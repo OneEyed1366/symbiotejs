@@ -11,5 +11,8 @@
   },
   "scripts": {
     "typecheck": "tsc --build"
+  },
+  "peerDependencies": {
+    "react-native": ">=0.86"
   }
 }

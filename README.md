@@ -168,6 +168,7 @@ the native pipe or the commit engine.
 | **M0** | Monorepo scaffold | pnpm workspaces, `shared` + `react` packages, headless harness | ✅ done |
 | **M1** | React canary on iOS | native pipe (R1) + clone-on-write engine (R2) + event→recommit (R3) | ✅ done |
 | **M2** | **React → React Native feature parity** | the full primitive + prop + event surface on the agnostic core | 🚧 in progress |
+| **DX** | `create-symbiote` scaffolder | pins `react-native` + `react` at the app root so your app code imports only `@symbiote/*`, never `react-native` | ⏳ planned |
 | **M3** | Vue adapter | `createRenderer` + nodeOps on the validated core — first non-React framework (R4) | ⏳ next |
 | **M4** | Angular adapter | a second mutation-oriented framework, template/renderer seam | ⏳ planned |
 | **M5** | Svelte adapter | compiled-output framework driving the shared mutation API | ⏳ planned |
