@@ -26,6 +26,8 @@ import {
   StatusBar,
   Keyboard,
   KEYBOARD_EVENT,
+  Platform,
+  StyleSheet,
 } from '@symbiote/react'
 
 const CHIP_WIDTH = 72
@@ -104,6 +106,23 @@ function App() {
       {/* native->JS: keyboard height pushed from the device hub, read live */}
       <Text style={{ color: '#7fb5ff', fontSize: 13, textAlign: 'center' }}>
         {keyboardHeight > 0 ? `keyboard up · ${keyboardHeight}px` : 'keyboard down'}
+      </Text>
+      {/* Tier A runtime modules, read live from the real native side. A non-empty
+          Version proves PlatformConstants resolved; a fractional hairline (e.g. 0.333
+          on @3x) proves DeviceInfo's scale resolved. The border below IS that hairline. */}
+      <Text
+        style={{
+          color: '#7fb5ff',
+          fontSize: 13,
+          textAlign: 'center',
+          paddingTop: 8,
+          borderTopColor: '#2b6cb0',
+          borderTopWidth: StyleSheet.hairlineWidth,
+        }}>
+        {`${Platform.OS} ${Platform.Version}` +
+          `${Platform.isPad ? ' · iPad' : ''}` +
+          ` · ${Platform.select({ ios: 'native ios', default: '?' })}` +
+          ` · hairline ${StyleSheet.hairlineWidth.toFixed(3)}`}
       </Text>
       {/* JS->native StatusBar controls — watch the top strip react */}
       <View style={{ flexDirection: 'row', gap: 12 }}>
