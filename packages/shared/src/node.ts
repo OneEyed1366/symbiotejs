@@ -4,12 +4,16 @@
 // tree mutable while the Fabric mirror stays persistent is the core R2 trick,
 // and it lives here in shared so no adapter re-implements it.
 
-// `view`  -> RCTView
-// `text`  -> RCTText (top level) or RCTVirtualText (nested in text); resolved at commit
-// `rawText` -> RCTRawText, the leaf carrying an actual string in props.text
-export type NodeKind = 'view' | 'text' | 'rawText'
-
 const BRAND: unique symbol = Symbol('symbiote.node')
+
+// A node carries the Fabric view name directly, so adding a primitive (Image,
+// ScrollView, TextInput) is just a new string from the adapter — no core change.
+// The only name resolved at commit time is text: a <Text> nested inside another
+// <Text> becomes a virtual span. `isText` marks a text container so its
+// descendants pick the virtual variant.
+export const RAW_TEXT_COMPONENT = 'RCTRawText'
+export const TEXT_COMPONENT = 'RCTText'
+export const VIRTUAL_TEXT_COMPONENT = 'RCTVirtualText'
 
 export interface SymbioteEvent {
   type: string
@@ -24,17 +28,21 @@ export type Listener = (event: SymbioteEvent) => void
 
 export interface SymbioteNode {
   readonly [BRAND]: true
-  readonly kind: NodeKind
+  // Fabric view name passed to createNode (RCTView, RCTImageView, RCTText, ...).
+  readonly component: string
+  // A text container: its descendants render as virtual text spans.
+  readonly isText: boolean
   props: Record<string, unknown>
   listeners: Map<string, Listener> | undefined
   children: SymbioteNode[]
   parent: SymbioteNode | undefined
 }
 
-export function createElement(kind: 'view' | 'text'): SymbioteNode {
+export function createElement(component: string, isText = false): SymbioteNode {
   return {
     [BRAND]: true,
-    kind,
+    component,
+    isText,
     props: {},
     listeners: undefined,
     children: [],
@@ -45,7 +53,8 @@ export function createElement(kind: 'view' | 'text'): SymbioteNode {
 export function createRawText(text: string): SymbioteNode {
   return {
     [BRAND]: true,
-    kind: 'rawText',
+    component: RAW_TEXT_COMPONENT,
+    isText: false,
     props: { text },
     listeners: undefined,
     children: [],

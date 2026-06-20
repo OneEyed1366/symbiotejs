@@ -13,12 +13,13 @@ export {
   setText,
   isSymbioteNode,
 } from './node'
-export type { SymbioteNode, NodeKind, SymbioteEvent, Listener } from './node'
+export type { SymbioteNode, SymbioteEvent, Listener } from './node'
 
 export { SymbioteSurface, createSurface } from './surface'
 export { setEventDispatcher } from './events'
-export { setColorProcessor } from './commit'
+export { setColorProcessor, dispatchViewCommand } from './commit'
 export { flattenStyle } from './style'
+export { dlog, isDebug } from './debug'
 
 export { getSlot } from './fabric'
 export type {

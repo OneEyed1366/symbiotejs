@@ -78,13 +78,13 @@ function check(label: string, ok: boolean): void {
 const ROOT_TAG = 11
 const surface = createSurface(ROOT_TAG)
 
-const a = createElement('view')
+const a = createElement('RCTView')
 setProp(a, 'opacity', 1)
-appendChild(a, createElement('view'))
+appendChild(a, createElement('RCTView'))
 
-const b = createElement('view')
+const b = createElement('RCTView')
 setProp(b, 'opacity', 1)
-appendChild(b, createElement('view'))
+appendChild(b, createElement('RCTView'))
 
 surface.appendChild(a)
 surface.appendChild(b)

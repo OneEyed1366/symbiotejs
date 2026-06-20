@@ -43,6 +43,8 @@ export interface FabricSlot {
   appendChildToSet(childSet: FabricChildSet, child: FabricNode): void
   completeRoot(rootTag: RootTag, childSet: FabricChildSet): void
   registerEventHandler(handler: FabricEventHandler): void
+  // Imperative view commands (e.g. TextInput setTextAndSelection, focus, blur).
+  dispatchCommand(node: FabricNode, commandName: string, args: readonly unknown[]): void
 }
 
 // The JSI global, typed at the trust boundary. RN's InitializeCore installs it
@@ -79,6 +81,7 @@ export function getSlot(): FabricSlot {
   const { appendChildToSet } = host
   const { completeRoot } = host
   const { registerEventHandler } = host
+  const { dispatchCommand } = host
 
   cached = {
     createNode: (reactTag, viewName, rootTag, props, instanceHandle) =>
@@ -92,6 +95,8 @@ export function getSlot(): FabricSlot {
     appendChildToSet: (childSet, child) => appendChildToSet(childSet, child),
     completeRoot: (rootTag, childSet) => completeRoot(rootTag, childSet),
     registerEventHandler: (handler) => registerEventHandler(handler),
+    dispatchCommand: (node, commandName, args) =>
+      dispatchCommand(node, commandName, args),
   }
   dlog('slot bound to nativeFabricUIManager')
   return cached

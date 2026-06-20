@@ -10,5 +10,5 @@
     "skipLibCheck": true,
     "types": ["node"]
   },
-  "include": ["smoke.tsx"]
+  "include": ["smoke.tsx", "*.smoke.ts", "*.smoke.tsx"]
 }

@@ -19,7 +19,11 @@ import {
   type FabricProps,
   type RootTag,
 } from './fabric'
-import type { SymbioteNode } from './node'
+import {
+  RAW_TEXT_COMPONENT,
+  VIRTUAL_TEXT_COMPONENT,
+  type SymbioteNode,
+} from './node'
 import { dlog, isDebug } from './debug'
 import { flattenStyle } from './style'
 import { nextTag } from './tags'
@@ -62,22 +66,16 @@ function processValue(key: string, value: unknown): unknown {
 }
 
 function viewNameFor(node: SymbioteNode, hasTextAncestor: boolean): string {
-  switch (node.kind) {
-    case 'view':
-      return 'RCTView'
-    case 'rawText':
-      return 'RCTRawText'
-    case 'text':
-      // Nested text becomes a virtual span; top-level text is a paragraph.
-      return hasTextAncestor ? 'RCTVirtualText' : 'RCTText'
-  }
+  // The only position-dependent name: a <Text> inside another <Text> becomes a
+  // virtual span. Everything else is the component string the adapter chose.
+  return node.isText && hasTextAncestor ? VIRTUAL_TEXT_COMPONENT : node.component
 }
 
 // Translate the retained node's logical props into the flat payload Fabric's C++
 // props expect: `style` keys are hoisted to the top level, event handlers and
 // undefined values are dropped.
 function fabricProps(node: SymbioteNode): FabricProps {
-  if (node.kind === 'rawText') {
+  if (node.component === RAW_TEXT_COMPONENT) {
     return { text: node.props.text }
   }
   const out: Record<string, unknown> = {}
@@ -148,7 +146,7 @@ function reconcile(
 ): Reconciled {
   const viewName = viewNameFor(node, hasTextAncestor)
   const props = fabricProps(node)
-  const childInText = node.kind === 'text' || hasTextAncestor
+  const childInText = node.isText || hasTextAncestor
   const committed = mirror.get(node)
 
   // First mount, or the view kind flipped (RCTText <-> RCTVirtualText when a
@@ -239,4 +237,21 @@ export function commitChildren(rootTag: RootTag, children: readonly SymbioteNode
         `cloneChildren=${stats.cloneChildren} reused=${stats.reused}`,
     )
   }
+}
+
+// Imperative view command (e.g. TextInput's setTextAndSelection / focus / blur),
+// aimed at a node's CURRENT Fabric handle. Only valid once the node has been
+// committed at least once — its handle is read from the mirror.
+export function dispatchViewCommand(
+  node: SymbioteNode,
+  commandName: string,
+  args: readonly unknown[],
+): void {
+  const record = mirror.get(node)
+  if (record === undefined) {
+    dlog(`dispatchViewCommand "${commandName}" skipped: node not committed`)
+    return
+  }
+  dlog(`dispatchViewCommand "${commandName}"`)
+  getSlot().dispatchCommand(record.handle, commandName, args)
 }

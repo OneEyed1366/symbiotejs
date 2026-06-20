@@ -28,6 +28,33 @@ interface HostContext {
   isInsideText: boolean
 }
 
+// Intrinsic JSX type -> Fabric component. Adding a primitive is one entry here
+// plus its thin component in components.ts — no host-config logic per primitive.
+interface ComponentDescriptor {
+  component: string
+  isText: boolean
+}
+const COMPONENTS: Readonly<Record<string, ComponentDescriptor>> = {
+  'symbiote-view': { component: 'RCTView', isText: false },
+  'symbiote-text': { component: 'RCTText', isText: true },
+  'symbiote-image': { component: 'RCTImageView', isText: false },
+  'symbiote-scroll-view': { component: 'RCTScrollView', isText: false },
+  'symbiote-scroll-content': { component: 'RCTScrollContentView', isText: false },
+  'symbiote-text-input': { component: 'RCTSinglelineTextInputView', isText: false },
+  'symbiote-text-input-multiline': {
+    component: 'RCTMultilineTextInputView',
+    isText: false,
+  },
+}
+
+function descriptorFor(type: string): ComponentDescriptor {
+  const descriptor = COMPONENTS[type]
+  if (descriptor === undefined) {
+    throw new Error(`Unknown symbiote component type: ${type}`)
+  }
+  return descriptor
+}
+
 function applyProps(node: SymbioteNode, props: Props): void {
   for (const [key, value] of Object.entries(props)) {
     if (key === 'children') continue
@@ -61,7 +88,7 @@ export function withDiscretePriority(run: () => void): void {
 }
 
 const reconciler = createReconciler<
-  'symbiote-view' | 'symbiote-text', // Type
+  string, // Type
   Props, // Props
   SymbioteSurface, // Container
   SymbioteNode, // Instance
@@ -86,7 +113,7 @@ const reconciler = createReconciler<
 
   getRootHostContext: () => ({ isInsideText: false }),
   getChildHostContext(parentHostContext, type) {
-    const isInsideText = type === 'symbiote-text'
+    const isInsideText = descriptorFor(type).isText
     return parentHostContext.isInsideText === isInsideText
       ? parentHostContext
       : { isInsideText }
@@ -105,10 +132,11 @@ const reconciler = createReconciler<
   shouldSetTextContent: () => false,
 
   createInstance(type, props, _container, hostContext) {
-    if (hostContext.isInsideText && type === 'symbiote-view') {
-      throw new Error("<View> can't be nested inside <Text>")
+    const descriptor = descriptorFor(type)
+    if (hostContext.isInsideText && !descriptor.isText) {
+      throw new Error(`<${type}> can't be nested inside <Text>`)
     }
-    const node = createElement(type === 'symbiote-text' ? 'text' : 'view')
+    const node = createElement(descriptor.component, descriptor.isText)
     applyProps(node, props)
     return node
   },

@@ -48,10 +48,10 @@ function fire(target: unknown, topLevelType: string, nativeEvent: Record<string,
 
 // ---- retained tree: root > button(child) + sibling ----------------------
 
-const root = createElement('view')
-const button = createElement('view')
-const child = createElement('view')
-const sibling = createElement('view')
+const root = createElement('RCTView')
+const button = createElement('RCTView')
+const child = createElement('RCTView')
+const sibling = createElement('RCTView')
 appendChild(root, button)
 appendChild(button, child)
 appendChild(root, sibling)

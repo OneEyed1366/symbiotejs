@@ -13,16 +13,38 @@ import { isSymbioteNode, type SymbioteEvent, type SymbioteNode } from './node'
 // Raw Fabric event name -> listener name. Generic bubbling events live here; press
 // is synthesized from a touch sequence and layout is direct, so both are handled
 // outside this table.
-const RAW_TO_LISTENER: Readonly<Record<string, string>> = {
+// Raw Fabric event -> listener name, split by dispatch phase. Press is synthesized
+// from a touch sequence (handled separately below); everything else is table-driven.
+// Bubbling events walk target -> root; direct events fire only on the target.
+const BUBBLING_EVENTS: Readonly<Record<string, string>> = {
+  topFocus: 'focus',
+  topBlur: 'blur',
+  topChange: 'change',
+  topEndEditing: 'endEditing',
+  topSubmitEditing: 'submitEditing',
+  topKeyPress: 'keyPress',
+}
+const DIRECT_EVENTS: Readonly<Record<string, string>> = {
   topLayout: 'layout',
+  topScroll: 'scroll',
+  topScrollBeginDrag: 'scrollBeginDrag',
+  topScrollEndDrag: 'scrollEndDrag',
+  topMomentumScrollBegin: 'momentumScrollBegin',
+  topMomentumScrollEnd: 'momentumScrollEnd',
+  topSelectionChange: 'selectionChange',
+  topContentSizeChange: 'contentSizeChange',
+  topLoadStart: 'loadStart',
+  topLoad: 'load',
+  topLoadEnd: 'loadEnd',
+  topError: 'error',
+  topProgress: 'progress',
+  topPartialLoad: 'partialLoad',
 }
 
 const TOUCH_START = 'topTouchStart'
 const TOUCH_END = 'topTouchEnd'
 const TOUCH_CANCEL = 'topTouchCancel'
-const LAYOUT = 'topLayout'
 const PRESS = 'press'
-const LAYOUT_LISTENER = 'layout'
 
 let installed = false
 
@@ -73,14 +95,18 @@ export function installEventHandler(): void {
       return
     }
 
-    if (topLevelType === LAYOUT) {
-      wrapDispatch(() => deliverDirect(instanceHandle, LAYOUT_LISTENER, nativeEvent))
+    const direct = DIRECT_EVENTS[topLevelType]
+    if (direct !== undefined) {
+      dlog(`event ${topLevelType} -> ${direct} (direct)`)
+      wrapDispatch(() => deliverDirect(instanceHandle, direct, nativeEvent))
       return
     }
 
-    const listenerName = RAW_TO_LISTENER[topLevelType]
-    if (listenerName === undefined) return
-    wrapDispatch(() => bubble(instanceHandle, listenerName, nativeEvent))
+    const bubbling = BUBBLING_EVENTS[topLevelType]
+    if (bubbling !== undefined) {
+      dlog(`event ${topLevelType} -> ${bubbling} (bubble)`)
+      wrapDispatch(() => bubble(instanceHandle, bubbling, nativeEvent))
+    }
   })
 }
 

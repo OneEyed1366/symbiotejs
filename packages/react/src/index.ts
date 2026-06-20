@@ -4,6 +4,12 @@
 
 export { View, Text } from './components'
 export type { ViewProps, TextProps } from './components'
+export { Image, setImageSourceResolver } from './image'
+export type { ImageProps, ImageSource, ImageSourceProp, ResizeMode } from './image'
+export { ScrollView } from './scroll-view'
+export type { ScrollViewProps } from './scroll-view'
+export { TextInput } from './text-input'
+export type { TextInputProps } from './text-input'
 export type { ViewStyle, TextStyle, FlexAlign, FlexJustify } from './styles'
 export { mount } from './render'
 
