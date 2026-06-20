@@ -30,7 +30,7 @@ import {
 
 const CHIP_WIDTH = 72
 const CHIP_GAP = 12
-const REFRESH_MS = 1200
+const REFRESH_MS = 2000
 
 const chips = Array.from({ length: 24 }, (_, index) => ({
   id: `chip-${index}`,
@@ -122,9 +122,25 @@ function App() {
           />
         </View>
       </View>
-      <Text style={{ color: '#41506a', fontSize: 13, textAlign: 'center' }}>
-        {`pull to refresh · refreshed ${refreshes}×`}
-      </Text>
+      {/* The native UIRefreshControl spinner only shows while iOS holds the scroll
+          view pulled-down; our full re-commit snaps the offset back, so we drive
+          our OWN indicator from the same `refreshing` flag — guaranteed visible. */}
+      {refreshing ? (
+        <View
+          style={{
+            flexDirection: 'row',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: 8,
+          }}>
+          <ActivityIndicator color="#7fb5ff" />
+          <Text style={{ color: '#7fb5ff', fontSize: 13 }}>Refreshing…</Text>
+        </View>
+      ) : (
+        <Text style={{ color: '#41506a', fontSize: 13, textAlign: 'center' }}>
+          {`pull to refresh · refreshed ${refreshes}×`}
+        </Text>
+      )}
 
       {/* View + press-to-increment */}
       <View
