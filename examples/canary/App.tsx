@@ -28,6 +28,15 @@ import {
   KEYBOARD_EVENT,
   Platform,
   StyleSheet,
+  PixelRatio,
+  useWindowDimensions,
+  useColorScheme,
+  AppState,
+  Alert,
+  ActionSheetIOS,
+  Linking,
+  Vibration,
+  Share,
 } from '@symbiote/react'
 
 const CHIP_WIDTH = 72
@@ -51,6 +60,12 @@ function App() {
   const [statusBarHidden, setStatusBarHidden] = useState(false)
   const [darkStatusBar, setDarkStatusBar] = useState(false)
 
+  // Tier B runtime modules, read live: the hooks pull from Dimensions/Appearance,
+  // appState tracks foreground/background through AppState's device events.
+  const window = useWindowDimensions()
+  const colorScheme = useColorScheme()
+  const [appState, setAppState] = useState<string>(AppState.currentState ?? 'unknown')
+
   // native -> JS: the device hub pushes keyboard frames; we read the height live.
   useEffect(() => {
     const onShow = (payload: unknown) => {
@@ -73,12 +88,47 @@ function App() {
     return () => subscriptions.forEach(subscription => subscription.remove())
   }, [])
 
+  // native -> JS: AppState pushes lifecycle changes; read the current phase live.
+  useEffect(() => {
+    const subscription = AppState.addEventListener('change', (...args: unknown[]) => {
+      const next = args[0]
+      if (typeof next === 'string') setAppState(next)
+    })
+    return () => subscription.remove()
+  }, [])
+
   const onRefresh = useCallback(() => {
     setRefreshing(true)
     setTimeout(() => {
       setRefreshing(false)
       setRefreshes(value => value + 1)
     }, REFRESH_MS)
+  }, [])
+
+  // JS -> native imperative modules. A Promise reject (no native module / user
+  // cancel) is expected, so it's swallowed — this is a demo, not a flow to handle.
+  const onShare = useCallback(() => {
+    void Share.share({ message: 'Sent from symbiote', url: 'https://reactnative.dev' }).catch(
+      () => {},
+    )
+  }, [])
+  const onAlert = useCallback(() => {
+    Alert.alert('symbiote', 'Native AlertManager reached.', [
+      { text: 'Cancel', style: 'cancel' },
+      { text: 'Vibrate', onPress: () => Vibration.vibrate() },
+    ])
+  }, [])
+  const onActionSheet = useCallback(() => {
+    ActionSheetIOS.showActionSheetWithOptions(
+      { options: ['Share', 'Vibrate', 'Cancel'], cancelButtonIndex: 2 },
+      (index: number) => {
+        if (index === 0) onShare()
+        if (index === 1) Vibration.vibrate()
+      },
+    )
+  }, [onShare])
+  const onOpenUrl = useCallback(() => {
+    void Linking.openURL('https://reactnative.dev').catch(() => {})
   }, [])
 
   return (
@@ -124,6 +174,13 @@ function App() {
           ` · ${Platform.select({ ios: 'native ios', default: '?' })}` +
           ` · hairline ${StyleSheet.hairlineWidth.toFixed(3)}`}
       </Text>
+      {/* Tier B runtime modules, live. Real w×h@scale proves Dimensions + PixelRatio;
+          a colorScheme proves Appearance; appState flips when you background the app
+          (AppState's device events). */}
+      <Text style={{ color: '#7fb5ff', fontSize: 13, textAlign: 'center' }}>
+        {`${Math.round(window.width)}×${Math.round(window.height)} @${PixelRatio.get()}x` +
+          ` · ${colorScheme ?? 'no-scheme'} · ${appState}`}
+      </Text>
       {/* JS->native StatusBar controls — watch the top strip react */}
       <View style={{ flexDirection: 'row', gap: 12 }}>
         <View style={{ flex: 1 }}>
@@ -141,6 +198,26 @@ function App() {
           />
         </View>
       </View>
+      {/* JS->native imperative modules — tap to fire the real native UI / haptics.
+          Each working button proves its module name resolved on the bridgeless host. */}
+      <View style={{ flexDirection: 'row', gap: 12 }}>
+        <View style={{ flex: 1 }}>
+          <Button title="Alert" onPress={onAlert} color="#7fb5ff" />
+        </View>
+        <View style={{ flex: 1 }}>
+          <Button title="Action sheet" onPress={onActionSheet} color="#7fb5ff" />
+        </View>
+      </View>
+      <View style={{ flexDirection: 'row', gap: 12 }}>
+        <View style={{ flex: 1 }}>
+          <Button title="Share" onPress={onShare} color="#7fb5ff" />
+        </View>
+        <View style={{ flex: 1 }}>
+          <Button title="Vibrate" onPress={() => Vibration.vibrate()} color="#7fb5ff" />
+        </View>
+      </View>
+      <Button title="Open reactnative.dev" onPress={onOpenUrl} color="#7fb5ff" />
+
       {/* The native UIRefreshControl spinner only shows while iOS holds the scroll
           view pulled-down; our full re-commit snaps the offset back, so we drive
           our OWN indicator from the same `refreshing` flag — guaranteed visible. */}
