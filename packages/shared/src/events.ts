@@ -1,17 +1,34 @@
 // Event normalization. Fabric delivers raw touch primitives to a single global
 // handler, with the instanceHandle (our SymbioteNode) as the target. There is no
-// raw `press` event — a tap is synthesized from a touch sequence; for the canary
-// we treat topTouchEnd as a press. Events bubble up the retained tree via parent
-// pointers until a listener is found.
+// raw `press` event — a tap is synthesized from a touch sequence: the start and
+// end targets are correlated so a press fires only when the touch ends on the
+// node it started on (or a descendant). Bubbling events walk target -> root,
+// invoking each ancestor's listener until one calls stopPropagation. Layout is a
+// direct event in RN and is delivered only to its own target.
 
+import { dlog } from './debug'
 import { getSlot } from './fabric'
-import { isSymbioteNode, type SymbioteNode } from './node'
+import { isSymbioteNode, type SymbioteEvent, type SymbioteNode } from './node'
 
+// Raw Fabric event name -> listener name. Generic bubbling events live here; press
+// is synthesized from a touch sequence and layout is direct, so both are handled
+// outside this table.
 const RAW_TO_LISTENER: Readonly<Record<string, string>> = {
-  topTouchEnd: 'press',
+  topLayout: 'layout',
 }
 
+const TOUCH_START = 'topTouchStart'
+const TOUCH_END = 'topTouchEnd'
+const TOUCH_CANCEL = 'topTouchCancel'
+const LAYOUT = 'topLayout'
+const PRESS = 'press'
+const LAYOUT_LISTENER = 'layout'
+
 let installed = false
+
+// Target of the in-flight touch, remembered at topTouchStart and consumed (or
+// cleared) at topTouchEnd / topTouchCancel.
+let pressStart: SymbioteNode | undefined
 
 // An event arrives outside the framework's own update loop. Adapters wrap the
 // dispatch so the listener's state change runs at the right priority and is
@@ -31,25 +48,99 @@ export function installEventHandler(): void {
   installed = true
 
   getSlot().registerEventHandler((instanceHandle, topLevelType, nativeEvent) => {
+    if (!isSymbioteNode(instanceHandle)) return
+
+    if (topLevelType === TOUCH_START) {
+      dlog(`event ${TOUCH_START}`)
+      pressStart = instanceHandle
+      return
+    }
+
+    if (topLevelType === TOUCH_END) {
+      const start = pressStart
+      pressStart = undefined
+      if (start && endsWithin(instanceHandle, start)) {
+        dlog('event press -> dispatch')
+        wrapDispatch(() => bubble(start, PRESS, nativeEvent))
+      } else {
+        dlog(`event ${TOUCH_END} ignored (no matching start)`)
+      }
+      return
+    }
+
+    if (topLevelType === TOUCH_CANCEL) {
+      pressStart = undefined
+      return
+    }
+
+    if (topLevelType === LAYOUT) {
+      wrapDispatch(() => deliverDirect(instanceHandle, LAYOUT_LISTENER, nativeEvent))
+      return
+    }
+
     const listenerName = RAW_TO_LISTENER[topLevelType]
     if (listenerName === undefined) return
-    if (!isSymbioteNode(instanceHandle)) return
-    wrapDispatch(() => dispatch(instanceHandle, listenerName, nativeEvent))
+    wrapDispatch(() => bubble(instanceHandle, listenerName, nativeEvent))
   })
 }
 
-function dispatch(
+// A press is honest only if the touch ends on the node it started on, or a
+// descendant of it: walk parent pointers up from the end target looking for the
+// start target. The start node may have been unmounted mid-touch (parent pointer
+// cleared) — the walk simply runs out and returns false, no throw.
+function endsWithin(endTarget: SymbioteNode, start: SymbioteNode): boolean {
+  let node: SymbioteNode | undefined = endTarget
+  while (node) {
+    if (node === start) return true
+    node = node.parent
+  }
+  return false
+}
+
+// True bubbling: walk target -> root, invoking each ancestor's listener for this
+// event name in order, until the chain ends or a listener stops propagation.
+// `target` stays the original node; `currentTarget` tracks whose listener runs.
+function bubble(
   target: SymbioteNode,
   listenerName: string,
   nativeEvent: Record<string, unknown>,
 ): void {
+  let stopped = false
   let node: SymbioteNode | undefined = target
   while (node) {
     const listener = node.listeners?.get(listenerName)
     if (listener) {
-      listener({ type: listenerName, target, nativeEvent })
-      return
+      // engine owner adds currentTarget + stopPropagation to SymbioteEvent
+      const event: SymbioteEvent = {
+        type: listenerName,
+        target,
+        currentTarget: node,
+        nativeEvent,
+        stopPropagation: () => {
+          stopped = true
+        },
+      }
+      listener(event)
+      if (stopped) return
     }
     node = node.parent
   }
+}
+
+// Direct (non-bubbling) delivery: only the target's own listener fires.
+function deliverDirect(
+  target: SymbioteNode,
+  listenerName: string,
+  nativeEvent: Record<string, unknown>,
+): void {
+  const listener = target.listeners?.get(listenerName)
+  if (!listener) return
+  // engine owner adds currentTarget + stopPropagation to SymbioteEvent
+  listener({
+    type: listenerName,
+    target,
+    currentTarget: target,
+    nativeEvent,
+    stopPropagation: () => {},
+  })
 }

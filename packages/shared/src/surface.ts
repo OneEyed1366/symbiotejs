@@ -4,6 +4,7 @@
 
 import type { RootTag } from './fabric'
 import { commitChildren } from './commit'
+import { dlog } from './debug'
 import { installEventHandler } from './events'
 import type { SymbioteNode } from './node'
 
@@ -70,5 +71,6 @@ export class SymbioteSurface {
 
 export function createSurface(rootTag: RootTag): SymbioteSurface {
   installEventHandler()
+  dlog(`surface created root=${rootTag}`)
   return new SymbioteSurface(rootTag)
 }

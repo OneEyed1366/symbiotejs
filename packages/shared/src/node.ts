@@ -13,8 +13,12 @@ const BRAND: unique symbol = Symbol('symbiote.node')
 
 export interface SymbioteEvent {
   type: string
+  // `target` is the node the gesture started on; `currentTarget` is the node
+  // whose listener is running right now as the event bubbles toward the root.
   target: SymbioteNode
+  currentTarget: SymbioteNode
   nativeEvent: Record<string, unknown>
+  stopPropagation: () => void
 }
 export type Listener = (event: SymbioteEvent) => void
 

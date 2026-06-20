@@ -18,6 +18,7 @@ export type { SymbioteNode, NodeKind, SymbioteEvent, Listener } from './node'
 export { SymbioteSurface, createSurface } from './surface'
 export { setEventDispatcher } from './events'
 export { setColorProcessor } from './commit'
+export { flattenStyle } from './style'
 
 export { getSlot } from './fabric'
 export type {

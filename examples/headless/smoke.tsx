@@ -39,8 +39,17 @@ const slot = {
     allCreated.push(node)
     return node
   },
-  cloneNodeWithNewProps: (node: FakeNode): FakeNode => node,
-  cloneNodeWithNewChildren: (node: FakeNode): FakeNode => node,
+  // Faithful persistent semantics: a clone is a new identity. NewProps replaces
+  // the payload; the "...Children" variants reset children (the engine re-appends).
+  cloneNodeWithNewProps: (node: FakeNode, newProps: Record<string, unknown>): FakeNode => ({
+    ...node,
+    props: newProps,
+  }),
+  cloneNodeWithNewChildren: (node: FakeNode): FakeNode => ({ ...node, children: [] }),
+  cloneNodeWithNewChildrenAndProps: (
+    node: FakeNode,
+    newProps: Record<string, unknown>,
+  ): FakeNode => ({ ...node, props: newProps, children: [] }),
   createChildSet: (): FakeNode[] => [],
   appendChild(parent: FakeNode, child: FakeNode): FakeNode {
     parent.children.push(child)
@@ -108,7 +117,9 @@ if (!view) {
   console.log('FAIL  no event handler was registered')
   failures += 1
 } else {
-  // Fire a tap: Fabric hands the View's instanceHandle straight back.
+  // Fire a tap: Fabric hands the View's instanceHandle straight back. A press is
+  // an honest gesture — a touch that starts and ends on the same node.
+  eventHandler(view.instanceHandle, 'topTouchStart', {})
   eventHandler(view.instanceHandle, 'topTouchEnd', {})
   expect(
     'tap increments the counter and recommits',

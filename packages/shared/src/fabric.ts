@@ -5,6 +5,8 @@
 // The live object is a lazy caching proxy: every property access mints a fresh
 // host function, so we read each method once and cache a plain facade.
 
+import { dlog } from './debug'
+
 export type RootTag = number
 
 // Opaque native handles. We never construct these — the slot mints and returns
@@ -35,6 +37,7 @@ export interface FabricSlot {
   ): FabricNode
   cloneNodeWithNewProps(node: FabricNode, newProps: FabricProps): FabricNode
   cloneNodeWithNewChildren(node: FabricNode): FabricNode
+  cloneNodeWithNewChildrenAndProps(node: FabricNode, newProps: FabricProps): FabricNode
   createChildSet(rootTag: RootTag): FabricChildSet
   appendChild(parent: FabricNode, child: FabricNode): FabricNode
   appendChildToSet(childSet: FabricChildSet, child: FabricNode): void
@@ -70,6 +73,7 @@ export function getSlot(): FabricSlot {
   const { createNode } = host
   const { cloneNodeWithNewProps } = host
   const { cloneNodeWithNewChildren } = host
+  const { cloneNodeWithNewChildrenAndProps } = host
   const { createChildSet } = host
   const { appendChild } = host
   const { appendChildToSet } = host
@@ -81,11 +85,14 @@ export function getSlot(): FabricSlot {
       createNode(reactTag, viewName, rootTag, props, instanceHandle),
     cloneNodeWithNewProps: (node, newProps) => cloneNodeWithNewProps(node, newProps),
     cloneNodeWithNewChildren: (node) => cloneNodeWithNewChildren(node),
+    cloneNodeWithNewChildrenAndProps: (node, newProps) =>
+      cloneNodeWithNewChildrenAndProps(node, newProps),
     createChildSet: (rootTag) => createChildSet(rootTag),
     appendChild: (parent, child) => appendChild(parent, child),
     appendChildToSet: (childSet, child) => appendChildToSet(childSet, child),
     completeRoot: (rootTag, childSet) => completeRoot(rootTag, childSet),
     registerEventHandler: (handler) => registerEventHandler(handler),
   }
+  dlog('slot bound to nativeFabricUIManager')
   return cached
 }

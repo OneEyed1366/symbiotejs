@@ -14,6 +14,10 @@ import { setColorProcessor } from '@symbiote/shared';
 import App from './App';
 import { name as appName } from './app.json';
 
+// Diagnostic logs are off unless DEBUG=1 is set when Metro starts (babel inlines
+// it). Mirror it onto the global so shared sees it on any host.
+globalThis.__SYMBIOTE_DEBUG__ = process.env.DEBUG === '1';
+
 // Colors reach Fabric as platform ints; let shared use RN's own converter.
 setColorProcessor(processColor);
 
