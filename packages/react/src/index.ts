@@ -70,4 +70,38 @@ export type {
   PlatformSelectSpec,
 } from '@symbiote/shared'
 
+// Runtime modules — native-bridge consumers, same shape as Keyboard/StatusBar:
+// thin JS over getNativeModule + device events, no Fabric component of their own.
+export { Dimensions } from './dimensions'
+export type {
+  DisplayMetrics,
+  DisplayMetricsAndroid,
+  DimensionsPayload,
+  DimensionsSet,
+  DimensionsKey,
+  DimensionsChangeListener,
+  DimensionsStatic,
+} from './dimensions'
+export { PixelRatio } from './pixel-ratio'
+export type { PixelRatioStatic } from './pixel-ratio'
+export { useWindowDimensions } from './use-window-dimensions'
+export { Appearance } from './appearance'
+export type { ColorSchemeName, ColorSchemePreference } from './appearance'
+export { useColorScheme } from './use-color-scheme'
+export { AppState } from './app-state'
+export type { AppStateStatus, AppStateEvent } from './app-state'
+export { Alert } from './alert'
+export type { AlertType, AlertButtonStyle, AlertButton, AlertButtons, AlertOptions } from './alert'
+export { ActionSheetIOS } from './action-sheet-ios'
+export type {
+  ActionSheetIOSOptions,
+  ShareActionSheetIOSOptions,
+  ShareActionSheetError,
+} from './action-sheet-ios'
+export { Linking } from './linking'
+export type { UrlEvent } from './linking'
+export { Vibration } from './vibration'
+export { Share } from './share'
+export type { ShareContent, ShareOptions, ShareAction } from './share'
+
 export type { SymbioteEvent } from '@symbiote/shared'
