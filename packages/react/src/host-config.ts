@@ -52,6 +52,7 @@ const COMPONENTS: Readonly<Record<string, ComponentDescriptor>> = {
   'symbiote-safe-area-view': { component: 'SafeAreaView', isText: false },
   'symbiote-modal': { component: 'ModalHostView', isText: false },
   'symbiote-refresh-control': { component: 'PullToRefreshView', isText: false },
+  'symbiote-input-accessory-view': { component: 'RCTInputAccessoryView', isText: false },
 }
 
 function descriptorFor(type: string): ComponentDescriptor {

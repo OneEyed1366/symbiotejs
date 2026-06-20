@@ -24,6 +24,9 @@ export interface TextInputProps {
   maxLength?: number
   multiline?: boolean
   selection?: { start: number; end?: number }
+  // Pairs this input with an InputAccessoryView whose nativeID matches; native docks
+  // that view above the keyboard while the input is focused. Forwarded via ...rest.
+  inputAccessoryViewID?: string
   style?: TextStyle
 
   onChangeText?: (text: string) => void
