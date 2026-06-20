@@ -7,6 +7,7 @@
 // direct event in RN and is delivered only to its own target.
 
 import { dlog } from './debug'
+import { runWrapped } from './dispatch'
 import { getSlot } from './fabric'
 import { isSymbioteNode, type SymbioteEvent, type SymbioteNode } from './node'
 
@@ -61,19 +62,6 @@ let installed = false
 // cleared) at topTouchEnd / topTouchCancel.
 let pressStart: SymbioteNode | undefined
 
-// An event arrives outside the framework's own update loop. Adapters wrap the
-// dispatch so the listener's state change runs at the right priority and is
-// flushed synchronously — both framework-specific (e.g. React's discrete lane +
-// flushSyncWork), so the wrapper lives in the adapter, not here. The default is
-// a plain pass-through for adapters that need no wrapping.
-let wrapDispatch: (run: () => void) => void = (run) => {
-  run()
-}
-
-export function setEventDispatcher(wrap: (run: () => void) => void): void {
-  wrapDispatch = wrap
-}
-
 export function installEventHandler(): void {
   if (installed) return
   installed = true
@@ -84,7 +72,7 @@ export function installEventHandler(): void {
     if (topLevelType === TOUCH_START) {
       dlog(`event ${TOUCH_START}`)
       pressStart = instanceHandle
-      wrapDispatch(() => bubble(instanceHandle, PRESS_IN, nativeEvent))
+      runWrapped(() => bubble(instanceHandle, PRESS_IN, nativeEvent))
       return
     }
 
@@ -98,7 +86,7 @@ export function installEventHandler(): void {
       // press fires only on an honest tap (ended within the responder); pressOut
       // always fires on the responder so its pressed-state can release.
       const tapped = endsWithin(instanceHandle, start)
-      wrapDispatch(() => {
+      runWrapped(() => {
         if (tapped) {
           dlog('event press -> dispatch')
           bubble(start, PRESS, nativeEvent)
@@ -111,21 +99,21 @@ export function installEventHandler(): void {
     if (topLevelType === TOUCH_CANCEL) {
       const start = pressStart
       pressStart = undefined
-      if (start) wrapDispatch(() => bubble(start, PRESS_OUT, nativeEvent))
+      if (start) runWrapped(() => bubble(start, PRESS_OUT, nativeEvent))
       return
     }
 
     const direct = DIRECT_EVENTS[topLevelType]
     if (direct !== undefined) {
       dlog(`event ${topLevelType} -> ${direct} (direct)`)
-      wrapDispatch(() => deliverDirect(instanceHandle, direct, nativeEvent))
+      runWrapped(() => deliverDirect(instanceHandle, direct, nativeEvent))
       return
     }
 
     const bubbling = BUBBLING_EVENTS[topLevelType]
     if (bubbling !== undefined) {
       dlog(`event ${topLevelType} -> ${bubbling} (bubble)`)
-      wrapDispatch(() => bubble(instanceHandle, bubbling, nativeEvent))
+      runWrapped(() => bubble(instanceHandle, bubbling, nativeEvent))
     }
   })
 }

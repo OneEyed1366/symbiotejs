@@ -19,10 +19,19 @@ export { isEventFor } from './view-config'
 export type { SymbioteNode, SymbioteEvent, Listener } from './node'
 
 export { SymbioteSurface, createSurface } from './surface'
-export { setEventDispatcher } from './events'
+export { setEventDispatcher } from './dispatch'
 export { setColorProcessor, dispatchViewCommand } from './commit'
 export { flattenStyle } from './style'
 export { dlog, isDebug } from './debug'
+
+export { getNativeModule, getEnforcingNativeModule } from './native-modules'
+export { installDeviceEventHub, NativeEventEmitter, setDeviceEventSource } from './native-events'
+export type {
+  EventSubscription,
+  EventEmitterModule,
+  NativeEventListener,
+  DeviceEventSource,
+} from './native-events'
 
 export { getSlot } from './fabric'
 export type {
