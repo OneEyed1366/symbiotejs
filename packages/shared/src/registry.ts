@@ -70,7 +70,7 @@ const EMPTY: Resolved = { listeners: new Set(), byRaw: new Map(), processors: ne
 // commit COLOR_PROPS). The source is never consulted for these, so they can't
 // drift. Everything else derives. This list grows only when WE add a core
 // primitive, never for a community package.
-const BUILTIN_COMPONENTS: ReadonlySet<string> = new Set([
+const BUILTIN_COMPONENTS = new Set([
   'RCTView',
   'RCTText',
   'RCTRawText',
@@ -86,7 +86,7 @@ const BUILTIN_COMPONENTS: ReadonlySet<string> = new Set([
   'ModalHostView',
   'PullToRefreshView',
   'RCTInputAccessoryView',
-])
+]) satisfies ReadonlySet<string>
 
 // Manual overrides per component (usually none) — the escape hatch.
 const overrides = new Map<string, ComponentRegistration[]>()
