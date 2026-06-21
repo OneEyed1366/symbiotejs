@@ -13,9 +13,14 @@ import {
   Image as RNImage,
   DeviceEventEmitter,
 } from 'react-native';
+import * as ReactNativeViewConfigRegistry from 'react-native/Libraries/Renderer/shims/ReactNativeViewConfigRegistry';
 import { createElement } from 'react';
 import { mount, setImageSourceResolver } from '@symbiote/react';
-import { setColorProcessor, setDeviceEventSource } from '@symbiote/shared';
+import {
+  setColorProcessor,
+  setDeviceEventSource,
+  setNativeViewConfigSource,
+} from '@symbiote/shared';
 import App from './App';
 import { name as appName } from './app.json';
 
@@ -34,6 +39,18 @@ setImageSourceResolver(source => RNImage.resolveAssetSource(source));
 // RCTDeviceEventEmitter — the JS module native actually invokes. We subscribe
 // through it rather than registering our own (native ignores a duplicate name).
 setDeviceEventSource(DeviceEventEmitter);
+
+// Third-party Fabric views derive their events + prop processors from RN's own
+// ViewConfig registry (populated by each library's codegen). `get` throws for an
+// unregistered name; our built-ins never reach here, so undefined is the right
+// answer for anything the registry doesn't know.
+setNativeViewConfigSource(name => {
+  try {
+    return ReactNativeViewConfigRegistry.get(name);
+  } catch {
+    return undefined;
+  }
+});
 
 AppRegistry.registerRunnable(appName, appParameters => {
   mount(appParameters.rootTag, createElement(App));

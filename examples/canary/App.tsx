@@ -38,6 +38,10 @@ import {
   Vibration,
   Share,
 } from '@symbiote/react'
+// A real third-party native view, used straight from the library — no symbiote
+// wrapper. symbiote derives RNCSlider's events and prop processors from its own
+// ViewConfig at runtime; this is the "install the package, use its component" path.
+import Slider from '@react-native-community/slider'
 
 const CHIP_WIDTH = 72
 const CHIP_GAP = 12
@@ -53,6 +57,7 @@ function App() {
   const [count, setCount] = useState(0)
   const [name, setName] = useState('')
   const [spinning, setSpinning] = useState(true)
+  const [volume, setVolume] = useState(0.5)
   const [modalVisible, setModalVisible] = useState(false)
   const [refreshing, setRefreshing] = useState(false)
   const [refreshes, setRefreshes] = useState(0)
@@ -289,6 +294,28 @@ function App() {
         />
       </View>
       <ActivityIndicator animating={spinning} color="#7fb5ff" size="large" />
+
+      {/* Slider — a THIRD-PARTY native view (@react-native-community/slider). symbiote
+          ships zero metadata for it: shared derives its onValueChange event and the
+          track/thumb tint processors from the library's own ViewConfig at runtime.
+          Drag it — the value updates live; the colored track proves color derivation. */}
+      <View style={{ gap: 8 }}>
+        <Text style={{ color: '#cbd5e1', fontSize: 16 }}>
+          {`volume · ${Math.round(volume * 100)}%`}
+        </Text>
+        <Slider
+          value={volume}
+          onValueChange={setVolume}
+          minimumValue={0}
+          maximumValue={1}
+          step={0.01}
+          minimumTrackTintColor="#7fb5ff"
+          maximumTrackTintColor="#334155"
+          thumbTintColor="#ffffff"
+          // Pin a height so the native track always has room in the flex column.
+          style={{ height: 40, alignSelf: 'stretch' }}
+        />
+      </View>
 
       {/* Button opens a Modal */}
       <Button title="Open modal" onPress={() => setModalVisible(true)} color="#7fb5ff" />
