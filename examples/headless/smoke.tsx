@@ -103,13 +103,23 @@ function serializeNode(node: FakeNode): string {
 const ROOT_TAG = 11
 mount(ROOT_TAG, <Counter />)
 
+// Every commit is now wrapped in RN's AppContainer equivalent: one synthetic RCTView
+// root (flex:1 + pointerEvents box-none). Unwrap it before asserting the app's shape.
+const appRoot = committed[0]
+if (committed.length !== 1 || appRoot.props.pointerEvents !== 'box-none') {
+  console.log('FAIL  expected a single box-none AppContainer root')
+  failures += 1
+}
 expect(
   'initial mount paints View > Text > RawText',
-  serialize(committed),
+  serialize(appRoot.children),
   'RCTView(RCTText(RCTRawText "count: 0"))',
 )
 
-const view = allCreated.find((node) => node.viewName === 'RCTView')
+// Skip the synthetic AppContainer root; the app's own View is the non-box-none RCTView.
+const view = allCreated.find(
+  (node) => node.viewName === 'RCTView' && node.props.pointerEvents !== 'box-none',
+)
 if (!view) {
   console.log('FAIL  no RCTView was created')
   failures += 1
@@ -123,7 +133,7 @@ if (!view) {
   eventHandler(view.instanceHandle, 'topTouchEnd', {})
   expect(
     'tap increments the counter and recommits',
-    serialize(committed),
+    serialize(committed[0].children),
     'RCTView(RCTText(RCTRawText "count: 1"))',
   )
 }
