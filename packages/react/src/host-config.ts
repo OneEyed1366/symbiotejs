@@ -57,10 +57,16 @@ const COMPONENTS: Readonly<Record<string, ComponentDescriptor>> = {
 
 function descriptorFor(type: string): ComponentDescriptor {
   const descriptor = COMPONENTS[type]
-  if (descriptor === undefined) {
+  if (descriptor !== undefined) return descriptor
+  // A `symbiote-*` type with no entry is a typo in our own code — surface it.
+  if (type.startsWith('symbiote-')) {
     throw new Error(`Unknown symbiote component type: ${type}`)
   }
-  return descriptor
+  // Any other type is a raw Fabric view name straight from a library's codegen
+  // component (`requireNativeComponent` returns the name string, so <RNCSlider/>
+  // arrives here as 'RNCSlider'). It flows through untouched: shared derives its
+  // events and processors from the view's ViewConfig — no per-library glue.
+  return { component: type, isText: false }
 }
 
 function applyProps(node: SymbioteNode, props: Props): void {

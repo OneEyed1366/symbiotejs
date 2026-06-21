@@ -63,6 +63,11 @@ export { mount } from './render'
 // Framework-agnostic runtime utilities live in shared; the adapter re-exports them
 // so app code names only @symbiote/react (RN's surface, one import root).
 export { Platform, StyleSheet } from '@symbiote/shared'
+// Wired once by the app entry on a real host (like setColorProcessor): hands shared
+// RN's ViewConfig registry so third-party Fabric views auto-derive their metadata —
+//   setNativeViewConfigSource(name => ReactNativeViewConfigRegistry.get(name))
+export { setNativeViewConfigSource } from '@symbiote/shared'
+export type { NativeViewConfig, NativeViewConfigSource } from '@symbiote/shared'
 export type {
   PlatformStatic,
   PlatformOSType,
