@@ -111,7 +111,13 @@ mount(ROOT_TAG, <App />)
 // PullToRefreshView is a child of RCTScrollView, the FIRST sibling — before the
 // content container (exactly as RN's iOS ScrollView orders {refreshControl} then
 // {contentContainer}).
-const shape = serialize(committed)
+// Every commit is now wrapped in RN's AppContainer equivalent: one synthetic RCTView
+// root (flex:1 + pointerEvents box-none). Unwrap it before asserting the app's shape.
+const [appRoot] = committed
+if (committed.length !== 1 || appRoot.props.pointerEvents !== 'box-none') {
+  throw new Error(`expected one synthetic box-none root, got ${serialize(committed)}`)
+}
+const shape = serialize(appRoot.children)
 const EXPECTED_SHAPE =
   'RCTScrollView(PullToRefreshViewRCTScrollContentView(RCTView))'
 if (shape !== EXPECTED_SHAPE) {
@@ -120,7 +126,7 @@ if (shape !== EXPECTED_SHAPE) {
 
 // The serializer runs siblings together, so assert the ordered children of the
 // scroll view directly: refresh control FIRST, content container SECOND.
-const scrollView = committed[0]
+const scrollView = appRoot.children[0]
 if (!scrollView || scrollView.viewName !== 'RCTScrollView') {
   throw new Error(`root is not RCTScrollView: ${JSON.stringify(scrollView?.viewName)}`)
 }

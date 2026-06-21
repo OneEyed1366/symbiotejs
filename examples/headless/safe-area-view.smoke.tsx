@@ -107,7 +107,13 @@ function serializeNode(node: FakeNode): string {
 const ROOT_TAG = 31
 mount(ROOT_TAG, <App />)
 
-const shape = serialize(committed)
+// Every commit is now wrapped in RN's AppContainer equivalent: one synthetic RCTView
+// root (flex:1 + pointerEvents box-none). Unwrap it before asserting the app's shape.
+const [appRoot] = committed
+if (committed.length !== 1 || appRoot.props.pointerEvents !== 'box-none') {
+  throw new Error(`expected one synthetic box-none root, got ${serialize(committed)}`)
+}
+const shape = serialize(appRoot.children)
 if (shape !== 'SafeAreaView(RCTView)') {
   throw new Error(`committed tree wrong: ${shape}`)
 }

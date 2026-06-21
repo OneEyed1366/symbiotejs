@@ -90,11 +90,13 @@ surface.appendChild(a)
 surface.appendChild(b)
 
 surface.commit()
-// A, A.child, B, B.child -> 4 createNode; one completeRoot.
-check('mount creates every node once (4)', counters.createNode === 4)
+// synthetic AppContainer root + A, A.child, B, B.child -> 5 createNode; one completeRoot.
+check('mount creates every node once (5)', counters.createNode === 5)
 check('mount commits once', counters.completeRoot === 1)
-const aHandle1 = committed[0]
-const bHandle1 = committed[1]
+// committed[0] is the synthetic root; A and B are its two children.
+const root = committed[0]
+const aHandle1 = root.children[0]
+const bHandle1 = root.children[1]
 
 // ---- change only A's prop ------------------------------------------------
 
@@ -105,10 +107,11 @@ surface.commit()
 check('update rebuilds nothing (0 createNode)', counters.createNode === 0)
 check('update re-clones A (props changed)', counters.cloneProps >= 1)
 check('update commits once', counters.completeRoot === 1)
-check('untouched sibling B is reused by reference', committed[1] === bHandle1)
-check('changed sibling A gets a new handle', committed[0] !== aHandle1)
-// B's subtree was never cloned — its single child clone count stays put.
-check('only the changed branch was cloned', counters.cloneChildren === 0)
+check('untouched sibling B is reused by reference', committed[0].children[1] === bHandle1)
+check('changed sibling A gets a new handle', committed[0].children[0] !== aHandle1)
+// One cloneChildren: the synthetic root re-clones to point at A's new handle. B's
+// subtree is never cloned (proven by B's reuse above), so the count stays at exactly 1.
+check('only the changed branch was cloned', counters.cloneChildren === 1)
 
 // ---- a no-op commit must touch nothing native ----------------------------
 

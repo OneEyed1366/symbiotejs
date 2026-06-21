@@ -125,9 +125,11 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 // The current committed wrapper node (the outer RCTView KeyboardAvoidingView
 // renders). Re-read after each commit since clone-on-write hands back new nodes.
 function currentWrapper(): FakeNode {
-  const wrapper = committed[0]
+  // committed[0] is the synthetic AppContainer root (RCTView, box-none); the
+  // KeyboardAvoidingView's own RCTView wrapper is its single child.
+  const wrapper = committed[0]?.children[0]
   if (wrapper === undefined || wrapper.viewName !== 'RCTView') {
-    throw new Error(`expected an RCTView wrapper at the root, got ${JSON.stringify(committed)}`)
+    throw new Error(`expected an RCTView wrapper under the root, got ${JSON.stringify(committed)}`)
   }
   return wrapper
 }

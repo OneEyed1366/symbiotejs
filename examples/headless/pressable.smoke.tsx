@@ -123,7 +123,11 @@ function reset(): void {
 // RCTView committed. Its instanceHandle is the stable SymbioteNode that
 // round-trips through Fabric as the event target.
 function responderHandle(): unknown {
-  const view = allCreated.find((n) => n.viewName === 'RCTView')
+  // Skip the synthetic AppContainer root (RCTView, pointerEvents box-none) that now
+  // wraps every commit — the responder is the Pressable's own RCTView.
+  const view = allCreated.find(
+    (n) => n.viewName === 'RCTView' && n.props.pointerEvents !== 'box-none',
+  )
   if (!view) throw new Error('no RCTView (Pressable responder) was created')
   return view.instanceHandle
 }
@@ -132,7 +136,8 @@ function responderHandle(): unknown {
 // since clone-on-write produces a fresh FakeNode tree).
 function responderProps(): Record<string, unknown> {
   function find(node: FakeNode): FakeNode | undefined {
-    if (node.viewName === 'RCTView') return node
+    // Skip the synthetic AppContainer root (box-none); the responder is the app's RCTView.
+    if (node.viewName === 'RCTView' && node.props.pointerEvents !== 'box-none') return node
     for (const child of node.children) {
       const hit = find(child)
       if (hit) return hit

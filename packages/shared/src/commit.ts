@@ -20,12 +20,14 @@ import {
   type RootTag,
 } from './fabric'
 import {
+  createElement,
   RAW_TEXT_COMPONENT,
   VIRTUAL_TEXT_COMPONENT,
   type SymbioteNode,
 } from './node'
 import { dlog, isDebug } from './debug'
 import { flattenStyle } from './style'
+import { registeredProcessor } from './registry'
 import { nextTag } from './tags'
 
 // Per-commit work counters, surfaced via dlog so a device run can prove the
@@ -58,10 +60,16 @@ export function setColorProcessor(process: (value: string) => unknown): void {
   colorProcessor = process
 }
 
-function processValue(key: string, value: unknown): unknown {
-  if (typeof value === 'string' && COLOR_PROPS.has(key)) {
-    return colorProcessor(value)
-  }
+// Convert a prop to the shape Fabric's C++ expects. A third-party view contributes
+// its own processors, auto-derived from its ViewConfig (validAttributes[*].process —
+// e.g. processColor for a slider's track tints); those run first. Built-ins are
+// never in the registry, so they fall through to the global color path, where any
+// CSS-string color is run through the injected platform processor (Fabric's C++
+// color parser silently drops strings).
+function processValue(component: string, key: string, value: unknown): unknown {
+  const processor = registeredProcessor(component, key)
+  if (processor !== undefined) return processor(value)
+  if (typeof value === 'string' && COLOR_PROPS.has(key)) return colorProcessor(value)
   return value
 }
 
@@ -83,13 +91,13 @@ function fabricProps(node: SymbioteNode): FabricProps {
     if (key === 'style') continue
     if (typeof value === 'function') continue
     if (value === undefined) continue
-    out[key] = processValue(key, value)
+    out[key] = processValue(node.component, key, value)
   }
   // Collapse style (object | array | nested arrays) into one flat payload before
   // hoisting — `style={[base, override]}` is RN's idiom and Fabric wants it flat.
   const style = flattenStyle(node.props.style)
   for (const [key, value] of Object.entries(style)) {
-    if (value !== undefined) out[key] = processValue(key, value)
+    if (value !== undefined) out[key] = processValue(node.component, key, value)
   }
   return out
 }
@@ -212,36 +220,56 @@ function reconcile(
   return { handle, changed: true }
 }
 
-// The top-level children committed last time per root, so a commit that changed
-// nothing (common when a reactive framework over-schedules) makes zero native
-// calls instead of a redundant completeRoot.
-const lastTopChildren = new Map<RootTag, readonly SymbioteNode[]>()
+// One persistent synthetic root container per surface, mirroring RN's AppContainer
+// (renderApplication wraps the app in `<View style={{flex:1}} pointerEvents="box-none">`).
+// Without it a non-flex root view collapses to content height, and touches outside the
+// app's children have no box-none escape. Keeping it here — not in each adapter's
+// mount() — gives every framework a full-screen flex root for free and keeps layout in
+// shared (adapters_stay_thin). The container is just another persistent node in the
+// clone-on-write engine: stable identity, so an unchanged subtree leaves it un-cloned.
+const ROOT_VIEW_COMPONENT = 'RCTView'
+const ROOT_CONTAINER_STYLE = { flex: 1 }
+const ROOT_CONTAINER_POINTER_EVENTS = 'box-none'
+
+const rootContainers = new Map<RootTag, SymbioteNode>()
+
+function rootContainerFor(rootTag: RootTag): SymbioteNode {
+  let container = rootContainers.get(rootTag)
+  if (container === undefined) {
+    container = createElement(ROOT_VIEW_COMPONENT)
+    container.props = {
+      style: ROOT_CONTAINER_STYLE,
+      pointerEvents: ROOT_CONTAINER_POINTER_EVENTS,
+    }
+    rootContainers.set(rootTag, container)
+    dlog(`root container created root=${rootTag} (flex:1, box-none)`)
+  }
+  return container
+}
 
 export function commitChildren(rootTag: RootTag, children: readonly SymbioteNode[]): void {
   const slot = getSlot()
+  const container = rootContainerFor(rootTag)
+  // The wrapper holds the surface's top-level children; reconcile walks from it so the
+  // whole tree, synthetic root included, goes through the same clone-on-write path.
+  container.children = children.slice()
 
   stats.created = 0
   stats.cloneProps = 0
   stats.cloneChildren = 0
   stats.reused = 0
-  const results = children.map((child) => reconcile(slot, child, rootTag, false))
+  const result = reconcile(slot, container, rootTag, false)
 
-  const previous = lastTopChildren.get(rootTag)
-  const topUnchanged =
-    previous !== undefined &&
-    previous.length === children.length &&
-    children.every((child, index) => child === previous[index])
-  if (topUnchanged && results.every((result) => !result.changed)) {
+  // The container's identity is stable, so its un-cloned flag is the no-op signal:
+  // an over-scheduled commit that touched nothing makes zero native calls.
+  if (!result.changed) {
     dlog(`commit root=${rootTag} no-op (skipped completeRoot)`)
     return
   }
 
   const childSet = slot.createChildSet(rootTag)
-  for (const result of results) {
-    slot.appendChildToSet(childSet, result.handle)
-  }
+  slot.appendChildToSet(childSet, result.handle)
   slot.completeRoot(rootTag, childSet)
-  lastTopChildren.set(rootTag, children.slice())
 
   if (isDebug()) {
     const mode = stats.created > 0 && stats.reused === 0 ? 'full' : 'incremental'

@@ -88,7 +88,11 @@ function findSpinner(): FakeNode {
 }
 
 function findWrapper(): FakeNode {
-  const node = allCreated.find((n) => n.viewName === 'RCTView')
+  // Skip the synthetic AppContainer root (RCTView, box-none); the centering wrapper
+  // is ActivityIndicator's own RCTView.
+  const node = allCreated.find(
+    (n) => n.viewName === 'RCTView' && n.props.pointerEvents !== 'box-none',
+  )
   if (!node) throw new Error('no RCTView wrapper was created')
   return node
 }
@@ -102,7 +106,13 @@ function StringSizeApp(): ReactElement {
 const ROOT_TAG = 21
 mount(ROOT_TAG, <StringSizeApp />)
 
-const shape = serialize(committed)
+// Every commit is now wrapped in RN's AppContainer equivalent: one synthetic RCTView
+// root (flex:1 + pointerEvents box-none). Unwrap it before asserting the app's shape.
+const [appRoot] = committed
+if (committed.length !== 1 || appRoot.props.pointerEvents !== 'box-none') {
+  throw new Error(`expected one synthetic box-none root, got ${serialize(committed)}`)
+}
+const shape = serialize(appRoot.children)
 if (shape !== 'RCTView(ActivityIndicatorView)') {
   throw new Error(`committed tree wrong: ${shape}`)
 }
@@ -126,7 +136,9 @@ if (spinner.props.width !== 36 || spinner.props.height !== 36) {
   throw new Error(`'large' should size to 36x36: ${JSON.stringify(spinner.props)}`)
 }
 
-const wrapper = allCreated.find((n) => n.viewName === 'RCTView')
+const wrapper = allCreated.find(
+  (n) => n.viewName === 'RCTView' && n.props.pointerEvents !== 'box-none',
+)
 if (!wrapper) throw new Error('no RCTView wrapper was created')
 if (wrapper.props.alignItems !== 'center' || wrapper.props.justifyContent !== 'center') {
   throw new Error(`wrapper should center its child: ${JSON.stringify(wrapper.props)}`)

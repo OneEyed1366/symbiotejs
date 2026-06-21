@@ -82,7 +82,11 @@ mount(
 
 // ---- assert: wrapper RCTView gets the wrapper style ----------------------
 
-const wrapper = allCreated.find((node) => node.viewName === 'RCTView')
+// Skip the synthetic AppContainer root (RCTView, pointerEvents box-none) that now
+// wraps every commit — the ImageBackground wrapper is the app's own RCTView.
+const wrapper = allCreated.find(
+  (node) => node.viewName === 'RCTView' && node.props.pointerEvents !== 'box-none',
+)
 if (!wrapper) throw new Error('no wrapper RCTView was created')
 if (wrapper.props.width !== WRAPPER_STYLE.width || wrapper.props.height !== WRAPPER_STYLE.height) {
   throw new Error(`wrapper RCTView missing wrapper style: ${JSON.stringify(wrapper.props)}`)
@@ -111,10 +115,12 @@ if (image.props.width !== WRAPPER_STYLE.width || image.props.height !== WRAPPER_
 
 // ---- assert: children render on top (after the image in child order) -----
 
+// committed[0] is the synthetic AppContainer root; the ImageBackground wrapper is its
+// single child.
 if (committed.length !== 1) throw new Error(`expected one committed root child, got ${committed.length}`)
-const committedWrapper = committed[0]
-if (committedWrapper.viewName !== 'RCTView') {
-  throw new Error(`committed root child must be the wrapper RCTView, got ${committedWrapper.viewName}`)
+const committedWrapper = committed[0].children[0]
+if (committedWrapper === undefined || committedWrapper.viewName !== 'RCTView') {
+  throw new Error(`committed wrapper must be an RCTView, got ${committedWrapper?.viewName}`)
 }
 
 const childNames = committedWrapper.children.map((child) => child.viewName)

@@ -122,7 +122,9 @@ mount(20, (
   </Modal>
 ))
 
-const shape = serialize(committed)
+// committed[0] is the synthetic AppContainer root (RCTView, box-none) wrapping every
+// commit; assert the modal subtree beneath it.
+const shape = serialize(committed[0]?.children ?? [])
 if (shape !== 'ModalHostView(RCTView(RCTView))') {
   throw new Error(`visible modal committed wrong tree: ${shape}`)
 }
@@ -159,7 +161,8 @@ mount(21, (
   </Modal>
 ))
 
-if (committed.length !== 0) {
+// The synthetic AppContainer root always commits; a hidden modal must leave it empty.
+if (committed[0]?.children.length !== 0) {
   throw new Error(`hidden modal still committed nodes: ${serialize(committed)}`)
 }
 if (allCreated.some((n) => n.viewName === 'ModalHostView')) {
