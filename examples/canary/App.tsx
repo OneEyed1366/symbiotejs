@@ -70,20 +70,19 @@ function AnimatedDemo() {
   const [jsForward, setJsForward] = useState(false)
   const [nativeForward, setNativeForward] = useState(false)
 
-  // A perpetual native-driven heartbeat: scale + opacity breathing.
+  // A perpetual native-driven heartbeat. A SINGLE looping timing offloads entirely
+  // to native (iterations -1, zero JS per cycle); the 0->1 ramp becomes a breathe
+  // in-and-out via the [0, 0.5, 1] interpolation, so no JS sequence is needed.
   useEffect(() => {
     const animation = Animated.loop(
-      Animated.sequence([
-        Animated.timing(pulse, { toValue: 1, duration: 700, useNativeDriver: true }),
-        Animated.timing(pulse, { toValue: 0, duration: 700, useNativeDriver: true }),
-      ]),
+      Animated.timing(pulse, { toValue: 1, duration: 1400, useNativeDriver: true }),
     )
     animation.start()
     return () => animation.stop()
   }, [pulse])
 
-  const pulseScale = pulse.interpolate({ inputRange: [0, 1], outputRange: [1, 1.3] })
-  const pulseOpacity = pulse.interpolate({ inputRange: [0, 1], outputRange: [0.4, 1] })
+  const pulseScale = pulse.interpolate({ inputRange: [0, 0.5, 1], outputRange: [1, 1.3, 1] })
+  const pulseOpacity = pulse.interpolate({ inputRange: [0, 0.5, 1], outputRange: [0.4, 1, 0.4] })
 
   const slide = (
     value: typeof jsSlide,
@@ -182,17 +181,30 @@ const TRACK_DISTANCE = 200
 const HEADER_COLLAPSE = 60
 
 function AnimatedParityDemo() {
-  // --- ValueXY + PanResponder: drag the box around --------------------------
-  // On grant, fold the resting position into the offset and zero the value, so the
-  // gesture's dx/dy maps straight onto the value; on release, flatten it back.
+  // --- ValueXY + PanResponder: drag the box, clamped inside the frame --------
+  // Track the resting position in a ref; each move sets the absolute position
+  // (resting + gesture delta) clamped to [0, DRAG_MAX] so the box can't leave the
+  // frame. DRAG_MAX = inner width (XY_SPAN+36 - 6*2 padding) - box (36).
+  const DRAG_MAX = XY_SPAN - 12
   const xy = useRef(new Animated.ValueXY({ x: 0, y: 0 })).current
+  const restingPos = useRef({ x: 0, y: 0 })
+  const clamp = (n: number): number => Math.max(0, Math.min(DRAG_MAX, n))
   const panResponder = useRef(
     PanResponder.create({
       onStartShouldSetPanResponder: () => true,
       onMoveShouldSetPanResponder: () => true,
-      onPanResponderGrant: () => xy.extractOffset(),
-      onPanResponderMove: (_event, gesture) => xy.setValue({ x: gesture.dx, y: gesture.dy }),
-      onPanResponderRelease: () => xy.flattenOffset(),
+      onPanResponderMove: (_event, gesture) => {
+        xy.setValue({
+          x: clamp(restingPos.current.x + gesture.dx),
+          y: clamp(restingPos.current.y + gesture.dy),
+        })
+      },
+      onPanResponderRelease: (_event, gesture) => {
+        restingPos.current = {
+          x: clamp(restingPos.current.x + gesture.dx),
+          y: clamp(restingPos.current.y + gesture.dy),
+        }
+      },
     }),
   ).current
 
