@@ -141,8 +141,13 @@ function jsonEqual(a: unknown, b: unknown): boolean {
 
 // What Fabric currently holds for a node. The retained node carries the *desired*
 // state (props/children); the mirror carries the *committed* state we diff against.
+// `tag` is the reactTag we minted at first create — stable across clone-on-write
+// (the clone keeps the family) — kept so the Animated native driver can bind to it
+// (ADR 0017). `rootTag` lets a targeted re-commit (setNativeProps) find the surface.
 interface Mirror {
   handle: FabricNode
+  tag: number
+  rootTag: RootTag
   props: FabricProps
   children: readonly SymbioteNode[]
   viewName: string
@@ -176,11 +181,12 @@ function reconcile(
   // can't be cloned across, so create a fresh node from scratch.
   if (committed === undefined || committed.viewName !== viewName) {
     stats.created += 1
-    const handle = slot.createNode(nextTag(), viewName, rootTag, props, node)
+    const tag = nextTag()
+    const handle = slot.createNode(tag, viewName, rootTag, props, node)
     for (const child of node.children) {
       slot.appendChild(handle, reconcile(slot, child, rootTag, childInText).handle)
     }
-    mirror.set(node, { handle, props, children: node.children.slice(), viewName })
+    mirror.set(node, { handle, tag, rootTag, props, children: node.children.slice(), viewName })
     return { handle, changed: true }
   }
 
@@ -216,7 +222,15 @@ function reconcile(
     handle = slot.cloneNodeWithNewProps(committed.handle, diffProps(committed.props, props))
   }
 
-  mirror.set(node, { handle, props, children: node.children.slice(), viewName })
+  // The clone keeps the node's family, so its reactTag is unchanged — carry it.
+  mirror.set(node, {
+    handle,
+    tag: committed.tag,
+    rootTag,
+    props,
+    children: node.children.slice(),
+    viewName,
+  })
   return { handle, changed: true }
 }
 
@@ -248,11 +262,18 @@ function rootContainerFor(rootTag: RootTag): SymbioteNode {
 }
 
 export function commitChildren(rootTag: RootTag, children: readonly SymbioteNode[]): void {
-  const slot = getSlot()
-  const container = rootContainerFor(rootTag)
   // The wrapper holds the surface's top-level children; reconcile walks from it so the
   // whole tree, synthetic root included, goes through the same clone-on-write path.
-  container.children = children.slice()
+  rootContainerFor(rootTag).children = children.slice()
+  commitContainer(rootTag)
+}
+
+// Re-run the scoped commit for a surface from its synthetic root container, reusing
+// whatever top-level children it currently holds. The shared half of the engine: both
+// a full mutation→commit and a single-node Animated frame (setNativeProps) funnel here.
+function commitContainer(rootTag: RootTag): void {
+  const slot = getSlot()
+  const container = rootContainerFor(rootTag)
 
   stats.created = 0
   stats.cloneProps = 0
@@ -279,6 +300,37 @@ export function commitChildren(rootTag: RootTag, children: readonly SymbioteNode
         `cloneChildren=${stats.cloneChildren} reused=${stats.reused}`,
     )
   }
+}
+
+// Targeted per-frame prop write for the JS-driven Animated path (ADR 0016). RN
+// flushes an animation frame with an in-place `instance.setNativeProps(...)`; we have
+// no in-place mutation (Fabric is persistent), so a frame is one scoped commit: mutate
+// the node's desired props, then re-reconcile its surface. The engine clones only this
+// node (props differ), bubbles the re-clone to the root, reuses every sibling subtree
+// by reference, and emits a single completeRoot. This is the "slow tier" — viable for a
+// single shallow animation; the native driver (ADR 0017) is the answer for scale.
+export function setNativeProps(node: SymbioteNode, partial: Record<string, unknown>): void {
+  const record = mirror.get(node)
+  if (record === undefined) {
+    dlog('setNativeProps skipped: node not committed')
+    return
+  }
+  Object.assign(node.props, partial)
+  dlog(`setNativeProps root=${record.rootTag} tag=${record.tag} keys=${Object.keys(partial)}`)
+  commitContainer(record.rootTag)
+}
+
+// The committed reactTag of a node (stable across clone-on-write), for binding the
+// Animated native driver via connectAnimatedNodeToView (ADR 0017). Undefined until the
+// node has been committed at least once.
+export function getNativeTag(node: SymbioteNode): number | undefined {
+  return mirror.get(node)?.tag
+}
+
+// The node's current Fabric handle (the createNode/clone return value) — identical in
+// kind to React's stateNode.node, for the native driver's ShadowNodeFamily path.
+export function getNativeNode(node: SymbioteNode): FabricNode | undefined {
+  return mirror.get(node)?.handle
 }
 
 // Imperative view command (e.g. TextInput's setTextAndSelection / focus / blur),

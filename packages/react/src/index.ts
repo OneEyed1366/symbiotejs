@@ -60,6 +60,11 @@ export type { VirtualizedListProps } from './virtualized-list'
 export type { ViewStyle, TextStyle, FlexAlign, FlexJustify } from './styles'
 export { mount } from './render'
 
+// Animated bridge: createAnimatedComponent + Animated.View/Text/Image, driving the
+// shared JS Animated engine (ADR 0016). Imperative timing/spring drivers merge into
+// this namespace once they land in shared.
+export { Animated, createAnimatedComponent } from './animated'
+
 // Framework-agnostic runtime utilities live in shared; the adapter re-exports them
 // so app code names only @symbiote/react (RN's surface, one import root).
 export { Platform, StyleSheet } from '@symbiote/shared'

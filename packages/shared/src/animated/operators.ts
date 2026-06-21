@@ -1,0 +1,328 @@
+// Arithmetic / operator graph nodes — add, subtract, multiply, divide, modulo,
+// diffClamp. Each composes one or two upstream values into a derived value.
+// Ported from RN's AnimatedAddition / AnimatedSubtraction / AnimatedMultiplication
+// / AnimatedDivision / AnimatedModulo / AnimatedDiffClamp, numeric path only.
+//
+// Each node is an AnimatedWithChildren: its OWN children array holds downstream
+// consumers (wired by the base __connectNativeChildren), while its INPUTS are held
+// separately and wired by registering this node as a child of each input at
+// __attach (input.__addChild(this)). __getNativeConfig is creation-only — it reads
+// each input's native tag (creating the input node) but issues no connect.
+
+import { AnimatedNode, AnimatedWithChildren } from './graph'
+import { AnimatedValue } from './value'
+import { AnimatedInterpolation } from './interpolation-node'
+import type { InterpolationConfig } from './interpolation'
+import { dlog } from '../debug'
+import type { NativeNodeConfig } from './native/native-animated'
+
+// Wrap a bare number in an AnimatedValue so every input is a graph node.
+function toNode(input: AnimatedNode | number): AnimatedNode {
+  return typeof input === 'number' ? new AnimatedValue(input) : input
+}
+
+function numericValue(node: AnimatedNode): number {
+  const value = node.__getValue()
+  if (typeof value !== 'number') {
+    throw new Error('Animated operator input did not resolve to a number')
+  }
+  return value
+}
+
+export class AnimatedAddition extends AnimatedWithChildren {
+  private readonly a: AnimatedNode
+  private readonly b: AnimatedNode
+
+  constructor(a: AnimatedNode | number, b: AnimatedNode | number) {
+    super()
+    this.a = toNode(a)
+    this.b = toNode(b)
+  }
+
+  override __getValue(): number {
+    return numericValue(this.a) + numericValue(this.b)
+  }
+
+  interpolate(config: InterpolationConfig): AnimatedInterpolation {
+    return new AnimatedInterpolation(this, config)
+  }
+
+  override __attach(): void {
+    this.a.__addChild(this)
+    this.b.__addChild(this)
+    super.__attach()
+  }
+
+  override __detach(): void {
+    this.a.__removeChild(this)
+    this.b.__removeChild(this)
+    super.__detach()
+  }
+
+  override __makeNative(): void {
+    this.a.__makeNative()
+    this.b.__makeNative()
+    super.__makeNative()
+  }
+
+  override __getNativeConfig(): NativeNodeConfig {
+    return { type: 'addition', input: [this.a.__getNativeTag(), this.b.__getNativeTag()] }
+  }
+}
+
+export class AnimatedSubtraction extends AnimatedWithChildren {
+  private readonly a: AnimatedNode
+  private readonly b: AnimatedNode
+
+  constructor(a: AnimatedNode | number, b: AnimatedNode | number) {
+    super()
+    this.a = toNode(a)
+    this.b = toNode(b)
+  }
+
+  override __getValue(): number {
+    return numericValue(this.a) - numericValue(this.b)
+  }
+
+  interpolate(config: InterpolationConfig): AnimatedInterpolation {
+    return new AnimatedInterpolation(this, config)
+  }
+
+  override __attach(): void {
+    this.a.__addChild(this)
+    this.b.__addChild(this)
+    super.__attach()
+  }
+
+  override __detach(): void {
+    this.a.__removeChild(this)
+    this.b.__removeChild(this)
+    super.__detach()
+  }
+
+  override __makeNative(): void {
+    this.a.__makeNative()
+    this.b.__makeNative()
+    super.__makeNative()
+  }
+
+  override __getNativeConfig(): NativeNodeConfig {
+    return { type: 'subtraction', input: [this.a.__getNativeTag(), this.b.__getNativeTag()] }
+  }
+}
+
+export class AnimatedMultiplication extends AnimatedWithChildren {
+  private readonly a: AnimatedNode
+  private readonly b: AnimatedNode
+
+  constructor(a: AnimatedNode | number, b: AnimatedNode | number) {
+    super()
+    this.a = toNode(a)
+    this.b = toNode(b)
+  }
+
+  override __getValue(): number {
+    return numericValue(this.a) * numericValue(this.b)
+  }
+
+  interpolate(config: InterpolationConfig): AnimatedInterpolation {
+    return new AnimatedInterpolation(this, config)
+  }
+
+  override __attach(): void {
+    this.a.__addChild(this)
+    this.b.__addChild(this)
+    super.__attach()
+  }
+
+  override __detach(): void {
+    this.a.__removeChild(this)
+    this.b.__removeChild(this)
+    super.__detach()
+  }
+
+  override __makeNative(): void {
+    this.a.__makeNative()
+    this.b.__makeNative()
+    super.__makeNative()
+  }
+
+  override __getNativeConfig(): NativeNodeConfig {
+    return { type: 'multiplication', input: [this.a.__getNativeTag(), this.b.__getNativeTag()] }
+  }
+}
+
+export class AnimatedDivision extends AnimatedWithChildren {
+  private readonly a: AnimatedNode
+  private readonly b: AnimatedNode
+  private warnedAboutDivideByZero = false
+
+  constructor(a: AnimatedNode | number, b: AnimatedNode | number) {
+    super()
+    if (b === 0 || (b instanceof AnimatedNode && b.__getValue() === 0)) {
+      dlog('AnimatedDivision: detected potential division by zero')
+    }
+    this.a = toNode(a)
+    this.b = toNode(b)
+  }
+
+  override __getValue(): number {
+    const a = numericValue(this.a)
+    const b = numericValue(this.b)
+    if (b === 0) {
+      // A divide-by-zero yields Infinity/NaN, which crashes Fabric — clamp to 0.
+      if (!this.warnedAboutDivideByZero) {
+        dlog('AnimatedDivision: detected division by zero')
+        this.warnedAboutDivideByZero = true
+      }
+      return 0
+    }
+    this.warnedAboutDivideByZero = false
+    return a / b
+  }
+
+  interpolate(config: InterpolationConfig): AnimatedInterpolation {
+    return new AnimatedInterpolation(this, config)
+  }
+
+  override __attach(): void {
+    this.a.__addChild(this)
+    this.b.__addChild(this)
+    super.__attach()
+  }
+
+  override __detach(): void {
+    this.a.__removeChild(this)
+    this.b.__removeChild(this)
+    super.__detach()
+  }
+
+  override __makeNative(): void {
+    this.a.__makeNative()
+    this.b.__makeNative()
+    super.__makeNative()
+  }
+
+  override __getNativeConfig(): NativeNodeConfig {
+    return { type: 'division', input: [this.a.__getNativeTag(), this.b.__getNativeTag()] }
+  }
+}
+
+export class AnimatedModulo extends AnimatedWithChildren {
+  private readonly a: AnimatedNode
+  private readonly modulus: number
+
+  constructor(a: AnimatedNode, modulus: number) {
+    super()
+    this.a = a
+    this.modulus = modulus
+  }
+
+  // Euclidean modulo: always lands in [0, modulus), unlike JS % which keeps the
+  // dividend's sign.
+  override __getValue(): number {
+    const a = numericValue(this.a)
+    return ((a % this.modulus) + this.modulus) % this.modulus
+  }
+
+  interpolate(config: InterpolationConfig): AnimatedInterpolation {
+    return new AnimatedInterpolation(this, config)
+  }
+
+  override __attach(): void {
+    this.a.__addChild(this)
+    super.__attach()
+  }
+
+  override __detach(): void {
+    this.a.__removeChild(this)
+    super.__detach()
+  }
+
+  override __makeNative(): void {
+    this.a.__makeNative()
+    super.__makeNative()
+  }
+
+  override __getNativeConfig(): NativeNodeConfig {
+    return { type: 'modulus', input: this.a.__getNativeTag(), modulus: this.modulus }
+  }
+}
+
+export class AnimatedDiffClamp extends AnimatedWithChildren {
+  private readonly a: AnimatedNode
+  private readonly min: number
+  private readonly max: number
+  private value: number
+  private lastValue: number
+
+  constructor(a: AnimatedNode, min: number, max: number) {
+    super()
+    this.a = a
+    this.min = min
+    this.max = max
+    this.value = numericValue(a)
+    this.lastValue = this.value
+  }
+
+  // Accumulate the input's frame-to-frame DELTA and clamp the running total to
+  // [min, max]. The output tracks the input but never drifts past the band — the
+  // classic collapsing-header pattern.
+  override __getValue(): number {
+    const value = numericValue(this.a)
+    const diff = value - this.lastValue
+    this.lastValue = value
+    this.value = Math.min(Math.max(this.value + diff, this.min), this.max)
+    return this.value
+  }
+
+  interpolate(config: InterpolationConfig): AnimatedInterpolation {
+    return new AnimatedInterpolation(this, config)
+  }
+
+  override __attach(): void {
+    this.a.__addChild(this)
+    super.__attach()
+  }
+
+  override __detach(): void {
+    this.a.__removeChild(this)
+    super.__detach()
+  }
+
+  override __makeNative(): void {
+    this.a.__makeNative()
+    super.__makeNative()
+  }
+
+  override __getNativeConfig(): NativeNodeConfig {
+    return { type: 'diffclamp', input: this.a.__getNativeTag(), min: this.min, max: this.max }
+  }
+}
+
+export function add(a: AnimatedNode | number, b: AnimatedNode | number): AnimatedAddition {
+  return new AnimatedAddition(a, b)
+}
+
+export function subtract(a: AnimatedNode | number, b: AnimatedNode | number): AnimatedSubtraction {
+  return new AnimatedSubtraction(a, b)
+}
+
+export function multiply(
+  a: AnimatedNode | number,
+  b: AnimatedNode | number,
+): AnimatedMultiplication {
+  return new AnimatedMultiplication(a, b)
+}
+
+export function divide(a: AnimatedNode | number, b: AnimatedNode | number): AnimatedDivision {
+  return new AnimatedDivision(a, b)
+}
+
+export function modulo(a: AnimatedNode, modulus: number): AnimatedModulo {
+  return new AnimatedModulo(a, modulus)
+}
+
+export function diffClamp(a: AnimatedNode, min: number, max: number): AnimatedDiffClamp {
+  return new AnimatedDiffClamp(a, min, max)
+}

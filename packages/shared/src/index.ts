@@ -28,7 +28,13 @@ export type { SymbioteNode, SymbioteEvent, Listener } from './node'
 
 export { SymbioteSurface, createSurface } from './surface'
 export { setEventDispatcher } from './dispatch'
-export { setColorProcessor, dispatchViewCommand } from './commit'
+export {
+  setColorProcessor,
+  dispatchViewCommand,
+  setNativeProps,
+  getNativeTag,
+  getNativeNode,
+} from './commit'
 export { flattenStyle } from './style'
 export { StyleSheet, computeHairlineWidth } from './style-sheet'
 export { Platform } from './platform'
@@ -48,6 +54,70 @@ export type {
   NativeEventListener,
   DeviceEventSource,
 } from './native-events'
+
+export {
+  AnimatedNode,
+  AnimatedWithChildren,
+  AnimatedValue,
+  AnimatedValueXY,
+  AnimatedColor,
+  AnimatedInterpolation,
+  AnimatedAddition,
+  AnimatedSubtraction,
+  AnimatedMultiplication,
+  AnimatedDivision,
+  AnimatedModulo,
+  AnimatedDiffClamp,
+  AnimatedEvent,
+  add,
+  subtract,
+  multiply,
+  divide,
+  modulo,
+  diffClamp,
+  event,
+  flushValue,
+  Easing,
+  createNumericInterpolation,
+  checkValidRanges,
+  TimingAnimation,
+  SpringAnimation,
+  DecayAnimation,
+  AnimatedTracking,
+  timing,
+  spring,
+  decay,
+  parallel,
+  sequence,
+  stagger,
+  loop,
+  delay,
+  nativeAnimated,
+  isNativeAnimatedAvailable,
+} from './animated'
+export type {
+  ValueXY,
+  RgbaValue,
+  ColorInput,
+  EventConfig,
+  AnimatedEventHandler,
+  ValueListener,
+  EasingFunction,
+  InterpolationConfig,
+  ExtrapolateType,
+  Animation,
+  EndCallback,
+  EndResult,
+  CompositeAnimation,
+  TimingConfig,
+  SpringConfig,
+  DecayConfig,
+  ParallelConfig,
+  LoopAnimationConfig,
+  NativeNodeConfig,
+  NativeAnimationConfig,
+  NativeEventMapping,
+} from './animated'
 
 export { getSlot } from './fabric'
 export type {
