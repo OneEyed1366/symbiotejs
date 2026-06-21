@@ -26,7 +26,10 @@ export interface SymbioteEvent {
   nativeEvent: Record<string, unknown>
   stopPropagation: () => void
 }
-export type Listener = (event: SymbioteEvent) => void
+// Returns `unknown`, not `void`: the responder negotiation reads a boolean back
+// from onStartShouldSetResponder / onResponderTerminationRequest. Bubbling/direct
+// dispatch ignore the return; only the responder path consults it.
+export type Listener = (event: SymbioteEvent) => unknown
 
 export interface SymbioteNode {
   readonly [BRAND]: true
@@ -99,9 +102,7 @@ export function setEventListener(node: SymbioteNode, name: string, value: unknow
   if (isHandler) {
     const handler = value
     const listeners = (node.listeners ??= new Map())
-    listeners.set(name, (event: SymbioteEvent) => {
-      handler(event)
-    })
+    listeners.set(name, (event: SymbioteEvent) => handler(event))
   } else {
     node.listeners?.delete(name)
   }
@@ -115,6 +116,26 @@ function listenerName(propName: string): string {
   return propName.charAt(2).toLowerCase() + propName.slice(3)
 }
 
+// The responder-negotiation events (PanResponder's panHandlers). They are a
+// JS-side protocol the event layer synthesizes from raw touches, NOT Fabric
+// ViewConfig events — so isEventFor never reports them. Treat them as listeners on
+// any node so PanResponder's handlers actually attach (rather than routing to
+// setProp and reaching Fabric as dead props). Names are post-listenerName.
+const RESPONDER_EVENTS: ReadonlySet<string> = new Set([
+  'startShouldSetResponder',
+  'startShouldSetResponderCapture',
+  'moveShouldSetResponder',
+  'moveShouldSetResponderCapture',
+  'responderGrant',
+  'responderReject',
+  'responderStart',
+  'responderMove',
+  'responderEnd',
+  'responderRelease',
+  'responderTerminate',
+  'responderTerminationRequest',
+])
+
 // The flat-bag split (React / Vue / Solid): an `onX` prop becomes an event listener
 // ONLY when the node's component actually declares `x` as an event (per the shared
 // ViewConfig). Otherwise it is a plain prop — so `onTintColor` on a Switch, whose
@@ -122,7 +143,7 @@ function listenerName(propName: string): string {
 export function routeProp(node: SymbioteNode, key: string, value: unknown): void {
   if (ON_PREFIX.test(key)) {
     const name = listenerName(key)
-    if (isEventFor(node.component, name)) {
+    if (RESPONDER_EVENTS.has(name) || isEventFor(node.component, name)) {
       setEventListener(node, name, value)
       return
     }

@@ -49,9 +49,20 @@ const DIRECT_EVENTS: Readonly<Record<string, string>> = {
 }
 
 const TOUCH_START = 'topTouchStart'
+const TOUCH_MOVE = 'topTouchMove'
 const TOUCH_END = 'topTouchEnd'
 const TOUCH_CANCEL = 'topTouchCancel'
 const PRESS = 'press'
+
+// Responder protocol (PanResponder). Minimal RN model: on a touch start, walk
+// target -> root asking onStartShouldSetResponder; the first node that claims it
+// becomes the responder and receives grant/move/release. Listener names are
+// post-listenerName (onResponderMove -> 'responderMove').
+const SHOULD_SET_RESPONDER = 'startShouldSetResponder'
+const RESPONDER_GRANT = 'responderGrant'
+const RESPONDER_MOVE = 'responderMove'
+const RESPONDER_RELEASE = 'responderRelease'
+const RESPONDER_TERMINATE = 'responderTerminate'
 // Synthesized alongside press so Pressable can show pressed-state feedback: both
 // fire on the node the touch STARTED on (the responder), pressOut on end/cancel.
 const PRESS_IN = 'pressIn'
@@ -63,6 +74,44 @@ let installed = false
 // cleared) at topTouchEnd / topTouchCancel.
 let pressStart: SymbioteNode | undefined
 
+// The node that claimed the responder for the in-flight touch (PanResponder), or
+// undefined when nobody claimed it. Receives move and release/terminate.
+let currentResponder: SymbioteNode | undefined
+
+// Invoke one node's own listener (no bubbling) and hand back its return value, so
+// the responder negotiation can read the boolean from onStartShouldSetResponder.
+function callOwnListener(
+  node: SymbioteNode,
+  listenerName: string,
+  nativeEvent: Record<string, unknown>,
+): unknown {
+  const listener = node.listeners?.get(listenerName)
+  if (!listener) return undefined
+  return listener({
+    type: listenerName,
+    target: node,
+    currentTarget: node,
+    nativeEvent,
+    stopPropagation: () => {},
+  })
+}
+
+// Walk target -> root; the first node whose onStartShouldSetResponder returns true
+// becomes the responder and is granted. Minimal model: no capture phase, no
+// move-should-set, no mid-gesture takeover (enough for a PanResponder drag).
+function negotiateResponder(target: SymbioteNode, nativeEvent: Record<string, unknown>): void {
+  let node: SymbioteNode | undefined = target
+  while (node) {
+    if (callOwnListener(node, SHOULD_SET_RESPONDER, nativeEvent) === true) {
+      currentResponder = node
+      dlog(`responder granted to ${node.component}`)
+      callOwnListener(node, RESPONDER_GRANT, nativeEvent)
+      return
+    }
+    node = node.parent
+  }
+}
+
 export function installEventHandler(): void {
   if (installed) return
   installed = true
@@ -73,26 +122,40 @@ export function installEventHandler(): void {
     if (topLevelType === TOUCH_START) {
       dlog(`event ${TOUCH_START}`)
       pressStart = instanceHandle
-      runWrapped(() => bubble(instanceHandle, PRESS_IN, nativeEvent))
+      runWrapped(() => {
+        bubble(instanceHandle, PRESS_IN, nativeEvent)
+        // Responder negotiation runs alongside press synthesis: a View can be both
+        // a Pressable (press) and a PanResponder target (responder).
+        negotiateResponder(instanceHandle, nativeEvent)
+      })
+      return
+    }
+
+    if (topLevelType === TOUCH_MOVE) {
+      // The only consumer of a move is the responder; without one, RN drops it too.
+      const responder = currentResponder
+      if (responder) runWrapped(() => callOwnListener(responder, RESPONDER_MOVE, nativeEvent))
       return
     }
 
     if (topLevelType === TOUCH_END) {
       const start = pressStart
       pressStart = undefined
-      if (!start) {
-        dlog(`event ${TOUCH_END} ignored (no matching start)`)
-        return
-      }
-      // press fires only on an honest tap (ended within the responder); pressOut
-      // always fires on the responder so its pressed-state can release.
-      const tapped = endsWithin(instanceHandle, start)
+      const responder = currentResponder
+      currentResponder = undefined
       runWrapped(() => {
-        if (tapped) {
-          dlog('event press -> dispatch')
-          bubble(start, PRESS, nativeEvent)
+        if (start) {
+          // press fires only on an honest tap (ended within the responder); pressOut
+          // always fires on the responder so its pressed-state can release.
+          if (endsWithin(instanceHandle, start)) {
+            dlog('event press -> dispatch')
+            bubble(start, PRESS, nativeEvent)
+          }
+          bubble(start, PRESS_OUT, nativeEvent)
+        } else {
+          dlog(`event ${TOUCH_END} ignored (no matching start)`)
         }
-        bubble(start, PRESS_OUT, nativeEvent)
+        if (responder) callOwnListener(responder, RESPONDER_RELEASE, nativeEvent)
       })
       return
     }
@@ -100,7 +163,12 @@ export function installEventHandler(): void {
     if (topLevelType === TOUCH_CANCEL) {
       const start = pressStart
       pressStart = undefined
-      if (start) runWrapped(() => bubble(start, PRESS_OUT, nativeEvent))
+      const responder = currentResponder
+      currentResponder = undefined
+      runWrapped(() => {
+        if (start) bubble(start, PRESS_OUT, nativeEvent)
+        if (responder) callOwnListener(responder, RESPONDER_TERMINATE, nativeEvent)
+      })
       return
     }
 
