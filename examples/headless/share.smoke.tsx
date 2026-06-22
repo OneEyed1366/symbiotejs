@@ -1,18 +1,22 @@
-// Headless proof of the Share module — JS->native only, no simulator. On iOS the
-// share sheet is driven by ActionSheetManager.showShareActionSheetWithOptions (there
-// is NO ShareModule on iOS — that's the Android module), so we fake ActionSheetManager
-// and drive its success/dismiss callbacks. We assert a completed share resolves to
-// { action: 'sharedAction', activityType }, a dismissed share resolves to
-// 'dismissedAction', and invalid content (neither message nor url) rejects. A failure
-// here is in JS, not native.
+// Headless proof of the Share module — JS->native only, no simulator. The native
+// module is platform-specific: on iOS the share sheet is driven by
+// ActionSheetManager.showShareActionSheetWithOptions (there is NO ShareModule on iOS —
+// that's the Android module), on Android by ShareModule.share. We fake both and drive
+// each branch:
+//   iOS (default Platform.OS) — completed share -> { action: 'sharedAction', activityType },
+//     dismissed share -> 'dismissedAction', invalid content rejects.
+//   Android (Platform.OS toggled) — ShareModule.share(content, dialogTitle) resolves
+//     { action: 'sharedAction' } -> { action: 'sharedAction', activityType: null }.
+// A failure here is in JS, not native.
 
+import { Platform } from '@symbiote/shared'
 import { Share, type ShareContent } from '../../packages/react/src/share'
 
-// ---- fake native module --------------------------------------------------
+// ---- fake native modules -------------------------------------------------
 
 const SHARED_ACTIVITY = 'com.apple.UIKit.activity.PostToTwitter'
 
-// `completed` decides which callback path runs; the test flips it per case.
+// `completed` decides which iOS callback path runs; the test flips it per case.
 let completeNextShare = true
 
 const fakeActionSheetManager = {
@@ -25,8 +29,20 @@ const fakeActionSheetManager = {
   },
 }
 
+// The Android fake records its last call so the test can assert content + dialogTitle
+// were forwarded, then resolves the sharedAction shape ShareModule.share returns.
+let lastAndroidShare: { content: { title?: string; message?: string }; dialogTitle?: string } | null = null
+
+const fakeShareModule = {
+  share: (content: { title?: string; message?: string }, dialogTitle?: string): Promise<{ action: string }> => {
+    lastAndroidShare = { content, dialogTitle }
+    return Promise.resolve({ action: 'sharedAction' })
+  },
+}
+
 const registeredModules: Record<string, unknown> = {
   ActionSheetManager: fakeActionSheetManager,
+  ShareModule: fakeShareModule,
 }
 
 Object.assign(globalThis, {
@@ -70,6 +86,32 @@ async function main(): Promise<void> {
     rejected = true
   })
   if (!rejected) throw new Error('share with neither message nor url must reject')
+
+  // Android branch — toggle Platform.OS, assert share() forwards content + dialogTitle
+  // to ShareModule.share and maps { action: 'sharedAction' } to the public shape with
+  // activityType: null. Restore Platform.OS afterwards so the toggle can't leak.
+  const originalOS = Platform.OS
+  Object.defineProperty(Platform, 'OS', { value: 'android', configurable: true })
+  try {
+    const androidResult = await Share.share({ title: 'T', message: 'body' }, { dialogTitle: 'Pick one' })
+    if (androidResult.action !== 'sharedAction') {
+      throw new Error(`android share should resolve 'sharedAction', got ${String(androidResult.action)}`)
+    }
+    if (androidResult.activityType !== null) {
+      throw new Error(`android share should carry activityType: null, got ${String(androidResult.activityType)}`)
+    }
+    if (lastAndroidShare === null) {
+      throw new Error('android share should call ShareModule.share')
+    }
+    if (lastAndroidShare.content.message !== 'body' || lastAndroidShare.content.title !== 'T') {
+      throw new Error('android share should forward the content dict (title, message)')
+    }
+    if (lastAndroidShare.dialogTitle !== 'Pick one') {
+      throw new Error('android share should forward options.dialogTitle')
+    }
+  } finally {
+    Object.defineProperty(Platform, 'OS', { value: originalOS, configurable: true })
+  }
 
   console.log('share.smoke OK')
 }

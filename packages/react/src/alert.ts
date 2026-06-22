@@ -1,21 +1,51 @@
-// Alert — a JS->native imperative module, no Fabric view, no React. It drives the
-// `AlertManager` native module: `alertWithArgs(args, callback)` pops the native
-// alert, and the native `callback(id, value)` reports which button (by numeric id)
-// the user tapped and any text-input value. We mirror RN's arg-building and the
-// id->onPress dispatch faithfully.
+// Alert — a JS->native imperative module, no Fabric view, no React. Two native
+// backends, picked by Platform.OS in this one file (ADR 0018 — a Platform.OS branch,
+// not a .ios/.android Metro split, so the tsx/Node smoke harness resolves it):
 //
-// The native contract is confirmed from RN's TurboModule spec at
-// .vendors/react-native/.../src/private/specs_DEPRECATED/modules/NativeAlertManager.js:
-//   alertWithArgs(args: Args, callback: (id: number, value: string) => void)
+//   iOS     → `AlertManager.alertWithArgs(args, callback)` pops the native alert;
+//             the native `callback(id, value)` reports which button (by numeric id)
+//             the user tapped and any text-input value.
+//   Android → `DialogManagerAndroid.showAlert(config, onError, onAction)` pops the
+//             native dialog; `onAction(action, buttonKey)` reports the action and the
+//             tapped button's key constant, both read from `getConstants()`.
 //
-// iOS only: RN's Alert.alert delegates to Alert.prompt on iOS and calls
-// AlertManager directly; the Android dialog path (NativeDialogManagerAndroid) is
-// out of scope here. Non-throwing, like StatusBar: a missing native module is a
-// no-op, never a crash (on a device the module may be absent).
+// The native contracts are confirmed from RN's TurboModule specs:
+//   .vendors/.../specs_DEPRECATED/modules/NativeAlertManager.js
+//     alertWithArgs(args: Args, callback: (id: number, value: string) => void)
+//   .vendors/.../specs_DEPRECATED/modules/NativeDialogManagerAndroid.js
+//     getConstants(): { buttonClicked, dismissed, buttonPositive, buttonNegative,
+//                       buttonNeutral }
+//     showAlert(config, onError: (msg) => void, onAction: (action, buttonKey?) => void)
+//
+// Non-throwing, like StatusBar: a missing native module is a no-op, never a crash
+// (on a device the module may be absent).
 
-import { dlog, getNativeModule } from '@symbiote/shared'
+import { dlog, getNativeModule, Platform } from '@symbiote/shared'
 
-const ALERT_MANAGER = 'AlertManager'
+// The native module name per platform. iOS hits AlertManager; Android does NOT use
+// it — Android's dialog lives in DialogManagerAndroid (DialogManagerAndroid is
+// device-verify-pending: headless fakes resolve any name, so the Android name is
+// proven only on a real host — see .docs/native-module-platform-routing.md).
+const ALERT_MODULE = {
+  ios: 'AlertManager',
+  android: 'DialogManagerAndroid',
+} as const
+
+const ALERT_MANAGER = ALERT_MODULE.ios
+
+// RN's hardwired Android fallbacks for the button-key constants (NativeDialogManager-
+// Android documents buttonPositive=-1, buttonNegative=-2, buttonNeutral=-3, and the
+// 'buttonClicked'/'dismissed' actions). Used when getConstants() omits a key.
+const ANDROID_DIALOG_CONSTANTS = {
+  buttonClicked: 'buttonClicked',
+  dismissed: 'dismissed',
+  buttonPositive: -1,
+  buttonNegative: -2,
+  buttonNeutral: -3,
+} as const
+
+// The default positive label RN uses when an Android button carries no text.
+const DEFAULT_POSITIVE_TEXT = 'OK'
 
 // The alert `type` strings the spec documents (iOS), as a closed union so a typo
 // can't reach the native call. 'default' = no text input; the rest prompt.
@@ -63,13 +93,132 @@ interface NativeAlertManager {
   alertWithArgs(args: AlertArgs, callback: (id: number, value: string) => void): void
 }
 
+// The Android dialog config — RN's DialogOptions. At most three buttons map onto the
+// positive/negative/neutral slots; `cancelable` controls dismiss-on-outside-tap.
+interface DialogConfig {
+  title: string
+  message: string
+  cancelable: boolean
+  buttonPositive?: string
+  buttonNegative?: string
+  buttonNeutral?: string
+}
+
+// The button-key constants getConstants() returns: the two action strings and the
+// three numeric button keys. We narrow them at the trust boundary below.
+interface AndroidDialogConstants {
+  buttonClicked: string
+  dismissed: string
+  buttonPositive: number
+  buttonNegative: number
+  buttonNeutral: number
+}
+
+// The Android native module: getConstants() for the button-key constants plus
+// showAlert. `buttonKey` is optional on dismiss (no button was tapped).
+interface NativeDialogManagerAndroid {
+  getConstants(): unknown
+  showAlert(
+    config: DialogConfig,
+    onError: (error: string) => void,
+    onAction: (action: string, buttonKey?: number) => void,
+  ): void
+}
+
+// The trust boundary for getConstants(): native sends an untyped HostObject. Read each
+// key with a typeof guard and fall back to RN's documented default when it's missing.
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null
+}
+
+function readDialogConstants(raw: unknown): AndroidDialogConstants {
+  if (!isRecord(raw)) {
+    dlog('Alert: DialogManagerAndroid.getConstants() returned a non-object — using defaults')
+    return ANDROID_DIALOG_CONSTANTS
+  }
+  const action = (key: 'buttonClicked' | 'dismissed'): string =>
+    typeof raw[key] === 'string' ? raw[key] : ANDROID_DIALOG_CONSTANTS[key]
+  const buttonKey = (key: 'buttonPositive' | 'buttonNegative' | 'buttonNeutral'): number =>
+    typeof raw[key] === 'number' ? raw[key] : ANDROID_DIALOG_CONSTANTS[key]
+  return {
+    buttonClicked: action('buttonClicked'),
+    dismissed: action('dismissed'),
+    buttonPositive: buttonKey('buttonPositive'),
+    buttonNegative: buttonKey('buttonNegative'),
+    buttonNeutral: buttonKey('buttonNeutral'),
+  }
+}
+
 type PromptCallbackOrButtons = ((text: string) => void) | AlertButtons
 
 // The static imperative API RN exposes, mirrored as a static-method object.
 export const Alert = {
-  // alert delegates to prompt on iOS, exactly as RN does — same AlertManager path.
+  // alert delegates to prompt on iOS (same AlertManager path); on Android it builds
+  // the DialogManagerAndroid config and dispatches via onAction — exactly as RN does.
   alert(title?: string, message?: string, buttons?: AlertButtons, options?: AlertOptions): void {
+    if (Platform.OS === 'android') {
+      Alert.alertAndroid(title, message, buttons, options)
+      return
+    }
     Alert.prompt(title, message, buttons, 'default', undefined, undefined, options)
+  },
+
+  // The Android dialog path. RN keeps at most three buttons and maps them, last-to-
+  // first, onto positive/negative/neutral; onAction reads the native button-key
+  // constant back and fires that button's onPress. Non-throwing: no module -> no-op.
+  alertAndroid(title?: string, message?: string, buttons?: AlertButtons, options?: AlertOptions): void {
+    dlog('Alert.alert (android)')
+
+    const manager = getNativeModule<NativeDialogManagerAndroid>(ALERT_MODULE.android)
+    if (manager === null) {
+      dlog(`Alert.alert: "${ALERT_MODULE.android}" unresolved — no-op`)
+      return
+    }
+    const constants = readDialogConstants(manager.getConstants())
+
+    const config: DialogConfig = {
+      title: title || '',
+      message: message || '',
+      cancelable: options?.cancelable ?? false,
+    }
+
+    // At most three buttons (neutral, negative, positive). Ignore the rest. RN pops
+    // last-to-first, so the LAST button becomes positive and the FIRST neutral.
+    const validButtons: AlertButtons = buttons ? buttons.slice(0, 3) : [{ text: DEFAULT_POSITIVE_TEXT }]
+    const buttonPositive = validButtons.pop()
+    const buttonNegative = validButtons.pop()
+    const buttonNeutral = validButtons.pop()
+
+    if (buttonNeutral) {
+      config.buttonNeutral = buttonNeutral.text || ''
+    }
+    if (buttonNegative) {
+      config.buttonNegative = buttonNegative.text || ''
+    }
+    if (buttonPositive) {
+      config.buttonPositive = buttonPositive.text || DEFAULT_POSITIVE_TEXT
+    }
+
+    // onAction maps the returned button-key constant back to the matching button's
+    // onPress; the dismiss action fires options.onDismiss.
+    const onAction = (action: string, buttonKey?: number): void => {
+      dlog(`Alert onAction action=${action} buttonKey=${String(buttonKey)}`)
+      if (action === constants.buttonClicked) {
+        if (buttonKey === constants.buttonNeutral) {
+          buttonNeutral?.onPress?.()
+        } else if (buttonKey === constants.buttonNegative) {
+          buttonNegative?.onPress?.()
+        } else if (buttonKey === constants.buttonPositive) {
+          buttonPositive?.onPress?.()
+        }
+      } else if (action === constants.dismissed) {
+        options?.onDismiss?.()
+      }
+    }
+    const onError = (errorMessage: string): void => {
+      dlog(`Alert onError: ${errorMessage}`)
+    }
+    manager.showAlert(config, onError, onAction)
   },
 
   // prompt builds the native args, assigns each button its array index as id, and
