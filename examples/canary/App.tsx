@@ -41,6 +41,8 @@ import {
   PanResponder,
   I18nManager,
   Settings,
+  findNodeHandle,
+  type HostInstance,
 } from '@symbiote/react'
 // A real third-party native view, used straight from the library — no symbiote
 // wrapper. symbiote derives RNCSlider's events and prop processors from its own
@@ -422,6 +424,71 @@ function NativeModulesDemo() {
   )
 }
 
+// Imperative host-ref API — the seam reanimated / gesture-handler reach through.
+// `measure` returns the box's real on-screen frame (only a live host can answer it);
+// `setNativeProps` recolors the box bypassing React entirely (no state, no re-render);
+// `findNodeHandle` reads the committed native tag. The flash holds until the next React
+// commit re-applies the declarative style — exactly RN's imperative-override semantics.
+function RefApiDemo() {
+  const boxRef = useRef<HostInstance | null>(null)
+  const flashedRef = useRef(false)
+  const [frame, setFrame] = useState('tap “Measure”')
+  const [tag, setTag] = useState<number | null>(null)
+
+  useEffect(() => {
+    // The tag exists only after the first commit, so read it post-mount.
+    setTag(findNodeHandle(boxRef.current))
+  }, [])
+
+  const onMeasure = (): void => {
+    const box = boxRef.current
+    if (box === null) return
+    box.measure((x, y, width, height, pageX, pageY) => {
+      setFrame(
+        `x${Math.round(x)} y${Math.round(y)} · ${Math.round(width)}×${Math.round(height)}` +
+          ` · page ${Math.round(pageX)},${Math.round(pageY)}`,
+      )
+    })
+  }
+
+  const onFlash = (): void => {
+    const box = boxRef.current
+    if (box === null) return
+    flashedRef.current = !flashedRef.current
+    box.setNativeProps({ style: { backgroundColor: flashedRef.current ? '#f6ad55' : '#7fb5ff' } })
+  }
+
+  return (
+    <View style={{ gap: 12 }}>
+      <Text style={{ color: '#41506a', fontSize: 13 }}>
+        Imperative ref · measure / setNativeProps / findNodeHandle
+      </Text>
+      <View
+        ref={boxRef}
+        style={{
+          height: 56,
+          borderRadius: 12,
+          backgroundColor: '#7fb5ff',
+          alignItems: 'center',
+          justifyContent: 'center',
+        }}>
+        <Text style={{ color: '#0b1622', fontSize: 14, fontWeight: 'bold' }}>
+          {`native tag ${tag ?? '—'}`}
+        </Text>
+      </View>
+      <Text style={{ color: '#cbd5e1', fontSize: 14 }}>{`frame: ${frame}`}</Text>
+      <View style={{ flexDirection: 'row', gap: 12 }}>
+        <View style={{ flex: 1 }}>
+          <Button title="Measure" onPress={onMeasure} color="#7fb5ff" />
+        </View>
+        <View style={{ flex: 1 }}>
+          <Button title="Flash (setNativeProps)" onPress={onFlash} color="#f6ad55" />
+        </View>
+      </View>
+    </View>
+  )
+}
+
 function App() {
   const [count, setCount] = useState(0)
   const [name, setName] = useState('')
@@ -694,6 +761,9 @@ function App() {
 
       {/* Runtime modules — I18nManager, Settings, Image statics */}
       <NativeModulesDemo />
+
+      {/* Imperative host-ref API — measure / setNativeProps / findNodeHandle */}
+      <RefApiDemo />
 
       {/* Button opens a Modal */}
       <Button title="Open modal" onPress={() => setModalVisible(true)} color="#7fb5ff" />
