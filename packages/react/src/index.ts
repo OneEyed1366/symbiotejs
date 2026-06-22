@@ -66,6 +66,8 @@ export type { VirtualizedListProps } from './virtualized-list'
 
 export type { ViewStyle, TextStyle, FlexAlign, FlexJustify } from './styles'
 export { mount } from './render'
+export { findNodeHandle } from './host-instance'
+export type { HostInstance } from './host-instance'
 
 // Animated bridge: createAnimatedComponent + Animated.View/Text/Image, driving the
 // shared JS Animated engine (ADR 0016). Imperative timing/spring drivers merge into

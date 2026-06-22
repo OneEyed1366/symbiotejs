@@ -27,6 +27,31 @@ export type FabricEventHandler = (
   nativeEvent: Record<string, unknown>,
 ) => void
 
+// Measurement callbacks, matching Fabric's native signatures (ReactNativeElement's
+// measure family). `measure` reports the on-screen frame plus page offset;
+// `measureInWindow` the window-relative frame; `measureLayout` the frame relative to
+// another node. Libraries (reanimated, gesture-handler, scroll-to) read these.
+export type MeasureOnSuccess = (
+  x: number,
+  y: number,
+  width: number,
+  height: number,
+  pageX: number,
+  pageY: number,
+) => void
+export type MeasureInWindowOnSuccess = (
+  x: number,
+  y: number,
+  width: number,
+  height: number,
+) => void
+export type MeasureLayoutOnSuccess = (
+  left: number,
+  top: number,
+  width: number,
+  height: number,
+) => void
+
 export interface FabricSlot {
   createNode(
     reactTag: number,
@@ -45,6 +70,15 @@ export interface FabricSlot {
   registerEventHandler(handler: FabricEventHandler): void
   // Imperative view commands (e.g. TextInput setTextAndSelection, focus, blur).
   dispatchCommand(node: FabricNode, commandName: string, args: readonly unknown[]): void
+  // Imperative measurement, against a node's CURRENT (committed) Fabric handle.
+  measure(node: FabricNode, callback: MeasureOnSuccess): void
+  measureInWindow(node: FabricNode, callback: MeasureInWindowOnSuccess): void
+  measureLayout(
+    node: FabricNode,
+    relativeToNode: FabricNode,
+    onFail: () => void,
+    onSuccess: MeasureLayoutOnSuccess,
+  ): void
 }
 
 // The JSI global, typed at the trust boundary. RN's InitializeCore installs it
@@ -82,6 +116,9 @@ export function getSlot(): FabricSlot {
   const { completeRoot } = host
   const { registerEventHandler } = host
   const { dispatchCommand } = host
+  const { measure } = host
+  const { measureInWindow } = host
+  const { measureLayout } = host
 
   cached = {
     createNode: (reactTag, viewName, rootTag, props, instanceHandle) =>
@@ -97,6 +134,10 @@ export function getSlot(): FabricSlot {
     registerEventHandler: (handler) => registerEventHandler(handler),
     dispatchCommand: (node, commandName, args) =>
       dispatchCommand(node, commandName, args),
+    measure: (node, callback) => measure(node, callback),
+    measureInWindow: (node, callback) => measureInWindow(node, callback),
+    measureLayout: (node, relativeToNode, onFail, onSuccess) =>
+      measureLayout(node, relativeToNode, onFail, onSuccess),
   }
   dlog('slot bound to nativeFabricUIManager')
   return cached

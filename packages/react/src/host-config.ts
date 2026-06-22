@@ -21,6 +21,7 @@ import {
   DiscreteEventPriority,
   NoEventPriority,
 } from './reconciler-constants'
+import { toPublicInstance, type HostInstance } from './host-instance'
 
 type Props = Record<string, unknown>
 
@@ -110,7 +111,7 @@ const reconciler = createReconciler<
   never, // SuspenseInstance
   unknown, // HydratableInstance
   unknown, // FormInstance
-  SymbioteNode, // PublicInstance
+  HostInstance, // PublicInstance
   HostContext, // HostContext
   unknown, // ChildSet
   number, // TimeoutHandle
@@ -132,7 +133,7 @@ const reconciler = createReconciler<
       ? parentHostContext
       : { isInsideText }
   },
-  getPublicInstance: (instance) => instance,
+  getPublicInstance: (instance) => toPublicInstance(instance),
 
   prepareForCommit: () => null,
   resetAfterCommit: (container) => {

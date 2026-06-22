@@ -45,6 +45,9 @@ export {
   setNativeProps,
   getNativeTag,
   getNativeNode,
+  measure,
+  measureInWindow,
+  measureLayout,
 } from './commit'
 export { flattenStyle } from './style'
 export { StyleSheet, computeHairlineWidth } from './style-sheet'
@@ -138,4 +141,7 @@ export type {
   FabricProps,
   FabricEventHandler,
   RootTag,
+  MeasureOnSuccess,
+  MeasureInWindowOnSuccess,
+  MeasureLayoutOnSuccess,
 } from './fabric'

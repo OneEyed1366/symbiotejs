@@ -18,6 +18,9 @@ import {
   type FabricNode,
   type FabricProps,
   type RootTag,
+  type MeasureOnSuccess,
+  type MeasureInWindowOnSuccess,
+  type MeasureLayoutOnSuccess,
 } from './fabric'
 import {
   createElement,
@@ -315,7 +318,16 @@ export function setNativeProps(node: SymbioteNode, partial: Record<string, unkno
     dlog('setNativeProps skipped: node not committed')
     return
   }
-  Object.assign(node.props, partial)
+  for (const [key, value] of Object.entries(partial)) {
+    if (key === 'style') {
+      // A partial style override MERGES onto the declarative style (RN semantics):
+      // setNativeProps({style:{backgroundColor}}) recolors without dropping height
+      // or radius. Transient — the next React commit re-applies the full style.
+      node.props.style = { ...flattenStyle(node.props.style), ...flattenStyle(value) }
+    } else {
+      node.props[key] = value
+    }
+  }
   dlog(`setNativeProps root=${record.rootTag} tag=${record.tag} keys=${Object.keys(partial)}`)
   commitContainer(record.rootTag)
 }
@@ -348,4 +360,43 @@ export function dispatchViewCommand(
   }
   dlog(`dispatchViewCommand "${commandName}"`)
   getSlot().dispatchCommand(record.handle, commandName, args)
+}
+
+// Imperative measurement against a node's CURRENT Fabric handle (the public-instance
+// measure family that reanimated / gesture-handler / scroll-to reach through). A
+// no-op with a dlog until the node is committed — there is no handle to measure yet.
+export function measure(node: SymbioteNode, callback: MeasureOnSuccess): void {
+  const record = mirror.get(node)
+  if (record === undefined) {
+    dlog('measure skipped: node not committed')
+    return
+  }
+  getSlot().measure(record.handle, callback)
+}
+
+export function measureInWindow(node: SymbioteNode, callback: MeasureInWindowOnSuccess): void {
+  const record = mirror.get(node)
+  if (record === undefined) {
+    dlog('measureInWindow skipped: node not committed')
+    return
+  }
+  getSlot().measureInWindow(record.handle, callback)
+}
+
+// Measure `node`'s frame relative to `relativeTo`. Both must be committed; RN's public
+// signature is (relative, onSuccess, onFail) but the native slot wants the fail
+// callback before success, so the order is swapped here.
+export function measureLayout(
+  node: SymbioteNode,
+  relativeTo: SymbioteNode,
+  onSuccess: MeasureLayoutOnSuccess,
+  onFail: () => void = () => {},
+): void {
+  const record = mirror.get(node)
+  const relativeRecord = mirror.get(relativeTo)
+  if (record === undefined || relativeRecord === undefined) {
+    dlog('measureLayout skipped: a node is not committed')
+    return
+  }
+  getSlot().measureLayout(record.handle, relativeRecord.handle, onFail, onSuccess)
 }
