@@ -8,23 +8,20 @@
 // through the ref dispatch the matching view command to that host node. No
 // simulator — a failure here is in JS, not native.
 //
-// The native AndroidDrawerLayout view is Android-only and the component degrades off
-// Android, so the smoke flips Platform.OS to 'android' (runtime defineProperty, not a
-// type cast) BEFORE mounting so the native path is exercised.
+// Per ADR 0019 the drawer is split by filename, not a Platform.OS branch: the real
+// native build is drawer-layout-android.android.ts, and the base drawer-layout-android.ts
+// is the off-Android fallback. So this imports each DIRECTLY — no Metro, no runtime
+// Platform.OS toggle. The .android build is asserted to commit AndroidDrawerLayout and
+// dispatch the drawer commands; the base build is asserted to degrade to a plain View.
 
 import { type ReactElement } from 'react'
-import { View, Text, Platform, mount } from '@symbiote/react'
+import { View, Text, mount } from '@symbiote/react'
 
-// Force the Android branch before importing the component path: Platform.OS is a
-// runtime const object; defineProperty rewrites it without a type cast.
-Object.defineProperty(Platform, 'OS', { value: 'android', configurable: true })
-
-// DrawerLayoutAndroid isn't on the barrel yet (the parent wires exports), so reach
-// the source directly — the headless harness has no built dist.
 import {
   DrawerLayoutAndroid,
   type DrawerLayoutAndroidHandle,
-} from '../../packages/react/src/drawer-layout-android'
+} from '../../packages/react/src/drawer-layout-android.android'
+import { DrawerLayoutAndroid as DrawerLayoutFallback } from '../../packages/react/src/drawer-layout-android'
 
 // ---- fake Fabric slot ---------------------------------------------------
 
@@ -205,6 +202,42 @@ if (openCmd.tag !== drawerNode().tag) {
 handle.closeDrawer()
 if (!dispatched.some((d) => d.command === 'closeDrawer')) {
   throw new Error(`closeDrawer() did not dispatch the 'closeDrawer' command, got ${JSON.stringify(dispatched)}`)
+}
+
+// ---- case 3: the base build degrades to a plain View, commands are no-ops ----
+// The off-Android fallback (base drawer-layout-android.ts) renders the content in a
+// plain container — no AndroidDrawerLayout host node — and its imperative open/close
+// dispatch nothing (there is no drawer to drive).
+
+reset()
+
+let fallbackHandle: DrawerLayoutAndroidHandle | null = null
+function FallbackCase(): ReactElement {
+  return (
+    <DrawerLayoutFallback
+      ref={(instance) => { fallbackHandle = instance }}
+      drawerWidth={250}
+      renderNavigationView={() => <View />}
+    >
+      <View>
+        <Text>Content</Text>
+      </View>
+    </DrawerLayoutFallback>
+  )
+}
+
+mount(42, <FallbackCase />)
+
+if (allCreated.some((n) => n.viewName === 'AndroidDrawerLayout')) {
+  throw new Error('the base fallback must NOT create an AndroidDrawerLayout host node')
+}
+if (fallbackHandle === null) {
+  throw new Error('fallback imperative handle was not captured')
+}
+fallbackHandle.openDrawer()
+fallbackHandle.closeDrawer()
+if (dispatched.length !== 0) {
+  throw new Error(`fallback open/close must be no-ops, got ${JSON.stringify(dispatched)}`)
 }
 
 console.log('drawer-layout-android.smoke OK')
