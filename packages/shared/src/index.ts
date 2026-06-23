@@ -56,12 +56,13 @@ export type { ColorValue, OpaqueColorValue, DynamicColorIOSTuple } from './platf
 export { flattenStyle } from './style'
 export { StyleSheet, computeHairlineWidth } from './style-sheet'
 export { Platform } from './platform'
-export type {
-  PlatformStatic,
-  PlatformOSType,
-  PlatformConstantsIOS,
-  PlatformSelectSpec,
-} from './platform'
+export type { PlatformStatic, PlatformOSType, PlatformSelectSpec } from './platform'
+// The per-platform constants types come from their own files, not the host-selected
+// `./platform` — on an Android Metro build `./platform` IS platform.android.ts, which
+// has no PlatformConstantsIOS. These are type-only (erased at runtime), so naming the
+// explicit file pulls no cross-platform runtime code.
+export type { PlatformConstantsIOS } from './platform.ios'
+export type { PlatformConstantsAndroid } from './platform.android'
 export { dlog, isDebug } from './debug'
 
 export { getNativeModule, getEnforcingNativeModule } from './native-modules'

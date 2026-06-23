@@ -658,7 +658,7 @@ function App() {
         }}>
         {`${Platform.OS} ${Platform.Version}` +
           `${Platform.isPad ? ' · iPad' : ''}` +
-          ` · ${Platform.select({ ios: 'native ios', default: '?' })}` +
+          ` · ${Platform.select({ ios: 'native ios', android: 'native android', default: '?' })}` +
           ` · hairline ${StyleSheet.hairlineWidth.toFixed(3)}`}
       </Text>
       {/* Tier B runtime modules, live. Real w×h@scale proves Dimensions + PixelRatio;

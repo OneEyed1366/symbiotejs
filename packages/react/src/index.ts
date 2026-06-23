@@ -95,6 +95,7 @@ export type {
   PlatformStatic,
   PlatformOSType,
   PlatformConstantsIOS,
+  PlatformConstantsAndroid,
   PlatformSelectSpec,
 } from '@symbiote/shared'
 
