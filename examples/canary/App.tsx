@@ -691,9 +691,13 @@ function App() {
         <View style={{ flex: 1 }}>
           <Button title="Alert" onPress={onAlert} color="#7fb5ff" />
         </View>
-        <View style={{ flex: 1 }}>
-          <Button title="Action sheet" onPress={onActionSheet} color="#7fb5ff" />
-        </View>
+        {/* ActionSheetIOS drives the iOS-only ActionSheetManager — no Android native
+            module exists, so the control is iOS-only by design (not a gap). */}
+        {Platform.OS !== 'android' && (
+          <View style={{ flex: 1 }}>
+            <Button title="Action sheet" onPress={onActionSheet} color="#7fb5ff" />
+          </View>
+        )}
       </View>
       <View style={{ flexDirection: 'row', gap: 12 }}>
         <View style={{ flex: 1 }}>
