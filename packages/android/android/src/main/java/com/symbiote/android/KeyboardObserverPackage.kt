@@ -11,7 +11,7 @@ import com.facebook.react.uimanager.ViewManager
 // plain event-emitter module. Autolinking discovers this class and registers it.
 class SymbioteAndroidPackage : ReactPackage {
   override fun createNativeModules(reactContext: ReactApplicationContext): List<NativeModule> =
-      listOf(KeyboardObserverModule(reactContext))
+      listOf(KeyboardObserverModule(reactContext), SettingsManagerModule(reactContext))
 
   override fun createViewManagers(reactContext: ReactApplicationContext): List<ViewManager<*, *>> =
       emptyList()
