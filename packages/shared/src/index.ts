@@ -49,6 +49,7 @@ export {
   measure,
   measureInWindow,
   measureLayout,
+  disposeRoot,
 } from './commit'
 export { PlatformColor, DynamicColorIOS, isOpaqueColorValue } from './platform-color'
 export type { ColorValue, OpaqueColorValue, DynamicColorIOSTuple } from './platform-color'

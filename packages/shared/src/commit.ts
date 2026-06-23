@@ -308,6 +308,16 @@ function rootContainerFor(rootTag: RootTag): SymbioteNode {
   return container
 }
 
+// Drop a surface's persistent root container so the NEXT mount on this rootTag starts
+// from scratch (fresh tags, fresh mirror) instead of cloning handles that belonged to a
+// now-stopped surface. Called from stopSurface: the bridgeless host stops then restarts a
+// surface (Fast Refresh, focus/lifecycle) reusing the same rootTag, and a stale root
+// container would re-clone dead handles into the new surface → a blank screen. The old
+// container's descendants fall out of every reference and their mirror entries GC.
+export function disposeRoot(rootTag: RootTag): void {
+  if (rootContainers.delete(rootTag)) dlog(`root container disposed root=${rootTag}`)
+}
+
 export function commitChildren(rootTag: RootTag, children: readonly SymbioteNode[]): void {
   // The wrapper holds the surface's top-level children; reconcile walks from it so the
   // whole tree, synthetic root included, goes through the same clone-on-write path.
