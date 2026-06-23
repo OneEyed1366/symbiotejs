@@ -18,6 +18,27 @@ import { isRegisteredEvent } from './registry'
 // are synthesized from the touch stream (see events.ts); `layout` is universal.
 const BASE_EVENTS: readonly string[] = ['press', 'pressIn', 'pressOut', 'layout']
 
+// An event set is platform-invariant — a text input emits `change` on iOS and Android
+// alike; only the native component NAME differs (iOS RCTSinglelineTextInputView vs
+// Android AndroidTextInput, iOS Switch vs Android AndroidSwitch). So each primitive's
+// events are declared ONCE and keyed under BOTH platform names below. The table is
+// consulted by the resolved native name (SymbioteNode.component), and only one
+// platform's names ever exist at runtime, so the other platform's keys are inert — no
+// Platform.OS branch, the names simply coexist. Missing the Android keys is what made
+// onChangeText (and Switch/Modal/RefreshControl events) silently dead on Android: the
+// onX prop failed isEventFor, fell to setProp, and no listener was ever registered.
+const TEXT_INPUT_EVENTS: readonly string[] = [
+  'change',
+  'focus',
+  'blur',
+  'endEditing',
+  'submitEditing',
+  'keyPress',
+  'selectionChange',
+  'contentSizeChange',
+]
+const MODAL_EVENTS: readonly string[] = ['show', 'dismiss', 'requestClose', 'orientationChange']
+
 // Fabric component name -> the events it emits beyond the base set. The keys match
 // SymbioteNode.component (what createNode is called with). A component absent here
 // still gets BASE_EVENTS, so a new primitive has working press/layout for free.
@@ -31,29 +52,15 @@ const COMPONENT_EVENTS: Readonly<Record<string, readonly string[]>> = {
     'momentumScrollEnd',
     'contentSizeChange',
   ],
-  RCTSinglelineTextInputView: [
-    'change',
-    'focus',
-    'blur',
-    'endEditing',
-    'submitEditing',
-    'keyPress',
-    'selectionChange',
-    'contentSizeChange',
-  ],
-  RCTMultilineTextInputView: [
-    'change',
-    'focus',
-    'blur',
-    'endEditing',
-    'submitEditing',
-    'keyPress',
-    'selectionChange',
-    'contentSizeChange',
-  ],
+  RCTSinglelineTextInputView: TEXT_INPUT_EVENTS,
+  RCTMultilineTextInputView: TEXT_INPUT_EVENTS,
+  AndroidTextInput: TEXT_INPUT_EVENTS,
   Switch: ['change'],
-  ModalHostView: ['show', 'dismiss', 'requestClose', 'orientationChange'],
+  AndroidSwitch: ['change'],
+  ModalHostView: MODAL_EVENTS,
+  RCTModalHostView: MODAL_EVENTS,
   PullToRefreshView: ['refresh'],
+  AndroidSwipeRefreshLayout: ['refresh'],
 }
 
 const configCache = new Map<string, ReadonlySet<string>>()

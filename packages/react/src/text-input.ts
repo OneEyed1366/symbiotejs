@@ -72,6 +72,13 @@ export const TextInput: FC<TextInputProps> = (props) => {
 
   const handleChange = useCallback(
     (event: SymbioteEvent): void => {
+      // Event seam: the controlled handshake hinges on the change payload carrying
+      // `text` (+ `eventCount`). iOS and Android Fabric can key these differently, so
+      // log the actual shape here — a missing `text` means onChangeText never fires.
+      dlog(
+        `TextInput change keys=[${Object.keys(event.nativeEvent).join(',')}] ` +
+          `text=${JSON.stringify(event.nativeEvent.text)} count=${JSON.stringify(event.nativeEvent.eventCount)}`,
+      )
       const text = textFromChange(event)
       if (text !== undefined) {
         lastNativeText.current = text
