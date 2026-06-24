@@ -13,6 +13,7 @@ import {
   type NativeEventListener,
   dlog,
 } from '@symbiote/shared'
+import { blurTextInput, currentlyFocusedInput } from './text-input-state'
 
 // The native module name RN registers the keyboard observer under — confirmed
 // from its spec (specs_DEPRECATED/modules/NativeKeyboardObserver.js:20,
@@ -67,10 +68,12 @@ export const Keyboard = {
     return getEmitter().addListener(eventType, listener)
   },
 
-  // RN routes dismiss through a native dismissKeyboard utility that the
-  // KeyboardObserver spec does not expose. Until that seam exists, this is a safe
-  // no-op so callers (TextInput.onSubmitEditing) don't break.
+  // RN's dismissKeyboard blurs the currently-focused input (TextInputState); blurring
+  // an input is what actually retracts the keyboard, so we do the same. A no-op when
+  // nothing holds focus, like RN.
   dismiss(): void {
-    dlog('Keyboard.dismiss -> no-op (native dismiss not wired)')
+    const focused = currentlyFocusedInput()
+    dlog(`Keyboard.dismiss -> ${focused ? 'blur focused input' : 'no focused input (no-op)'}`)
+    blurTextInput(focused)
   },
 }

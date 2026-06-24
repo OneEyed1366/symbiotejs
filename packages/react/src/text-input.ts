@@ -16,6 +16,7 @@ import {
   useState,
 } from 'react'
 import { dispatchViewCommand, dlog, type SymbioteEvent, type SymbioteNode } from '@symbiote/shared'
+import { blurTextInput, setInputBlurred, setInputFocused } from './text-input-state'
 import { resolveAccessibilityProps, type AccessibilityProps, type AriaProps } from './accessibility-props'
 import type { TextStyle } from './styles'
 
@@ -151,6 +152,8 @@ export const TextInput = forwardRef<TextInputHandle, TextInputProps>((rawProps, 
   const handleFocus = useCallback(
     (event: SymbioteEvent): void => {
       focused.current = true
+      // Track focus app-wide so Keyboard.dismiss can blur this input without a ref.
+      if (ref.current !== null) setInputFocused(ref.current)
       onFocus?.(event)
     },
     [onFocus],
@@ -159,6 +162,7 @@ export const TextInput = forwardRef<TextInputHandle, TextInputProps>((rawProps, 
   const handleBlur = useCallback(
     (event: SymbioteEvent): void => {
       focused.current = false
+      if (ref.current !== null) setInputBlurred(ref.current)
       onBlur?.(event)
     },
     [onBlur],
@@ -175,8 +179,8 @@ export const TextInput = forwardRef<TextInputHandle, TextInputProps>((rawProps, 
         if (node !== null) dispatchViewCommand(node, 'focus', [])
       },
       blur: (): void => {
-        const node = ref.current
-        if (node !== null) dispatchViewCommand(node, 'blur', [])
+        // Routes through TextInputState so the app-wide focus tracking clears too.
+        blurTextInput(ref.current)
       },
       clear: (): void => {
         const node = ref.current

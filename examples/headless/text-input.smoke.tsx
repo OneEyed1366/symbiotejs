@@ -9,7 +9,7 @@
 // simulator — a failure here is in JS, not native.
 
 import { useState, type ReactElement } from 'react'
-import { mount } from '@symbiote/react'
+import { Keyboard, mount } from '@symbiote/react'
 import { TextInput } from '../../packages/react/src/text-input'
 
 // ---- fake Fabric slot ---------------------------------------------------
@@ -166,6 +166,31 @@ mount(13, <Forced />)
   }
   if (setText.args[1] !== 'AB') {
     throw new Error(`setTextAndSelection pushed ${JSON.stringify(setText.args[1])}, expected "AB"`)
+  }
+}
+
+// ---- case 5: Keyboard.dismiss blurs the currently-focused input ----------
+// Focusing an input registers it as the app-wide focused input (TextInputState);
+// Keyboard.dismiss then blurs it via the native `blur` view command, with no ref.
+
+reset()
+mount(14, <TextInput value="focus me" />)
+
+{
+  const node = inputNode(SINGLELINE)
+  if (!eventHandler) throw new Error('no event handler was registered')
+  // Native reports focus -> TextInput records this node as the focused one.
+  eventHandler(node.instanceHandle, 'topFocus', {})
+  Keyboard.dismiss()
+  const blur = commands.find((c) => c.name === 'blur')
+  if (!blur) {
+    throw new Error('Keyboard.dismiss should blur the focused input via a blur command')
+  }
+  // A second dismiss has nothing focused -> must be a no-op (no new blur command).
+  commands.length = 0
+  Keyboard.dismiss()
+  if (commands.some((c) => c.name === 'blur')) {
+    throw new Error('Keyboard.dismiss must be a no-op when nothing holds focus')
   }
 }
 
