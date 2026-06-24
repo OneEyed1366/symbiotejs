@@ -1,15 +1,14 @@
 /** @jsxRuntime automatic */
-// Headless proof of the interaction family (Pressable + Touchable*) over the same
-// fake Fabric slot the other smokes use. It drives the real touch primitives the
-// way native would — topTouchStart/topTouchEnd on the responder node's
-// instanceHandle — and asserts the synthesized press, the pressed-state style
-// flip (which re-renders and re-commits), the disabled suppression, and the
-// JS-synthesized onLongPress timer. No simulator — a failure here is in JS.
+// Headless proof of Pressable over the same fake Fabric slot the other smokes
+// use. It drives the real touch primitives the way native would —
+// topTouchStart/topTouchEnd on the responder node's instanceHandle — and asserts
+// the synthesized press, the disabled suppression, and the JS-synthesized
+// onLongPress timer. No simulator — a failure here is in JS. (The Touchable*
+// Animated feedback lives in touchable.smoke.tsx.)
 
 import { mount } from '@symbiote/react'
 // Not on the barrel yet (the integrator wires exports), so reach the source.
 import { Pressable } from '../../packages/react/src/pressable'
-import { TouchableOpacity } from '../../packages/react/src/touchable'
 import { Button } from '../../packages/react/src/button'
 
 // ---- controllable fake timers (for the long-press path) -----------------
@@ -198,43 +197,7 @@ installFakeTimers()
   }
 }
 
-// ---- case 2: pressed state flips the resolved style in/out --------------
-// TouchableOpacity drives opacity off Pressable's pressed state. Pressing in
-// must drop opacity to activeOpacity; pressing out must restore it.
-
-{
-  reset()
-  const ACTIVE_OPACITY = 0.3
-  mount(12, <TouchableOpacity activeOpacity={ACTIVE_OPACITY} style={{ width: 10 }} />)
-
-  const handle = responderHandle()
-
-  // shared flattens style keys directly onto the node's props, so the resolved
-  // opacity/width live on props.opacity / props.width.
-  const released = responderProps()
-  if (released.opacity !== undefined) {
-    throw new Error(`expected no opacity before press, got ${JSON.stringify(released.opacity)}`)
-  }
-
-  fire(handle, TOUCH_START)
-  const active = responderProps()
-  if (active.opacity !== ACTIVE_OPACITY) {
-    throw new Error(`pressed opacity should be ${ACTIVE_OPACITY}, got ${JSON.stringify(active.opacity)}`)
-  }
-  if (active.width !== 10) {
-    throw new Error(`pressed style should keep base width:10, got ${JSON.stringify(active.width)}`)
-  }
-
-  fire(handle, TOUCH_END)
-  const back = responderProps()
-  // A removed prop is sent to Fabric as an explicit `null` (the reset signal that
-  // survives Fabric's prop merge); null and undefined both mean "cleared" here.
-  if (back.opacity != null) {
-    throw new Error(`released opacity should clear, got ${JSON.stringify(back.opacity)}`)
-  }
-}
-
-// ---- case 3: disabled suppresses onPress --------------------------------
+// ---- case 2: disabled suppresses onPress --------------------------------
 
 {
   reset()
