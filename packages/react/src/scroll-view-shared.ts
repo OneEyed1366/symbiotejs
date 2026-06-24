@@ -6,8 +6,9 @@
 // (AndroidSwipeRefreshLayout is the parent, ScrollView nested inside). So the .ios/.android
 // files assemble the final element; the filename selects, no Platform.OS read.
 
-import { createElement, type ReactElement, type ReactNode } from 'react'
-import { dlog, type SymbioteEvent } from '@symbiote/shared'
+import { createElement, type ReactElement, type ReactNode, type RefObject } from 'react'
+import { dispatchViewCommand, dlog, type SymbioteEvent, type SymbioteNode } from '@symbiote/shared'
+import { resolveAccessibilityProps, type AccessibilityProps, type AriaProps } from './accessibility-props'
 import type { SymbioteIntrinsic } from './component-names-shared'
 import type { ViewStyle } from './styles'
 
@@ -18,7 +19,17 @@ const DECELERATION_RATE: Readonly<Record<string, number>> = {
   fast: 0.99,
 }
 
-export interface ScrollViewProps {
+// The imperative API RN exposes on a ScrollView ref. Each method drives a native
+// view command on the scroll-view node (RN ScrollViewCommands): scrollTo carries
+// [x, y, animated], scrollToEnd [animated], flashScrollIndicators no args. The
+// platform files wrap the component in forwardRef and back this with the scroll node.
+export interface ScrollViewHandle {
+  scrollTo(options?: { x?: number; y?: number; animated?: boolean }): void
+  scrollToEnd(options?: { animated?: boolean }): void
+  flashScrollIndicators(): void
+}
+
+export interface ScrollViewProps extends AccessibilityProps, AriaProps {
   style?: ViewStyle
   contentContainerStyle?: ViewStyle
   horizontal?: boolean
@@ -32,11 +43,52 @@ export interface ScrollViewProps {
   contentInset?: { top?: number; left?: number; bottom?: number; right?: number }
   contentOffset?: { x: number; y: number }
   refreshControl?: ReactElement<ClonableRefreshControl>
+  removeClippedSubviews?: boolean
+  // Snap / paging family — forwarded to the native scroll view via ...rest; the native
+  // ViewManager reads them directly, no extra JS wiring (RN ScrollView passes the same
+  // props straight through to RCTScrollView / the Android manager).
+  snapToInterval?: number
+  snapToOffsets?: number[]
+  snapToAlignment?: 'start' | 'center' | 'end'
+  snapToStart?: boolean
+  snapToEnd?: boolean
+  disableIntervalMomentum?: boolean
+  // Sticky headers and keyboard interaction — native reads these directly.
+  stickyHeaderIndices?: number[]
+  keyboardDismissMode?: 'none' | 'on-drag' | 'interactive'
+  keyboardShouldPersistTaps?: boolean | 'always' | 'never' | 'handled'
+  maintainVisibleContentPosition?: {
+    minIndexForVisible: number
+    autoscrollToTopThreshold?: number
+  }
+  // iOS-only forwarding props. Harmless on Android (its manager ignores unknown props);
+  // the iOS RCTScrollView reads them directly off the shadow node.
+  alwaysBounceHorizontal?: boolean
+  alwaysBounceVertical?: boolean
+  centerContent?: boolean
+  scrollIndicatorInsets?: { top?: number; left?: number; bottom?: number; right?: number }
+  indicatorStyle?: 'default' | 'black' | 'white'
+  directionalLockEnabled?: boolean
+  automaticallyAdjustKeyboardInsets?: boolean
+  contentInsetAdjustmentBehavior?: 'automatic' | 'scrollableAxes' | 'never' | 'always'
+  minimumZoomScale?: number
+  maximumZoomScale?: number
+  zoomScale?: number
+  bouncesZoom?: boolean
+  pinchGestureEnabled?: boolean
+  // Android-only forwarding props. Harmless on iOS; the Android manager reads them.
+  nestedScrollEnabled?: boolean
+  overScrollMode?: 'auto' | 'always' | 'never'
+  fadingEdgeLength?: number
+  persistentScrollbar?: boolean
+  endFillColor?: string
   onScroll?: ScrollHandler
   onScrollBeginDrag?: ScrollHandler
   onScrollEndDrag?: ScrollHandler
   onMomentumScrollBegin?: ScrollHandler
   onMomentumScrollEnd?: ScrollHandler
+  // iOS-only: user tapped the status bar to scroll to top. Inert on Android.
+  onScrollToTop?: ScrollHandler
   children?: ReactNode
 }
 
@@ -86,7 +138,10 @@ export interface PreparedScrollView {
   refreshControl: ReactElement<ClonableRefreshControl> | undefined
 }
 
-export function prepareScrollView(props: ScrollViewProps): PreparedScrollView {
+export function prepareScrollView(rawProps: ScrollViewProps): PreparedScrollView {
+  // ScrollView forwards its outer props straight to the native scroll view (not a View
+  // wrapper), so it folds aria/role into accessibility* here before forwarding.
+  const props = resolveAccessibilityProps(rawProps)
   const {
     style,
     contentContainerStyle,
@@ -137,4 +192,38 @@ export function prepareScrollView(props: ScrollViewProps): PreparedScrollView {
   )
 
   return { scrollViewIntrinsic, scrollViewBaseStyle, outerProps, style, content, refreshControl }
+}
+
+// The imperative handle is identical across platforms — every method dispatches a view
+// command on the SAME scroll-view node; only the surrounding element assembly diverges
+// (iOS sibling RefreshControl vs Android wrap). So it is built once here and both platform
+// files back it with their scroll node ref. Commands and arg order mirror RN's
+// ScrollViewCommands: scrollTo [x, y, animated], scrollToEnd [animated], flashScrollIndicators [].
+export function buildScrollViewHandle(
+  ref: RefObject<SymbioteNode | null>,
+): ScrollViewHandle {
+  return {
+    scrollTo: (options): void => {
+      const node = ref.current
+      if (node === null) return
+      const x = options?.x ?? 0
+      const y = options?.y ?? 0
+      const animated = options?.animated ?? true
+      dlog(`ScrollView.scrollTo x=${x} y=${y} animated=${animated}`)
+      dispatchViewCommand(node, 'scrollTo', [x, y, animated])
+    },
+    scrollToEnd: (options): void => {
+      const node = ref.current
+      if (node === null) return
+      const animated = options?.animated ?? true
+      dlog(`ScrollView.scrollToEnd animated=${animated}`)
+      dispatchViewCommand(node, 'scrollToEnd', [animated])
+    },
+    flashScrollIndicators: (): void => {
+      const node = ref.current
+      if (node === null) return
+      dlog('ScrollView.flashScrollIndicators')
+      dispatchViewCommand(node, 'flashScrollIndicators', [])
+    },
+  }
 }

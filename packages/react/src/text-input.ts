@@ -6,14 +6,22 @@
 // (the one native last reported) and go through the setTextAndSelection view
 // command — never a plain prop re-push, which would fight the cursor.
 
-import { createElement, useCallback, useLayoutEffect, useRef, useState } from 'react'
-import type { FC } from 'react'
+import {
+  createElement,
+  forwardRef,
+  useCallback,
+  useImperativeHandle,
+  useLayoutEffect,
+  useRef,
+  useState,
+} from 'react'
 import { dispatchViewCommand, dlog, type SymbioteEvent, type SymbioteNode } from '@symbiote/shared'
+import { resolveAccessibilityProps, type AccessibilityProps, type AriaProps } from './accessibility-props'
 import type { TextStyle } from './styles'
 
 type EventHandler = (event: SymbioteEvent) => void
 
-export interface TextInputProps {
+export interface TextInputProps extends AccessibilityProps, AriaProps {
   value?: string
   defaultValue?: string
   placeholder?: string
@@ -24,6 +32,18 @@ export interface TextInputProps {
   maxLength?: number
   multiline?: boolean
   selection?: { start: number; end?: number }
+  // Input behavior props — forwarded to Fabric via ...rest (the native TextInput
+  // ViewManager reads them directly); declared here so app code is type-checked.
+  autoCapitalize?: 'none' | 'sentences' | 'words' | 'characters'
+  autoCorrect?: boolean
+  autoComplete?: string
+  autoFocus?: boolean
+  returnKeyType?: string
+  selectTextOnFocus?: boolean
+  scrollEnabled?: boolean
+  numberOfLines?: number
+  textAlign?: 'left' | 'center' | 'right'
+  blurOnSubmit?: boolean
   // Pairs this input with an InputAccessoryView whose nativeID matches; native docks
   // that view above the keyboard while the input is focused. Forwarded via ...rest.
   inputAccessoryViewID?: string
@@ -38,6 +58,17 @@ export interface TextInputProps {
   onKeyPress?: EventHandler
   onSelectionChange?: EventHandler
   onContentSizeChange?: EventHandler
+}
+
+// The imperative handle RN exposes on a TextInput ref. focus/blur/clear drive native
+// view commands; isFocused is tracked JS-side from the focus/blur event pair (RN keeps
+// the same state in TextInputState — there is no native getter to query).
+export interface TextInputHandle {
+  focus(): void
+  blur(): void
+  clear(): void
+  isFocused(): boolean
+  setSelection(start: number, end: number): void
 }
 
 // RN's fold: value wins, else defaultValue, else leave undefined (uncontrolled).
@@ -57,10 +88,16 @@ function eventCountFromChange(event: SymbioteEvent): number | undefined {
   return typeof count === 'number' ? count : undefined
 }
 
-export const TextInput: FC<TextInputProps> = (props) => {
-  const { value, defaultValue, multiline, selection, onChange, onChangeText, ...rest } = props
+export const TextInput = forwardRef<TextInputHandle, TextInputProps>((rawProps, forwardedRef) => {
+  // TextInput is its own host element (not a View wrapper), so it folds aria/role here.
+  const props = resolveAccessibilityProps(rawProps)
+  const { value, defaultValue, multiline, selection, onChange, onChangeText, onFocus, onBlur, ...rest } =
+    props
 
   const ref = useRef<SymbioteNode | null>(null)
+  // JS-side focus state, mirrored from the focus/blur events for isFocused(). RN's
+  // TextInputState holds the same — native exposes no synchronous focus getter.
+  const focused = useRef(false)
   // The count native last acknowledged. We echo it back on every controlled
   // write so native's eventLag lands on 0 and the write applies.
   const [mostRecentEventCount, setMostRecentEventCount] = useState(0)
@@ -111,6 +148,53 @@ export const TextInput: FC<TextInputProps> = (props) => {
     lastNativeText.current = value
   })
 
+  const handleFocus = useCallback(
+    (event: SymbioteEvent): void => {
+      focused.current = true
+      onFocus?.(event)
+    },
+    [onFocus],
+  )
+
+  const handleBlur = useCallback(
+    (event: SymbioteEvent): void => {
+      focused.current = false
+      onBlur?.(event)
+    },
+    [onBlur],
+  )
+
+  // The imperative API RN exposes on the ref. focus/blur drive native view commands;
+  // clear and setSelection reuse setTextAndSelection — the same stale-safe path as a
+  // controlled write — echoing the acknowledged event count so native applies them.
+  useImperativeHandle(
+    forwardedRef,
+    () => ({
+      focus: (): void => {
+        const node = ref.current
+        if (node !== null) dispatchViewCommand(node, 'focus', [])
+      },
+      blur: (): void => {
+        const node = ref.current
+        if (node !== null) dispatchViewCommand(node, 'blur', [])
+      },
+      clear: (): void => {
+        const node = ref.current
+        if (node === null) return
+        dispatchViewCommand(node, 'setTextAndSelection', [mostRecentEventCount, '', 0, 0])
+        lastNativeText.current = ''
+      },
+      isFocused: (): boolean => focused.current,
+      setSelection: (start: number, end: number): void => {
+        const node = ref.current
+        if (node === null) return
+        const current = lastNativeText.current ?? ''
+        dispatchViewCommand(node, 'setTextAndSelection', [mostRecentEventCount, current, start, end])
+      },
+    }),
+    [mostRecentEventCount],
+  )
+
   const intrinsic = multiline === true ? 'symbiote-text-input-multiline' : 'symbiote-text-input'
 
   return createElement(intrinsic, {
@@ -120,5 +204,9 @@ export const TextInput: FC<TextInputProps> = (props) => {
     mostRecentEventCount,
     selection,
     onChange: handleChange,
+    onFocus: handleFocus,
+    onBlur: handleBlur,
   })
-}
+})
+
+TextInput.displayName = 'TextInput'

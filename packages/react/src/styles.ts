@@ -33,6 +33,9 @@ export type TransformProp =
   | { skewX: string }
   | { skewY: string }
   | { perspective: number }
+  // A pre-baked 4x4 column-major affine matrix (16 numbers) or 3x3 (9). Fabric
+  // consumes it as-is — flattenStyle copies the array through untouched, no parse.
+  | { matrix: number[] }
 
 export interface ViewStyle {
   // Box dimensions
@@ -55,6 +58,8 @@ export interface ViewStyle {
   alignSelf?: 'auto' | FlexAlign
   alignContent?: FlexJustify | 'stretch'
   justifyContent?: FlexJustify
+  // Yoga layout direction. 'inherit' takes the parent's; ltr/rtl force it.
+  direction?: 'inherit' | 'ltr' | 'rtl'
   gap?: number | string
   rowGap?: number | string
   columnGap?: number | string
@@ -97,6 +102,14 @@ export interface ViewStyle {
   borderTopRightRadius?: number | string
   borderBottomLeftRadius?: number | string
   borderBottomRightRadius?: number | string
+  // Logical (writing-direction-relative) corner radii — resolve to physical
+  // corners per `direction`. RTL flips start/end.
+  borderStartStartRadius?: number | string
+  borderStartEndRadius?: number | string
+  borderEndStartRadius?: number | string
+  borderEndEndRadius?: number | string
+  // iOS 13+ continuous ("squircle") vs circular corner contour.
+  borderCurve?: 'circular' | 'continuous'
 
   // Borders — width per edge
   borderWidth?: number
@@ -158,5 +171,13 @@ export interface TextStyle extends ViewStyle {
   textAlignVertical?: 'auto' | 'top' | 'bottom' | 'center'
   textTransform?: 'none' | 'capitalize' | 'uppercase' | 'lowercase'
   textDecorationLine?: 'none' | 'underline' | 'line-through' | 'underline line-through'
+  // A color prop: needs processColor before Fabric. See SHARED CHANGES NEEDED —
+  // the type is declared here, the COLOR_PROPS wiring is a shared change.
+  textDecorationColor?: ColorValue
+  textDecorationStyle?: 'solid' | 'double' | 'dotted' | 'dashed'
+  // OpenType feature selectors, e.g. ['tabular-nums', 'oldstyle-nums'].
+  fontVariant?: string[]
+  // Per-text override of the layout writing direction.
+  writingDirection?: 'auto' | 'ltr' | 'rtl'
   includeFontPadding?: boolean
 }

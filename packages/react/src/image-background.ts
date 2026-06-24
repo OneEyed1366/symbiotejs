@@ -10,15 +10,14 @@
 import { createElement, type ReactElement, type ReactNode } from 'react'
 import { dlog, flattenStyle } from '@symbiote/shared'
 import { View } from './components'
-import { Image, type ImageSourceProp, type ResizeMode } from './image'
+import { Image, type ImageProps } from './image'
 import type { DimensionValue, ViewStyle } from './styles'
 
-export interface ImageBackgroundProps {
-  source: ImageSourceProp
-  defaultSource?: ImageSourceProp
-  resizeMode?: ResizeMode
-  tintColor?: string
-  blurRadius?: number
+// Inherit every forwarding Image prop (source, defaultSource, loadingIndicatorSource,
+// resizeMode, resizeMethod, tintColor, blurRadius, capInsets, fadeDuration, load
+// events) — they spread onto the inner Image. `style` is overridden to mean the
+// WRAPPER View's style; `imageStyle` targets the inner Image.
+export interface ImageBackgroundProps extends Omit<ImageProps, 'style'> {
   // Wrapper View style; its width/height are reapplied to the inner Image.
   style?: ViewStyle
   // Style merged onto the inner absolute-fill Image, after the proxied dimensions.

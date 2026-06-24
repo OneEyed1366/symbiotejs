@@ -9,24 +9,33 @@
 // device-verify-pending: the wrap shape mirrors RN, proven on a real host by the absence
 // of the "addViewAt: failed to insert" crash.
 
-import { cloneElement, createElement, type FC } from 'react'
-import { dlog } from '@symbiote/shared'
-import { prepareScrollView, type ScrollViewProps } from './scroll-view-shared'
-export type { ScrollViewProps } from './scroll-view-shared'
+import { cloneElement, createElement, forwardRef, useImperativeHandle, useRef } from 'react'
+import { dlog, type SymbioteNode } from '@symbiote/shared'
+import {
+  buildScrollViewHandle,
+  prepareScrollView,
+  type ScrollViewHandle,
+  type ScrollViewProps,
+} from './scroll-view-shared'
+export type { ScrollViewProps, ScrollViewHandle } from './scroll-view-shared'
 
 // The scroll view fills its RefreshControl wrapper; the layout style moved to the wrapper.
 const INNER_FILL_STYLE = { flex: 1 }
 
-export const ScrollView: FC<ScrollViewProps> = (props) => {
+export const ScrollView = forwardRef<ScrollViewHandle, ScrollViewProps>((props, forwardedRef) => {
   const { scrollViewIntrinsic, scrollViewBaseStyle, outerProps, style, content, refreshControl } =
     prepareScrollView(props)
+  // The node ref backs the imperative handle; it attaches to the inner scroll-view element
+  // (the wrap shape leaves the scroll view as the command target, not the RefreshControl).
+  const ref = useRef<SymbioteNode | null>(null)
+  useImperativeHandle(forwardedRef, () => buildScrollViewHandle(ref), [])
   dlog('ScrollView.ANDROID refreshControl=' + (refreshControl === undefined ? 'NONE(1child)' : 'WRAP'))
 
   if (refreshControl === undefined) {
     // Base style (flexDirection: row for horizontal) under user style; undefined base
     // (vertical) passes the user style through unchanged.
     const scrollStyle = scrollViewBaseStyle ? { ...scrollViewBaseStyle, ...style } : style
-    return createElement(scrollViewIntrinsic, { ...outerProps, style: scrollStyle }, content)
+    return createElement(scrollViewIntrinsic, { ...outerProps, style: scrollStyle, ref }, content)
   }
 
   // The style goes on the outer RefreshControl (the laid-out box); the inner scroll view
@@ -39,8 +48,10 @@ export const ScrollView: FC<ScrollViewProps> = (props) => {
     : INNER_FILL_STYLE
   const scrollView = createElement(
     scrollViewIntrinsic,
-    { ...outerProps, style: innerStyle, nestedScrollEnabled: true },
+    { ...outerProps, style: innerStyle, nestedScrollEnabled: true, ref },
     content,
   )
   return cloneElement(refreshControl, { style }, scrollView)
-}
+})
+
+ScrollView.displayName = 'ScrollView'

@@ -7,6 +7,7 @@
 
 import { createElement, type FC } from 'react'
 import { dlog, getNativeModule, type SymbioteEvent } from '@symbiote/shared'
+import { resolveAccessibilityProps, type AccessibilityProps, type AriaProps } from './accessibility-props'
 import type { ViewStyle } from './styles'
 
 type ImageEventHandler = (event: SymbioteEvent) => void
@@ -24,13 +25,35 @@ export interface ImageSource {
 // opaque asset id (the number `require('./x.png')` returns) the resolver expands.
 export type ImageSourceProp = ImageSource | ImageSource[] | number
 
-export interface ImageProps {
+// iOS resizable-image cap insets: the unscaled border kept fixed while the
+// center stretches (a 9-patch on iOS). Forwarded as-is; native understands it.
+export interface ImageCapInsets {
+  top: number
+  left: number
+  bottom: number
+  right: number
+}
+
+// Android decode strategy: 'auto' lets RN pick, 'resize' downsamples at decode
+// (cheaper memory), 'scale' decodes full then scales.
+export type ResizeMethod = 'auto' | 'resize' | 'scale'
+
+export interface ImageProps extends AccessibilityProps, AriaProps {
   source: ImageSourceProp
   defaultSource?: ImageSourceProp
+  // Android-only: shown while the main source loads. Mutually exclusive with
+  // defaultSource (RN warns if both are set). Resolved like any asset source.
+  loadingIndicatorSource?: ImageSourceProp
   style?: ViewStyle
   resizeMode?: ResizeMode
+  // Android decode-time scaling strategy.
+  resizeMethod?: ResizeMethod
   tintColor?: string
   blurRadius?: number
+  // iOS: cap insets for a resizable (stretchable-center) image.
+  capInsets?: ImageCapInsets
+  // Android: cross-fade duration in ms when the image appears.
+  fadeDuration?: number
   onLoadStart?: ImageEventHandler
   onLoad?: ImageEventHandler
   onLoadEnd?: ImageEventHandler
@@ -62,8 +85,22 @@ function readStyleString(style: ViewStyle | undefined, key: 'resizeMode' | 'tint
   return typeof value === 'string' ? value : undefined
 }
 
-const ImageComponent: FC<ImageProps> = (props) => {
-  const { source, defaultSource, style, resizeMode, tintColor, ...rest } = props
+// Resolve an asset source and read its single uri. RN forwards the Android
+// loading indicator as a bare uri string (`loadingIndicatorSrc`), not the
+// array shape the main source uses, so we resolve and pluck the uri.
+function readSourceUri(source: ImageSourceProp): string | undefined {
+  const [resolved] = normalizeSource(source)
+  if (typeof resolved === 'object' && resolved !== null) {
+    const uri = Reflect.get(resolved, 'uri')
+    if (typeof uri === 'string') return uri
+  }
+  return undefined
+}
+
+const ImageComponent: FC<ImageProps> = (rawProps) => {
+  // Image is its own host element (not a View wrapper), so it folds aria/role here.
+  const props = resolveAccessibilityProps(rawProps)
+  const { source, defaultSource, loadingIndicatorSource, style, resizeMode, tintColor, ...rest } = props
 
   const mapped: Record<string, unknown> = {
     ...rest,
@@ -73,6 +110,9 @@ const ImageComponent: FC<ImageProps> = (props) => {
     tintColor: tintColor ?? readStyleString(style, 'tintColor'),
   }
   if (defaultSource !== undefined) mapped.defaultSource = normalizeSource(defaultSource)
+  if (loadingIndicatorSource !== undefined) {
+    mapped.loadingIndicatorSrc = readSourceUri(loadingIndicatorSource)
+  }
 
   return createElement('symbiote-image', mapped)
 }
@@ -101,10 +141,14 @@ type SizeFailure = (error: unknown) => void
 // Android's `prefetchImage` takes a second `requestId` arg (abortRequest keys off
 // it) — NativeImageLoaderAndroid.js — while iOS takes only `uri`. iOS ignores the
 // extra arg, so we always pass a requestId and stay parity-correct on both.
+// `abortRequest` cancels an in-flight prefetch keyed by its requestId. It is on
+// the Android spec only (NativeImageLoaderAndroid.js); iOS's ImageLoader has no
+// such method, so the call is best-effort and silently no-ops where unsupported.
 interface NativeImageLoader {
   getSize(uri: string): Promise<unknown>
   getSizeWithHeaders(uri: string, headers: Record<string, string>): Promise<unknown>
   prefetchImage(uri: string, requestId: number): Promise<unknown>
+  abortRequest?(requestId: number): void
   queryCache(uris: string[]): Promise<unknown>
 }
 
@@ -193,9 +237,12 @@ function getSizeWithHeaders(
 let prefetchRequestId = 0
 
 // Download a remote image into the disk cache. Resolves to whether it succeeded.
-function prefetch(uri: string): Promise<boolean> {
+// `callback` receives the requestId (RN's Image.android.js shape) so the caller
+// can later pass it to abortPrefetch.
+function prefetch(uri: string, callback?: (requestId: number) => void): Promise<boolean> {
   prefetchRequestId += 1
   const requestId = prefetchRequestId
+  if (typeof callback === 'function') callback(requestId)
   return Promise.resolve()
     .then(() => requireLoader('prefetch').prefetchImage(uri, requestId))
     .then((result) => result === true)
@@ -203,6 +250,18 @@ function prefetch(uri: string): Promise<boolean> {
       dlog(`Image.prefetch failed for ${uri}: ${String(error)}`)
       throw error
     })
+}
+
+// Cancel an in-flight prefetch by the requestId prefetch handed back. Android
+// only (mirrors Image.android.js -> NativeImageLoaderAndroid.abortRequest); a
+// missing abortRequest (iOS, headless) is a no-op rather than a throw.
+function abortPrefetch(requestId: number): void {
+  const loader = getImageLoader()
+  if (loader === null || typeof loader.abortRequest !== 'function') {
+    dlog(`Image.abortPrefetch(${requestId}): no abortRequest on this host, ignoring`)
+    return
+  }
+  loader.abortRequest(requestId)
 }
 
 // Narrow native's queryCache result: an object mapping each known uri to its
@@ -247,6 +306,7 @@ interface ImageStatics {
   getSize: typeof getSize
   getSizeWithHeaders: typeof getSizeWithHeaders
   prefetch: typeof prefetch
+  abortPrefetch: typeof abortPrefetch
   queryCache: typeof queryCache
   resolveAssetSource: typeof resolveAssetSource
 }
@@ -259,6 +319,7 @@ export const Image: ImageWithStatics = Object.assign(ImageComponent, {
   getSize,
   getSizeWithHeaders,
   prefetch,
+  abortPrefetch,
   queryCache,
   resolveAssetSource,
 })
