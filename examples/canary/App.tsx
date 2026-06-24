@@ -709,10 +709,14 @@ function AccessibilityDemo() {
 // visible effect, so a real host confirms what the headless smokes prove in JS.
 const PARITY_ROW_H = 30
 const parityRows = Array.from({ length: 30 }, (_unused, index) => ({ id: `pr-${index}`, n: index }))
+// Tall sections (taller than the list viewport) so the sticky cross-talk is visible: as
+// you scroll, the next section header should reach the top and PUSH the pinned one off.
+const sectionData = (prefix: string, label: string): { id: string; label: string }[] =>
+  Array.from({ length: 8 }, (_unused, index) => ({ id: `${prefix}${index}`, label: `${label} ${index}` }))
 const paritySections: Section<{ id: string; label: string }>[] = [
-  { title: 'Fruit', data: [{ id: 'f1', label: 'apple' }, { id: 'f2', label: 'pear' }, { id: 'f3', label: 'plum' }, { id: 'f4', label: 'kiwi' }] },
-  { title: 'Tools', data: [{ id: 't1', label: 'hammer' }, { id: 't2', label: 'drill' }, { id: 't3', label: 'saw' }, { id: 't4', label: 'wrench' }] },
-  { title: 'Cities', data: [{ id: 'c1', label: 'porto' }, { id: 'c2', label: 'lima' }, { id: 'c3', label: 'oslo' }, { id: 'c4', label: 'cairo' }] },
+  { title: 'Fruit', data: sectionData('f', 'apple') },
+  { title: 'Tools', data: sectionData('t', 'hammer') },
+  { title: 'Cities', data: sectionData('c', 'porto') },
 ]
 
 function ParityDemo() {
@@ -771,13 +775,15 @@ function ParityDemo() {
         </View>
       </View>
 
-      {/* #13 sticky section headers — drag the inner list, headers pin at the top. */}
-      <Text style={{ color: '#41506a', fontSize: 13 }}>SectionList · sticky headers</Text>
+      {/* #13 sticky section headers — drag the inner list: each header pins at the top.
+          Cross-talk check: as the NEXT header reaches the top it should PUSH the pinned
+          one off (nextHeaderLayoutY not yet wired — watch push vs overlap). */}
+      <Text style={{ color: '#41506a', fontSize: 13 }}>SectionList · sticky (scroll: next header should push prev off)</Text>
       <SectionList
         sections={paritySections}
         keyExtractor={item => item.id}
         stickySectionHeadersEnabled
-        style={{ height: 160, borderRadius: 10, backgroundColor: '#0f1e30' }}
+        style={{ height: 200, borderRadius: 10, backgroundColor: '#0f1e30' }}
         renderSectionHeader={({ section }) => (
           <Text style={{ color: '#0b1622', fontSize: 13, fontWeight: 'bold', paddingVertical: 6, paddingHorizontal: 12, backgroundColor: '#7fb5ff' }}>
             {section.title}
@@ -816,6 +822,9 @@ function App() {
   const [keyboardHeight, setKeyboardHeight] = useState(0)
   const [statusBarHidden, setStatusBarHidden] = useState(false)
   const [darkStatusBar, setDarkStatusBar] = useState(false)
+  // #6 Android-only StatusBar window flags — the blank-risk pair (device-verify-pending).
+  const [statusBarRed, setStatusBarRed] = useState(false)
+  const [statusBarTranslucent, setStatusBarTranslucent] = useState(false)
 
   // Tier B runtime modules, read live: the hooks pull from Dimensions/Appearance,
   // appState tracks foreground/background through AppState's device events.
@@ -956,6 +965,35 @@ function App() {
           />
         </View>
       </View>
+      {/* #6 Android-only window flags — the blank-risk pair. PASS: the top strip turns
+          red / goes translucent and the app STAYS rendered. FAIL: the surface blanks
+          (white screen) — watch logcat for stopSurface / "reactInstance is null". */}
+      {Platform.OS === 'android' && (
+        <View style={{ flexDirection: 'row', gap: 12 }}>
+          <View style={{ flex: 1 }}>
+            <Button
+              title={statusBarRed ? 'BG default' : 'BG red'}
+              onPress={() => {
+                const next = !statusBarRed
+                setStatusBarRed(next)
+                StatusBar.setBackgroundColor(next ? '#ff0000' : '#101a2c', true)
+              }}
+              color="#7fb5ff"
+            />
+          </View>
+          <View style={{ flex: 1 }}>
+            <Button
+              title={statusBarTranslucent ? 'Opaque' : 'Translucent'}
+              onPress={() => {
+                const next = !statusBarTranslucent
+                setStatusBarTranslucent(next)
+                StatusBar.setTranslucent(next)
+              }}
+              color="#7fb5ff"
+            />
+          </View>
+        </View>
+      )}
       {/* JS->native imperative modules — tap to fire the real native UI / haptics.
           Each working button proves its module name resolved on the bridgeless host. */}
       <View style={{ flexDirection: 'row', gap: 12 }}>
