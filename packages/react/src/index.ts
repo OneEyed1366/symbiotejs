@@ -4,6 +4,15 @@
 
 export { View, Text } from './components'
 export type { ViewProps, TextProps } from './components'
+export type {
+  AccessibilityProps,
+  AriaProps,
+  AccessibilityRole,
+  Role,
+  AccessibilityStateValue,
+  AccessibilityValue,
+  AccessibilityActionInfo,
+} from './accessibility-props'
 export { Image, setImageSourceResolver } from './image'
 export type {
   ImageProps,
@@ -16,9 +25,9 @@ export type {
 export { ImageBackground } from './image-background'
 export type { ImageBackgroundProps } from './image-background'
 export { ScrollView } from './scroll-view'
-export type { ScrollViewProps } from './scroll-view'
+export type { ScrollViewProps, ScrollViewHandle } from './scroll-view'
 export { TextInput } from './text-input'
-export type { TextInputProps } from './text-input'
+export type { TextInputProps, TextInputHandle } from './text-input'
 export { InputAccessoryView } from './input-accessory-view'
 export type { InputAccessoryViewProps } from './input-accessory-view'
 export { Keyboard, KEYBOARD_EVENT } from './keyboard'
@@ -56,13 +65,20 @@ export { Button } from './button'
 export type { ButtonProps } from './button'
 
 export { FlatList } from './flat-list'
-export type { FlatListProps } from './flat-list'
+export type { FlatListProps, FlatListHandle } from './flat-list'
 export { SectionList } from './section-list'
-export type { SectionListProps, Section } from './section-list'
+export type { SectionListProps, SectionListHandle, Section } from './section-list'
 export { VirtualizedSectionList } from './virtualized-section-list'
-export type { VirtualizedSectionListProps } from './virtualized-section-list'
+export type { VirtualizedSectionListProps, VirtualizedSectionListHandle } from './virtualized-section-list'
 export { VirtualizedList } from './virtualized-list'
-export type { VirtualizedListProps } from './virtualized-list'
+export type {
+  VirtualizedListProps,
+  VirtualizedListHandle,
+  ViewToken,
+  ViewableItemsChangedInfo,
+  ViewabilityConfig,
+  ViewabilityConfigCallbackPair,
+} from './virtualized-list'
 
 export type { ViewStyle, TextStyle, FlexAlign, FlexJustify } from './styles'
 export { mount } from './render'
@@ -133,7 +149,14 @@ export { Vibration } from './vibration'
 export { Share } from './share'
 export type { ShareContent, ShareOptions, ShareAction } from './share'
 export { AccessibilityInfo } from './accessibility-info'
-export type { AccessibilityChangeEvent } from './accessibility-info'
+export type {
+  AccessibilityChangeEvent,
+  AccessibilityChangeEventName,
+  AccessibilityChangeEventHandler,
+  AccessibilityAnnouncementFinishedEvent,
+  AnnounceForAccessibilityOptions,
+  AccessibilityEventType,
+} from './accessibility-info'
 export { I18nManager } from './i18n-manager'
 export type { I18nManagerConstants } from './i18n-manager'
 export { Settings } from './settings'
