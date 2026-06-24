@@ -9,6 +9,7 @@
 // native_module_name_is_platform_specific).
 
 import type { FC } from 'react'
+import type { ColorValue } from '@symbiote/shared'
 
 // The bar styles RN documents (statusBarStyles), as a closed union so a typo can't
 // reach the native call.
@@ -33,12 +34,20 @@ export interface StatusBarProps {
   hidden?: boolean
   animated?: boolean
   networkActivityIndicatorVisible?: boolean
+  // Android-only — inert on iOS (RN's StatusBar has no iOS background color).
+  backgroundColor?: ColorValue
+  translucent?: boolean
 }
 
 // The static imperative API RN exposes — used widely without rendering a component.
-// Attached to the function object, mirroring RN.
+// Attached to the function object, mirroring RN. setBackgroundColor / setTranslucent
+// and currentHeight are Android-only; on iOS they are inert/absent per RN, but stay on
+// the contract so a typo can't pass and callers don't branch on platform.
 export interface StatusBarComponent extends FC<StatusBarProps> {
   setBarStyle(style: StatusBarStyle, animated?: boolean): void
   setHidden(hidden: boolean, animation?: StatusBarAnimation): void
   setNetworkActivityIndicatorVisible(visible: boolean): void
+  setBackgroundColor(color: ColorValue, animated?: boolean): void
+  setTranslucent(translucent: boolean): void
+  currentHeight?: number
 }

@@ -73,3 +73,13 @@ StatusBar.setNetworkActivityIndicatorVisible = (visible) => {
     visible,
   )
 }
+
+// Android-only on RN — inert on iOS (the iOS status bar has no background color and
+// is never translucent in RN's sense). Present so the contract is platform-uniform.
+StatusBar.setBackgroundColor = () => {
+  dlog('StatusBar.setBackgroundColor (ios no-op)')
+}
+StatusBar.setTranslucent = () => {
+  dlog('StatusBar.setTranslucent (ios no-op)')
+}
+// currentHeight is Android-only; absent on iOS (RN sets it to null on iOS).
