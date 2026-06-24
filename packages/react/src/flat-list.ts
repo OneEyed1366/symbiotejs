@@ -47,6 +47,13 @@ export interface FlatListProps<ItemT> extends AccessibilityProps, AriaProps {
   extraData?: unknown
   onEndReached?: (info: { distanceFromEnd: number }) => void
   onEndReachedThreshold?: number
+  // Top-edge twin of onEndReached, forwarded straight through to VirtualizedList.
+  onStartReached?: (info: { distanceFromStart: number }) => void
+  onStartReachedThreshold?: number
+  // Pull-to-refresh, forwarded to VirtualizedList (which builds the RefreshControl).
+  onRefresh?: () => void
+  refreshing?: boolean | null
+  progressViewOffset?: number
   onViewableItemsChanged?: (info: ViewableItemsChangedInfo<ItemT>) => void
   viewabilityConfig?: ViewabilityConfig
   viewabilityConfigCallbackPairs?: ViewabilityConfigCallbackPair<ItemT>[]

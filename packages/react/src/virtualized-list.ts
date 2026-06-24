@@ -41,6 +41,7 @@ import {
 } from 'react'
 import { dlog, type SymbioteEvent } from '@symbiote/shared'
 import { ScrollView, type ScrollViewHandle, type ScrollViewProps } from './scroll-view'
+import { RefreshControl } from './refresh-control'
 import type { AccessibilityProps, AriaProps } from './accessibility-props'
 import type { ViewStyle } from './styles'
 
@@ -64,9 +65,12 @@ const FULLY_VISIBLE_PERCENT = 100
 // fraction of a pixel from the bottom still counts as "reached the end"
 // (RN VirtualizedList.js: ON_EDGE_REACHED_EPSILON).
 const ON_EDGE_REACHED_EPSILON = 0.001
-// Sentinel for "onEndReached has not fired for any content length yet". Real
-// content lengths are >= 0, so -1 can never collide with one.
+// Sentinel for "onEndReached / onStartReached has not fired for any content
+// length yet". Real content lengths are >= 0, so -1 can never collide with one.
 const NO_CONTENT_LENGTH_SENT = -1
+// onStartReachedThreshold default, mirroring RN's onStartReachedThresholdOrDefault
+// (`?? 2`) — a multiple of the visible length, same shape as the end threshold.
+const DEFAULT_START_REACHED_THRESHOLD = 2
 // Inversion flips the content container along the scroll axis; each cell re-flips
 // so its own content stays upright (RN does the same with a scale(-1) transform).
 const INVERTED_Y_STYLE: ViewStyle = { transform: [{ scaleY: -1 }] }
@@ -116,7 +120,10 @@ export interface ViewabilityConfigCallbackPair<ItemT> {
 }
 
 // The imperative API RN exposes on a VirtualizedList/FlatList ref. Every scroll
-// resolves to an offset and is pushed via the contentOffset prop.
+// resolves to an offset and is pushed via the contentOffset prop. The
+// flash/get*/record methods mirror RN's VirtualizedList: flashScrollIndicators
+// and the scroll-ref getters route to the inner ScrollView handle;
+// recordInteraction flips the interaction flag that ungates waitForInteraction.
 export interface VirtualizedListHandle {
   scrollToOffset(params: { offset: number; animated?: boolean }): void
   scrollToIndex(params: {
@@ -127,6 +134,13 @@ export interface VirtualizedListHandle {
   }): void
   scrollToItem(params: { item: unknown; animated?: boolean; viewPosition?: number }): void
   scrollToEnd(params?: { animated?: boolean }): void
+  flashScrollIndicators(): void
+  // RN returns the native scroll ref / responder / node. We hand back the inner
+  // ScrollView handle (or null before it attaches) — no fabricated native tag.
+  getNativeScrollRef(): ScrollViewHandle | null
+  getScrollableNode(): ScrollViewHandle | null
+  getScrollResponder(): ScrollViewHandle | null
+  recordInteraction(): void
 }
 
 export interface VirtualizedListProps<ItemT> extends AccessibilityProps, AriaProps {
@@ -151,6 +165,18 @@ export interface VirtualizedListProps<ItemT> extends AccessibilityProps, AriaPro
   extraData?: unknown
   onEndReached?: (info: { distanceFromEnd: number }) => void
   onEndReachedThreshold?: number
+  // Fired once when the scroll position gets within onStartReachedThreshold of the
+  // start (the top edge), mirroring onEndReached for the bottom. The threshold is a
+  // multiple of the visible length (RN's onStartReachedThresholdOrDefault `?? 2`).
+  onStartReached?: (info: { distanceFromStart: number }) => void
+  onStartReachedThreshold?: number
+  // Pull-to-refresh. When onRefresh is set, RN renders a RefreshControl into the
+  // inner ScrollView's refreshControl prop; refreshing is the controlled spinner
+  // state (required-by-RN alongside onRefresh, defaulted to false when nullish),
+  // and progressViewOffset nudges the spinner's resting position.
+  onRefresh?: () => void
+  refreshing?: boolean | null
+  progressViewOffset?: number
   onViewableItemsChanged?: (info: ViewableItemsChangedInfo<ItemT>) => void
   viewabilityConfig?: ViewabilityConfig
   viewabilityConfigCallbackPairs?: ViewabilityConfigCallbackPair<ItemT>[]
@@ -348,6 +374,11 @@ export function VirtualizedList<ItemT>(
     extraData,
     onEndReached,
     onEndReachedThreshold = DEFAULT_END_REACHED_THRESHOLD,
+    onStartReached,
+    onStartReachedThreshold = DEFAULT_START_REACHED_THRESHOLD,
+    onRefresh,
+    refreshing,
+    progressViewOffset,
     onViewableItemsChanged,
     viewabilityConfig,
     viewabilityConfigCallbackPairs,
@@ -390,6 +421,9 @@ export function VirtualizedList<ItemT>(
   // re-approach with the same content does not double-fire, but growing the
   // content (more rows measured/appended) re-arms the callback.
   const sentEndForContentLengthRef = useRef<number>(NO_CONTENT_LENGTH_SENT)
+  // The start-edge twin of sentEndForContentLengthRef (RN's _sentStartForContentLength):
+  // dedup onStartReached by content length, re-armed on scroll away from the start.
+  const sentStartForContentLengthRef = useRef<number>(NO_CONTENT_LENGTH_SENT)
   // The previously committed window, so throttleWindow can grow it by at most
   // maxToRenderPerBatch per batch tick instead of snapping.
   const committedWindowRef = useRef<{ first: number; last: number }>({
@@ -513,6 +547,38 @@ export function VirtualizedList<ItemT>(
       sentEndForContentLengthRef.current = NO_CONTENT_LENGTH_SENT
     }
   }, [onEndReached, onEndReachedThreshold, viewportLength, scrollOffset, total, last, count])
+
+  // onStartReached gating: the top-edge twin of the onEndReached effect above
+  // (RN folds both into one _maybeCallOnEdgeReached). distanceFromStart is just
+  // the scroll offset; fire only when the first cell is rendered AND we are within
+  // the start threshold; dedup by content length; re-arm on scroll away from start.
+  useEffect(() => {
+    if (onStartReached === undefined || viewportLength <= EMPTY_OFFSET) return
+    let distanceFromStart = scrollOffset
+    // Floor sub-pixel distances so a debounced near-top scroll still counts.
+    if (distanceFromStart < ON_EDGE_REACHED_EPSILON) {
+      distanceFromStart = EMPTY_OFFSET
+    }
+    const threshold = onStartReachedThreshold * viewportLength
+    const isWithinStartThreshold = distanceFromStart <= threshold
+    const firstCellRendered = first === FIRST_INDEX
+    if (
+      isWithinStartThreshold &&
+      firstCellRendered &&
+      sentStartForContentLengthRef.current !== total
+    ) {
+      sentStartForContentLengthRef.current = total
+      dlog(
+        `VirtualizedList onStartReached distanceFromStart=${distanceFromStart} ` +
+          `(first=${first}, contentLength=${total})`,
+      )
+      onStartReached({ distanceFromStart })
+    }
+    // Scroll away from the start re-arms the callback for the next approach.
+    if (!isWithinStartThreshold) {
+      sentStartForContentLengthRef.current = NO_CONTENT_LENGTH_SENT
+    }
+  }, [onStartReached, onStartReachedThreshold, viewportLength, scrollOffset, total, first])
 
   // Viewability detection: after each scroll/window change, recompute which
   // rendered cells clear the viewability threshold and, if the viewable set
@@ -701,6 +767,21 @@ export function VirtualizedList<ItemT>(
       scrollToEnd: (params?: { animated?: boolean }): void => {
         scrollToPixel(Math.max(EMPTY_OFFSET, total - viewportLength), params?.animated ?? true)
       },
+      // Route to the inner ScrollView, which already exposes flashScrollIndicators.
+      flashScrollIndicators: (): void => {
+        scrollViewRef.current?.flashScrollIndicators?.()
+      },
+      // RN's getScrollableNode/getScrollResponder/getNativeScrollRef hand back the
+      // native scroll ref; we surface the inner ScrollView handle (null pre-mount).
+      getNativeScrollRef: (): ScrollViewHandle | null => scrollViewRef.current,
+      getScrollableNode: (): ScrollViewHandle | null => scrollViewRef.current,
+      getScrollResponder: (): ScrollViewHandle | null => scrollViewRef.current,
+      // Manual trigger for RN's recordInteraction: flip the interaction flag so
+      // waitForInteraction viewability configs start reporting (the next scroll /
+      // window pass picks it up), without waiting for the first scroll.
+      recordInteraction: (): void => {
+        hasInteractedRef.current = true
+      },
     }),
     [scrollToPixel, offsetForIndex, count, data, getItem, total, viewportLength],
   )
@@ -839,6 +920,18 @@ export function VirtualizedList<ItemT>(
   if (commandedOffset !== undefined) scrollProps.contentOffset = commandedOffset
   // Headers in the window stick natively; an empty list leaves the prop off entirely.
   if (renderedStickyIndices.length > 0) scrollProps.stickyHeaderIndices = renderedStickyIndices
+
+  // Pull-to-refresh: when onRefresh is set, build a RefreshControl for the ScrollView's
+  // refreshControl prop (iOS sibling / Android wrap, owned by ScrollView). refreshing is
+  // RN-required alongside onRefresh, so default it to false when nullish.
+  if (onRefresh !== undefined) {
+    dlog('VirtualizedList wiring RefreshControl (onRefresh provided)')
+    scrollProps.refreshControl = createElement(RefreshControl, {
+      refreshing: refreshing ?? false,
+      onRefresh,
+      progressViewOffset,
+    })
+  }
 
   // The ScrollView handle (ref) backs animated imperative scrolls via its native command.
   return createElement(ScrollView, { ...scrollProps, ref: scrollViewRef }, ...children)

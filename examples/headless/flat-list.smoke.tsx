@@ -6,10 +6,10 @@
 // only a window's worth of item nodes is ever committed — never all 1000 — and
 // that window SHIFTS when we scroll. No simulator; a failure here is in JS.
 
-import { createElement, type ReactElement } from 'react'
+import { createElement, createRef, type ReactElement } from 'react'
 import { mount } from '@symbiote/react'
 // Not on the barrel yet (the integrator wires exports), so reach the source.
-import { FlatList } from '../../packages/react/src/flat-list'
+import { FlatList, type FlatListHandle } from '../../packages/react/src/flat-list'
 
 // ---- fake Fabric slot ---------------------------------------------------
 
@@ -31,9 +31,13 @@ let committed: FakeNode[] = []
 let eventHandler: EventHandler | undefined
 const allCreated: FakeNode[] = []
 const endReachedDistances: number[] = []
+const startReachedDistances: number[] = []
 // Read the count through a function so control-flow analysis can't pin .length to a
 // literal after an earlier `!== 0` check (it can't see the push inside the callback).
 const endReachedCount = (): number => endReachedDistances.length
+const startReachedCount = (): number => startReachedDistances.length
+
+const listRef = createRef<FlatListHandle>()
 
 const slot = {
   createNode(
@@ -96,6 +100,7 @@ const Footer = (): ReactElement => createElement('symbiote-text', {}, 'FOOTER')
 
 function App(): ReactElement {
   return createElement(FlatList<Row>, {
+    ref: listRef,
     data: DATA,
     keyExtractor: (item: Row) => `k-${item.id}`,
     getItemLayout: (_data: unknown, index: number) => ({
@@ -108,6 +113,9 @@ function App(): ReactElement {
     ListFooterComponent: Footer,
     onEndReached: ({ distanceFromEnd }: { distanceFromEnd: number }) => {
       endReachedDistances.push(distanceFromEnd)
+    },
+    onStartReached: ({ distanceFromStart }: { distanceFromStart: number }) => {
+      startReachedDistances.push(distanceFromStart)
     },
     renderItem: ({ item }: { item: Row }) =>
       createElement('symbiote-text', { key: item.id }, item.label),
@@ -269,6 +277,61 @@ scrollTo(scrollView.instanceHandle, BOTTOM_OFFSET)
 if (endReachedCount() !== 1) {
   throw new Error(
     `onEndReached double-fired for the same content length: ${endReachedDistances.length} calls`,
+  )
+}
+
+// ---- assertion 4: the imperative handle exposes the new RN methods -------
+
+const handle = listRef.current
+if (handle === null) throw new Error('FlatList ref did not attach a handle')
+const requiredMethods: ReadonlyArray<keyof FlatListHandle> = [
+  'flashScrollIndicators',
+  'getNativeScrollRef',
+  'getScrollableNode',
+  'getScrollResponder',
+  'recordInteraction',
+]
+for (const method of requiredMethods) {
+  if (typeof handle[method] !== 'function') {
+    throw new Error(`FlatList handle is missing ${method} (got ${typeof handle[method]})`)
+  }
+}
+// getNativeScrollRef hands back the inner ScrollView handle (its own flash method),
+// not a fabricated native tag.
+const nativeRef = handle.getNativeScrollRef()
+if (nativeRef === null || typeof nativeRef.flashScrollIndicators !== 'function') {
+  throw new Error('getNativeScrollRef should return the inner ScrollView handle')
+}
+
+// ---- assertion 5: scrolling near the top fires onStartReached ------------
+
+// We are currently parked at the bottom (assertion 3), well past the start
+// threshold, so onStartReached is re-armed. Record the count, scroll back to the
+// very top, and require exactly one more start-edge fire.
+const startBeforeReturn = startReachedCount()
+scrollTo(scrollView.instanceHandle, 0)
+if (!collectRowLabels().has('row-0')) {
+  throw new Error('row-0 should be resident again after scrolling back to the top')
+}
+if (startReachedCount() !== startBeforeReturn + 1) {
+  throw new Error(
+    `onStartReached should fire once on return to the top, count went ` +
+      `${startBeforeReturn} -> ${startReachedCount()}`,
+  )
+}
+// The reported distance from the start at offset 0 is ~0 (floored).
+const lastStartDistance = startReachedDistances[startReachedDistances.length - 1]
+if (lastStartDistance !== 0) {
+  throw new Error(`distanceFromStart at the top should floor to 0, got ${lastStartDistance}`)
+}
+
+// A redundant scroll at the same top (same content length, first cell still
+// rendered) must NOT double-fire — same content-length dedup as the end edge.
+const startAfterReturn = startReachedCount()
+scrollTo(scrollView.instanceHandle, 0)
+if (startReachedCount() !== startAfterReturn) {
+  throw new Error(
+    `onStartReached double-fired for the same content length: ${startReachedCount()} calls`,
   )
 }
 

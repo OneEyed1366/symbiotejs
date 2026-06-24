@@ -20,6 +20,7 @@ import {
 } from 'react'
 import { dlog } from '@symbiote/shared'
 import { VirtualizedList, type VirtualizedListHandle } from './virtualized-list'
+import type { ScrollViewHandle } from './scroll-view'
 import type { AccessibilityProps, AriaProps } from './accessibility-props'
 import type { ViewStyle } from './styles'
 
@@ -48,6 +49,13 @@ export interface VirtualizedSectionListHandle {
     viewPosition?: number
     animated?: boolean
   }): void
+  // The same flash/scroll-ref/interaction surface as VirtualizedListHandle, routed
+  // to the inner VirtualizedList (RN's SectionList forwards these to it too).
+  flashScrollIndicators(): void
+  getNativeScrollRef(): ScrollViewHandle | null
+  getScrollableNode(): ScrollViewHandle | null
+  getScrollResponder(): ScrollViewHandle | null
+  recordInteraction(): void
 }
 
 export interface VirtualizedSectionListProps<ItemT> extends AccessibilityProps, AriaProps {
@@ -71,6 +79,13 @@ export interface VirtualizedSectionListProps<ItemT> extends AccessibilityProps, 
   ListEmptyComponent?: ComponentType<Record<string, never>> | ReactElement
   onEndReached?: (info: { distanceFromEnd: number }) => void
   onEndReachedThreshold?: number
+  // Top-edge twin of onEndReached, forwarded through to the inner VirtualizedList.
+  onStartReached?: (info: { distanceFromStart: number }) => void
+  onStartReachedThreshold?: number
+  // Pull-to-refresh, forwarded through to the inner VirtualizedList.
+  onRefresh?: () => void
+  refreshing?: boolean | null
+  progressViewOffset?: number
   initialNumToRender?: number
   initialScrollIndex?: number
   maxToRenderPerBatch?: number
@@ -171,6 +186,19 @@ export function VirtualizedSectionList<ItemT>(
           viewPosition: params.viewPosition,
           animated: params.animated,
         })
+      },
+      // Forward the inner VirtualizedList's flash/scroll-ref/interaction surface.
+      flashScrollIndicators: (): void => {
+        listRef.current?.flashScrollIndicators()
+      },
+      getNativeScrollRef: (): ScrollViewHandle | null =>
+        listRef.current?.getNativeScrollRef() ?? null,
+      getScrollableNode: (): ScrollViewHandle | null =>
+        listRef.current?.getScrollableNode() ?? null,
+      getScrollResponder: (): ScrollViewHandle | null =>
+        listRef.current?.getScrollResponder() ?? null,
+      recordInteraction: (): void => {
+        listRef.current?.recordInteraction()
       },
     }),
     [headerIndices],
