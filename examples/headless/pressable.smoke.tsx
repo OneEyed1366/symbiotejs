@@ -69,6 +69,21 @@ let committed: FakeNode[] = []
 let eventHandler: EventHandler | undefined
 const allCreated: FakeNode[] = []
 
+// Fabric's clone*WithNewProps MERGES the diff payload onto the node's existing props
+// (it does not replace them), and a key sent as `null` resets to default — which is how
+// shared's diffProps signals a removed prop. Model both, or a minimal diff (e.g. only the
+// changed `opacity` on press) would drop unchanged base props like `width`.
+function mergeFabricProps(
+  previous: Record<string, unknown>,
+  patch: Record<string, unknown>,
+): Record<string, unknown> {
+  const merged = { ...previous, ...patch }
+  for (const key of Object.keys(patch)) {
+    if (patch[key] === null) delete merged[key]
+  }
+  return merged
+}
+
 const slot = {
   createNode(
     tag: number,
@@ -83,13 +98,13 @@ const slot = {
   },
   cloneNodeWithNewProps: (node: FakeNode, newProps: Record<string, unknown>): FakeNode => ({
     ...node,
-    props: newProps,
+    props: mergeFabricProps(node.props, newProps),
   }),
   cloneNodeWithNewChildren: (node: FakeNode): FakeNode => ({ ...node, children: [] }),
   cloneNodeWithNewChildrenAndProps: (
     node: FakeNode,
     newProps: Record<string, unknown>,
-  ): FakeNode => ({ ...node, props: newProps, children: [] }),
+  ): FakeNode => ({ ...node, props: mergeFabricProps(node.props, newProps), children: [] }),
   createChildSet: (): FakeNode[] => [],
   appendChild(parent: FakeNode, child: FakeNode): FakeNode {
     parent.children.push(child)
