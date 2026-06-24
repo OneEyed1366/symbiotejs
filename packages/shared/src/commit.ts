@@ -113,6 +113,8 @@ const COLOR_PROPS: ReadonlySet<string> = new Set([
   'selectionColor',
   'cursorColor',
   'underlineColorAndroid',
+  // Text decoration color (underline/strike) — same Fabric strictness as any color.
+  'textDecorationColor',
   'selectionHandleColor',
 ])
 

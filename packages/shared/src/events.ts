@@ -46,6 +46,16 @@ const DIRECT_EVENTS: Readonly<Record<string, string>> = {
   topRequestClose: 'requestClose',
   topDismiss: 'dismiss',
   topOrientationChange: 'orientationChange',
+  // Text glyph layout (onTextLayout) and the iOS status-bar-tap scroll-to-top.
+  topTextLayout: 'textLayout',
+  topScrollToTop: 'scrollToTop',
+  // Accessibility events from RN's base ViewConfig — any view can emit them.
+  // accessibilityAction fires on iOS + Android; the iOS-only three (accessibilityTap,
+  // magicTap, accessibilityEscape) have no Android producer, so they are inert there.
+  topAccessibilityAction: 'accessibilityAction',
+  topAccessibilityTap: 'accessibilityTap',
+  topMagicTap: 'magicTap',
+  topAccessibilityEscape: 'accessibilityEscape',
 }
 
 const TOUCH_START = 'topTouchStart'
