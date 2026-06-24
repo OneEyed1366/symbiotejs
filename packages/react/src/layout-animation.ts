@@ -163,15 +163,20 @@ const Presets = {
 
 // ---- configureNext -------------------------------------------------------
 
-// One extra frame (~16ms) + 1ms slack — the window we wait for native's
-// completion callback before forcing it ourselves (see the race below).
-const ANIMATION_COMPLETION_SLACK_MS = 17
-
-// Configures the next commit to be animated. `onAnimationDidEnd` is guaranteed to
-// fire when the animation completes (we race a timeout with the native callback in
-// case native never calls back). `onAnimationDidFail` fires only if native config
-// parsing fails. When no native module is linked (headless), this is a logged
-// no-op — an app without it must still run, so we never throw.
+// Configures the next commit to be animated. NATIVE drives completion:
+// `onAnimationDidEnd` is passed straight through as the native success callback,
+// so it fires exactly when the native animation actually finishes — including
+// when native extends it past `duration` (spring overshoot, OS slowdown,
+// reduce-motion). `onAnimationDidFail` fires only if native config parsing fails.
+// When no native module is linked (headless), this is a logged no-op — an app
+// without it must still run, so we never throw.
+//
+// We deliberately do NOT arm a JS `setTimeout(duration + slack)` to force
+// completion. RN keeps such a timer as a fallback for platform/renderer combos
+// where native never calls back (non-Fabric Android, iOS Fabric pre-ship); but a
+// fixed `duration + 17ms` timer races and usually beats the real native callback,
+// firing `onAnimationDidEnd` before the animation visually completes. On our
+// Fabric-only path native completion is reliably wired, so we rely on it solely.
 function configureNext(
   config: LayoutAnimationConfig,
   onAnimationDidEnd?: OnAnimationDidEndCallback,
@@ -183,17 +188,14 @@ function configureNext(
     return
   }
 
-  // Race a timeout with native completion so `onAnimationDidEnd` is guaranteed to
-  // run exactly once even if native never calls back (LayoutAnimations may be off
-  // for a given platform/host). Mirrors RN.
+  // Idempotent guard so native can't drive both success and error into a
+  // double-fire (RN's `animationCompletionHasRun`), without a JS timer racing it.
   let completionHasRun = false
   const onComplete: OnAnimationDidEndCallback = () => {
     if (completionHasRun) return
     completionHasRun = true
-    clearTimeout(raceTimeoutId)
     onAnimationDidEnd?.()
   }
-  const raceTimeoutId = setTimeout(onComplete, config.duration + ANIMATION_COMPLETION_SLACK_MS)
 
   dlog(`LayoutAnimation.configureNext: dispatching config (duration=${config.duration})`)
   // onError only fires if native config parsing fails; default to a no-op.

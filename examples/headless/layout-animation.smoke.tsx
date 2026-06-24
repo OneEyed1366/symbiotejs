@@ -83,16 +83,41 @@ if (built.delete?.type !== 'linear' || built.delete?.property !== 'scaleXY') {
 
 // 3. configureNext(preset) dispatches THAT config to native.
 let didEnd = false
+let didEndCount = 0
 LayoutAnimation.configureNext(preset, () => {
   didEnd = true
+  didEndCount += 1
 })
 if (captured === null) fail('configureNextLayoutAnimation was never called on the native module')
 if (captured.config !== preset) {
   fail(`native received a different config than passed: ${JSON.stringify(captured.config)}`)
 }
-// The success callback native invokes must drive onAnimationDidEnd.
+
+// 3a. The CORE regression guard: onAnimationDidEnd must be driven by the NATIVE
+//     success callback, NOT by a JS `setTimeout(duration + slack)`. Wait well past
+//     the old `duration + 17ms` race window WITHOUT invoking native — the callback
+//     must still NOT have fired. (preset.duration is 300; we wait 400ms.)
+const PAST_RACE_WINDOW_MS = (preset.duration ?? 0) + 100
+await new Promise<void>((resolve) => setTimeout(resolve, PAST_RACE_WINDOW_MS))
+if (didEnd) {
+  fail(
+    'onAnimationDidEnd fired on its own (a JS timer raced native completion) — ' +
+      'it must fire ONLY when native invokes the success callback',
+  )
+}
+
+// 3b. Now native invokes its success callback — THAT must drive onAnimationDidEnd.
 captured.onSuccess()
 if (!didEnd) fail('native onSuccess did not drive onAnimationDidEnd')
+if (didEndCount !== 1) fail(`onAnimationDidEnd should fire exactly once, fired ${didEndCount}`)
+
+// 3c. No double-fire: native erroneously calling success again (or an error after
+//     success) must be swallowed by the idempotent guard.
+captured.onSuccess()
+captured.onError()
+if (didEndCount !== 1) {
+  fail(`onAnimationDidEnd must stay at one call after a repeat/error, got ${didEndCount}`)
+}
 
 // 4. With NO module installed, configureNext is a safe no-op (no throw). Flip the
 //    fake off and reset the lazily-cached resolution by re-importing a fresh module
