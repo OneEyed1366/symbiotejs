@@ -38,6 +38,7 @@ import {
   Linking,
   Vibration,
   Share,
+  AccessibilityInfo,
   PanResponder,
   I18nManager,
   Settings,
@@ -535,6 +536,60 @@ function PlatformColorDemo() {
   )
 }
 
+// Accessibility — the props reach native unchanged (accessibilityLabel -> Android
+// content-desc / iOS accessibilityLabel; accessibilityState -> checked/selected/enabled),
+// the web aria-*/role aliases FOLD to accessibility* in our wrapper (raw aria-* must
+// never reach native), and AccessibilityInfo reads device state + drives announce.
+// Verify on Android with `uiautomator dump` (content-desc / selected / enabled) and
+// logcat for the announce + module-resolution dlogs; on iOS via Accessibility Inspector.
+function AccessibilityDemo() {
+  const [screenReader, setScreenReader] = useState('querying…')
+
+  useEffect(() => {
+    // A non-throwing getter proves the native module name resolved (Android
+    // 'AccessibilityInfo' / iOS 'AccessibilityManager'); a reject means wrong name.
+    AccessibilityInfo.isScreenReaderEnabled()
+      .then(enabled => setScreenReader(enabled ? 'on' : 'off'))
+      .catch(() => setScreenReader('unavailable'))
+    AccessibilityInfo.announceForAccessibility('symbiote accessibility online')
+  }, [])
+
+  return (
+    <View style={{ gap: 12 }}>
+      <Text style={{ color: '#41506a', fontSize: 13 }}>
+        Accessibility · props → native · aria/role transform · AccessibilityInfo
+      </Text>
+      {/* getter readout — 'off' (no screen reader) proves the module resolved */}
+      <Text style={{ color: '#cbd5e1', fontSize: 14 }}>{`screen reader: ${screenReader}`}</Text>
+      {/* canonical accessibility* — content-desc 'a11y-canonical-label' + role=header */}
+      <View
+        accessible
+        accessibilityRole="header"
+        accessibilityLabel="a11y-canonical-label"
+        style={{ padding: 12, borderRadius: 10, backgroundColor: '#13243a' }}>
+        <Text style={{ color: '#cbd5e1', fontSize: 14 }}>canonical label + role=header</Text>
+      </View>
+      {/* web aria and role aliases — MUST fold: content-desc should be
+          'a11y-aria-label', a raw aria-label attribute must not reach the native node */}
+      <View
+        accessible
+        role="button"
+        aria-label="a11y-aria-label"
+        style={{ padding: 12, borderRadius: 10, backgroundColor: '#13243a' }}>
+        <Text style={{ color: '#cbd5e1', fontSize: 14 }}>aria-label + role=button</Text>
+      </View>
+      {/* accessibilityState — uiautomator shows enabled=false / selected=true */}
+      <View
+        accessible
+        accessibilityLabel="a11y-state"
+        accessibilityState={{ disabled: true, selected: true }}
+        style={{ padding: 12, borderRadius: 10, backgroundColor: '#13243a' }}>
+        <Text style={{ color: '#cbd5e1', fontSize: 14 }}>state: disabled + selected</Text>
+      </View>
+    </View>
+  )
+}
+
 function App() {
   const [count, setCount] = useState(0)
   const [name, setName] = useState('')
@@ -817,6 +872,9 @@ function App() {
 
       {/* PlatformColor / DynamicColorIOS — native semantic + appearance-aware colors */}
       <PlatformColorDemo />
+
+      {/* Accessibility — a11y props to native, aria/role transform, AccessibilityInfo */}
+      <AccessibilityDemo />
 
       {/* Button opens a Modal */}
       <Button title="Open modal" onPress={() => setModalVisible(true)} color="#7fb5ff" />
