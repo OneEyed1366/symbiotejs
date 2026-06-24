@@ -11,7 +11,7 @@
 // child View rather than being spread onto the Pressable.
 
 import { createElement, type FC, type ReactNode } from 'react'
-import { dlog } from '@symbiote/shared'
+import { dlog, Platform } from '@symbiote/shared'
 import { View } from './components'
 import { Pressable, type PressableProps } from './pressable'
 
@@ -107,9 +107,14 @@ const TouchableNativeFeedback: TouchableNativeFeedbackComponent = Object.assign(
       borderless,
       rippleRadius,
     }),
-    // Native foreground ripple is Android-only (API 23+ on device); symbiote is
-    // iOS-first, so this is false until the Android pass wires the real check.
-    canUseNativeForeground: (): boolean => false,
+    // Native foreground ripple is Android-only (API 23+). RN gates this on
+    // Platform.OS === 'android' && Platform.Version >= 23. Version is a string on
+    // iOS (where the gate is irrelevant) and a number on Android, so guard the
+    // type at runtime before the numeric compare — no cast.
+    canUseNativeForeground: (): boolean =>
+      Platform.OS === 'android' &&
+      typeof Platform.Version === 'number' &&
+      Platform.Version >= 23,
   },
 )
 
