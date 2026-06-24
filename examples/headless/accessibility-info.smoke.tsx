@@ -86,6 +86,12 @@ const fakeAccessibilityInfo = {
   getCurrentReduceTransparencyState: (onSuccess: (enabled: boolean) => void): void => {
     onSuccess(true)
   },
+  getCurrentDarkerSystemColorsState: (onSuccess: (enabled: boolean) => void): void => {
+    onSuccess(true)
+  },
+  getCurrentPrefersCrossFadeTransitionsState: (onSuccess: (enabled: boolean) => void): void => {
+    onSuccess(false)
+  },
   announceForAccessibility: (announcement: string): void => {
     announced = announcement
   },
@@ -184,6 +190,13 @@ function isType<T>(value: unknown): value is T {
 
   const service = await AccessibilityInfo.isAccessibilityServiceEnabled()
   if (service !== false) throw new Error('isAccessibilityServiceEnabled should be false on iOS')
+
+  // The newer iOS getters resolve to their module's values (optional methods, present here).
+  const darker = await AccessibilityInfo.isDarkerSystemColorsEnabled()
+  if (darker !== true) throw new Error(`isDarkerSystemColorsEnabled should be true, got ${String(darker)}`)
+
+  const crossFade = await AccessibilityInfo.prefersCrossFadeTransitions()
+  if (crossFade !== false) throw new Error(`prefersCrossFadeTransitions should be false, got ${String(crossFade)}`)
 }
 
 // ---- case 4: announce + focus drive the native module --------------------

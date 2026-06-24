@@ -124,4 +124,14 @@ function lastEvent(): AccessibilityCall {
   }
 }
 
+// ---- case 4: iOS-only getters resolve false on Android (RN parity) --------
+
+{
+  const darker = await AccessibilityInfo.isDarkerSystemColorsEnabled()
+  if (darker !== false) throw new Error('isDarkerSystemColorsEnabled must be false on Android')
+
+  const crossFade = await AccessibilityInfo.prefersCrossFadeTransitions()
+  if (crossFade !== false) throw new Error('prefersCrossFadeTransitions must be false on Android')
+}
+
 console.log('accessibility-info-android.smoke OK')

@@ -85,6 +85,12 @@ function getEmitter(): NativeEventEmitter {
 }
 
 class AppStateImpl {
+  // Feature-detect: true when the native AppState module resolved, false when it
+  // isn't linked. RN exposes the same field so callers can guard before subscribing.
+  get isAvailable(): boolean {
+    return getModule() !== null
+  }
+
   // The current foreground/background state, populated from getConstants and kept
   // fresh by the change observer. Null until the module resolves (or never linked).
   get currentState(): string | null {

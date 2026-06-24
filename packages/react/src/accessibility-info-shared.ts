@@ -69,6 +69,8 @@ export interface AccessibilityInfoStatic {
   isReduceTransparencyEnabled(): Promise<boolean>
   isHighTextContrastEnabled(): Promise<boolean>
   isAccessibilityServiceEnabled(): Promise<boolean>
+  isDarkerSystemColorsEnabled(): Promise<boolean>
+  prefersCrossFadeTransitions(): Promise<boolean>
   announceForAccessibility(announcement: string): void
   announceForAccessibilityWithOptions(
     announcement: string,

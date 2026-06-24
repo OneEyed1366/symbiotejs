@@ -147,6 +147,16 @@ class AccessibilityInfoAndroid implements AccessibilityInfoStatic {
     return queryState((m) => m.isHighTextContrastEnabled, 'isHighTextContrastEnabled')
   }
 
+  // iOS-only "Increase Contrast"; Android has no equivalent, so resolve false (RN parity).
+  isDarkerSystemColorsEnabled(): Promise<boolean> {
+    return Promise.resolve(false)
+  }
+
+  // iOS-only reduce-motion sub-setting; resolve false on Android (RN parity).
+  prefersCrossFadeTransitions(): Promise<boolean> {
+    return Promise.resolve(false)
+  }
+
   isAccessibilityServiceEnabled(): Promise<boolean> {
     return queryState((m) => m.isAccessibilityServiceEnabled, 'isAccessibilityServiceEnabled')
   }

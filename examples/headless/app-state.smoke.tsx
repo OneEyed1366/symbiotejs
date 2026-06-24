@@ -45,6 +45,12 @@ function isType<T>(value: unknown): value is T {
   return value !== null && value !== undefined
 }
 
+// ---- case 0: isAvailable reflects the resolved native module --------------
+
+if (AppState.isAvailable !== true) {
+  throw new Error('isAvailable must be true when the AppState native module resolves')
+}
+
 // ---- case 1: initial currentState from getConstants ----------------------
 
 if (AppState.currentState !== 'active') {

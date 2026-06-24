@@ -71,6 +71,7 @@ interface NativeAccessibilityManagerIOS extends EventEmitterModule {
   getCurrentInvertColorsState(onSuccess: StateCallback, onError: ErrorCallback): void
   getCurrentReduceTransparencyState(onSuccess: StateCallback, onError: ErrorCallback): void
   getCurrentDarkerSystemColorsState?(onSuccess: StateCallback, onError: ErrorCallback): void
+  getCurrentPrefersCrossFadeTransitionsState?(onSuccess: StateCallback, onError: ErrorCallback): void
   announceForAccessibility(announcement: string): void
   announceForAccessibilityWithOptions?(
     announcement: string,
@@ -128,6 +129,33 @@ function queryState(
   })
 }
 
+// Like queryState, but for an OPTIONAL native getter (newer iOS surfaces): resolves false
+// when the module is unlinked OR the method is absent on this host, instead of throwing.
+function queryOptionalState(
+  pick: (
+    module: NativeAccessibilityManagerIOS,
+  ) => ((s: StateCallback, e: ErrorCallback) => void) | undefined,
+  label: string,
+): Promise<boolean> {
+  const module = getModule()
+  if (module === null) {
+    dlog(`AccessibilityInfo(ios).${label} -> no module (false)`)
+    return Promise.resolve(false)
+  }
+  const getter = pick(module)
+  if (getter === undefined) {
+    dlog(`AccessibilityInfo(ios).${label} -> method absent (false)`)
+    return Promise.resolve(false)
+  }
+  return new Promise((resolve, reject) => {
+    getter.call(
+      module,
+      (enabled) => resolve(enabled),
+      (error) => reject(error),
+    )
+  })
+}
+
 class AccessibilityInfoIOS implements AccessibilityInfoStatic {
   isScreenReaderEnabled(): Promise<boolean> {
     return queryState((m) => m.getCurrentVoiceOverState, 'isScreenReaderEnabled')
@@ -151,6 +179,19 @@ class AccessibilityInfoIOS implements AccessibilityInfoStatic {
 
   isReduceTransparencyEnabled(): Promise<boolean> {
     return queryState((m) => m.getCurrentReduceTransparencyState, 'isReduceTransparencyEnabled')
+  }
+
+  // iOS "Increase Contrast" — Settings > Accessibility > Display & Text Size. The native
+  // getter is optional (older hosts lack it); resolve false when absent rather than reject,
+  // keeping the unified surface non-throwing (RN rejects, we mirror the false fallback).
+  isDarkerSystemColorsEnabled(): Promise<boolean> {
+    return queryOptionalState((m) => m.getCurrentDarkerSystemColorsState, 'isDarkerSystemColorsEnabled')
+  }
+
+  // iOS reduce-motion sub-setting (prefer cross-fade over slide). Optional native getter;
+  // resolve false when absent (RN parity for the unavailable case).
+  prefersCrossFadeTransitions(): Promise<boolean> {
+    return queryOptionalState((m) => m.getCurrentPrefersCrossFadeTransitionsState, 'prefersCrossFadeTransitions')
   }
 
   // Android-only query; iOS has no high-text-contrast concept, so resolve false (RN parity).
