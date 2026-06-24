@@ -15,6 +15,8 @@ let a11yAdded = 0
 let a11yRemoved = 0
 const screenReaderState = true
 const reduceMotionState = false
+let announced: string | undefined
+let focusedTag: number | undefined
 const fakeAccessibilityInfo = {
   getCurrentVoiceOverState: (onSuccess: (enabled: boolean) => void): void => {
     onSuccess(screenReaderState)
@@ -25,8 +27,21 @@ const fakeAccessibilityInfo = {
   getCurrentBoldTextState: (onSuccess: (enabled: boolean) => void): void => {
     onSuccess(false)
   },
-  announceForAccessibility: (): void => {},
-  setAccessibilityFocus: (): void => {},
+  getCurrentGrayscaleState: (onSuccess: (enabled: boolean) => void): void => {
+    onSuccess(true)
+  },
+  getCurrentInvertColorsState: (onSuccess: (enabled: boolean) => void): void => {
+    onSuccess(false)
+  },
+  getCurrentReduceTransparencyState: (onSuccess: (enabled: boolean) => void): void => {
+    onSuccess(true)
+  },
+  announceForAccessibility: (announcement: string): void => {
+    announced = announcement
+  },
+  setAccessibilityFocus: (reactTag: number): void => {
+    focusedTag = reactTag
+  },
   addListener: (): void => {
     a11yAdded += 1
   },
@@ -97,6 +112,72 @@ function isType<T>(value: unknown): value is T {
   }
   deviceHub.emit('screenReaderChanged', true)
   if (received !== undefined) throw new Error('a removed listener must not fire')
+}
+
+// ---- case 3: the expanded iOS getters resolve to the module's values ------
+
+{
+  const grayscale = await AccessibilityInfo.isGrayscaleEnabled()
+  if (grayscale !== true) throw new Error(`isGrayscaleEnabled should be true, got ${String(grayscale)}`)
+
+  const invert = await AccessibilityInfo.isInvertColorsEnabled()
+  if (invert !== false) throw new Error(`isInvertColorsEnabled should be false, got ${String(invert)}`)
+
+  const transparency = await AccessibilityInfo.isReduceTransparencyEnabled()
+  if (transparency !== true) {
+    throw new Error(`isReduceTransparencyEnabled should be true, got ${String(transparency)}`)
+  }
+
+  // Android-only queries resolve false on the iOS build (no throw, RN parity).
+  const highContrast = await AccessibilityInfo.isHighTextContrastEnabled()
+  if (highContrast !== false) throw new Error('isHighTextContrastEnabled should be false on iOS')
+
+  const service = await AccessibilityInfo.isAccessibilityServiceEnabled()
+  if (service !== false) throw new Error('isAccessibilityServiceEnabled should be false on iOS')
+}
+
+// ---- case 4: announce + focus drive the native module --------------------
+
+{
+  AccessibilityInfo.announceForAccessibility('hello')
+  // Capture into a fresh local: a `!== 'hello'` throw-guard would otherwise narrow
+  // `announced` to the literal 'hello', making the later 'queued' check a no-overlap
+  // type error (TS can't see the fake module mutate `announced` between the calls).
+  const firstAnnounce: string | undefined = announced
+  if (firstAnnounce !== 'hello') throw new Error(`announceForAccessibility should reach native, got ${String(firstAnnounce)}`)
+
+  // No options-aware method on the fake -> falls back to the plain announce.
+  AccessibilityInfo.announceForAccessibilityWithOptions('queued', { queue: true, priority: 'high' })
+  const secondAnnounce: string | undefined = announced
+  if (secondAnnounce !== 'queued') throw new Error('announceForAccessibilityWithOptions should fall back to announce')
+
+  AccessibilityInfo.setAccessibilityFocus(42)
+  if (focusedTag !== 42) throw new Error(`setAccessibilityFocus should reach native, got ${String(focusedTag)}`)
+}
+
+// ---- case 5: getRecommendedTimeoutMillis returns the original on iOS ------
+
+{
+  const timeout = await AccessibilityInfo.getRecommendedTimeoutMillis(3000)
+  if (timeout !== 3000) throw new Error(`getRecommendedTimeoutMillis should resolve the original, got ${String(timeout)}`)
+}
+
+// ---- case 6: sendAccessibilityEvent('focus') resolves the handle to a tag ----
+
+{
+  // A numeric handle passes straight through findNodeHandle, so iOS routes it to the
+  // native setAccessibilityFocus — same path as case 4, driven from sendAccessibilityEvent.
+  focusedTag = undefined
+  AccessibilityInfo.sendAccessibilityEvent(99, 'focus')
+  if (focusedTag !== 99) {
+    throw new Error(`sendAccessibilityEvent('focus') should focus tag 99, got ${String(focusedTag)}`)
+  }
+
+  // A non-'focus' event has no iOS native producer -> no-op, leaves the focus untouched.
+  AccessibilityInfo.sendAccessibilityEvent(7, 'click')
+  if (focusedTag !== 99) {
+    throw new Error(`non-focus sendAccessibilityEvent must not move focus, got ${String(focusedTag)}`)
+  }
 }
 
 console.log('accessibility-info.smoke OK')
