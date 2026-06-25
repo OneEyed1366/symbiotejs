@@ -9,7 +9,7 @@
 //   TouchableWithoutFeedback — no visual change, just the press wiring.
 
 import { createElement, useRef, type FC, type ReactNode } from 'react'
-import type { SymbioteEvent } from '@symbiote/shared'
+import { dlog, type SymbioteEvent } from '@symbiote/shared'
 import { Pressable, type PressableProps, type PressState } from './pressable'
 import { Animated } from './animated'
 import type { ViewStyle } from './styles'
@@ -23,22 +23,49 @@ const RESTING_OPACITY = 1
 // TouchableHighlight.js: child opacity 0.85, underlay 'black' when unset.
 const DEFAULT_HIGHLIGHT_CHILD_OPACITY = 0.85
 const DEFAULT_UNDERLAY_COLOR = 'black'
+// RN's Pressability DEFAULT_MIN_PRESS_DURATION — the floor a press visual is held,
+// so a very fast tap still flashes the active feedback (Pressability.js).
+const DEFAULT_MIN_PRESS_DURATION_MS = 130
 
-type TouchableBaseProps = Omit<PressableProps, 'style' | 'children'> & {
-  style?: ViewStyle
-  children?: ReactNode
+// The press-timing props RN's TouchableOpacity forwards to its Pressability config
+// (_createPressabilityConfig). Pressable does not own these, so the Touchable layers
+// the delay/floor scheduling on top of its own onPressIn/onPressOut.
+interface PressTimingProps {
+  delayPressIn?: number
+  delayPressOut?: number
+  minPressDuration?: number
 }
+
+type TouchableBaseProps = Omit<PressableProps, 'style' | 'children'> &
+  PressTimingProps & {
+    style?: ViewStyle
+    children?: ReactNode
+  }
 
 export interface TouchableOpacityProps extends TouchableBaseProps {
   activeOpacity?: number
 }
 
 export const TouchableOpacity: FC<TouchableOpacityProps> = (props) => {
-  const { activeOpacity = DEFAULT_ACTIVE_OPACITY, style, children, onPressIn, onPressOut, ...rest } = props
+  const {
+    activeOpacity = DEFAULT_ACTIVE_OPACITY,
+    style,
+    children,
+    onPressIn,
+    onPressOut,
+    delayPressIn = 0,
+    delayPressOut = 0,
+    minPressDuration = DEFAULT_MIN_PRESS_DURATION_MS,
+    ...rest
+  } = props
 
   // One Animated.Value per mount, resting at full opacity. The Animated.View leaf
   // commits its current value every frame, so timing it animates the real view.
   const opacity = useRef(new Animated.Value(RESTING_OPACITY)).current
+  // The pending delayPressIn timer, so a release before it fires can flush it.
+  const pressInTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
+  // When the active visual actually started, to floor onPressOut by minPressDuration.
+  const activatedAt = useRef<number | undefined>(undefined)
 
   function setOpacityTo(toValue: number, duration: number): void {
     Animated.timing(opacity, {
@@ -49,14 +76,57 @@ export const TouchableOpacity: FC<TouchableOpacityProps> = (props) => {
     }).start()
   }
 
-  function handlePressIn(event: SymbioteEvent): void {
+  function clearPressInTimer(): void {
+    if (pressInTimer.current !== undefined) {
+      clearTimeout(pressInTimer.current)
+      pressInTimer.current = undefined
+    }
+  }
+
+  // The real activation: lower opacity, fire onPressIn, stamp the activation time.
+  function activate(event: SymbioteEvent): void {
+    activatedAt.current = Date.now()
     setOpacityTo(activeOpacity, OPACITY_ACTIVE_DURATION_MS)
     onPressIn?.(event)
   }
 
-  function handlePressOut(event: SymbioteEvent): void {
+  // The real deactivation: restore opacity, fire onPressOut.
+  function deactivate(event: SymbioteEvent): void {
+    activatedAt.current = undefined
     setOpacityTo(RESTING_OPACITY, OPACITY_INACTIVE_DURATION_MS)
     onPressOut?.(event)
+  }
+
+  // RN's _createPressabilityConfig forwards delayPressIn: defer the active visual and
+  // onPressIn behind the delay (a release before it elapses flushes it synchronously).
+  function handlePressIn(event: SymbioteEvent): void {
+    if (delayPressIn > 0) {
+      dlog(`TouchableOpacity pressIn deferred ${delayPressIn}ms`)
+      pressInTimer.current = setTimeout(() => {
+        pressInTimer.current = undefined
+        activate(event)
+      }, delayPressIn)
+      return
+    }
+    activate(event)
+  }
+
+  // delayPressOut + minPressDuration (RN _deactivate): the press-out waits at least
+  // minPressDuration past activation (so a fast tap holds the active visual) and at
+  // least delayPressOut, whichever is longer.
+  function handlePressOut(event: SymbioteEvent): void {
+    if (pressInTimer.current !== undefined) {
+      clearPressInTimer()
+      activate(event)
+    }
+    const heldFor = activatedAt.current === undefined ? 0 : Date.now() - activatedAt.current
+    const wait = Math.max(minPressDuration - heldFor, delayPressOut)
+    if (wait > 0) {
+      dlog(`TouchableOpacity pressOut deferred ${wait}ms`)
+      setTimeout(() => deactivate(event), wait)
+      return
+    }
+    deactivate(event)
   }
 
   return createElement(

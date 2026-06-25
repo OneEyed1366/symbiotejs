@@ -118,7 +118,21 @@ const slot = {
   registerEventHandler(handler: EventHandler): void {
     eventHandler = handler
   },
+  // The Pressable measures its responder rect on grant to drive the retention region
+  // (RN's _measureResponderRegion). Report a fixed frame so the rect-based test runs
+  // off-device; the configured frame is set by `measuredFrame` before each case.
+  measure(
+    _handle: unknown,
+    callback: (x: number, y: number, w: number, h: number, px: number, py: number) => void,
+  ): void {
+    const f = measuredFrame
+    if (f === undefined) return
+    callback(0, 0, f.width, f.height, f.pageX, f.pageY)
+  },
 }
+
+// The frame slot.measure reports; undefined disables measure (the radius fallback path).
+let measuredFrame: { width: number; height: number; pageX: number; pageY: number } | undefined
 
 Object.assign(globalThis, { nativeFabricUIManager: slot })
 
@@ -133,6 +147,8 @@ function reset(): void {
   committed = []
   allCreated.length = 0
   timers = []
+  // Default: no measured frame, so existing cases keep exercising the radius fallback.
+  measuredFrame = undefined
 }
 
 // The responder is the View the Pressable renders — the first (and here only)
@@ -453,6 +469,101 @@ installFakeTimers()
   }
   if (presses !== 1) {
     throw new Error(`a quick tap under unstable_pressDelay must still fire onPress, fired ${presses}`)
+  }
+}
+
+// ---- case 11: retention tests the MEASURED rect, per-edge (not a radius) ----------
+// With a measured frame 0..100 x 0..40 and pressRetentionOffset {right:40} (other edges
+// default to RN's DEFAULT_PRESS_RECT_OFFSETS {top20,left20,bottom30,right20}), the live
+// region's right edge is 100+40 = 140. A move to x=130 stays INSIDE (retained), proving
+// the asymmetric per-edge rect — a symmetric radius from the press start at (50,20) would
+// have dropped it. A move down to y=80 (past bottom 40+30 = 70) drops it.
+{
+  reset()
+  measuredFrame = { width: 100, height: 40, pageX: 0, pageY: 0 }
+  let presses = 0
+  let pressOuts = 0
+  mount(
+    21,
+    <Pressable
+      pressRetentionOffset={{ right: 40 }}
+      onPress={() => { presses++ }}
+      onPressOut={() => { pressOuts++ }}
+    />,
+  )
+
+  const handle = responderHandle()
+
+  // (a) x=130 is inside the right edge (140) → retained, tap fires on release.
+  fireAt(handle, TOUCH_START, 50, 20)
+  fireAt(handle, TOUCH_MOVE, 130, 20)
+  fireAt(handle, TOUCH_END, 130, 20)
+  if (presses !== 1) {
+    throw new Error(`a move inside the measured rect's right edge must retain, onPress fired ${presses}`)
+  }
+
+  // (b) y=80 is past the bottom edge (70) → drifted out, early pressOut, tap suppressed.
+  presses = 0
+  pressOuts = 0
+  fireAt(handle, TOUCH_START, 50, 20)
+  fireAt(handle, TOUCH_MOVE, 50, 80)
+  if (pressOuts !== 1) {
+    throw new Error(`a move past the measured bottom edge must fire an early onPressOut, fired ${pressOuts}`)
+  }
+  fireAt(handle, TOUCH_END, 50, 80)
+  if (presses !== 0) {
+    throw new Error(`a drift past the measured rect must suppress the tap, onPress fired ${presses}`)
+  }
+}
+
+// ---- case 12: cancelable wires onResponderTerminationRequest ----------------------
+// cancelable === false registers a termination-request gate returning false (the press
+// refuses to yield); cancelable === true returns true; unset registers no gate (RN's
+// implicit yes). The gate is a listener on the responder node, not a Fabric prop.
+{
+  const TERMINATION_REQUEST = 'responderTerminationRequest'
+  function terminationGate(handle: unknown): ((event: unknown) => unknown) | undefined {
+    if (!isRecord(handle)) return undefined
+    const listeners = handle.listeners
+    if (!(listeners instanceof Map)) return undefined
+    const gate = listeners.get(TERMINATION_REQUEST)
+    return typeof gate === 'function' ? gate : undefined
+  }
+
+  reset()
+  mount(22, <Pressable cancelable={false} onPress={() => {}} />)
+  const noGate = terminationGate(responderHandle())
+  if (noGate === undefined || noGate({ nativeEvent: {} }) !== false) {
+    throw new Error('cancelable={false} must register a termination gate returning false')
+  }
+
+  reset()
+  mount(23, <Pressable cancelable onPress={() => {}} />)
+  const yesGate = terminationGate(responderHandle())
+  if (yesGate === undefined || yesGate({ nativeEvent: {} }) !== true) {
+    throw new Error('cancelable must register a termination gate returning true')
+  }
+
+  reset()
+  mount(24, <Pressable onPress={() => {}} />)
+  if (terminationGate(responderHandle()) !== undefined) {
+    throw new Error('unset cancelable must not register a termination gate (RN implicit yes)')
+  }
+}
+
+// ---- case 13: onPressMove fires on every responder move while the press is live ----
+{
+  reset()
+  let moves = 0
+  mount(25, <Pressable onPressMove={() => { moves++ }} onPress={() => {}} />)
+
+  const handle = responderHandle()
+  fireAt(handle, TOUCH_START, 50, 50)
+  fireAt(handle, TOUCH_MOVE, 51, 50)
+  fireAt(handle, TOUCH_MOVE, 52, 50)
+  fireAt(handle, TOUCH_END, 52, 50)
+  if (moves !== 2) {
+    throw new Error(`onPressMove should fire once per move, fired ${moves}`)
   }
 }
 

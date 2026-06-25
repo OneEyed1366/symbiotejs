@@ -116,6 +116,14 @@ const slot = {
   registerEventHandler(handler: EventHandler): void {
     eventHandler = handler
   },
+  // Pressable measures its responder rect on grant (retention region). Report a fixed
+  // frame so the measure path runs instead of throwing on a slot without measure.
+  measure(
+    _handle: unknown,
+    callback: (x: number, y: number, w: number, h: number, px: number, py: number) => void,
+  ): void {
+    callback(0, 0, 100, 40, 0, 0)
+  },
 }
 
 Object.assign(globalThis, { nativeFabricUIManager: slot })
@@ -225,6 +233,34 @@ if (pressIns !== 1) {
 }
 if (pressOuts !== 1) {
   throw new Error(`onPressOut should fire once, fired ${pressOuts}`)
+}
+
+// ---- delayPressIn defers onPressIn (and the active visual) past touch-down ----------
+// RN's TouchableOpacity._createPressabilityConfig forwards delayPressIn. With it set,
+// touch-down must NOT fire onPressIn synchronously — only after the delay elapses. A
+// short real delay is awaited (this smoke runs on real timers, not a fake queue).
+{
+  const DELAY = 30
+  let deferredPressIns = 0
+  const createdBefore = allCreated.length
+  mount(
+    22,
+    <TouchableOpacity delayPressIn={DELAY} onPressIn={() => { deferredPressIns++ }} onPress={() => {}} />,
+  )
+  // The responder is the FIRST non-box-none RCTView of this mount (the Pressable's own
+  // View, created before its inner Animated.View child).
+  const responder = allCreated
+    .slice(createdBefore)
+    .find((n) => n.viewName === 'RCTView' && n.props.pointerEvents !== 'box-none')
+  if (!responder) throw new Error('no responder RCTView for the delayPressIn case')
+  fire(responder.instanceHandle, TOUCH_START)
+  if (deferredPressIns !== 0) {
+    throw new Error(`delayPressIn must defer onPressIn, fired ${deferredPressIns} on touch-down`)
+  }
+  await new Promise((resolve) => setTimeout(resolve, DELAY + 20))
+  if (deferredPressIns !== 1) {
+    throw new Error(`onPressIn should fire after delayPressIn, fired ${deferredPressIns}`)
+  }
 }
 
 console.log('touchable.smoke OK')
