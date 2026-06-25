@@ -53,6 +53,12 @@ export interface ModalProps extends AccessibilityProps, AriaProps {
   supportedOrientations?: ReadonlyArray<ModalOrientation>
   hardwareAccelerated?: boolean
   statusBarTranslucent?: boolean
+  // navigationBarTranslucent makes the Android nav bar translucent; RN requires
+  // statusBarTranslucent true alongside it (Modal.js ~172 / confirmProps ~193).
+  navigationBarTranslucent?: boolean
+  // allowSwipeDismissal lets a swipe-down dismiss the modal on iOS; RN pairs it
+  // with onRequestClose to handle the dismissal (Modal.js ~155).
+  allowSwipeDismissal?: boolean
   testID?: string
   onShow?: () => void
   onDismiss?: () => void
@@ -113,6 +119,13 @@ export const Modal: FC<ModalProps> = (rawProps) => {
     backdropColor,
     animationType,
     presentationStyle,
+    // Named-forward the platform props RN passes explicitly on RCTModalHostView
+    // (Modal.js ~336-350) rather than letting them ride ...passthrough raw.
+    supportedOrientations,
+    hardwareAccelerated,
+    statusBarTranslucent,
+    navigationBarTranslucent,
+    allowSwipeDismissal,
     style,
     children,
     onShow,
@@ -196,6 +209,14 @@ export const Modal: FC<ModalProps> = (rawProps) => {
       transparent,
       animationType: animationType ?? DEFAULT_ANIMATION_TYPE,
       presentationStyle: resolvedPresentationStyle,
+      // Platform props named-forwarded to match RCTModalHostView (Modal.js
+      // ~336-350): iOS supportedOrientations/allowSwipeDismissal,
+      // Android hardwareAccelerated/statusBarTranslucent/navigationBarTranslucent.
+      supportedOrientations,
+      hardwareAccelerated,
+      statusBarTranslucent,
+      navigationBarTranslucent,
+      allowSwipeDismissal,
       onShow: loggedEvent('onShow', onShow),
       onDismiss: loggedEvent('onDismiss', onDismiss),
       onRequestClose: loggedEvent('onRequestClose', onRequestClose),

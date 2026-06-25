@@ -256,6 +256,45 @@ mount(26, (
   }
 }
 
+// ---- case 7b: platform props forward as NAMED host props ----------------
+// supportedOrientations/hardwareAccelerated/statusBarTranslucent/
+// navigationBarTranslucent/allowSwipeDismissal are named-forwarded on the host
+// (Modal.js ~336-350), not left to ride ...passthrough raw.
+
+reset()
+mount(28, (
+  <Modal
+    visible
+    supportedOrientations={['portrait', 'landscape']}
+    hardwareAccelerated
+    statusBarTranslucent
+    navigationBarTranslucent
+    allowSwipeDismissal
+    onRequestClose={() => {}}
+  >
+    <View />
+  </Modal>
+))
+
+{
+  const props = modalNode().props
+  if (JSON.stringify(props.supportedOrientations) !== JSON.stringify(['portrait', 'landscape'])) {
+    throw new Error(`supportedOrientations should forward, got ${JSON.stringify(props.supportedOrientations)}`)
+  }
+  if (props.hardwareAccelerated !== true) {
+    throw new Error(`hardwareAccelerated should forward, got ${JSON.stringify(props.hardwareAccelerated)}`)
+  }
+  if (props.statusBarTranslucent !== true) {
+    throw new Error(`statusBarTranslucent should forward, got ${JSON.stringify(props.statusBarTranslucent)}`)
+  }
+  if (props.navigationBarTranslucent !== true) {
+    throw new Error(`navigationBarTranslucent should forward, got ${JSON.stringify(props.navigationBarTranslucent)}`)
+  }
+  if (props.allowSwipeDismissal !== true) {
+    throw new Error(`allowSwipeDismissal should forward, got ${JSON.stringify(props.allowSwipeDismissal)}`)
+  }
+}
+
 // ---- case 8: onDismiss is the native topDismiss event, NOT a JS simulation ---
 // On Fabric, onDismiss is a real native DirectEvent (topDismiss -> 'dismiss',
 // routed by MODAL_EVENTS). RN never simulates it in JS: hiding the modal only

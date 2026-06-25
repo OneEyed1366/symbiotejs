@@ -133,4 +133,27 @@ mount(13, <Image source={{ uri: 'http://x/y.png' }} onLoad={(event) => { loadedW
   if (!loadedWith) throw new Error('onLoad did not fire')
 }
 
+// ---- case 4: W3C aliases — `src` folds to a source uri, `alt` to a11y ----
+
+reset()
+mount(14, <Image src="http://x/z.png" alt="a kitten" />)
+
+{
+  const node = imageNode()
+  const source = node.props.source
+  if (!Array.isArray(source)) throw new Error('src did not fold to a source array')
+  if (source.length !== 1) throw new Error(`expected 1 src source, got ${source.length}`)
+  const first = source[0]
+  const uri = typeof first === 'object' && first !== null ? Reflect.get(first, 'uri') : undefined
+  if (uri !== 'http://x/z.png') throw new Error(`src uri not folded: ${JSON.stringify(first)}`)
+  if (node.props.accessibilityLabel !== 'a kitten') {
+    throw new Error(`alt not folded to accessibilityLabel: ${JSON.stringify(node.props.accessibilityLabel)}`)
+  }
+  if (node.props.accessible !== true) throw new Error('alt did not mark the image accessible')
+  // The aliases themselves must not reach native.
+  if ('src' in node.props || 'alt' in node.props) {
+    throw new Error('raw src/alt alias leaked to native props')
+  }
+}
+
 console.log('image.smoke OK')
