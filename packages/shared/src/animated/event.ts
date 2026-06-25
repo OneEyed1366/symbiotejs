@@ -15,6 +15,8 @@
 //     the view with zero JS per event.
 
 import { dlog } from '../debug'
+import { getNativeTag } from '../commit'
+import type { SymbioteNode } from '../node'
 import { AnimatedNode, flushValue } from './graph'
 import { nativeAnimated } from './native/native-animated'
 
@@ -152,4 +154,33 @@ export class AnimatedEvent {
 // need the native attach path.
 export function event(argMapping: readonly Mapping[], config?: EventConfig): AnimatedEventHandler {
   return new AnimatedEvent(argMapping, config).__getHandler()
+}
+
+export interface NativeEventAttachment {
+  detach(): void
+}
+
+// Imperatively bind a real native event on a host node to the mapping's animated values, so the
+// event drives them on the UI thread with zero JS per event — RN's
+// AnimatedImplementation.attachNativeEvent (ScrollView.js:1095 uses it for sticky headers). The
+// ScrollView is NOT an animated component, so the event can't ride a prop; it is attached to the
+// node's native tag directly. Returns a detach handle. Callers MUST gate on
+// isNativeAnimatedAvailable(): with no native module __attach no-ops and the values never move,
+// so a JS Animated.event path must remain the fallback.
+export function attachNativeEvent(
+  node: SymbioteNode,
+  eventName: string,
+  argMapping: readonly Mapping[],
+): NativeEventAttachment {
+  const viewTag = getNativeTag(node)
+  const animatedEvent = new AnimatedEvent(argMapping)
+  if (viewTag !== undefined) {
+    dlog(`attachNativeEvent: ${eventName} -> view=${viewTag}`)
+    animatedEvent.__attach(viewTag, eventName)
+  }
+  return {
+    detach(): void {
+      if (viewTag !== undefined) animatedEvent.__detach(viewTag, eventName)
+    },
+  }
 }

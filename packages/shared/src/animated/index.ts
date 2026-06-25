@@ -20,7 +20,7 @@ export {
   modulo,
   diffClamp,
 } from './operators'
-export { AnimatedEvent, event, type EventConfig, type AnimatedEventHandler } from './event'
+export { AnimatedEvent, event, attachNativeEvent, type EventConfig, type AnimatedEventHandler, type NativeEventAttachment } from './event'
 export { AnimatedColor, type RgbaValue, type ColorInput } from './color'
 export { Easing, type EasingFunction } from './easing'
 export {

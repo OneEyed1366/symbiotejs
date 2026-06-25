@@ -23,12 +23,21 @@ import {
   type ReactElement,
   type Ref,
 } from 'react'
-import { AnimatedNode } from '@symbiote/shared'
+import { AnimatedNode, isNativeAnimatedAvailable } from '@symbiote/shared'
 import { AnimatedProps } from './props'
 import { AnimatedStyle } from './style'
 
 function isAnimatedNode(value: unknown): value is AnimatedNode {
   return value instanceof AnimatedNode
+}
+
+// RN's `passthroughAnimatedPropExplicitValues` carries explicit (already-rasterized) prop
+// values — e.g. a sticky header's debounced `{style:{transform:[{translateY}]}}` — that must
+// override the animated prop in the COMMITTED props so the Fabric ShadowTree (hit-testing)
+// stays current while the native driver animates. Read its `style` without a cast.
+function readPassthroughStyle(passthrough: unknown): unknown {
+  if (typeof passthrough !== 'object' || passthrough === null) return undefined
+  return Reflect.get(passthrough, 'style')
 }
 
 // Replace animated entries in a props map with their current rasterized values so
@@ -76,7 +85,10 @@ export function createAnimatedComponent<P extends AnimatableProps>(
   Component: ComponentType<P>,
 ): ComponentType<AnimatedComponentProps> {
   function AnimatedComponent(props: AnimatedComponentProps): ReactElement {
-    const { ref: forwardedRef, ...rest } = props
+    const { ref: forwardedRef, passthroughAnimatedPropExplicitValues: passthrough, ...rest } = props
+    // Native driving is opt-in per the passthrough prop AND requires a real native module;
+    // headless / unsupported hosts keep the JS flush path (and the existing JS smokes green).
+    const wantsNative = passthrough != null && isNativeAnimatedAvailable()
 
     // One AnimatedProps leaf per distinct props object. Rebuilt when props change,
     // so a newly-added animated value joins the graph; the effect below swaps the
@@ -103,6 +115,14 @@ export function createAnimatedComponent<P extends AnimatableProps>(
       }
     }, [animatedProps])
 
+    // Native-driver trigger (ADR 0017). Runs after attach: push the leaf -> style -> transform
+    // -> interpolation -> value chain native so the props animate on the UI thread (no JS lag).
+    // Cascades down to the source value; the scroll event attaches to that same value
+    // (idempotent). __makeNative is idempotent, so re-firing on a leaf swap is safe.
+    useEffect(() => {
+      if (wantsNative) animatedProps.__makeNative()
+    }, [animatedProps, wantsNative])
+
     // Final teardown: detach the last-attached leaf when the component unmounts.
     useEffect(() => {
       return () => {
@@ -123,9 +143,16 @@ export function createAnimatedComponent<P extends AnimatableProps>(
     // Reduced props are P-shaped (animated nodes already replaced by values); add the
     // capture ref. Build via Object.assign so the merged object stays typed as P & ref
     // without a cast — createElement then accepts it for the generic base component.
+    const reduced = reduceProps(rest)
+    // Override the committed style with the explicit passthrough values (last wins via the style
+    // array, which the commit layer flattens) so the ShadowTree carries the current transform.
+    const passthroughStyle = readPassthroughStyle(passthrough)
+    if (passthroughStyle !== undefined) {
+      reduced.style = reduced.style === undefined ? passthroughStyle : [reduced.style, passthroughStyle]
+    }
     const childProps: P & { ref: (instance: unknown) => void } = Object.assign(
       Object.create(null),
-      reduceProps(rest),
+      reduced,
       { ref: captureRef },
     )
     return createElement(Component, childProps)
