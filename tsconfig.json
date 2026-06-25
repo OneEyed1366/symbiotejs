@@ -2,6 +2,7 @@
   "files": [],
   "references": [
     { "path": "core/engine" },
-    { "path": "adapters/react" }
+    { "path": "adapters/react" },
+    { "path": "adapters/vue" }
   ]
 }
