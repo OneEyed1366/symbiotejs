@@ -222,4 +222,75 @@ mount(15, <TextInput inputMode="numeric" enterKeyHint="done" readOnly selectionC
   }
 }
 
+// ---- case 7: autoComplete folds + showSoftInputOnFocus derivation --------
+// RN folds the W3C autoComplete token to the per-platform native prop
+// (Android `autoComplete`, iOS `textContentType`) and derives showSoftInputOnFocus
+// from inputMode. Symbiote folds platform-agnostically, so both native props appear.
+
+reset()
+mount(16, <TextInput autoComplete="email" inputMode="text" />)
+
+{
+  const node = inputNode(SINGLELINE)
+  // 'email' maps to Android 'email' and iOS textContentType 'emailAddress'.
+  if (node.props.autoComplete !== 'email') {
+    throw new Error(`autoComplete="email" should fold to Android "email", got ${JSON.stringify(node.props.autoComplete)}`)
+  }
+  if (node.props.textContentType !== 'emailAddress') {
+    throw new Error(`autoComplete="email" should fold to textContentType "emailAddress", got ${JSON.stringify(node.props.textContentType)}`)
+  }
+  // inputMode="text" (!= 'none') -> showSoftInputOnFocus true.
+  if (node.props.showSoftInputOnFocus !== true) {
+    throw new Error(`inputMode="text" should derive showSoftInputOnFocus:true, got ${JSON.stringify(node.props.showSoftInputOnFocus)}`)
+  }
+  // The raw W3C token must not also leak as some other key beyond the folded ones.
+}
+
+// inputMode="none" hides the soft keyboard (showSoftInputOnFocus:false).
+reset()
+mount(17, <TextInput inputMode="none" />)
+{
+  const node = inputNode(SINGLELINE)
+  if (node.props.showSoftInputOnFocus !== false) {
+    throw new Error(`inputMode="none" should derive showSoftInputOnFocus:false, got ${JSON.stringify(node.props.showSoftInputOnFocus)}`)
+  }
+}
+
+// An unmapped autoComplete token passes through to Android verbatim, with no iOS type.
+reset()
+mount(18, <TextInput autoComplete="cc-name" />)
+{
+  const node = inputNode(SINGLELINE)
+  if (node.props.autoComplete !== 'cc-name') {
+    throw new Error(`unmapped autoComplete should pass through, got ${JSON.stringify(node.props.autoComplete)}`)
+  }
+  // 'cc-name' has an iOS textContentType but no Android map entry -> Android keeps the token.
+  if (node.props.textContentType !== 'creditCardName') {
+    throw new Error(`autoComplete="cc-name" should fold to textContentType "creditCardName", got ${JSON.stringify(node.props.textContentType)}`)
+  }
+}
+
+// ---- case 8: underlineColorAndroid defaults to 'transparent' -------------
+// RN hides the Material default EditText underline by defaulting
+// underlineColorAndroid to 'transparent' (TextInput.js:908) and forwarding it.
+// Symbiote must do the same when the prop is absent, and respect an explicit value.
+
+reset()
+mount(19, <TextInput value="x" />)
+{
+  const node = inputNode(SINGLELINE)
+  if (node.props.underlineColorAndroid !== 'transparent') {
+    throw new Error(`underlineColorAndroid should default to "transparent", got ${JSON.stringify(node.props.underlineColorAndroid)}`)
+  }
+}
+
+reset()
+mount(20, <TextInput value="x" underlineColorAndroid="#00ff00" />)
+{
+  const node = inputNode(SINGLELINE)
+  if (node.props.underlineColorAndroid !== '#00ff00') {
+    throw new Error(`explicit underlineColorAndroid should win, got ${JSON.stringify(node.props.underlineColorAndroid)}`)
+  }
+}
+
 console.log('text-input.smoke OK')

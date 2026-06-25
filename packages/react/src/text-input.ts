@@ -10,6 +10,7 @@ import {
   createElement,
   forwardRef,
   useCallback,
+  useEffect,
   useImperativeHandle,
   useLayoutEffect,
   useRef,
@@ -52,6 +53,106 @@ const enterKeyHintToReturnKeyType: Record<EnterKeyHint, string> = {
   send: 'send',
 }
 
+// RN's W3C autocomplete -> Android `autoComplete` map (TextInput.js:828). A token
+// with no native equivalent passes through unchanged (RN's `?? autoComplete`).
+const autoCompleteWebToAndroid: Record<string, string> = {
+  'additional-name': 'name-middle',
+  'address-line1': 'postal-address-region',
+  'address-line2': 'postal-address-locality',
+  bday: 'birthdate-full',
+  'bday-day': 'birthdate-day',
+  'bday-month': 'birthdate-month',
+  'bday-year': 'birthdate-year',
+  'cc-csc': 'cc-csc',
+  'cc-exp': 'cc-exp',
+  'cc-exp-month': 'cc-exp-month',
+  'cc-exp-year': 'cc-exp-year',
+  'cc-number': 'cc-number',
+  country: 'postal-address-country',
+  'current-password': 'password',
+  email: 'email',
+  'family-name': 'name-family',
+  'given-name': 'name-given',
+  'honorific-prefix': 'name-prefix',
+  'honorific-suffix': 'name-suffix',
+  name: 'name',
+  'new-password': 'password-new',
+  off: 'off',
+  'one-time-code': 'sms-otp',
+  'postal-code': 'postal-code',
+  sex: 'gender',
+  'street-address': 'street-address',
+  tel: 'tel',
+  'tel-country-code': 'tel-country-code',
+  'tel-national': 'tel-national',
+  username: 'username',
+}
+
+// RN's W3C autocomplete -> iOS `textContentType` map (TextInput.js:862). A token absent
+// here leaves textContentType undefined on iOS (RN's `autoComplete in map` guard).
+const autoCompleteWebToTextContentType: Record<string, string> = {
+  'additional-name': 'middleName',
+  'address-line1': 'streetAddressLine1',
+  'address-line2': 'streetAddressLine2',
+  bday: 'birthdate',
+  'bday-day': 'birthdateDay',
+  'bday-month': 'birthdateMonth',
+  'bday-year': 'birthdateYear',
+  'cc-additional-name': 'creditCardMiddleName',
+  'cc-csc': 'creditCardSecurityCode',
+  'cc-exp': 'creditCardExpiration',
+  'cc-exp-month': 'creditCardExpirationMonth',
+  'cc-exp-year': 'creditCardExpirationYear',
+  'cc-family-name': 'creditCardFamilyName',
+  'cc-given-name': 'creditCardGivenName',
+  'cc-name': 'creditCardName',
+  'cc-number': 'creditCardNumber',
+  'cc-type': 'creditCardType',
+  country: 'countryName',
+  'current-password': 'password',
+  email: 'emailAddress',
+  'family-name': 'familyName',
+  'given-name': 'givenName',
+  'honorific-prefix': 'namePrefix',
+  'honorific-suffix': 'nameSuffix',
+  name: 'name',
+  'new-password': 'newPassword',
+  nickname: 'nickname',
+  off: 'none',
+  'one-time-code': 'oneTimeCode',
+  organization: 'organizationName',
+  'organization-title': 'jobTitle',
+  'postal-code': 'postalCode',
+  'street-address': 'fullStreetAddress',
+  tel: 'telephoneNumber',
+  url: 'URL',
+  username: 'username',
+}
+
+// Safe lookup into the W3C->native maps (no `as`): own-property guard, undefined if
+// the token has no native equivalent. The caller decides the per-platform fallback.
+function mapAutoComplete(map: Record<string, string>, token: string): string | undefined {
+  return Object.prototype.hasOwnProperty.call(map, token) ? map[token] : undefined
+}
+
+// RN folds W3C `autoComplete` per platform (TextInput.js:938): Android takes the mapped
+// `autoComplete` token (falling back to the raw token), iOS takes the mapped
+// `textContentType` (and only when the token is in the map, else leaves it untouched).
+// Symbiote is Metro-built per platform but folds platform-agnostically (like the
+// inputMode/enterKeyHint folds above), so we resolve BOTH native props from the one
+// token: the iOS-only `textContentType` is inert on Android and the Android `autoComplete`
+// token is inert on iOS, so emitting both is safe — same shape as the dual-keyed events.
+function foldAutoComplete(token: string | undefined): {
+  autoComplete: string | undefined
+  textContentType: string | undefined
+} {
+  if (token === undefined) return { autoComplete: undefined, textContentType: undefined }
+  return {
+    autoComplete: mapAutoComplete(autoCompleteWebToAndroid, token) ?? token,
+    textContentType: mapAutoComplete(autoCompleteWebToTextContentType, token),
+  }
+}
+
 // RN's submitBehavior reconciliation (TextInput.js:559). Explicit submitBehavior
 // wins (with single-line 'newline' coerced to 'blurAndSubmit'); else it is derived
 // from the legacy blurOnSubmit per multiline.
@@ -83,8 +184,15 @@ export interface TextInputProps extends AccessibilityProps, AriaProps {
   // ViewManager reads them directly); declared here so app code is type-checked.
   autoCapitalize?: 'none' | 'sentences' | 'words' | 'characters'
   autoCorrect?: boolean
+  // W3C autocomplete token. RN folds it to the Android `autoComplete` / iOS
+  // `textContentType` native prop in JS (TextInput.js:938) — see foldAutoComplete.
   autoComplete?: string
+  // iOS content-type hint. An explicit value wins over the autoComplete-derived one.
+  textContentType?: string
   autoFocus?: boolean
+  // iOS keyboard suppression. RN derives it from inputMode (`inputMode !== 'none'`)
+  // when inputMode is set, else uses the explicit value (TextInput.js:935).
+  showSoftInputOnFocus?: boolean
   returnKeyType?: string
   selectTextOnFocus?: boolean
   scrollEnabled?: boolean
@@ -101,6 +209,10 @@ export interface TextInputProps extends AccessibilityProps, AriaProps {
   cursorColor?: string
   selectionColor?: string
   selectionHandleColor?: string
+  // Android-only: color of the platform EditText underline. RN defaults it to
+  // 'transparent' so the Material default bar is hidden (TextInput.js:908, doc
+  // TextInput.js:347); iOS has no underline concept and ignores it.
+  underlineColorAndroid?: string
   // Pairs this input with an InputAccessoryView whose nativeID matches; native docks
   // that view above the keyboard while the input is focused. Forwarded via ...rest.
   inputAccessoryViewID?: string
@@ -170,6 +282,11 @@ export const TextInput = forwardRef<TextInputHandle, TextInputProps>((rawProps, 
     keyboardType,
     returnKeyType,
     editable,
+    autoComplete,
+    textContentType,
+    autoFocus,
+    showSoftInputOnFocus,
+    underlineColorAndroid,
     ...rest
   } = props
 
@@ -186,6 +303,19 @@ export const TextInput = forwardRef<TextInputHandle, TextInputProps>((rawProps, 
   const foldedCursorColor = cursorColor !== undefined ? cursorColor : selectionColor
   const foldedSelectionHandleColor =
     selectionHandleColor !== undefined ? selectionHandleColor : selectionColor
+  // RN folds the W3C autoComplete token to the per-platform native prop; an explicit
+  // textContentType still wins over the derived one (TextInput.js:946).
+  const foldedAutoComplete = foldAutoComplete(autoComplete)
+  const foldedTextContentType =
+    textContentType !== undefined ? textContentType : foldedAutoComplete.textContentType
+  // inputMode forces softInput visibility ('none' hides it); else the explicit prop
+  // stands (TextInput.js:935).
+  const foldedShowSoftInputOnFocus =
+    inputMode !== undefined ? inputMode !== 'none' : showSoftInputOnFocus
+  // RN defaults underlineColorAndroid to 'transparent' to hide the platform
+  // EditText underline (TextInput.js:908); an explicit value wins.
+  const foldedUnderlineColorAndroid =
+    underlineColorAndroid !== undefined ? underlineColorAndroid : 'transparent'
 
   const ref = useRef<SymbioteNode | null>(null)
   // JS-side focus state, mirrored from the focus/blur events for isFocused(). RN's
@@ -240,6 +370,18 @@ export const TextInput = forwardRef<TextInputHandle, TextInputProps>((rawProps, 
     dispatchViewCommand(node, 'setTextAndSelection', [mostRecentEventCount, value, selStart, selEnd])
     lastNativeText.current = value
   })
+
+  // autoFocus is driven in JS, not as a native prop: on mount, command `focus` down
+  // once (RN does the same via TextInputState.focusInput, TextInput.js:538). Empty deps
+  // so it fires only on mount; the native `focus` command is idempotent if already focused.
+  useEffect(() => {
+    if (autoFocus !== true) return
+    const node = ref.current
+    if (node === null) return
+    dlog('TextInput autoFocus -> focus command')
+    dispatchViewCommand(node, 'focus', [])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   const handleFocus = useCallback(
     (event: SymbioteEvent): void => {
@@ -306,6 +448,10 @@ export const TextInput = forwardRef<TextInputHandle, TextInputProps>((rawProps, 
     selectionColor,
     cursorColor: foldedCursorColor,
     selectionHandleColor: foldedSelectionHandleColor,
+    underlineColorAndroid: foldedUnderlineColorAndroid,
+    autoComplete: foldedAutoComplete.autoComplete,
+    textContentType: foldedTextContentType,
+    showSoftInputOnFocus: foldedShowSoftInputOnFocus,
     onChange: handleChange,
     onFocus: handleFocus,
     onBlur: handleBlur,
