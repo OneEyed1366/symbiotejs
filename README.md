@@ -4,7 +4,7 @@
 
 ### Want to ship a real native iOS/Android app, but you don't write React? Today you can't.
 
-**Pre-alpha** · iOS + Android · one native core, N framework adapters
+**Alpha** · iOS + Android · one native core, N framework adapters
 
 [Architecture](#how-it-works) · [Design decisions](#design-decisions) · [Milestones](#milestones) · [Prior art](https://github.com/OneEyed1366/wolf-tui)
 
@@ -146,11 +146,13 @@ Fabric — no React Native renderer in the path.
 ## Status
 
 > [!WARNING]
-> **Pre-alpha. Not published to npm, no stable API.** iOS is the reference surface (most
-> real-hardware time, widest prop-edge coverage); the full canary demo is also verified on an
-> Android emulator through the same core. This is a research project proving an architecture,
-> not a product you can build an app on yet. Watch the [milestones](#milestones) — the README
-> will say "alpha" when the React adapter reaches React Native feature parity.
+> **Alpha. Not published to npm, no stable API yet.** The architecture is proven: React Native's
+> renderer is extracted and the React adapter drives the framework-agnostic core on iOS + Android,
+> with RN's own renderer never in the path — the canary runs green on both. iOS stays the
+> reference surface (most real-hardware time, widest prop-edge coverage). It is not yet a product
+> you can ship a real app on — APIs will still move, the long-tail prop surface is hardening, and
+> the `create-symbiote` scaffolder doesn't exist yet. **Vue ([M3](#milestones)) is next:** a
+> second framework on the same untouched core, proving the renderer is genuinely framework-agnostic.
 
 **Done:** the native pipe, bootstrap, and `@symbiote/shared`'s mutation→clone-on-write engine
 are proven on a real iOS 26 simulator via the React canary (R1 + R2 + R3 — decision
@@ -171,6 +173,15 @@ commits through `@symbiote/shared` into Fabric, with React Native's renderer nev
 - **Third-party native views** — `@react-native-community/slider` used straight from the
   package with zero symbiote metadata; shared derives its events and prop processors from the
   library's own ViewConfig at runtime — the "install the package, use its component" path.
+- **Gestures & events** — the responder lifecycle (grant/move/release/terminate, LCA-scoped
+  re-negotiation), two-phase capture→bubble delivery, `Pressable` press-retention, `Touchable*`
+  delays, and `PanResponder` — all in shared, on both platforms.
+- **Accessibility** — the `accessibility*` / ARIA prop layer (roles, labels, states, focus,
+  grouping) folded across components and verified against the platform a11y tree on iOS + Android.
+- **Modern styling** — RN's JS style processors (`boxShadow` · `filter` · `transform` ·
+  `transformOrigin` · `aspectRatio` · `fontVariant`) and color resolution run in shared, so
+  CSS-style props commit correctly on **both** platforms — not just iOS tolerating a raw string
+  while Android's strict native converter crashes on it.
 
 **Android — the full canary, verified on an emulator.** The same React canary runs on an
 Android emulator through the same `@symbiote/shared` core, RN's renderer still never in the
@@ -187,17 +198,25 @@ branch. iOS stays the reference surface (more real-hardware time, wider prop-edg
 `ActionSheetIOS` is iOS-only by design, and `Vibration` needs the app to declare the `VIBRATE`
 permission (RN's standard requirement, owned by the future scaffolder).
 
-**In progress:** building `@symbiote/react` the rest of the way to full React Native feature
-parity (gestures, remaining components and prop edges) and bringing Android up to the iOS
-surface.
+**The bar for "done" is the canary, not a percentage.** [`examples/canary/App.tsx`](./examples/canary/App.tsx)
+is the working spec — it exercises the real surface (every primitive, the runtime modules,
+`Animated` on both drivers, gestures, a11y, a third-party native view) and it runs green on
+both an iOS simulator and an Android emulator. React Native's own surface is effectively
+unbounded; rather than chase a parity figure against it, the canary defines the contract and
+stays green. Known RN divergences that fall **outside** that surface (e.g. vector-driven
+`Animated.spring` on a `ValueXY`, the `item.key`/`item.id` default `keyExtractor` fallback) are
+tracked and fixed when a real screen needs them.
+
+**In progress:** widening the canary's surface (long-tail components and prop edges) and
+bringing Android fully level with the iOS reference.
 
 ---
 
 ## Milestones
 
-The strategy is to make **React** the known-good driver first — reach full React Native
-feature parity on the framework-agnostic core — then add one framework at a time on a core
-that's already validated. A break in a new adapter is then a break in *that adapter*, not in
+The strategy is to make **React** the known-good driver first — cover its React Native surface
+on the framework-agnostic core, with the canary as the spec — then add one framework at a time
+on a core that's already validated. A break in a new adapter is then a break in *that adapter*, not in
 the native pipe or the commit engine.
 
 There are **two orthogonal axes** here, not one line: the **framework** axis (React → Vue →
@@ -210,19 +229,20 @@ that each further adapter inherits as it lands.
 |---|-----------|----------------|--------|
 | **M0** | Monorepo scaffold | pnpm workspaces, `shared` + `react` packages, headless harness | ✅ done |
 | **M1** | React canary on iOS | native pipe (R1) + clone-on-write engine (R2) + event→recommit (R3) | ✅ done |
-| **M2** | **React → React Native feature parity** | the full primitive + prop + event surface on the agnostic core | 🚧 in progress |
+| **M2** | **React → React Native parity (canary surface)** | the canary's full primitive + prop + event surface on the agnostic core — green on iOS + Android | ✅ done |
 | ↳ M2.1 | Primitive surface | `View`/`Text`/`ScrollView`/`TextInput`/`Modal`/`FlatList`/… all driven through shared, on device | ✅ done |
 | ↳ M2.2 | Runtime modules | `Platform`/`StyleSheet`/`Dimensions`/`Appearance`/`AppState` + imperative `Alert`/`ActionSheetIOS`/`Share`/`Linking`/`Vibration`/`Keyboard`/`StatusBar` | ✅ done |
 | ↳ M2.3 | `Animated`, both drivers | JS + native driver (`ValueXY`/tracking/`diffClamp`); native offload proven by a JS-thread freeze (ADR 0016 · 0017) | ✅ done |
 | ↳ M2.4 | Third-party native views | `@react-native-community/slider` via runtime ViewConfig derivation — zero symbiote metadata | ✅ done |
-| ↳ M2.5 | Gestures + remaining parity | gesture responder, remaining components, prop-edge coverage | 🚧 in progress |
-| **DX** | `create-symbiote` scaffolder | pins `react-native` + `react` at the app root so your app code imports only `@symbiote/*`, never `react-native` | ⏳ planned |
+| ↳ M2.5 | Gestures & events | responder lifecycle, capture→bubble phases, `Pressable`/`Touchable*`/`PanResponder`, a11y prop layer | ✅ done |
+| ↳ M2.6 | Long-tail prop edges | continuous hardening of remaining components and per-prop edges as the canary surface widens — not a gate on M2 | 🔁 ongoing |
 | **M3** | Vue adapter | `createRenderer` + nodeOps on the validated core — first non-React framework (R4) | ⏳ next |
 | **M4** | Angular adapter | a second mutation-oriented framework, template/renderer seam | ⏳ planned |
 | **M5** | Svelte adapter | compiled-output framework driving the shared mutation API | ⏳ planned |
 | **M6** | Solid adapter | fine-grained reactivity driving the shared mutation API | ⏳ planned |
 | **M7** | Android *(platform axis)* | each adapter renders native Android off the same core as iOS — orthogonal to M3–M6, not after them | 🚧 React: full canary verified on emulator (`@symbiote/android` host shims). Other adapters inherit it as they land |
 | **M8** | Web *(stretch)* | the same trees rendered to the web as a default platform target | 💭 maybe |
+| **DX** | `create-symbiote` scaffolder | pins `react-native` + `react` at the app root so your app code imports only `@symbiote/*`, never `react-native` | ⏳ planned |
 
 **End goal:** each framework — Vue, Angular, Svelte, Solid, React — can render native iOS and
 Android apps the same way React Native does today, off one untouched native core. Web as a
@@ -310,9 +330,10 @@ its native C++/Obj-C++/JNI sources are never touched. symbiote replaces only the
 it to validate the native pipe and the commit engine first means that when Vue/Svelte/Solid/
 Angular break, the failure isolates to *that adapter* — not the native stack underneath it.
 
-**Can I use it today?** Not for a real app — it's pre-alpha. iOS is the reference surface; the
-full canary demo is also verified on an Android emulator through the same core. You can read
-the architecture, run the headless smokes, and follow the milestones.
+**Can I use it today?** Not for a real app yet — it's alpha: no stable API, no `create-symbiote`
+scaffolder. The architecture is proven, though — the React adapter drives the agnostic core on
+iOS + Android with RN's renderer never in the path. You can read the architecture, run the
+headless smokes, drive the canary, and follow the milestones.
 
 ---
 
