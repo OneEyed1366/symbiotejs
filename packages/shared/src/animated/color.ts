@@ -7,7 +7,7 @@
 
 import { AnimatedWithChildren, flushValue } from './graph'
 import { AnimatedValue } from './value'
-import type { NativeNodeConfig } from './native/native-animated'
+import type { NativeNodeConfig, PlatformConfig } from './native/native-animated'
 
 export interface RgbaValue {
   r: number
@@ -189,12 +189,12 @@ export class AnimatedColor extends AnimatedWithChildren {
     super.__detach()
   }
 
-  override __makeNative(): void {
-    this.r.__makeNative()
-    this.g.__makeNative()
-    this.b.__makeNative()
-    this.a.__makeNative()
-    super.__makeNative()
+  override __makeNative(platformConfig?: PlatformConfig): void {
+    this.r.__makeNative(platformConfig)
+    this.g.__makeNative(platformConfig)
+    this.b.__makeNative(platformConfig)
+    this.a.__makeNative(platformConfig)
+    super.__makeNative(platformConfig)
   }
 
   override __getNativeConfig(): NativeNodeConfig {

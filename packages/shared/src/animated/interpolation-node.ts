@@ -9,7 +9,7 @@ import {
   createInterpolation,
   type InterpolationConfig,
 } from './interpolation'
-import type { NativeNodeConfig } from './native/native-animated'
+import type { NativeNodeConfig, PlatformConfig } from './native/native-animated'
 
 export class AnimatedInterpolation extends AnimatedWithChildren {
   private readonly parent: AnimatedNode
@@ -55,9 +55,9 @@ export class AnimatedInterpolation extends AnimatedWithChildren {
 
   // Make the upstream value native first, so the parent->interpolation edge can be
   // wired when this node is reached from a leaf rather than from the value.
-  override __makeNative(): void {
-    this.parent.__makeNative()
-    super.__makeNative()
+  override __makeNative(platformConfig?: PlatformConfig): void {
+    this.parent.__makeNative(platformConfig)
+    super.__makeNative(platformConfig)
   }
 
   override __getNativeConfig(): NativeNodeConfig {

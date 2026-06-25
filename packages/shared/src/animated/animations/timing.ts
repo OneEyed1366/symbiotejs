@@ -54,7 +54,14 @@ export class TimingAnimation extends BaseAnimation {
       frames.push(this.easing(frame / numFrames))
     }
     frames.push(this.easing(1))
-    return { type: 'frames', frames, toValue: this.toValue, iterations: this.__iterations }
+    return {
+      type: 'frames',
+      frames,
+      toValue: this.toValue,
+      iterations: this.__iterations,
+      platformConfig: this.__platformConfig,
+      debugID: this.__getDebugID(),
+    }
   }
 
   override start(

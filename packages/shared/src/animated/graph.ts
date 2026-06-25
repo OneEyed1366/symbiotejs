@@ -15,6 +15,7 @@ import {
   generateNativeNodeTag,
   nativeAnimated,
   type NativeNodeConfig,
+  type PlatformConfig,
 } from './native/native-animated'
 
 // Most nodes emit a scalar; a composite node (AnimatedColor) emits its rasterized
@@ -48,6 +49,11 @@ export class AnimatedNode {
   // allocated lazily on first reference (which also creates the native node).
   protected isNative = false
   private nativeTag: number | undefined
+  // RN's AnimatedNode._platformConfig (AnimatedNode.js:34): the platform tuning bag
+  // a useNativeDriver animation hands down via __makeNative, merged into this node's
+  // native config at creation (__getNativeTag). Optional — undefined when no caller
+  // supplied one, matching today's behavior.
+  private platformConfig: PlatformConfig | undefined
 
   __attach(): void {}
 
@@ -70,9 +76,12 @@ export class AnimatedNode {
   //      only READS child tags (also creating them), never connects, so creation is
   //      side-effect-free w.r.t. edges and createAnimatedNode may precede its refs.
   //   2. CONNECT every edge — only once both endpoints are guaranteed created.
-  __makeNative(): void {
+  __makeNative(platformConfig?: PlatformConfig): void {
     if (this.isNative) return
     this.isNative = true
+    // RN stores the platform bag before minting the tag (AnimatedNode.js:80) so it
+    // is already present when __getNativeTag folds it into the create config.
+    if (platformConfig !== undefined) this.platformConfig = platformConfig
     this.__getNativeTag() // phase 1: create self (config may create referenced children)
     this.__connectNativeChildren() // phase 2: wire edges
   }
@@ -87,7 +96,13 @@ export class AnimatedNode {
   __getNativeTag(): number {
     if (this.nativeTag === undefined) {
       this.nativeTag = generateNativeNodeTag()
-      nativeAnimated.createAnimatedNode(this.nativeTag, this.__getNativeConfig())
+      // RN merges _platformConfig into the config after __getNativeConfig returns
+      // (AnimatedNode.js:146-148) rather than in each node's config method.
+      const config =
+        this.platformConfig === undefined
+          ? this.__getNativeConfig()
+          : { ...this.__getNativeConfig(), platformConfig: this.platformConfig }
+      nativeAnimated.createAnimatedNode(this.nativeTag, config)
     }
     return this.nativeTag
   }

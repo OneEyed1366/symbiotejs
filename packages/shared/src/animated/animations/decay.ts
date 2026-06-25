@@ -36,6 +36,8 @@ export class DecayAnimation extends BaseAnimation {
       deceleration: this.deceleration,
       velocity: this.velocity,
       iterations: this.__iterations,
+      platformConfig: this.__platformConfig,
+      debugID: this.__getDebugID(),
     }
   }
 

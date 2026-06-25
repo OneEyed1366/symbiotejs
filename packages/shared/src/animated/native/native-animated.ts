@@ -14,6 +14,12 @@ import { dlog } from '../../debug'
 import { getNativeModule } from '../../native-modules'
 import { NativeEventEmitter, type EventSubscription } from '../../native-events'
 
+// Opaque per-platform tuning bag forwarded into a native node/animation config,
+// mirroring RN's AnimatedPlatformConfig.js (`export type PlatformConfig = {}`).
+// Stock RN keeps it empty today; it is the seam a future native driver reads
+// platform-specific knobs from. Forwarded verbatim — never inspected here.
+export type PlatformConfig = Record<string, unknown>
+
 // An animated-node config (`{type:'value'|'interpolation'|'style'|'transform'|'props', …}`)
 // and an animation config (`{type:'frames'|'spring'|'decay', …}`) cross into native as
 // plain JSON. They are open by design — each node/driver fills its own shape.

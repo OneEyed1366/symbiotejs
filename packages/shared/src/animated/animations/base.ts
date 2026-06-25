@@ -12,12 +12,13 @@
 import type { Animation, EndCallback, EndResult } from '../animation'
 import type { AnimatedValue } from '../value'
 import { flushValue } from '../graph'
-import { dlog } from '../../debug'
+import { dlog, isDebug } from '../../debug'
 import {
   generateNativeAnimationId,
   isNativeAnimatedAvailable,
   nativeAnimated,
   type NativeAnimationConfig,
+  type PlatformConfig,
 } from '../native/native-animated'
 
 export interface AnimationConfig {
@@ -26,6 +27,11 @@ export interface AnimationConfig {
   // ADR 0017: offload the curve to the stock native module (zero JS per frame).
   // Honoured only when the module is present; otherwise the JS path runs.
   useNativeDriver?: boolean
+  // RN threads both into every native animation config (Animation.js:30-34): the
+  // platform bag rides through to native unread; debugID labels the animation in
+  // native diagnostics. Optional — current callers pass nothing.
+  platformConfig?: PlatformConfig
+  debugID?: string
 }
 
 export abstract class BaseAnimation implements Animation {
@@ -33,6 +39,11 @@ export abstract class BaseAnimation implements Animation {
   // schedule the next frame; cleared by stop().
   protected __active = false
   protected __iterations: number
+  // RN's Animation holds `_platformConfig` / `__debugID` and folds them into the
+  // native config (Animation.js:60-62). Subclasses read them via the protected
+  // accessors below so every driver's config carries them uniformly.
+  protected readonly __platformConfig: PlatformConfig | undefined
+  private readonly __debugID: string | undefined
 
   private onEndCallback: EndCallback | null = null
   private readonly nativeDriverRequested: boolean
@@ -41,6 +52,14 @@ export abstract class BaseAnimation implements Animation {
   constructor(config: AnimationConfig) {
     this.__iterations = config.iterations ?? 1
     this.nativeDriverRequested = config.useNativeDriver === true
+    this.__platformConfig = config.platformConfig
+    this.__debugID = config.debugID
+  }
+
+  // Mirrors RN's Animation.__getDebugID (Animation.js:192). Returns the label only
+  // under DEBUG so production native configs stay lean, undefined otherwise.
+  protected __getDebugID(): string | undefined {
+    return isDebug() ? this.__debugID : undefined
   }
 
   abstract start(
@@ -75,7 +94,9 @@ export abstract class BaseAnimation implements Animation {
       return false
     }
     const config = this.getNativeAnimationConfig()
-    animatedValue.__makeNative()
+    // RN hands the curve's platform bag down to the value node (Animation.js:137)
+    // so the node's create config carries it too.
+    animatedValue.__makeNative(this.__platformConfig)
     this.nativeId = generateNativeAnimationId()
     nativeAnimated.startAnimatingNode(
       this.nativeId,

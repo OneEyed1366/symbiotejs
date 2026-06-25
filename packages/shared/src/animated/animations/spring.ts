@@ -114,6 +114,8 @@ export class SpringAnimation extends BaseAnimation {
       restSpeedThreshold: this.restSpeedThreshold,
       toValue: this.toValue,
       iterations: this.__iterations,
+      platformConfig: this.__platformConfig,
+      debugID: this.__getDebugID(),
     }
   }
 

@@ -14,7 +14,7 @@ import { AnimatedValue } from './value'
 import { AnimatedInterpolation } from './interpolation-node'
 import type { InterpolationConfig } from './interpolation'
 import { dlog } from '../debug'
-import type { NativeNodeConfig } from './native/native-animated'
+import type { NativeNodeConfig, PlatformConfig } from './native/native-animated'
 
 // Wrap a bare number in an AnimatedValue so every input is a graph node.
 function toNode(input: AnimatedNode | number): AnimatedNode {
@@ -59,10 +59,10 @@ export class AnimatedAddition extends AnimatedWithChildren {
     super.__detach()
   }
 
-  override __makeNative(): void {
-    this.a.__makeNative()
-    this.b.__makeNative()
-    super.__makeNative()
+  override __makeNative(platformConfig?: PlatformConfig): void {
+    this.a.__makeNative(platformConfig)
+    this.b.__makeNative(platformConfig)
+    super.__makeNative(platformConfig)
   }
 
   override __getNativeConfig(): NativeNodeConfig {
@@ -100,10 +100,10 @@ export class AnimatedSubtraction extends AnimatedWithChildren {
     super.__detach()
   }
 
-  override __makeNative(): void {
-    this.a.__makeNative()
-    this.b.__makeNative()
-    super.__makeNative()
+  override __makeNative(platformConfig?: PlatformConfig): void {
+    this.a.__makeNative(platformConfig)
+    this.b.__makeNative(platformConfig)
+    super.__makeNative(platformConfig)
   }
 
   override __getNativeConfig(): NativeNodeConfig {
@@ -141,10 +141,10 @@ export class AnimatedMultiplication extends AnimatedWithChildren {
     super.__detach()
   }
 
-  override __makeNative(): void {
-    this.a.__makeNative()
-    this.b.__makeNative()
-    super.__makeNative()
+  override __makeNative(platformConfig?: PlatformConfig): void {
+    this.a.__makeNative(platformConfig)
+    this.b.__makeNative(platformConfig)
+    super.__makeNative(platformConfig)
   }
 
   override __getNativeConfig(): NativeNodeConfig {
@@ -197,10 +197,10 @@ export class AnimatedDivision extends AnimatedWithChildren {
     super.__detach()
   }
 
-  override __makeNative(): void {
-    this.a.__makeNative()
-    this.b.__makeNative()
-    super.__makeNative()
+  override __makeNative(platformConfig?: PlatformConfig): void {
+    this.a.__makeNative(platformConfig)
+    this.b.__makeNative(platformConfig)
+    super.__makeNative(platformConfig)
   }
 
   override __getNativeConfig(): NativeNodeConfig {
@@ -239,9 +239,9 @@ export class AnimatedModulo extends AnimatedWithChildren {
     super.__detach()
   }
 
-  override __makeNative(): void {
-    this.a.__makeNative()
-    super.__makeNative()
+  override __makeNative(platformConfig?: PlatformConfig): void {
+    this.a.__makeNative(platformConfig)
+    super.__makeNative(platformConfig)
   }
 
   override __getNativeConfig(): NativeNodeConfig {
@@ -290,9 +290,9 @@ export class AnimatedDiffClamp extends AnimatedWithChildren {
     super.__detach()
   }
 
-  override __makeNative(): void {
-    this.a.__makeNative()
-    super.__makeNative()
+  override __makeNative(platformConfig?: PlatformConfig): void {
+    this.a.__makeNative(platformConfig)
+    super.__makeNative(platformConfig)
   }
 
   override __getNativeConfig(): NativeNodeConfig {

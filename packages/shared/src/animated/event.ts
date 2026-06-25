@@ -86,14 +86,19 @@ export interface AnimatedEventHandler {
   __getEvent(): AnimatedEvent
 }
 
+export type EventListener = (...args: unknown[]) => void
+
 export class AnimatedEvent {
-  private readonly listener: ((...args: unknown[]) => void) | undefined
+  // Listeners fired (in registration order) after the values are driven. Seeded
+  // with config.listener; forkEvent appends more via __addListener (RN
+  // AnimatedEvent.js seeds `__addListener(config.listener)` in its constructor).
+  private readonly listeners: EventListener[] = []
   // The leaves under argMapping[0].nativeEvent — the only place native-driven
   // events accept animated values (RN invariant). Resolved once at construction.
   private readonly mappedValues: readonly MappedValue[]
 
   constructor(argMapping: readonly Mapping[], config?: EventConfig) {
-    this.listener = config?.listener
+    if (config?.listener !== undefined) this.listeners.push(config.listener)
     const mapped: MappedValue[] = []
     const first = argMapping[0]
     if (isRecord(first)) {
@@ -103,6 +108,17 @@ export class AnimatedEvent {
       }
     }
     this.mappedValues = mapped
+  }
+
+  // Append / drop a listener (RN AnimatedEvent.js __addListener / __removeListener).
+  // forkEvent/unforkEvent use these to combine extra handlers onto one AnimatedEvent.
+  __addListener(callback: EventListener): void {
+    this.listeners.push(callback)
+  }
+
+  __removeListener(callback: EventListener): void {
+    const index = this.listeners.indexOf(callback)
+    if (index !== -1) this.listeners.splice(index, 1)
   }
 
   // Native path: mirror each leaf value into native and register its key path with
@@ -141,7 +157,7 @@ export class AnimatedEvent {
           setValue(extracted)
           flushValue(mapped.node)
         }
-        this.listener?.(...args)
+        for (const listener of this.listeners) listener(...args)
       },
       { __getEvent: (): AnimatedEvent => this },
     )
@@ -183,4 +199,47 @@ export function attachNativeEvent(
       if (viewTag !== undefined) animatedEvent.__detach(viewTag, eventName)
     },
   }
+}
+
+// Combine an existing event handler with an extra listener (RN
+// AnimatedImplementation.js forkEventImpl ~519). Three cases, by the existing event:
+//   - absent          -> the listener becomes the handler
+//   - an AnimatedEvent -> the listener is appended to it; the same event is returned
+//   - a plain function -> a new function calling both
+// The AnimatedEvent is recognised through its handler's __getEvent (the only public
+// seam), so a handler built by `event(...)` forks into the underlying AnimatedEvent.
+export function forkEvent(
+  existing: AnimatedEventHandler | EventListener | undefined,
+  listener: EventListener,
+): AnimatedEventHandler | EventListener {
+  if (existing === undefined) return listener
+  const animatedEvent = getAnimatedEvent(existing)
+  if (animatedEvent !== undefined) {
+    animatedEvent.__addListener(listener)
+    return existing
+  }
+  return (...args: unknown[]): void => {
+    existing(...args)
+    listener(...args)
+  }
+}
+
+// Undo a forkEvent that targeted an AnimatedEvent (RN unforkEventImpl ~531). A
+// plain-function fork has no removable seam, so this is a no-op for that case —
+// exactly as RN, which only removes from an AnimatedEvent.
+export function unforkEvent(
+  existing: AnimatedEventHandler | EventListener | undefined,
+  listener: EventListener,
+): void {
+  const animatedEvent = existing === undefined ? undefined : getAnimatedEvent(existing)
+  animatedEvent?.__removeListener(listener)
+}
+
+// Reach the AnimatedEvent behind a handler. event(...) returns an AnimatedEventHandler
+// carrying __getEvent; a bare listener does not, so this narrows the fork cases.
+function getAnimatedEvent(
+  candidate: AnimatedEventHandler | EventListener,
+): AnimatedEvent | undefined {
+  const accessor = Reflect.get(candidate, '__getEvent')
+  return typeof accessor === 'function' ? accessor.call(candidate) : undefined
 }

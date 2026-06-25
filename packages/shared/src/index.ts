@@ -96,6 +96,8 @@ export {
   modulo,
   diffClamp,
   event,
+  forkEvent,
+  unforkEvent,
   attachNativeEvent,
   flushValue,
   Easing,
@@ -121,6 +123,7 @@ export type {
   RgbaValue,
   ColorInput,
   EventConfig,
+  EventListener,
   AnimatedEventHandler,
   NativeEventAttachment,
   ValueListener,
@@ -139,6 +142,7 @@ export type {
   NativeNodeConfig,
   NativeAnimationConfig,
   NativeEventMapping,
+  PlatformConfig,
 } from './animated'
 
 export { getSlot } from './fabric'

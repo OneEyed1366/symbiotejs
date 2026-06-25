@@ -9,7 +9,11 @@ import { AnimatedWithChildren, flushValue, type ValueListener } from './graph'
 import type { AnimatedTracking } from './animations/tracking'
 import { AnimatedInterpolation } from './interpolation-node'
 import type { InterpolationConfig } from './interpolation'
-import { nativeAnimated, type NativeNodeConfig } from './native/native-animated'
+import {
+  nativeAnimated,
+  type NativeNodeConfig,
+  type PlatformConfig,
+} from './native/native-animated'
 
 export class AnimatedValue extends AnimatedWithChildren {
   private value: number
@@ -60,8 +64,8 @@ export class AnimatedValue extends AnimatedWithChildren {
   }
 
   // A value made native while listeners already exist must start streaming now.
-  override __makeNative(): void {
-    super.__makeNative()
+  override __makeNative(platformConfig?: PlatformConfig): void {
+    super.__makeNative(platformConfig)
     if (this.hasListeners()) this.startListeningToNativeValueUpdates()
   }
 
