@@ -14,6 +14,7 @@ import {
   dlog,
   event as animatedEvent,
   isNativeAnimatedAvailable,
+  Platform,
   type SymbioteEvent,
   type SymbioteNode,
 } from '@symbiote/shared'
@@ -33,11 +34,6 @@ function readLayoutDimension(event: SymbioteEvent, key: 'width' | 'height'): num
   if (typeof layout !== 'object' || layout === null) return undefined
   const value = Reflect.get(layout, key)
   return typeof value === 'number' ? value : undefined
-}
-
-const DECELERATION_RATE: Readonly<Record<string, number>> = {
-  normal: 0.998,
-  fast: 0.99,
 }
 
 // The imperative API RN exposes on a ScrollView ref. Each method drives a native
@@ -129,9 +125,19 @@ export interface ScrollViewProps extends AccessibilityProps, AriaProps {
   children?: ReactNode
 }
 
+// 'normal'/'fast' resolve to DIFFERENT friction constants per platform — RN's
+// processDecelerationRate.js Platform.select()s them: iOS glides longer (0.998/0.99),
+// Android sooner (0.985/0.9). Hardcoding the iOS pair made Android momentum scroll
+// glide far too long on 'fast'. This is the file's one Platform read: the header's
+// "no Platform.OS" rule governs component-intrinsic selection, not a value transform
+// RN itself platform-branches. `default` mirrors iOS so any non-ios/android host stays
+// defined (select would otherwise yield undefined). Numeric rates pass through unchanged.
 function resolveDecelerationRate(rate: 'normal' | 'fast' | number): number {
   if (typeof rate === 'number') return rate
-  return DECELERATION_RATE[rate]
+  // select() types as `number | undefined`; the always-present `default` makes the
+  // `??` fallback unreachable, but it narrows the return to a plain `number` (no cast).
+  if (rate === 'normal') return Platform.select({ ios: 0.998, android: 0.985, default: 0.998 }) ?? 0.998
+  return Platform.select({ ios: 0.99, android: 0.9, default: 0.99 }) ?? 0.99
 }
 
 // RN applies a base style to the scroll-view NODE itself, per axis (ScrollView.js
@@ -313,6 +319,11 @@ export function prepareScrollView(rawProps: ScrollViewProps): PreparedScrollView
   if (isHorizontal) contentStyle.flexDirection = 'row'
 
   const outerProps: Record<string, unknown> = { ...outer }
+  // RN defaults nested scrolling ON (ScrollView.js:1862 `nestedScrollEnabled ?? true`).
+  // Android needs the flag to scroll a scrollable nested inside another scroll view
+  // independently; without it the inner one stays put. iOS handles nesting natively, so
+  // it is a no-op there. Default to true so nested lists scroll out of the box, like RN.
+  outerProps.nestedScrollEnabled = props.nestedScrollEnabled ?? true
   // iOS needs `horizontal` to flip RCTScrollView's axis; Android's dedicated horizontal
   // manager ignores it. Harmless on Android, load-bearing on iOS — so always forward it.
   if (horizontal !== undefined) outerProps.horizontal = horizontal
@@ -366,6 +377,14 @@ export function prepareScrollView(rawProps: ScrollViewProps): PreparedScrollView
   // size actually changed (dedupe via a ref, like RN). Composed with any content onLayout.
   const lastContentSizeRef = useRef<{ width: number; height: number } | null>(null)
   const contentProps: Record<string, unknown> = { style: contentStyle, collapsable: false }
+  // maintainVisibleContentPosition (and Android snapToAlignment) anchor against the metrics
+  // of MOUNTED cell views. Android Fabric view-flattens layout-only cells away, so the native
+  // MaintainVisibleScrollPositionHelper has nothing to anchor to and the list jumps on prepend.
+  // RN keeps the cells as real views via collapsableChildren={false} on the content container
+  // (ScrollView.js:1731-1748 `preserveChildren`). iOS never flattens, so it is a no-op there.
+  if (props.maintainVisibleContentPosition !== undefined || props.snapToAlignment !== undefined) {
+    contentProps.collapsableChildren = false
+  }
   if (onContentSizeChange !== undefined) {
     contentProps.onLayout = (layoutEvent: SymbioteEvent): void => {
       const width = readLayoutDimension(layoutEvent, 'width')
