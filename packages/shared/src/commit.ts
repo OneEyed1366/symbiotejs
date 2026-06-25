@@ -33,6 +33,12 @@ import { flattenStyle } from './style'
 import { registeredProcessor } from './registry'
 import { nextTag } from './tags'
 import { isOpaqueColorValue, type ColorValue } from './platform-color'
+import { processBoxShadow } from './process-box-shadow'
+import { processFilter } from './process-filter'
+import { processTransformOrigin } from './process-transform-origin'
+import { processTransform } from './process-transform'
+import { processAspectRatio } from './process-aspect-ratio'
+import { processFontVariant } from './process-font-variant'
 
 // Per-commit work counters, surfaced via dlog so a device run can prove the
 // engine is incremental (created=0 with clones after the first mount).
@@ -128,6 +134,16 @@ const COLOR_PROPS: ReadonlySet<string> = new Set([
   // Text decoration color (underline/strike) — same Fabric strictness as any color.
   'textDecorationColor',
   'selectionHandleColor',
+  // Switch track/thumb colors. RN processColors each via the Switch ViewConfig
+  // (SwitchNativeComponent / AndroidSwitchNativeComponent validAttributes). iOS takes
+  // onTintColor (ON) / tintColor (OFF); Android takes trackColorForTrue/False +
+  // trackTintColor — and Android's ColorPropConverter is strict ("the value must be a
+  // number or Object"), so a raw CSS string crashes. thumbTintColor reaches both.
+  'onTintColor',
+  'thumbTintColor',
+  'trackColorForTrue',
+  'trackColorForFalse',
+  'trackTintColor',
 ])
 
 // Accepts a CSS string or an opaque PlatformColor / DynamicColorIOS object — RN's
@@ -154,15 +170,86 @@ function isProcessableColor(value: unknown): value is ColorValue {
   return typeof value === 'string' || isOpaqueColorValue(value)
 }
 
+// Structured CSS-style keys RN parses in JS before native (boxShadow/filter register
+// with enableNativeCSSParsing(), which DEFAULTS TO FALSE — so native CSS parsing is off
+// and the raw string is dropped). Each runs on the hoisted top-level style key, turning
+// a CSS string or structured array into the processed array Fabric's C++ expects.
+const STYLE_PROCESSORS = new Map<string, (value: unknown) => unknown>([
+  ['boxShadow', (value) => processBoxShadow(asBoxShadowInput(value))],
+  ['filter', (value) => processFilter(asFilterInput(value))],
+  ['transformOrigin', (value) => processTransformOrigin(asTransformOriginInput(value))],
+  ['transform', processTransformValue],
+  ['aspectRatio', (value) => processAspectRatio(asAspectRatioInput(value))],
+  ['fontVariant', (value) => processFontVariant(asFontVariantInput(value))],
+])
+
+// boxShadow accepts a CSS string or an array of shadow objects; anything else is
+// undefined to processBoxShadow (which returns []). Narrowing avoids an `as` cast.
+function asBoxShadowInput(value: unknown): Parameters<typeof processBoxShadow>[0] {
+  if (typeof value === 'string') return value
+  if (Array.isArray(value)) return value.filter(isRecord)
+  return undefined
+}
+
+// filter accepts a CSS string or an array of single-key filter objects; same narrowing.
+function asFilterInput(value: unknown): Parameters<typeof processFilter>[0] {
+  if (typeof value === 'string') return value
+  if (Array.isArray(value)) return value.filter(isRecord)
+  return undefined
+}
+
+// transformOrigin accepts a CSS string or a [x, y, z] array of strings/numbers; anything
+// else is undefined to processTransformOrigin (which defaults to center/center/0).
+function asTransformOriginInput(value: unknown): Parameters<typeof processTransformOrigin>[0] {
+  if (typeof value === 'string') return value
+  if (Array.isArray(value)) return value.filter(isStringOrNumber)
+  return undefined
+}
+
+// aspectRatio accepts a number (the common, working form) or a ratio string; otherwise
+// undefined, which processAspectRatio drops.
+function asAspectRatioInput(value: unknown): Parameters<typeof processAspectRatio>[0] {
+  if (typeof value === 'number' || typeof value === 'string') return value
+  return undefined
+}
+
+// fontVariant accepts an array of variant strings (the common, working form) or a
+// space-separated string; anything else becomes an empty string, which yields [].
+function asFontVariantInput(value: unknown): Parameters<typeof processFontVariant>[0] {
+  if (typeof value === 'string') return value
+  if (Array.isArray(value)) return value.filter(isString)
+  return ''
+}
+
+// transform accepts a CSS string (processTransform parses it) or an array of single-key
+// transform records (the hot animated / sticky-header path — passed through unchanged).
+// A non-string non-array value is NOT dropped: it may already be processed, so it passes
+// through verbatim rather than being coerced to [] (which would erase a valid transform).
+function processTransformValue(value: unknown): unknown {
+  if (typeof value === 'string') return processTransform(value)
+  if (Array.isArray(value)) return processTransform(value.filter(isRecord))
+  return value
+}
+
+function isStringOrNumber(value: unknown): value is string | number {
+  return typeof value === 'string' || typeof value === 'number'
+}
+
+function isString(value: unknown): value is string {
+  return typeof value === 'string'
+}
+
 // Convert a prop to the shape Fabric's C++ expects. A third-party view contributes
 // its own processors, auto-derived from its ViewConfig (validAttributes[*].process —
-// e.g. processColor for a slider's track tints); those run first. Built-ins are
-// never in the registry, so they fall through to the global color path, where any
-// CSS-string color is run through the injected platform processor (Fabric's C++
-// color parser silently drops strings).
+// e.g. processColor for a slider's track tints); those run first. Then the structured
+// CSS-style processors (boxShadow/filter). Built-ins are never in the registry, so they
+// fall through to the global color path, where any CSS-string color is run through the
+// injected platform processor (Fabric's C++ color parser silently drops strings).
 function processValue(component: string, key: string, value: unknown): unknown {
   const processor = registeredProcessor(component, key)
   if (processor !== undefined) return processor(value)
+  const styleProcessor = STYLE_PROCESSORS.get(key)
+  if (styleProcessor !== undefined) return styleProcessor(value)
   if (COLOR_PROPS.has(key) && isProcessableColor(value)) return colorProcessor(value)
   return value
 }
