@@ -18,8 +18,13 @@ import {
   type ReactNode,
   type Ref,
 } from 'react'
-import { dlog } from '@symbiote/shared'
-import { VirtualizedList, type VirtualizedListHandle } from './virtualized-list'
+import { dlog, Platform, type SymbioteEvent } from '@symbiote/shared'
+import {
+  VirtualizedList,
+  type Separators,
+  type SeparatorProps,
+  type VirtualizedListHandle,
+} from './virtualized-list'
 import type { ScrollViewHandle } from './scroll-view'
 import type { AccessibilityProps, AriaProps } from './accessibility-props'
 import type { ViewStyle } from './styles'
@@ -60,7 +65,12 @@ export interface VirtualizedSectionListHandle {
 
 export interface VirtualizedSectionListProps<ItemT> extends AccessibilityProps, AriaProps {
   sections: ReadonlyArray<Section<ItemT>>
-  renderItem: (info: { item: ItemT; index: number; section: Section<ItemT> }) => ReactNode
+  renderItem: (info: {
+    item: ItemT
+    index: number
+    section: Section<ItemT>
+    separators: Separators
+  }) => ReactNode
   renderSectionHeader?: (info: { section: Section<ItemT> }) => ReactNode
   renderSectionFooter?: (info: { section: Section<ItemT> }) => ReactNode
   // Painted between adjacent sections (after one section's footer, before the
@@ -70,10 +80,11 @@ export interface VirtualizedSectionListProps<ItemT> extends AccessibilityProps, 
   // Stick each section header to the top as the next section scrolls up. Routed to
   // the inner VirtualizedList's stickyHeaderIndices (the section-header flat indices),
   // which forwards the in-window ones to the ScrollView's native stickyHeaderIndices.
-  // Defaults to RN's true; pass false to scroll headers away with their section.
+  // Defaults to `Platform.OS === 'ios'` (RN SectionList.js:243-244) — Android section
+  // headers do NOT stick by default; pass true/false to override.
   stickySectionHeadersEnabled?: boolean
   extraData?: unknown
-  ItemSeparatorComponent?: ComponentType<Record<string, never>>
+  ItemSeparatorComponent?: ComponentType<SeparatorProps<ItemT>>
   ListHeaderComponent?: ComponentType<Record<string, never>> | ReactElement
   ListFooterComponent?: ComponentType<Record<string, never>> | ReactElement
   ListEmptyComponent?: ComponentType<Record<string, never>> | ReactElement
@@ -92,6 +103,23 @@ export interface VirtualizedSectionListProps<ItemT> extends AccessibilityProps, 
   updateCellsBatchingPeriod?: number
   windowSize?: number
   inverted?: boolean
+  // Forwarded to the inner VirtualizedList: anchor the visible item so a prepend doesn't
+  // jump (RN maintainVisibleContentPosition).
+  maintainVisibleContentPosition?: {
+    minIndexForVisible: number
+    autoscrollToTopThreshold?: number
+  }
+  // Scroll callbacks forwarded through to the inner VirtualizedList (via the rest
+  // spread), which composes onScroll with its windowing handler and forwards the
+  // lifecycle callbacks to the ScrollView (RN VirtualizedList.js:1096-1099,1695-1697).
+  onScroll?: (event: SymbioteEvent) => void
+  onScrollBeginDrag?: (event: SymbioteEvent) => void
+  onScrollEndDrag?: (event: SymbioteEvent) => void
+  onMomentumScrollBegin?: (event: SymbioteEvent) => void
+  onMomentumScrollEnd?: (event: SymbioteEvent) => void
+  scrollEventThrottle?: number
+  keyboardShouldPersistTaps?: boolean | 'always' | 'never' | 'handled'
+  keyboardDismissMode?: 'none' | 'on-drag' | 'interactive'
   style?: ViewStyle
   contentContainerStyle?: ViewStyle
 }
@@ -138,6 +166,10 @@ export function VirtualizedSectionList<ItemT>(
     renderSectionHeader,
     renderSectionFooter,
     SectionSeparatorComponent,
+    // Pulled out of `rest`: the user's separator is typed on ItemT, but the inner
+    // VirtualizedList streams Entry<ItemT>, so its separator props carry Entry items.
+    // We wrap it to unwrap each Entry back to its ItemT before handing it to the user.
+    ItemSeparatorComponent,
     keyExtractor,
     stickySectionHeadersEnabled,
     ...rest
@@ -148,10 +180,13 @@ export function VirtualizedSectionList<ItemT>(
     SectionSeparatorComponent !== undefined,
   )
 
-  // RN sticks section headers unless explicitly disabled. headerIndices are the flat
-  // positions of every section header; VirtualizedList forwards the in-window ones to
-  // the ScrollView's native stickyHeaderIndices.
-  const stickyHeaderIndices = stickySectionHeadersEnabled === false ? undefined : headerIndices
+  // RN sticks section headers by default only on iOS (SectionList.js:243-244,
+  // `_stickySectionHeadersEnabled ?? Platform.OS === 'ios'`); Android does not stick
+  // unless asked. headerIndices are the flat positions of every section header;
+  // VirtualizedList forwards the in-window ones to the ScrollView's native stickyHeaderIndices.
+  const stickyDefault = Platform.OS === 'ios'
+  const stickyEnabled = stickySectionHeadersEnabled ?? stickyDefault
+  const stickyHeaderIndices = stickyEnabled ? headerIndices : undefined
 
   // The handle reaches into the inner VirtualizedList to drive scrollToIndex.
   const listRef = useRef<VirtualizedListHandle | null>(null)
@@ -204,7 +239,11 @@ export function VirtualizedSectionList<ItemT>(
     [headerIndices],
   )
 
-  const renderEntry = (info: { item: Entry<ItemT>; index: number }): ReactNode => {
+  const renderEntry = (info: {
+    item: Entry<ItemT>
+    index: number
+    separators: Separators
+  }): ReactNode => {
     const entry = info.item
     if (entry.kind === 'header') {
       return renderSectionHeader ? renderSectionHeader({ section: entry.section }) : undefined
@@ -215,8 +254,30 @@ export function VirtualizedSectionList<ItemT>(
     if (entry.kind === 'section-separator') {
       return resolveSeparator(SectionSeparatorComponent)
     }
-    return renderItem({ item: entry.item, index: entry.itemIndex, section: entry.section })
+    return renderItem({
+      item: entry.item,
+      index: entry.itemIndex,
+      section: entry.section,
+      separators: info.separators,
+    })
   }
+
+  // Unwrap an Entry separator-prop into the underlying ItemT (or undefined for a
+  // non-item entry — header/footer/section-separator gaps have no item to show), so the
+  // user's ItemSeparatorComponent, typed on ItemT, sees real items. RN's SectionList
+  // likewise feeds its separators the items, not the flattened wrapper.
+  const unwrapEntryItem = (entry: Entry<ItemT> | undefined): ItemT | undefined =>
+    entry !== undefined && entry.kind === 'item' ? entry.item : undefined
+
+  const entrySeparatorComponent: ComponentType<SeparatorProps<Entry<ItemT>>> | undefined =
+    ItemSeparatorComponent === undefined
+      ? undefined
+      : (entryProps): ReactNode =>
+          createElement(ItemSeparatorComponent, {
+            ...entryProps,
+            leadingItem: unwrapEntryItem(entryProps.leadingItem),
+            trailingItem: unwrapEntryItem(entryProps.trailingItem),
+          })
 
   const entryKeyExtractor = (entry: Entry<ItemT>, index: number): string => {
     if (entry.kind === 'header') return `section-${entry.sectionIndex}`
@@ -234,6 +295,7 @@ export function VirtualizedSectionList<ItemT>(
     renderItem: renderEntry,
     keyExtractor: entryKeyExtractor,
     stickyHeaderIndices,
+    ItemSeparatorComponent: entrySeparatorComponent,
     ...rest,
   })
 }

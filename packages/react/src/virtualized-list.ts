@@ -31,6 +31,7 @@ import {
   useCallback,
   useEffect,
   useImperativeHandle,
+  useLayoutEffect,
   useMemo,
   useRef,
   useState,
@@ -81,7 +82,33 @@ export interface CellLayout {
   offset: number
 }
 
-type RenderItem<ItemT> = (info: { item: ItemT; index: number }) => ReactNode
+// The props RN hands ItemSeparatorComponent (VirtualizedListCellRenderer.js:53-56 plus
+// the section fields VirtualizedSectionList layers on): the highlight flag the cell can
+// toggle, the items on either side of the gap, and — for section lists — the section the
+// separator sits in. `section` stays optional because a flat VirtualizedList has none.
+export interface SeparatorProps<ItemT> {
+  highlighted: boolean
+  leadingItem?: ItemT
+  trailingItem?: ItemT
+  section?: unknown
+  [key: string]: unknown
+}
+
+// The imperative separator handle passed to renderItem (RN CellRenderer._separators,
+// VirtualizedListCellRenderer.js:92-115). highlight/unhighlight flip the highlighted flag
+// on the separators flanking this cell; updateProps merges arbitrary props onto the leading
+// (previous gap) or trailing (this gap) separator so a row can drive its own dividers.
+export interface Separators {
+  highlight(): void
+  unhighlight(): void
+  updateProps(select: 'leading' | 'trailing', newProps: Record<string, unknown>): void
+}
+
+type RenderItem<ItemT> = (info: {
+  item: ItemT
+  index: number
+  separators: Separators
+}) => ReactNode
 
 // A viewable item, as reported to onViewableItemsChanged. Mirrors RN's
 // ViewToken shape (item + key + index + isViewable), minus the section field
@@ -153,7 +180,7 @@ export interface VirtualizedListProps<ItemT> extends AccessibilityProps, AriaPro
     data: unknown,
     index: number,
   ) => { length: number; offset: number; index: number }
-  ItemSeparatorComponent?: ComponentType<Record<string, never>>
+  ItemSeparatorComponent?: ComponentType<SeparatorProps<ItemT>>
   ListHeaderComponent?: ComponentType<Record<string, never>> | ReactElement
   ListFooterComponent?: ComponentType<Record<string, never>> | ReactElement
   ListEmptyComponent?: ComponentType<Record<string, never>> | ReactElement
@@ -180,6 +207,15 @@ export interface VirtualizedListProps<ItemT> extends AccessibilityProps, AriaPro
   onViewableItemsChanged?: (info: ViewableItemsChangedInfo<ItemT>) => void
   viewabilityConfig?: ViewabilityConfig
   viewabilityConfigCallbackPairs?: ViewabilityConfigCallbackPair<ItemT>[]
+  // Fired when scrollToIndex targets a cell that has not been measured yet and there is
+  // no getItemLayout to place it from — RN cannot know the offset, so instead of guessing
+  // it hands the caller the failure to recover (e.g. scroll near, then retry). Mirrors RN
+  // VirtualizedList.js:162,184-193: {index, highestMeasuredFrameIndex, averageItemLength}.
+  onScrollToIndexFailed?: (info: {
+    index: number
+    highestMeasuredFrameIndex: number
+    averageItemLength: number
+  }) => void
   initialNumToRender?: number
   initialScrollIndex?: number
   maxToRenderPerBatch?: number
@@ -192,6 +228,36 @@ export interface VirtualizedListProps<ItemT> extends AccessibilityProps, AriaPro
   // window) can't stick until it re-enters; with the default ~10-screen window that
   // edge is rarely hit. Headerless lists leave this undefined (no sticky behavior).
   stickyHeaderIndices?: number[]
+  // Keep the visually-anchored item in place when content is prepended (RN's
+  // maintainVisibleContentPosition). `minIndexForVisible` is the first index treated as
+  // "visible" to anchor against; `autoscrollToTopThreshold`, when set and the anchor is
+  // within that many pixels of the top, follows the prepended content to the top instead.
+  // RN both (a) forwards this to the native ScrollView AND (b) shifts scroll in JS so a
+  // prepend doesn't jump the list (VirtualizedList.js:715-768, 1112-1121). We do both.
+  maintainVisibleContentPosition?: {
+    minIndexForVisible: number
+    autoscrollToTopThreshold?: number
+  }
+  // Scroll-driven UI hook. RN's _onScroll runs its own windowing bookkeeping AND
+  // then calls this.props.onScroll(e) (VirtualizedList.js:1695-1697) — the user's
+  // handler must COMPOSE with the internal one, never replace it. We destructure
+  // it out below so it cannot also arrive raw via ...accessibilityRest and clobber
+  // the internal handler, then chain both: internal first, user second.
+  onScroll?: (event: SymbioteEvent) => void
+  // Scroll-lifecycle callbacks forwarded to the inner ScrollView, mirroring RN's
+  // assembly (VirtualizedList.js:1096-1099). The ScrollView already types and fires
+  // these; the list only needs to forward them through.
+  onScrollBeginDrag?: (event: SymbioteEvent) => void
+  onScrollEndDrag?: (event: SymbioteEvent) => void
+  onMomentumScrollBegin?: (event: SymbioteEvent) => void
+  onMomentumScrollEnd?: (event: SymbioteEvent) => void
+  // Throttle for scroll-event delivery, forwarded to the inner ScrollView
+  // (RN VirtualizedList.js:1102 defaults it to a near-zero value).
+  scrollEventThrottle?: number
+  // Tap/keyboard behavior forwarded to the inner ScrollView. These already pass
+  // through at runtime via the rest spread; typed here so consumers can set them.
+  keyboardShouldPersistTaps?: boolean | 'always' | 'never' | 'handled'
+  keyboardDismissMode?: 'none' | 'on-drag' | 'interactive'
   style?: ViewStyle
   contentContainerStyle?: ViewStyle
 }
@@ -241,6 +307,27 @@ function resolveElement(
   if (component === undefined) return undefined
   if (typeof component === 'function') return createElement(component, {})
   return component
+}
+
+// Build the ItemSeparatorComponent element for the gap between leadingItem and
+// trailingItem, with the highlight flag and any handle-pushed overrides merged on top
+// (RN renders `<ItemSeparatorComponent {...separatorProps} />`,
+// VirtualizedListCellRenderer.js:205, where separatorProps starts {highlighted, leadingItem}
+// and absorbs updateProps writes). A bare element (non-component) is returned as-is.
+function renderSeparatorElement<ItemT>(
+  component: ComponentType<SeparatorProps<ItemT>> | undefined,
+  leadingItem: ItemT,
+  trailingItem: ItemT,
+  overrides: Partial<SeparatorProps<ItemT>> | undefined,
+): ReactNode {
+  if (component === undefined) return undefined
+  const props: SeparatorProps<ItemT> = {
+    highlighted: false,
+    leadingItem,
+    trailingItem,
+    ...overrides,
+  }
+  return createElement(component, props)
 }
 
 // Resolve every cell offset/length from the cache (or getItemLayout), filling
@@ -382,14 +469,30 @@ export function VirtualizedList<ItemT>(
     onViewableItemsChanged,
     viewabilityConfig,
     viewabilityConfigCallbackPairs,
+    onScrollToIndexFailed,
     initialNumToRender = DEFAULT_INITIAL_NUM_TO_RENDER,
     initialScrollIndex,
     maxToRenderPerBatch = DEFAULT_MAX_TO_RENDER_PER_BATCH,
     updateCellsBatchingPeriod = DEFAULT_UPDATE_CELLS_BATCHING_PERIOD,
     windowSize = DEFAULT_WINDOW_SIZE,
     stickyHeaderIndices,
+    maintainVisibleContentPosition,
     style,
     contentContainerStyle,
+    // Pulled out of the rest so the user's onScroll does NOT arrive raw via
+    // ...accessibilityRest and overwrite the internal windowing handler — instead we
+    // compose them below (internal first, user second), matching RN's _onScroll.
+    onScroll: userOnScroll,
+    // Scroll-lifecycle callbacks forwarded straight to the inner ScrollView, mirroring
+    // RN's assembly (VirtualizedList.js:1096-1099). The ScrollView fires the user's
+    // handler itself, so these only need to ride through unchanged.
+    onScrollBeginDrag,
+    onScrollEndDrag,
+    onMomentumScrollBegin,
+    onMomentumScrollEnd,
+    scrollEventThrottle,
+    keyboardShouldPersistTaps,
+    keyboardDismissMode,
     // The accessibility surface rides down to the underlying ScrollView, which runs
     // resolveAccessibilityProps itself — so the raw aria/role + accessibility* props
     // pass through here and fold there once. ref is pulled separately above, so it is
@@ -434,13 +537,31 @@ export function VirtualizedList<ItemT>(
   // cell key, so we only fire when the set changes (RN dedups the same way) and
   // can build the newly-hidden delta without rescanning all N items.
   const lastViewableRef = useRef<Map<string, ViewToken<ItemT>>>(new Map())
+  // Pending minimumViewTime debounce timer (RN ViewabilityHelper._timers). A fresh
+  // viewable set recomputed before this fires cancels it, so scrolling straight through a
+  // cell (it never stays minimumViewTime ms) never reports it viewable. null = no timer.
+  const viewableTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   // Flips true on the first scroll, mirroring RN's ViewabilityHelper._hasInteracted
   // (set by recordInteraction, which RN calls on scroll). A config with
   // waitForInteraction reports NO viewable items until this is true.
   const hasInteractedRef = useRef(false)
+  // Per-gap separator overrides, keyed by the LEADING cell index of the gap (the
+  // separator after cell N is N's trailing separator and N+1's leading separator —
+  // one entry per gap). Holds whatever `highlight`/`updateProps` pushed; merged over
+  // the geometric defaults at render. RN keeps this as per-cell separatorProps state
+  // (VirtualizedListCellRenderer.js:67-72); we fold it to one map plus a version bump
+  // since our separators are plain elements, not stateful CellRenderer instances.
+  const separatorOverridesRef = useRef<Map<number, Partial<SeparatorProps<ItemT>>>>(new Map())
+  const [, setSeparatorVersion] = useState(EMPTY_OFFSET)
   // initialScrollIndex is applied once, after the first layout gives us a
   // viewport and offsets to resolve the index into a pixel offset.
   const appliedInitialScrollRef = useRef(false)
+  // maintainVisibleContentPosition anchor tracking (RN's State.firstVisibleItemKey): the
+  // key of the item at minIndexForVisible on the LAST render. When a prepend moves that key
+  // to a higher index, the inserted extent above it is added to scrollOffset so the anchored
+  // item stays put instead of jumping (RN getDerivedStateFromProps:715-768). null = no
+  // anchor recorded yet (first render / MVCP off).
+  const firstVisibleKeyRef = useRef<string | null>(null)
 
   const fixedLayout = useMemo(() => {
     if (getItemLayout === undefined) return undefined
@@ -510,8 +631,11 @@ export function VirtualizedList<ItemT>(
       // A real user/native scroll supersedes any pending commanded offset, so
       // clearing it avoids re-pushing a stale target on the next render.
       setCommandedOffset(undefined)
+      // Compose, don't clobber: internal windowing bookkeeping ran first, now hand
+      // the same event to the user's onScroll (RN VirtualizedList.js:1695-1697).
+      if (userOnScroll !== undefined) userOnScroll(event)
     },
-    [horizontal],
+    [horizontal, userOnScroll],
   )
 
   // onEndReached gating, ported from RN's _maybeCallOnEdgeReached. Run it as an
@@ -654,13 +778,38 @@ export function VirtualizedList<ItemT>(
       if (!viewable.has(key)) changed.push({ ...token, isViewable: false })
     }
 
-    lastViewableRef.current = viewable
-    dlog(
-      `VirtualizedList viewable=${viewableTokens.length} changed=${changed.length} ` +
-        `(window [${first}, ${last}])`,
-    )
-    const info: ViewableItemsChangedInfo<ItemT> = { viewableItems: viewableTokens, changed }
-    for (const pair of viewabilityPairs) pair.onViewableItemsChanged(info)
+    const commitAndFire = (): void => {
+      lastViewableRef.current = viewable
+      dlog(
+        `VirtualizedList viewable=${viewableTokens.length} changed=${changed.length} ` +
+          `(window [${first}, ${last}])`,
+      )
+      const info: ViewableItemsChangedInfo<ItemT> = { viewableItems: viewableTokens, changed }
+      for (const pair of viewabilityPairs) pair.onViewableItemsChanged(info)
+    }
+
+    // minimumViewTime debounce (RN ViewabilityHelper.onUpdate:228-244): an item must stay
+    // viewable this long before the change is reported. The largest configured value gates
+    // the unified pass (we fold all pairs into one classification). A new set recomputed
+    // before the timer elapses clears it via the cleanup below, so a scroll-through no-ops.
+    let minimumViewTime = EMPTY_OFFSET
+    for (const pair of viewabilityPairs) {
+      const configured = pair.viewabilityConfig.minimumViewTime
+      if (configured !== undefined && configured > minimumViewTime) minimumViewTime = configured
+    }
+    if (viewableTimerRef.current !== null) {
+      clearTimeout(viewableTimerRef.current)
+      viewableTimerRef.current = null
+    }
+    if (minimumViewTime > EMPTY_OFFSET) {
+      dlog(`VirtualizedList viewability debounce ${minimumViewTime}ms (window [${first}, ${last}])`)
+      viewableTimerRef.current = setTimeout(() => {
+        viewableTimerRef.current = null
+        commitAndFire()
+      }, minimumViewTime)
+      return
+    }
+    commitAndFire()
   }, [
     viewabilityPairs,
     viewportLength,
@@ -674,6 +823,14 @@ export function VirtualizedList<ItemT>(
     offsets,
     lengths,
   ])
+
+  // Clear any pending minimumViewTime debounce on unmount (RN ViewabilityHelper.dispose
+  // clears _timers) so a queued fire never lands after the list is gone.
+  useEffect(() => {
+    return () => {
+      if (viewableTimerRef.current !== null) clearTimeout(viewableTimerRef.current)
+    }
+  }, [])
 
   const onViewportLayout = useCallback(
     (event: SymbioteEvent): void => {
@@ -698,6 +855,41 @@ export function VirtualizedList<ItemT>(
         setMeasureVersion((version) => version + 1)
       },
     [fixedLayout, horizontal],
+  )
+
+  // Merge an override onto the separator at a given gap and request a re-render. A gap
+  // index outside [0, count-2] has no separator, so the write is a no-op (RN bails the
+  // same way when prevCellKey/cellKey is null). Mirrors CellRenderer.updateSeparatorProps.
+  const mergeSeparator = useCallback(
+    (gapIndex: number, patch: Partial<SeparatorProps<ItemT>>): void => {
+      if (gapIndex < FIRST_INDEX || gapIndex > count - 2) return
+      const overrides = separatorOverridesRef.current
+      overrides.set(gapIndex, { ...overrides.get(gapIndex), ...patch })
+      setSeparatorVersion((version) => version + 1)
+    },
+    [count],
+  )
+
+  // The Separators handle for the cell at `index` (RN CellRenderer._separators). The gap
+  // after this cell is its TRAILING separator; the gap before it (index-1) is its LEADING
+  // separator. highlight/unhighlight flip both flanking gaps; updateProps targets one.
+  const makeSeparators = useCallback(
+    (index: number): Separators => ({
+      highlight: (): void => {
+        dlog(`VirtualizedList separator highlight cell=${index}`)
+        mergeSeparator(index - 1, { highlighted: true })
+        mergeSeparator(index, { highlighted: true })
+      },
+      unhighlight: (): void => {
+        dlog(`VirtualizedList separator unhighlight cell=${index}`)
+        mergeSeparator(index - 1, { highlighted: false })
+        mergeSeparator(index, { highlighted: false })
+      },
+      updateProps: (select: 'leading' | 'trailing', newProps: Record<string, unknown>): void => {
+        mergeSeparator(select === 'leading' ? index - 1 : index, newProps)
+      },
+    }),
+    [mergeSeparator],
   )
 
   // Resolve an index to a pixel offset, optionally biasing where in the viewport
@@ -734,6 +926,17 @@ export function VirtualizedList<ItemT>(
     [horizontal],
   )
 
+  // The largest index whose length we have actually measured (RN
+  // ListMetricsAggregator.getHighestMeasuredCellIndex). NO_INDEX when nothing is measured.
+  // With getItemLayout every index is "measured", so this is irrelevant on that path.
+  const highestMeasuredIndex = useCallback((): number => {
+    let highest = NO_INDEX
+    for (const index of measuredRef.current.keys()) {
+      if (index > highest) highest = index
+    }
+    return highest
+  }, [])
+
   useImperativeHandle(
     forwardedRef ?? null,
     () => ({
@@ -747,6 +950,23 @@ export function VirtualizedList<ItemT>(
         viewOffset?: number
         viewPosition?: number
       }): void => {
+        // No getItemLayout AND the target is past the last measured cell: we have no real
+        // offset for it, so report the failure instead of scrolling to a fabricated estimate
+        // (RN VirtualizedList.js:179-195). The caller recovers — typically scroll near, wait
+        // for measurement, retry. With getItemLayout (fixedLayout) every index is placeable,
+        // so this path never trips.
+        if (fixedLayout === undefined && params.index > highestMeasuredIndex()) {
+          dlog(
+            `VirtualizedList onScrollToIndexFailed index=${params.index} ` +
+              `highestMeasured=${highestMeasuredIndex()} (no getItemLayout)`,
+          )
+          onScrollToIndexFailed?.({
+            index: params.index,
+            highestMeasuredFrameIndex: highestMeasuredIndex(),
+            averageItemLength: averageLength,
+          })
+          return
+        }
         scrollToPixel(
           offsetForIndex(params.index, params.viewPosition ?? FIRST_INDEX, params.viewOffset ?? EMPTY_OFFSET),
           params.animated ?? true,
@@ -783,7 +1003,19 @@ export function VirtualizedList<ItemT>(
         hasInteractedRef.current = true
       },
     }),
-    [scrollToPixel, offsetForIndex, count, data, getItem, total, viewportLength],
+    [
+      scrollToPixel,
+      offsetForIndex,
+      count,
+      data,
+      getItem,
+      total,
+      viewportLength,
+      fixedLayout,
+      highestMeasuredIndex,
+      onScrollToIndexFailed,
+      averageLength,
+    ],
   )
 
   // initialScrollIndex: once the first viewport is known, jump to that index a
@@ -795,6 +1027,76 @@ export function VirtualizedList<ItemT>(
     // The initial jump is instant (RN doesn't animate initialScrollIndex).
     scrollToPixel(offsetForIndex(initialScrollIndex, FIRST_INDEX, EMPTY_OFFSET), false)
   }, [initialScrollIndex, viewportLength, count, scrollToPixel, offsetForIndex])
+
+  // maintainVisibleContentPosition JS anchor adjustment (RN getDerivedStateFromProps:715-768).
+  // RN forwards the config to the native ScrollView too (done below), but because our
+  // off-window content is collapsed into a SPACER rather than real cells, the native MVCP
+  // cannot see prepended items above the window — so we replicate the JS shift here: track
+  // the key of the item at minIndexForVisible; when a prepend moves it down by D items, add
+  // the inserted extent above it to scrollOffset so the anchored item does not jump. Runs in
+  // a layout effect so the correction lands before paint. autoscrollToTopThreshold: when the
+  // anchor sat within that many px of the top, follow the new content to the top instead.
+  const keyForIndex = useCallback(
+    (index: number): string => {
+      const item = getItem(data, index)
+      return keyExtractor ? keyExtractor(item, index) : String(index)
+    },
+    [getItem, data, keyExtractor],
+  )
+
+  useLayoutEffect(() => {
+    if (maintainVisibleContentPosition === undefined || count === FIRST_INDEX) {
+      firstVisibleKeyRef.current = null
+      return
+    }
+    const minIndexForVisible = maintainVisibleContentPosition.minIndexForVisible
+    const newFirstVisibleKey = count > minIndexForVisible ? keyForIndex(minIndexForVisible) : null
+    const prevKey = firstVisibleKeyRef.current
+
+    // A prepend keeps the same anchored key but pushes it to a higher index. Scan forward
+    // from minIndexForVisible for the old key; the items before it are the newly-inserted
+    // ones (RN's _findItemIndexWithKey with a count-delta hint). Same key at the same slot
+    // means no prepend — nothing to correct.
+    if (prevKey !== null && newFirstVisibleKey !== null && prevKey !== newFirstVisibleKey) {
+      let anchorIndex = NO_INDEX
+      for (let index = minIndexForVisible; index < count; index += 1) {
+        if (keyForIndex(index) === prevKey) {
+          anchorIndex = index
+          break
+        }
+      }
+      if (anchorIndex > minIndexForVisible) {
+        // The native maintainVisibleContentPosition already anchors the cells it RENDERS — on a
+        // real host the native helper shifts the offset by the in-window inserted extent on its
+        // own (verified on Android: it adds exactly the prepended height). So the JS shift must
+        // cover ONLY the inserted items in the leading SPACER — those above the first rendered
+        // index, which the native view collapsed away and cannot see. Counting the full inserted
+        // extent here double-corrects (JS +X and native +X) and the list jumps by one extent. RN
+        // splits the work the same way: native handles in-window, getDerivedStateFromProps the spacer.
+        const spacerEnd = Math.min(anchorIndex, committedWindowRef.current.first)
+        const insertedExtent =
+          spacerEnd > minIndexForVisible ? offsets[spacerEnd] - offsets[minIndexForVisible] : EMPTY_OFFSET
+        if (insertedExtent > EMPTY_OFFSET) {
+          const autoThreshold = maintainVisibleContentPosition.autoscrollToTopThreshold
+          const anchoredNearTop =
+            autoThreshold !== undefined && scrollOffset <= autoThreshold
+          if (anchoredNearTop) {
+            dlog(
+              `VirtualizedList MVCP autoscroll-to-top (offset=${scrollOffset} <= ${autoThreshold})`,
+            )
+            scrollToPixel(EMPTY_OFFSET, true)
+          } else {
+            dlog(
+              `VirtualizedList MVCP adjust +${insertedExtent}px ` +
+                `(anchor "${prevKey}" moved ${minIndexForVisible}->${anchorIndex})`,
+            )
+            scrollToPixel(scrollOffset + insertedExtent, false)
+          }
+        }
+      }
+    }
+    firstVisibleKeyRef.current = newFirstVisibleKey
+  }, [maintainVisibleContentPosition, count, keyForIndex, offsets, scrollOffset, scrollToPixel])
 
   // ---- assemble the windowed child list ----------------------------------
 
@@ -836,7 +1138,9 @@ export function VirtualizedList<ItemT>(
     for (let index = first; index <= last; index += 1) {
       const item = getItem(data, index)
       const key = keyExtractor ? keyExtractor(item, index) : String(index)
-      const cell = renderItem({ item, index })
+      // renderItem gets a separators handle so a row can highlight/update its own dividers
+      // (RN CellRenderer._renderElement passes `separators`, VirtualizedListCellRenderer.js:162-167).
+      const cell = renderItem({ item, index, separators: makeSeparators(index) })
       // Record this cell's child position before pushing it, if it is a sticky header.
       if (stickySet?.has(index) === true) renderedStickyIndices.push(children.length)
       // Wrap each cell in a measuring View. onLayout is a direct event the
@@ -855,8 +1159,20 @@ export function VirtualizedList<ItemT>(
           cell,
         ),
       )
-      const separator = resolveElement(ItemSeparatorComponent)
-      if (separator !== undefined && index < last) {
+      // The separator after cell `index` carries the gap's leading/trailing items and the
+      // highlight flag, merged with whatever a Separators handle pushed (RN passes
+      // {highlighted, leadingItem, trailingItem} to ItemSeparatorComponent,
+      // VirtualizedListCellRenderer.js:205). Geometric defaults first, overrides on top.
+      const separator =
+        index < last
+          ? renderSeparatorElement(
+              ItemSeparatorComponent,
+              item,
+              getItem(data, index + 1),
+              separatorOverridesRef.current.get(index),
+            )
+          : undefined
+      if (separator !== undefined) {
         children.push(
           createElement('symbiote-view', { key: `sep-${key}` }, separator),
         )
@@ -914,12 +1230,33 @@ export function VirtualizedList<ItemT>(
     onScroll,
     onLayout: onViewportLayout,
   }
+  // Scroll-lifecycle callbacks ride straight through to the inner ScrollView, which
+  // fires them (RN VirtualizedList.js:1096-1099). Only set when provided so an absent
+  // callback stays off the node.
+  if (onScrollBeginDrag !== undefined) scrollProps.onScrollBeginDrag = onScrollBeginDrag
+  if (onScrollEndDrag !== undefined) scrollProps.onScrollEndDrag = onScrollEndDrag
+  if (onMomentumScrollBegin !== undefined) scrollProps.onMomentumScrollBegin = onMomentumScrollBegin
+  if (onMomentumScrollEnd !== undefined) scrollProps.onMomentumScrollEnd = onMomentumScrollEnd
+  if (scrollEventThrottle !== undefined) scrollProps.scrollEventThrottle = scrollEventThrottle
+  if (keyboardShouldPersistTaps !== undefined)
+    scrollProps.keyboardShouldPersistTaps = keyboardShouldPersistTaps
+  if (keyboardDismissMode !== undefined) scrollProps.keyboardDismissMode = keyboardDismissMode
   // A pending imperative/initial scroll rides down as contentOffset. A fresh
   // object identity each push guarantees the commit path re-applies it even when
   // the numeric value repeats.
   if (commandedOffset !== undefined) scrollProps.contentOffset = commandedOffset
   // Headers in the window stick natively; an empty list leaves the prop off entirely.
   if (renderedStickyIndices.length > 0) scrollProps.stickyHeaderIndices = renderedStickyIndices
+  // Forward maintainVisibleContentPosition to the native ScrollView so it anchors the in-window
+  // cells (RN VirtualizedList.js:1112-1121). minIndexForVisible is bumped by 1 when a
+  // ListHeaderComponent occupies child 0, since that header shifts every cell's child position.
+  if (maintainVisibleContentPosition !== undefined) {
+    scrollProps.maintainVisibleContentPosition = {
+      ...maintainVisibleContentPosition,
+      minIndexForVisible:
+        maintainVisibleContentPosition.minIndexForVisible + (header !== undefined ? 1 : 0),
+    }
+  }
 
   // Pull-to-refresh: when onRefresh is set, build a RefreshControl for the ScrollView's
   // refreshControl prop (iOS sibling / Android wrap, owned by ScrollView). refreshing is
