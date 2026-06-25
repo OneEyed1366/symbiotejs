@@ -240,8 +240,7 @@ that each further adapter inherits as it lands.
 | **M4** | Angular adapter | a second mutation-oriented framework, template/renderer seam | ⏳ planned |
 | **M5** | Svelte adapter | compiled-output framework driving the shared mutation API | ⏳ planned |
 | **M6** | Solid adapter | fine-grained reactivity driving the shared mutation API | ⏳ planned |
-| **M7** | Android *(platform axis)* | each adapter renders native Android off the same core as iOS — orthogonal to M3–M6, not after them | 🚧 React: full canary verified on emulator (`@symbiote/android` host shims). Other adapters inherit it as they land |
-| **M8** | Web *(stretch)* | the same trees rendered to the web as a default platform target | 💭 maybe |
+| **M7** | Web *(stretch)* | the same trees rendered to the web as a default platform target | 💭 maybe |
 | **DX** | `create-symbiote` scaffolder | pins `react-native` + `react` at the app root so your app code imports only `@symbiote/*`, never `react-native` | ⏳ planned |
 
 **End goal:** each framework — Vue, Angular, Svelte, Solid, React — can render native iOS and
