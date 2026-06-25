@@ -8,7 +8,7 @@ import { type ReactElement } from 'react'
 import { View, mount } from '@symbiote/react'
 // SafeAreaView isn't on the barrel yet (the parent wires exports), so reach the
 // source directly — the headless harness has no built dist.
-import { SafeAreaView } from '../../packages/react/src/safe-area-view'
+import { SafeAreaView } from '../../adapters/react/src/safe-area-view'
 
 // ---- fake Fabric slot ---------------------------------------------------
 

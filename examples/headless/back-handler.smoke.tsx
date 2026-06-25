@@ -7,7 +7,7 @@
 // consumes, the native default fires once; (d) remove() unsubscribes. A failure here is
 // in JS.
 
-import { BackHandler } from '../../packages/react/src/back-handler'
+import { BackHandler } from '../../adapters/react/src/back-handler'
 
 // ---- fake native-module + device-hub globals ----------------------------
 

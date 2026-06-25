@@ -2,7 +2,7 @@
 // semantics: array merge with later-wins, nested array recursion, falsy skipping,
 // array/object property values passed through untouched, non-object → {}.
 
-import { flattenStyle } from '../../packages/shared/src/style'
+import { flattenStyle } from '../../core/engine/src/style'
 
 function deepEqual(a: unknown, b: unknown): boolean {
   return JSON.stringify(a) === JSON.stringify(b)

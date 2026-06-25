@@ -5,7 +5,7 @@
 // the initial read, then drive a system change through the hub and assert both the
 // change listener and the cached read track it. A failure here is in JS, not native.
 
-import { Appearance } from '../../packages/react/src/appearance'
+import { Appearance } from '../../adapters/react/src/appearance'
 
 // ---- fake native-module + device-hub globals ----------------------------
 

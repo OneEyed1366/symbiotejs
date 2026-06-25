@@ -12,8 +12,8 @@
 
 import { type ReactElement } from 'react'
 import { View, mount } from '@symbiote/react'
-import { ScrollView } from '../../packages/react/src/scroll-view.android'
-import { RefreshControl } from '../../packages/react/src/refresh-control'
+import { ScrollView } from '../../adapters/react/src/scroll-view.android'
+import { RefreshControl } from '../../adapters/react/src/refresh-control'
 
 // ---- fake Fabric slot ---------------------------------------------------
 

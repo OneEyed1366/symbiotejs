@@ -6,8 +6,8 @@
 //      the target re-launches toward the new value, and stopping detaches it so the
 //      follower stops chasing. The fake driver keeps the test off the real timeline.
 
-import { AnimatedValue, AnimatedTracking, timing } from '@symbiote/shared'
-import type { Animation, EndCallback } from '../../packages/shared/src/animated/animation'
+import { AnimatedValue, AnimatedTracking, timing } from '@symbiote/engine'
+import type { Animation, EndCallback } from '../../core/engine/src/animated/animation'
 
 // Part A starts a real TimingAnimation (to prove the public wiring), which needs a
 // host rAF. We never advance a frame — we only assert the tracking attaches and that

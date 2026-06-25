@@ -10,11 +10,11 @@
 
 import { createElement, type ReactElement } from 'react'
 import { View, Text, mount } from '@symbiote/react'
-import { ScrollView } from '../../packages/react/src/scroll-view'
+import { ScrollView } from '../../adapters/react/src/scroll-view'
 import {
   ScrollViewStickyHeader,
   type StickyHeaderProps,
-} from '../../packages/react/src/scroll-view-sticky-header'
+} from '../../adapters/react/src/scroll-view-sticky-header'
 
 // ---- fake Fabric slot ---------------------------------------------------
 

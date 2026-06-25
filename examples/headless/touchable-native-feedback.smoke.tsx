@@ -8,8 +8,8 @@
 
 import { mount } from '@symbiote/react'
 // Not on the barrel yet (the integrator wires exports), so reach the source.
-import { TouchableNativeFeedback } from '../../packages/react/src/touchable-native-feedback'
-import { View } from '../../packages/react/src/components'
+import { TouchableNativeFeedback } from '../../adapters/react/src/touchable-native-feedback'
+import { View } from '../../adapters/react/src/components'
 
 // ---- fake Fabric slot ---------------------------------------------------
 

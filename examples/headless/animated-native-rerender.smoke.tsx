@@ -13,10 +13,10 @@ import {
   createSurface,
   setEventDispatcher,
   type RootTag,
-} from '@symbiote/shared'
-import reconciler, { withDiscretePriority } from '../../packages/react/src/host-config'
-import { LegacyRoot } from '../../packages/react/src/reconciler-constants'
-import { Animated } from '../../packages/react/src/animated'
+} from '@symbiote/engine'
+import reconciler, { withDiscretePriority } from '../../adapters/react/src/host-config'
+import { LegacyRoot } from '../../adapters/react/src/reconciler-constants'
+import { Animated } from '../../adapters/react/src/animated'
 
 // ---- fake NativeAnimatedTurboModule (records calls) ----------------------
 

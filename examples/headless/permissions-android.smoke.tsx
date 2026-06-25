@@ -28,7 +28,7 @@ function callsOf(method: string): NativeCall[] {
 // ---- (e) absent module: safe defaults, no throw ------------------------------
 // Import with NO native module installed. The module is resolved lazily, so this
 // import sees a null module.
-const absent = await import('../../packages/react/src/permissions-android.ts')
+const absent = await import('../../adapters/react/src/permissions-android.ts')
 
 const absentCheck = await absent.PermissionsAndroid.check(absent.PERMISSIONS.CAMERA)
 if (absentCheck !== false) {
@@ -56,7 +56,7 @@ Object.assign(globalThis, {
 
 // Re-import with a cache-busting query so the module re-resolves and now sees the
 // fake (getNativeModule runs at module load).
-const present = await import('../../packages/react/src/permissions-android.ts?present')
+const present = await import('../../adapters/react/src/permissions-android.ts?present')
 const { PermissionsAndroid, PERMISSIONS, RESULTS } = present
 
 // ---- (d) constants are exposed -----------------------------------------------

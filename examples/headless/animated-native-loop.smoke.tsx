@@ -5,7 +5,7 @@
 // fires (native owns every cycle). A loop over a SEQUENCE can't offload and falls
 // back to JS restart.
 
-import { AnimatedValue, timing, loop, sequence } from '@symbiote/shared'
+import { AnimatedValue, timing, loop, sequence } from '@symbiote/engine'
 
 interface NativeCall {
   method: string

@@ -20,8 +20,8 @@ import { View, Text, mount } from '@symbiote/react'
 import {
   DrawerLayoutAndroid,
   type DrawerLayoutAndroidHandle,
-} from '../../packages/react/src/drawer-layout-android.android'
-import { DrawerLayoutAndroid as DrawerLayoutFallback } from '../../packages/react/src/drawer-layout-android'
+} from '../../adapters/react/src/drawer-layout-android.android'
+import { DrawerLayoutAndroid as DrawerLayoutFallback } from '../../adapters/react/src/drawer-layout-android'
 
 // ---- fake Fabric slot ---------------------------------------------------
 

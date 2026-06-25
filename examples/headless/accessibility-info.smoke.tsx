@@ -9,7 +9,7 @@
 
 import { type ReactElement } from 'react'
 import { mount, View } from '@symbiote/react'
-import { AccessibilityInfo } from '../../packages/react/src/accessibility-info'
+import { AccessibilityInfo } from '../../adapters/react/src/accessibility-info'
 
 // ---- fake Fabric slot: records sendAccessibilityEvent(node, eventType) ----
 // iOS now routes non-'click' accessibility events through the Fabric slot (RN's Fabric

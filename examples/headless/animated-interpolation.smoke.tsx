@@ -4,7 +4,7 @@
 // format (r,g,b rounded, alpha continuous). Mirrors RN AnimatedInterpolation.js's
 // createStringInterpolation. The scalar number->number path stays untouched.
 
-import { AnimatedValue } from '@symbiote/shared'
+import { AnimatedValue } from '@symbiote/engine'
 
 // ---- string-with-units: '0deg' -> '360deg' --------------------------------
 

@@ -7,7 +7,7 @@
 
 // Reach the source directly — Platform isn't on the barrel yet (the parent wires
 // exports) and the headless harness has no built dist.
-import { Platform, type PlatformConstantsIOS } from '../../packages/shared/src/platform'
+import { Platform, type PlatformConstantsIOS } from '../../core/engine/src/platform'
 
 // The values we feed the fake native module and read back through Platform.
 const FAKE_OS_VERSION = '17.4'

@@ -8,7 +8,7 @@
 
 import { type ReactElement } from 'react'
 import { mount, View, findNodeHandle } from '@symbiote/react'
-import { AccessibilityInfo } from '../../packages/react/src/accessibility-info.android'
+import { AccessibilityInfo } from '../../adapters/react/src/accessibility-info.android'
 
 // ---- fake Fabric slot ---------------------------------------------------
 

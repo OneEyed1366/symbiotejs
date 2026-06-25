@@ -7,7 +7,7 @@
 
 import { type ReactElement } from 'react'
 import { mount, View, PlatformColor, DynamicColorIOS, processColor } from '@symbiote/react'
-import { setColorProcessor, isOpaqueColorValue } from '@symbiote/shared'
+import { setColorProcessor, isOpaqueColorValue } from '@symbiote/engine'
 
 // ---- pure constructors: the opaque shapes iOS native reads ----------------
 

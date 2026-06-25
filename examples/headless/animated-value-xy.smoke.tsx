@@ -4,10 +4,10 @@
 // back the LIVE x/y values (so a later setValue is visible through them), that
 // setValue updates both axes, and that a combined listener fires with {x, y}.
 
-import { AnimatedValue } from '@symbiote/shared'
-// Not yet wired into the @symbiote/shared barrel (the coordinator owns that);
+import { AnimatedValue } from '@symbiote/engine'
+// Not yet wired into the @symbiote/engine barrel (the coordinator owns that);
 // import the class directly from its source.
-import { AnimatedValueXY } from '../../packages/shared/src/animated/value-xy'
+import { AnimatedValueXY } from '../../core/engine/src/animated/value-xy'
 
 function assert(condition: boolean, message: string): void {
   if (!condition) {

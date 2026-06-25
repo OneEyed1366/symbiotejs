@@ -11,7 +11,7 @@
 import { type ReactElement } from 'react'
 import { mount } from '@symbiote/react'
 // The Animated bridge source — reach it directly (no built dist in the harness).
-import { Animated } from '../../packages/react/src/animated'
+import { Animated } from '../../adapters/react/src/animated'
 
 // ---- fake Fabric slot ----------------------------------------------------
 

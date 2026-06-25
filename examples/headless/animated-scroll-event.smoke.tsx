@@ -11,8 +11,8 @@
 
 import { type ReactElement } from 'react'
 import { mount } from '@symbiote/react'
-import { Animated } from '../../packages/react/src/animated'
-import { AnimatedValueXY } from '../../packages/shared/src/animated/value-xy'
+import { Animated } from '../../adapters/react/src/animated'
+import { AnimatedValueXY } from '../../core/engine/src/animated/value-xy'
 
 // ---- fake Fabric slot (keeps the real props so the commit is checkable) ----
 

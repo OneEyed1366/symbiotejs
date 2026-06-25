@@ -10,7 +10,7 @@ import {
   getEnforcingNativeModule,
   installDeviceEventHub,
   NativeEventEmitter,
-} from '@symbiote/shared'
+} from '@symbiote/engine'
 
 // ---- fake JSI globals ---------------------------------------------------
 

@@ -9,7 +9,7 @@
 // a failure here is in the negotiation logic, not native.
 
 import { mount } from '@symbiote/react'
-import { View } from '../../packages/react/src/components'
+import { View } from '../../adapters/react/src/components'
 
 // ---- fake Fabric slot ---------------------------------------------------
 

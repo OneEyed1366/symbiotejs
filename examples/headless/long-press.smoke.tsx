@@ -8,7 +8,7 @@
 // case waits real wall-clock — a failure here is in the synthesis, not native.
 
 import { mount } from '@symbiote/react'
-import { Text } from '../../packages/react/src/components'
+import { Text } from '../../adapters/react/src/components'
 
 interface FakeNode {
   tag: number

@@ -6,10 +6,10 @@
 // BEFORE the await, callback fired exactly once; (b) spring same; (c) decay is the
 // empty animation (no toValue to land on); (d) sequence/parallel jump their members.
 
-import { AnimatedValue } from '@symbiote/shared'
-import type { EndResult } from '@symbiote/shared'
+import { AnimatedValue } from '@symbiote/engine'
+import type { EndResult } from '@symbiote/engine'
 // Reach the mock source directly — it is the half swapped in under reduced motion.
-import { AnimatedMock } from '../../packages/react/src/animated/mock'
+import { AnimatedMock } from '../../adapters/react/src/animated/mock'
 
 // ---- fake Fabric slot ----------------------------------------------------
 // setValue flushes through the commit engine, which reads nativeFabricUIManager. A

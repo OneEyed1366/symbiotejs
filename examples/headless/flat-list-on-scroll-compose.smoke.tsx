@@ -14,7 +14,7 @@
 
 import { createElement, type ReactElement } from 'react'
 import { mount } from '@symbiote/react'
-import { FlatList } from '../../packages/react/src/flat-list'
+import { FlatList } from '../../adapters/react/src/flat-list'
 
 interface FakeNode {
   tag: number

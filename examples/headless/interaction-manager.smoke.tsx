@@ -7,7 +7,7 @@
 //   (3) cancel() on the returned promise-like prevents the task from running.
 // A failure here is in shared's queue/handle logic.
 
-import { InteractionManager } from '../../packages/shared/src/interaction-manager'
+import { InteractionManager } from '../../core/engine/src/interaction-manager'
 
 // Resolve on the next macrotask, then again, to give the manager's own next-tick
 // scheduling room to fire and drain.

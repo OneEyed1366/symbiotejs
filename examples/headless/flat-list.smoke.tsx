@@ -9,7 +9,7 @@
 import { createElement, createRef, type ReactElement } from 'react'
 import { mount } from '@symbiote/react'
 // Not on the barrel yet (the integrator wires exports), so reach the source.
-import { FlatList, type FlatListHandle } from '../../packages/react/src/flat-list'
+import { FlatList, type FlatListHandle } from '../../adapters/react/src/flat-list'
 
 // ---- fake Fabric slot ---------------------------------------------------
 

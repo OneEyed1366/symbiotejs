@@ -8,8 +8,8 @@
 
 import { useState, type ReactElement } from 'react'
 import { View, mount } from '@symbiote/react'
-import { ScrollView } from '../../packages/react/src/scroll-view'
-import { RefreshControl } from '../../packages/react/src/refresh-control'
+import { ScrollView } from '../../adapters/react/src/scroll-view'
+import { RefreshControl } from '../../adapters/react/src/refresh-control'
 
 interface FakeNode {
   tag: number

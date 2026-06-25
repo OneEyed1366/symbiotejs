@@ -9,7 +9,7 @@
 
 import { mount } from '@symbiote/react'
 // Not on the barrel yet (the integrator wires exports), so reach the source.
-import { TouchableOpacity } from '../../packages/react/src/touchable'
+import { TouchableOpacity } from '../../adapters/react/src/touchable'
 
 // ---- rAF polyfill: drives the timing animation deterministically -----------
 // The drivers read requestAnimationFrame from the host at call time; a setTimeout-

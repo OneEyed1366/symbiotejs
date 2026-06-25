@@ -5,8 +5,8 @@
 // after the image in the wrapper's child order. This asserts that shape. No simulator.
 
 import { mount } from '@symbiote/react'
-import { Text } from '../../packages/react/src/components'
-import { ImageBackground } from '../../packages/react/src/image-background'
+import { Text } from '../../adapters/react/src/components'
+import { ImageBackground } from '../../adapters/react/src/image-background'
 
 // ---- fake Fabric slot ---------------------------------------------------
 

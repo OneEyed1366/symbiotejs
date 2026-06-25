@@ -8,7 +8,7 @@ import { type ReactElement } from 'react'
 import { View, mount } from '@symbiote/react'
 // ScrollView isn't on the barrel yet (the parent wires exports), so reach the
 // source directly — the headless harness has no built dist.
-import { ScrollView } from '../../packages/react/src/scroll-view'
+import { ScrollView } from '../../adapters/react/src/scroll-view'
 
 // ---- fake Fabric slot ---------------------------------------------------
 

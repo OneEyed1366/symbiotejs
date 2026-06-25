@@ -7,7 +7,7 @@
 
 // ActionSheetIOS isn't on the barrel yet (the parent wires exports), so reach the
 // source directly — the headless harness has no built dist.
-import { ActionSheetIOS } from '../../packages/react/src/action-sheet-ios'
+import { ActionSheetIOS } from '../../adapters/react/src/action-sheet-ios'
 
 // ---- fake ActionSheetManager native module ------------------------------
 

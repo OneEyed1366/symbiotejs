@@ -5,7 +5,7 @@
 // resolver before it gets there. Plus the onLoad event round-trip. No simulator.
 
 import { mount, type SymbioteEvent } from '@symbiote/react'
-import { Image, setImageSourceResolver } from '../../packages/react/src/image'
+import { Image, setImageSourceResolver } from '../../adapters/react/src/image'
 
 // ---- fake Fabric slot ---------------------------------------------------
 

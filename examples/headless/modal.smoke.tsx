@@ -14,7 +14,7 @@ import { useState, type ReactElement } from 'react'
 import { View, mount } from '@symbiote/react'
 // Modal isn't on the barrel yet (the parent wires exports), so reach the source
 // directly — the headless harness has no built dist.
-import { Modal } from '../../packages/react/src/modal'
+import { Modal } from '../../adapters/react/src/modal'
 
 // ---- fake Fabric slot ---------------------------------------------------
 

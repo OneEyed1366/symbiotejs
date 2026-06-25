@@ -9,7 +9,7 @@
 
 import { type ReactElement } from 'react'
 import { mount } from '@symbiote/react'
-import { Animated } from '../../packages/react/src/animated'
+import { Animated } from '../../adapters/react/src/animated'
 
 // ---- fake NativeAnimatedTurboModule (records calls) ----------------------
 

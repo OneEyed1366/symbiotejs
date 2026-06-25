@@ -32,7 +32,7 @@ function callsOf(method: string): NativeCall[] {
 // Import AFTER the fake is installed — constants resolve at module load. Imported
 // by relative path (not the barrel) so the module loads in isolation before the
 // coordinator wires the @symbiote/react export.
-const { I18nManager } = await import('../../packages/react/src/i18n-manager.ts')
+const { I18nManager } = await import('../../adapters/react/src/i18n-manager.ts')
 
 // ---- constants are read from the native getConstants() at load --------------
 

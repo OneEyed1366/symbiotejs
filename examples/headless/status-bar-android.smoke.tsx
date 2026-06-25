@@ -8,8 +8,8 @@
 
 import { type ReactElement } from 'react'
 import { View, mount } from '@symbiote/react'
-import { setColorProcessor } from '@symbiote/shared'
-import { StatusBar } from '../../packages/react/src/status-bar.android'
+import { setColorProcessor } from '@symbiote/engine'
+import { StatusBar } from '../../adapters/react/src/status-bar.android'
 
 // ---- fake Fabric slot ---------------------------------------------------
 

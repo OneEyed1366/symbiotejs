@@ -14,7 +14,7 @@
 import {
   LayoutAnimation,
   type LayoutAnimationConfig,
-} from '../../packages/react/src/layout-animation'
+} from '../../adapters/react/src/layout-animation'
 
 // ---- fake native UIManager ----------------------------------------------
 
@@ -128,7 +128,7 @@ captured = null
 // The impl caches its resolved module on first call, so to exercise the
 // absent-module path we load a fresh copy whose cache is empty.
 const freshModule = await import(
-  `../../packages/react/src/layout-animation?nocache=${Date.now()}`
+  `../../adapters/react/src/layout-animation?nocache=${Date.now()}`
 )
 const freshLayoutAnimation: { configureNext: (config: LayoutAnimationConfig) => void } =
   freshModule.LayoutAnimation

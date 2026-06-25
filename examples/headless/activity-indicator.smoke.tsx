@@ -10,7 +10,7 @@ import { type ReactElement } from 'react'
 import { mount } from '@symbiote/react'
 // ActivityIndicator isn't on the barrel yet (the parent wires exports), so reach
 // the source directly — the headless harness has no built dist.
-import { ActivityIndicator } from '../../packages/react/src/activity-indicator'
+import { ActivityIndicator } from '../../adapters/react/src/activity-indicator'
 
 // ---- fake Fabric slot ---------------------------------------------------
 

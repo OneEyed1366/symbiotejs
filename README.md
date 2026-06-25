@@ -45,7 +45,7 @@ core, N thin adapters.
 Vue · Svelte · Solid · Angular · React     thin reconciler / createRenderer per framework
         │  insert / remove / setProp / commit
         ▼
-@symbiote/shared : retained shadow-tree + diff→childSet + event normalization
+@symbiote/engine : retained shadow-tree + diff→childSet + event normalization
         │  ALL clone-on-write lives HERE, in one place
         ▼
 nativeFabricUIManager   createNode · cloneNodeWithNewProps · appendChildToSet · completeRoot
@@ -57,21 +57,21 @@ The hard part is that Vue/Svelte/Solid/Angular **mutate** nodes in place
 (`el.setAttribute`), while Fabric is **persistent** — every change clones the node with
 new props and atomically commits a new child set. That mutation→clone-on-write translation
 is the entire engineering substance of the project, and it lives **once** in
-`@symbiote/shared`. Adapters see only a four-call mutation API. A persistence bug is fixed
+`@symbiote/engine`. Adapters see only a four-call mutation API. A persistence bug is fixed
 once, for every framework.
 
 <details>
 <summary><b>Details</b> — data flow, events, bootstrap, what stays stock</summary>
 
-**One update.** Framework reactivity fires → the adapter calls `shared.setProp / insert /
-remove` on a retained node → shared marks it dirty → on flush, shared walks the dirty path,
+**One update.** Framework reactivity fires → the adapter calls `engine.setProp / insert /
+remove` on a retained node → the engine marks it dirty → on flush, the engine walks the dirty path,
 clones changed nodes with new props, builds a new childSet, and calls
 `completeRoot(rootTag, childSet)` → Fabric C++ diffs old vs new shadow tree → native views
 update.
 
 **Events fall out of the seam — they are not a separate subsystem.** At `createNode` time
 the adapter passes an `instanceHandle`; Fabric hands that same handle back when an event
-fires. In React it's the fiber; in symbiote it's the retained-tree node. `shared` normalizes
+fires. In React it's the fiber; in symbiote it's the retained-tree node. The engine normalizes
 the raw native event onto a listener registered on the node, and the adapter maps its own
 template syntax (`@click`, `on:click`, `(click)`) onto that listener. No new layer.
 
@@ -92,7 +92,7 @@ The only thing symbiote replaces is the JS renderer.
 
 The canary ([`examples/canary/App.tsx`](./examples/canary/App.tsx)) runs a full demo on the
 iOS simulator — every primitive, the runtime-module layer, `Animated` on both drivers, and a
-third-party native slider, all committing through `@symbiote/shared` while React Native's own
+third-party native slider, all committing through `@symbiote/engine` while React Native's own
 renderer is never involved. The same canary now also boots on an Android emulator through the
 same core. The smallest slice of it is a tap→increment counter:
 
@@ -103,11 +103,11 @@ The native entry registers a low-level *runnable* instead of a React component:
 import { AppRegistry, processColor } from 'react-native';
 import { createElement } from 'react';
 import { mount } from '@symbiote/react';
-import { setColorProcessor } from '@symbiote/shared';
+import { setColorProcessor } from '@symbiote/engine';
 import App from './App';
 import { name as appName } from './app.json';
 
-// Colors reach Fabric as platform ints; let shared use RN's own converter.
+// Colors reach Fabric as platform ints; let the engine use RN's own converter.
 setColorProcessor(processColor);
 
 // Instead of AppRegistry.registerComponent (which runs RN's renderer), register a
@@ -138,7 +138,7 @@ export default function App() {
 }
 ```
 
-That tree paints real native views, and the tap re-commits through `@symbiote/shared` into
+That tree paints real native views, and the tap re-commits through `@symbiote/engine` into
 Fabric — no React Native renderer in the path.
 
 ---
@@ -154,10 +154,10 @@ Fabric — no React Native renderer in the path.
 > the `create-symbiote` scaffolder doesn't exist yet. **Vue ([M3](#milestones)) is next:** a
 > second framework on the same untouched core, proving the renderer is genuinely framework-agnostic.
 
-**Done:** the native pipe, bootstrap, and `@symbiote/shared`'s mutation→clone-on-write engine
+**Done:** the native pipe, bootstrap, and `@symbiote/engine`'s mutation→clone-on-write engine
 are proven on a real iOS 26 simulator via the React canary (R1 + R2 + R3 — decision
 record 0009). The canary now runs a full end-to-end demo on device — every interaction below
-commits through `@symbiote/shared` into Fabric, with React Native's renderer never in the path:
+commits through `@symbiote/engine` into Fabric, with React Native's renderer never in the path:
 
 - **Primitives** — `View` · `Text` · `Image` · `ImageBackground` · `ScrollView` · `TextInput` ·
   `Pressable` · `Touchable*` · `Button` · `Switch` · `Modal` · `ActivityIndicator` ·
@@ -171,20 +171,20 @@ commits through `@symbiote/shared` into Fabric, with React Native's renderer nev
   jamming the JS thread 1.5 s: the native-driven animations keep moving, the JS-driven one
   stalls (decision records 0016 · 0017).
 - **Third-party native views** — `@react-native-community/slider` used straight from the
-  package with zero symbiote metadata; shared derives its events and prop processors from the
+  package with zero symbiote metadata; the engine derives its events and prop processors from the
   library's own ViewConfig at runtime — the "install the package, use its component" path.
 - **Gestures & events** — the responder lifecycle (grant/move/release/terminate, LCA-scoped
   re-negotiation), two-phase capture→bubble delivery, `Pressable` press-retention, `Touchable*`
-  delays, and `PanResponder` — all in shared, on both platforms.
+  delays, and `PanResponder` — all in the engine, on both platforms.
 - **Accessibility** — the `accessibility*` / ARIA prop layer (roles, labels, states, focus,
   grouping) folded across components and verified against the platform a11y tree on iOS + Android.
 - **Modern styling** — RN's JS style processors (`boxShadow` · `filter` · `transform` ·
-  `transformOrigin` · `aspectRatio` · `fontVariant`) and color resolution run in shared, so
+  `transformOrigin` · `aspectRatio` · `fontVariant`) and color resolution run in the engine, so
   CSS-style props commit correctly on **both** platforms — not just iOS tolerating a raw string
   while Android's strict native converter crashes on it.
 
 **Android — the full canary, verified on an emulator.** The same React canary runs on an
-Android emulator through the same `@symbiote/shared` core, RN's renderer still never in the
+Android emulator through the same `@symbiote/engine` core, RN's renderer still never in the
 path — every block of the demo confirmed on device: all primitives (`View`/`Text`/`ScrollView`
 vertical *and* horizontal/`TextInput`/`Switch`/`Modal`/`FlatList`/`Image`+`prefetch`), the
 runtime modules (`Platform` at the real OS/API level, `StatusBar`, `Keyboard`, `Settings`
@@ -227,10 +227,10 @@ that each further adapter inherits as it lands.
 
 | # | Milestone | What it proves | Status |
 |---|-----------|----------------|--------|
-| **M0** | Monorepo scaffold | pnpm workspaces, `shared` + `react` packages, headless harness | ✅ done |
+| **M0** | Monorepo scaffold | pnpm workspaces, `engine` + `react` packages, headless harness | ✅ done |
 | **M1** | React canary on iOS | native pipe (R1) + clone-on-write engine (R2) + event→recommit (R3) | ✅ done |
 | **M2** | **React → React Native parity (canary surface)** | the canary's full primitive + prop + event surface on the agnostic core — green on iOS + Android | ✅ done |
-| ↳ M2.1 | Primitive surface | `View`/`Text`/`ScrollView`/`TextInput`/`Modal`/`FlatList`/… all driven through shared, on device | ✅ done |
+| ↳ M2.1 | Primitive surface | `View`/`Text`/`ScrollView`/`TextInput`/`Modal`/`FlatList`/… all driven through the engine, on device | ✅ done |
 | ↳ M2.2 | Runtime modules | `Platform`/`StyleSheet`/`Dimensions`/`Appearance`/`AppState` + imperative `Alert`/`ActionSheetIOS`/`Share`/`Linking`/`Vibration`/`Keyboard`/`StatusBar` | ✅ done |
 | ↳ M2.3 | `Animated`, both drivers | JS + native driver (`ValueXY`/tracking/`diffClamp`); native offload proven by a JS-thread freeze (ADR 0016 · 0017) | ✅ done |
 | ↳ M2.4 | Third-party native views | `@react-native-community/slider` via runtime ViewConfig derivation — zero symbiote metadata | ✅ done |
@@ -238,8 +238,8 @@ that each further adapter inherits as it lands.
 | ↳ M2.6 | Long-tail prop edges | continuous hardening of remaining components and per-prop edges as the canary surface widens — not a gate on M2 | 🔁 ongoing |
 | **M3** | Vue adapter | `createRenderer` + nodeOps on the validated core — first non-React framework (R4) | ⏳ next |
 | **M4** | Angular adapter | a second mutation-oriented framework, template/renderer seam | ⏳ planned |
-| **M5** | Svelte adapter | compiled-output framework driving the shared mutation API | ⏳ planned |
-| **M6** | Solid adapter | fine-grained reactivity driving the shared mutation API | ⏳ planned |
+| **M5** | Svelte adapter | compiled-output framework driving the engine's mutation API | ⏳ planned |
+| **M6** | Solid adapter | fine-grained reactivity driving the engine's mutation API | ⏳ planned |
 | **M7** | Web *(stretch)* | the same trees rendered to the web as a default platform target | 💭 maybe |
 | **DX** | `create-symbiote` scaffolder | pins `react-native` + `react` at the app root so your app code imports only `@symbiote/*`, never `react-native` | ⏳ planned |
 
@@ -255,9 +255,11 @@ localizable.
 ## Repository Layout
 
 ```
-packages/
-  shared/      @symbiote/shared  — retained tree + clone-on-write commit engine + events
+core/
+  engine/      @symbiote/engine  — retained tree + clone-on-write commit engine + events
+adapters/
   react/       @symbiote/react   — react-reconciler host config (mutation mode) + primitives
+packages/
   android/     @symbiote/android — autolinked native host shims (keyboard, settings) for Android
 examples/
   canary/      stock RN 0.86 app whose entry drives symbiote on the iOS simulator
@@ -297,7 +299,7 @@ npm run android                # Android emulator (manual-links @symbiote/androi
 Press <kbd>R</kbd> in the simulator to reload. Because `DEBUG` is Babel-inlined into the
 bundle, changing it requires restarting Metro with `--reset-cache`.
 
-> **A note on logs.** All diagnostics go through `dlog` / `isDebug` from `@symbiote/shared`,
+> **A note on logs.** All diagnostics go through `dlog` / `isDebug` from `@symbiote/engine`,
 > off by default, gated by `DEBUG`. They are an asset — never deleted, only added. When
 > debugging finds a useful seam, a log stays there permanently.
 
@@ -310,10 +312,10 @@ decision, not a drift:
 
 - **The native core is never forked.** `react-native` is a dependency; only the JS renderer
   is replaced.
-- **All clone-on-write lives in `@symbiote/shared`.** Adapters never reimplement the
+- **All clone-on-write lives in `@symbiote/engine`.** Adapters never reimplement the
   persistence dance.
 - **Adapters stay thin.** Layout, commit batching, event normalization, and ViewConfig
-  handling are all shared.
+  handling all live in the engine.
 - **Layout is stock Yoga.** Taffy is out of scope — touching the C++ layout node
   turns "free RN upstream merges" into a permanent fork tax for an unmeasured
   benchmark win.

@@ -11,8 +11,8 @@
 // Not on the barrel yet (the integrator wires exports), so reach the source.
 import PanResponder, {
   type PanResponderGestureState,
-} from '../../packages/react/src/pan-responder'
-import { createElement, type SymbioteEvent } from '@symbiote/shared'
+} from '../../adapters/react/src/pan-responder'
+import { createElement, type SymbioteEvent } from '@symbiote/engine'
 
 // ---- synthetic events ---------------------------------------------------
 // shared puts touches on event.nativeEvent.touches with pageX/pageY/locationX/

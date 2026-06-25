@@ -15,8 +15,8 @@
 //
 // A failure here is in JS, not native — no simulator needed.
 
-import { Alert as IosAlert } from '../../packages/react/src/alert.ios'
-import { Alert as AndroidAlert } from '../../packages/react/src/alert.android'
+import { Alert as IosAlert } from '../../adapters/react/src/alert.ios'
+import { Alert as AndroidAlert } from '../../adapters/react/src/alert.android'
 
 // ---- fake AlertManager native module (iOS) ------------------------------
 

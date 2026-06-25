@@ -15,7 +15,7 @@ import {
   setProp,
   type AnimatedInterpolation,
   type SymbioteNode,
-} from '@symbiote/shared'
+} from '@symbiote/engine'
 
 // ---- fake Fabric slot ----------------------------------------------------
 

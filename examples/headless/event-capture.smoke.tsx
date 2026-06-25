@@ -5,14 +5,14 @@
 // hand-built tree and assert capture-before-bubble ordering and stopPropagation in
 // the capture phase.
 
-import { appendChild, createElement, type SymbioteEvent } from '@symbiote/shared'
-import { installEventHandler } from '../../packages/shared/src/events'
+import { appendChild, createElement, type SymbioteEvent } from '@symbiote/engine'
+import { installEventHandler } from '../../core/engine/src/events'
 // `change` (and thus `changeCapture`) is not a ViewConfig event for a bare RCTView, so
 // routeProp would route onChange/onChangeCapture to props, not listeners. The dispatch
 // layer reads the raw listener keys (`change`, `changeCapture`); register them through
 // the low-level setter directly so the test drives dispatch ordering, not routeProp's
 // ViewConfig gate.
-import { setEventListener } from '../../packages/shared/src/node'
+import { setEventListener } from '../../core/engine/src/node'
 
 type EventHandler = (
   instanceHandle: unknown,

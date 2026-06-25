@@ -1,7 +1,7 @@
 {
   "files": [],
   "references": [
-    { "path": "packages/shared" },
-    { "path": "packages/react" }
+    { "path": "core/engine" },
+    { "path": "adapters/react" }
   ]
 }

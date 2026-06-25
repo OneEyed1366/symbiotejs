@@ -58,7 +58,7 @@ function isType<T>(value: unknown): value is T {
 // ---- the smoke ----------------------------------------------------------
 
 // Import AFTER the proxy is installed so load-time constant resolution sees the fake.
-const { ToastAndroid } = await import('../../packages/react/src/toast-android')
+const { ToastAndroid } = await import('../../adapters/react/src/toast-android')
 
 // (c) constants exposed as numbers.
 for (const key of ['SHORT', 'LONG', 'TOP', 'BOTTOM', 'CENTER'] as const) {
@@ -97,7 +97,7 @@ Object.assign(globalThis, {
   __turboModuleProxy: <T,>(_name: string): T | null => null,
 })
 
-const fresh = await import(`../../packages/react/src/toast-android?nomodule=${Date.now()}`)
+const fresh = await import(`../../adapters/react/src/toast-android?nomodule=${Date.now()}`)
 const toast: unknown = fresh.ToastAndroid
 if (!isType<typeof ToastAndroid>(toast)) {
   throw new Error('fresh import did not expose ToastAndroid')

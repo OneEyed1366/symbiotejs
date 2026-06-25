@@ -7,7 +7,7 @@
 //   3. existing is a plain function  -> a new function calling both, in order.
 //   4. unforkEvent removes a forked listener from an AnimatedEvent.
 
-import { AnimatedValue, event, forkEvent, unforkEvent } from '@symbiote/shared'
+import { AnimatedValue, event, forkEvent, unforkEvent } from '@symbiote/engine'
 
 function assert(condition: boolean, message: string): void {
   if (!condition) {

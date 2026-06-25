@@ -10,7 +10,7 @@
 
 import { useState, type ReactElement } from 'react'
 import { Keyboard, mount } from '@symbiote/react'
-import { TextInput } from '../../packages/react/src/text-input'
+import { TextInput } from '../../adapters/react/src/text-input'
 
 // ---- fake Fabric slot ---------------------------------------------------
 

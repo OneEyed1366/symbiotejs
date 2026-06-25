@@ -8,8 +8,8 @@
 
 import { type ReactElement } from 'react'
 import { mount } from '@symbiote/react'
-import { setDeviceEventSource } from '@symbiote/shared'
-import { Animated } from '../../packages/react/src/animated'
+import { setDeviceEventSource } from '@symbiote/engine'
+import { Animated } from '../../adapters/react/src/animated'
 
 // ---- injected device-event source (the app's RN DeviceEventEmitter stand-in) ----
 

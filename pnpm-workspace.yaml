@@ -1,4 +1,6 @@
 packages:
+  - 'core/*'
+  - 'adapters/*'
   - 'packages/*'
   - 'examples/headless'
 allowBuilds:

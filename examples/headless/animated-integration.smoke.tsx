@@ -7,8 +7,8 @@
 import { type ReactElement } from 'react'
 import { mount } from '@symbiote/react'
 // Reach the Animated bridge source directly (no built dist in the harness).
-import { Animated } from '../../packages/react/src/animated'
-import { Easing } from '@symbiote/shared'
+import { Animated } from '../../adapters/react/src/animated'
+import { Easing } from '@symbiote/engine'
 
 // rAF is not a Node global; polyfill it (setTimeout-based) before any driver runs.
 // The drivers read requestAnimationFrame from the host at call time, so installing

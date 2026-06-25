@@ -3,10 +3,10 @@
 // tree and assert press correlation, bubbling + stopPropagation, and direct layout
 // delivery — no simulator, all in JS.
 
-import { appendChild, createElement, routeProp, type SymbioteEvent } from '@symbiote/shared'
+import { appendChild, createElement, routeProp, type SymbioteEvent } from '@symbiote/engine'
 // installEventHandler is not on the public barrel (surface.ts calls it internally);
 // reach it directly so the smoke can drive the handler without standing up a surface.
-import { installEventHandler } from '../../packages/shared/src/events'
+import { installEventHandler } from '../../core/engine/src/events'
 
 // ---- fake Fabric slot (captures the event handler) ----------------------
 

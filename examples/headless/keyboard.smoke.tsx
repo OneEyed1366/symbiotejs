@@ -5,7 +5,7 @@
 // and the cache (isVisible/metrics) tracks show/hide; removeAllListeners tears down
 // the caller subscriptions but the cache feed survives. A failure here is in JS.
 
-import { Keyboard, type KeyboardEvent } from '../../packages/react/src/keyboard'
+import { Keyboard, type KeyboardEvent } from '../../adapters/react/src/keyboard'
 
 // ---- fake native-module + device-hub globals ----------------------------
 

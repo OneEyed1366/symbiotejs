@@ -12,7 +12,7 @@
 
 import { createElement } from 'react'
 import { mount } from '@symbiote/react'
-import { setNativeViewConfigSource, type SymbioteEvent } from '@symbiote/shared'
+import { setNativeViewConfigSource, type SymbioteEvent } from '@symbiote/engine'
 
 // ---- fake Fabric slot ---------------------------------------------------
 

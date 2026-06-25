@@ -9,7 +9,7 @@
 import { createElement, type ReactElement } from 'react'
 import { mount } from '@symbiote/react'
 // Not on the barrel yet (the integrator wires exports), so reach the source.
-import { VirtualizedSectionList } from '../../packages/react/src/virtualized-section-list'
+import { VirtualizedSectionList } from '../../adapters/react/src/virtualized-section-list'
 
 // ---- fake Fabric slot ---------------------------------------------------
 

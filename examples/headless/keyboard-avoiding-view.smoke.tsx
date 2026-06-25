@@ -13,8 +13,8 @@ import { Text, mount } from '@symbiote/react'
 // act flushes ALL pending lanes (a plain device emit schedules setInset on a lane
 // that the Fabric-event flush path doesn't drain). The flag lets act flush
 // synchronously without the "not configured for act" warning in a bare process.
-import { KeyboardAvoidingView } from '../../packages/react/src/keyboard-avoiding-view'
-import { Keyboard } from '../../packages/react/src/keyboard'
+import { KeyboardAvoidingView } from '../../adapters/react/src/keyboard-avoiding-view'
+import { Keyboard } from '../../adapters/react/src/keyboard'
 
 // ---- fake Fabric slot ---------------------------------------------------
 

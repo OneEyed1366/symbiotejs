@@ -8,9 +8,9 @@
 
 // Reach the sources directly — the barrel is wired by the parent, the headless
 // harness has no built dist.
-import { Dimensions } from '../../packages/react/src/dimensions'
-import { PixelRatio } from '../../packages/react/src/pixel-ratio'
-import { useWindowDimensions } from '../../packages/react/src/use-window-dimensions'
+import { Dimensions } from '../../adapters/react/src/dimensions'
+import { PixelRatio } from '../../adapters/react/src/pixel-ratio'
+import { useWindowDimensions } from '../../adapters/react/src/use-window-dimensions'
 
 // ---- fake native-module + device-hub globals ----------------------------
 

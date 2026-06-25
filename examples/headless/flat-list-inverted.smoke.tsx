@@ -22,8 +22,8 @@
 
 import { createElement, type ReactElement } from 'react'
 import { mount } from '@symbiote/react'
-import { FlatList } from '../../packages/react/src/flat-list'
-import type { ViewableItemsChangedInfo } from '../../packages/react/src/virtualized-list'
+import { FlatList } from '../../adapters/react/src/flat-list'
+import type { ViewableItemsChangedInfo } from '../../adapters/react/src/virtualized-list'
 
 // ---- fake Fabric slot ---------------------------------------------------
 

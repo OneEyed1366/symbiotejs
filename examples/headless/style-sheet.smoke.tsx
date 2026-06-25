@@ -4,7 +4,7 @@
 // scale — then assert the width matches RN's formula for that scale. A failure here
 // is in JS, not native.
 
-import { StyleSheet, computeHairlineWidth } from '../../packages/shared/src/style-sheet'
+import { StyleSheet, computeHairlineWidth } from '../../core/engine/src/style-sheet'
 
 function assertEqual(actual: unknown, expected: unknown, label: string): void {
   const a = JSON.stringify(actual)

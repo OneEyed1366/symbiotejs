@@ -9,9 +9,9 @@
 //   - cancel reaches native cancel; a missing module is a silent no-op.
 // A failure here is in JS, not native.
 
-import { Vibration as IosVibration } from '../../packages/react/src/vibration.ios'
-import { Vibration as AndroidVibration } from '../../packages/react/src/vibration.android'
-import { createVibration } from '../../packages/react/src/vibration-shared'
+import { Vibration as IosVibration } from '../../adapters/react/src/vibration.ios'
+import { Vibration as AndroidVibration } from '../../adapters/react/src/vibration.android'
+import { createVibration } from '../../adapters/react/src/vibration-shared'
 
 // ---- fake native module --------------------------------------------------
 

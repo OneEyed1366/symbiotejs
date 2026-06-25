@@ -1,7 +1,7 @@
 // Headless proof of the AppRegistry entry point. RN app code registers a root with
 //   AppRegistry.registerComponent(appKey, () => App)
 // and the native Fabric host later runs it by key on a surface's rootTag. Our
-// AppRegistry stores a runnable that calls `mount` (driving @symbiote/shared) and
+// AppRegistry stores a runnable that calls `mount` (driving @symbiote/engine) and
 // bridges that runnable to the host registrar (RN's own AppRegistry, injected via
 // setHostRegistrar) so native can find it. This asserts both: the bridge fires on
 // registration, and invoking the runnable mounts the tree onto the given rootTag.

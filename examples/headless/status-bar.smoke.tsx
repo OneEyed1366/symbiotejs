@@ -9,7 +9,7 @@ import { type ReactElement } from 'react'
 import { View, mount } from '@symbiote/react'
 // StatusBar isn't on the barrel yet (the parent wires exports), so reach the source
 // directly — the headless harness has no built dist.
-import { StatusBar } from '../../packages/react/src/status-bar'
+import { StatusBar } from '../../adapters/react/src/status-bar'
 
 // ---- fake Fabric slot ---------------------------------------------------
 

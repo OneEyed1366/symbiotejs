@@ -7,7 +7,7 @@
 //
 // Expected outputs are RN-exact (cross-checked against RN's own processTransformOrigin tests).
 
-import { processTransformOrigin, processAspectRatio, processFontVariant } from '@symbiote/shared'
+import { processTransformOrigin, processAspectRatio, processFontVariant } from '@symbiote/engine'
 
 function assert(condition: boolean, message: string): void {
   if (!condition) throw new Error(message)

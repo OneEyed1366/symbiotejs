@@ -39,7 +39,7 @@ Object.assign(globalThis, {
 
 // Import AFTER faking the module so the snapshot seeds from the fake. The direct
 // file path (not the barrel) keeps the smoke independent of barrel wiring.
-const { Settings } = await import('../../packages/react/src/settings')
+const { Settings } = await import('../../adapters/react/src/settings')
 
 // ---- snapshot seeds from native getConstants().settings --------------------
 

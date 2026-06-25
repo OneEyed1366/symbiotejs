@@ -9,8 +9,8 @@ import { type ReactElement } from 'react'
 import { View, mount } from '@symbiote/react'
 // Neither ScrollView nor RefreshControl is on the barrel yet (the parent wires
 // exports), so reach the sources directly — the headless harness has no built dist.
-import { ScrollView } from '../../packages/react/src/scroll-view'
-import { RefreshControl } from '../../packages/react/src/refresh-control'
+import { ScrollView } from '../../adapters/react/src/scroll-view'
+import { RefreshControl } from '../../adapters/react/src/refresh-control'
 
 // ---- fake Fabric slot ---------------------------------------------------
 

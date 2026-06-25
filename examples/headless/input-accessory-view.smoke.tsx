@@ -7,7 +7,7 @@ import { type ReactElement } from 'react'
 import { Text, TextInput, View, mount } from '@symbiote/react'
 // InputAccessoryView isn't on the barrel yet (the parent wires exports), so reach the
 // source directly — the headless harness has no built dist.
-import { InputAccessoryView } from '../../packages/react/src/input-accessory-view'
+import { InputAccessoryView } from '../../adapters/react/src/input-accessory-view'
 
 // ---- fake Fabric slot ---------------------------------------------------
 

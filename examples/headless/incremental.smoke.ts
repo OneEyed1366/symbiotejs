@@ -11,7 +11,7 @@ import {
   setProp,
   appendChild,
   createSurface,
-} from '../../packages/shared/src/index'
+} from '../../core/engine/src/index'
 
 interface FakeNode {
   id: number

@@ -14,8 +14,8 @@ import {
   diffClamp,
   AnimatedAddition,
   AnimatedDiffClamp,
-} from '../../packages/shared/src/animated/operators'
-import { AnimatedValue } from '../../packages/shared/src/animated/value'
+} from '../../core/engine/src/animated/operators'
+import { AnimatedValue } from '../../core/engine/src/animated/value'
 
 function assert(condition: boolean, message: string): void {
   if (!condition) throw new Error(message)

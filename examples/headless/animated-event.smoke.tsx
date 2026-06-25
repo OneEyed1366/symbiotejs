@@ -11,8 +11,8 @@
 
 import { type ReactElement } from 'react'
 import { mount } from '@symbiote/react'
-import { Animated } from '../../packages/react/src/animated'
-import { event, AnimatedEvent } from '../../packages/shared/src/animated/event'
+import { Animated } from '../../adapters/react/src/animated'
+import { event, AnimatedEvent } from '../../core/engine/src/animated/event'
 
 // ---- fake NativeAnimatedTurboModule (records calls) ----------------------
 

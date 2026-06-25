@@ -8,8 +8,8 @@
 // The Android build also exercises sendIntent (forwards to IntentAndroid); the iOS build
 // asserts sendIntent rejects (Unsupported). A failure here is in JS, not native.
 
-import { Linking as IosLinking } from '../../packages/react/src/linking.ios'
-import { Linking as AndroidLinking } from '../../packages/react/src/linking.android'
+import { Linking as IosLinking } from '../../adapters/react/src/linking.ios'
+import { Linking as AndroidLinking } from '../../adapters/react/src/linking.android'
 
 // ---- fake native-module + device-hub globals ----------------------------
 

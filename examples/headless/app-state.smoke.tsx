@@ -5,7 +5,7 @@
 // currentState, then drive a native state change through the hub and assert both the
 // 'change' listener and AppState.currentState track it. A failure here is in JS.
 
-import { AppState } from '../../packages/react/src/app-state'
+import { AppState } from '../../adapters/react/src/app-state'
 
 // ---- fake native-module + device-hub globals ----------------------------
 

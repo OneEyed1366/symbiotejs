@@ -10,8 +10,8 @@
 //     -> { action: 'sharedAction', activityType: null }, forwarding content + dialogTitle.
 // A failure here is in JS, not native.
 
-import { Share as IosShare } from '../../packages/react/src/share.ios'
-import { Share as AndroidShare, type ShareContent } from '../../packages/react/src/share.android'
+import { Share as IosShare } from '../../adapters/react/src/share.ios'
+import { Share as AndroidShare, type ShareContent } from '../../adapters/react/src/share.android'
 
 // ---- fake native modules -------------------------------------------------
 

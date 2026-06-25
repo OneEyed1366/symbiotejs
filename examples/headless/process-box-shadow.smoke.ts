@@ -8,7 +8,7 @@
 //  (b) STRING form — needs a realistic processColor (null for non-colors, int for rgba),
 //      because the string parser classifies each arg by `processColor(arg) != null`.
 
-import { processBoxShadow, processFilter, setColorProcessor } from '@symbiote/shared'
+import { processBoxShadow, processFilter, setColorProcessor } from '@symbiote/engine'
 
 function assert(condition: boolean, message: string): void {
   if (!condition) throw new Error(message)

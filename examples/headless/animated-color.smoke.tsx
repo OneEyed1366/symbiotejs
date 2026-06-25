@@ -3,7 +3,7 @@
 // channel re-pulls it, and useNativeDriver mirrors a `color` node referencing the
 // four channel tags. A fake native module records the native config.
 
-import { AnimatedColor, AnimatedValue, AnimatedWithChildren } from '@symbiote/shared'
+import { AnimatedColor, AnimatedValue, AnimatedWithChildren } from '@symbiote/engine'
 
 // ---- input forms parse to channels ----------------------------------------
 

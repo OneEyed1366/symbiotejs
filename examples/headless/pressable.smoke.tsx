@@ -8,8 +8,8 @@
 
 import { mount } from '@symbiote/react'
 // Not on the barrel yet (the integrator wires exports), so reach the source.
-import { Pressable } from '../../packages/react/src/pressable'
-import { Button } from '../../packages/react/src/button'
+import { Pressable } from '../../adapters/react/src/pressable'
+import { Button } from '../../adapters/react/src/button'
 
 // ---- controllable fake timers (for the long-press path) -----------------
 // Replace setTimeout/clearTimeout with a manual queue so the long-press timer

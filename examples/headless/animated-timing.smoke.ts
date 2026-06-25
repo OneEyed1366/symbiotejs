@@ -5,8 +5,8 @@
 // loops run under Node. We observe the value through addListener — the value
 // graph itself is proven by animated-value.smoke.ts; this proves the drivers.
 
-import { AnimatedValue, Easing, parallel, sequence, spring, timing } from '@symbiote/shared'
-import type { EndResult } from '@symbiote/shared'
+import { AnimatedValue, Easing, parallel, sequence, spring, timing } from '@symbiote/engine'
+import type { EndResult } from '@symbiote/engine'
 
 // ---- fake Fabric slot ----------------------------------------------------
 // The drivers never touch Fabric directly, but AnimatedValue's flush path runs

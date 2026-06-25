@@ -11,7 +11,7 @@ import { useState, type ReactElement } from 'react'
 import { mount } from '@symbiote/react'
 // Switch isn't on the barrel yet (the parent wires exports), so reach the source
 // directly — the headless harness has no built dist.
-import { Switch } from '../../packages/react/src/switch'
+import { Switch } from '../../adapters/react/src/switch'
 
 // ---- fake Fabric slot ---------------------------------------------------
 

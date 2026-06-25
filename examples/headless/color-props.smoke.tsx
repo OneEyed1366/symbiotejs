@@ -8,7 +8,7 @@
 
 import { type ReactElement } from 'react'
 import { mount, View } from '@symbiote/react'
-import { setColorProcessor } from '@symbiote/shared'
+import { setColorProcessor } from '@symbiote/engine'
 
 interface FakeNode {
   tag: number

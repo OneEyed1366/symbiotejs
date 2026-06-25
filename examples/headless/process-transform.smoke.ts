@@ -8,7 +8,7 @@
 // unchanged (no decompose, no clone) or animated transforms regress. Expected string outputs
 // are RN-exact (cross-checked against RN's processTransform / its parse rules).
 
-import { processTransform } from '@symbiote/shared'
+import { processTransform } from '@symbiote/engine'
 
 function assert(condition: boolean, message: string): void {
   if (!condition) throw new Error(message)
