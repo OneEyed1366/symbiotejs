@@ -7,18 +7,30 @@ import type { SymbioteNode } from '@symbiote/shared'
 import {
   buildScrollViewHandle,
   prepareScrollView,
+  useNativeStickyScrollAttach,
   type ScrollViewHandle,
   type ScrollViewProps,
 } from './scroll-view-shared'
 export type { ScrollViewProps, ScrollViewHandle } from './scroll-view-shared'
 
 export const ScrollView = forwardRef<ScrollViewHandle, ScrollViewProps>((props, forwardedRef) => {
-  const { scrollViewIntrinsic, scrollViewBaseStyle, outerProps, style, content, refreshControl } =
-    prepareScrollView(props)
+  const {
+    scrollViewIntrinsic,
+    scrollViewBaseStyle,
+    outerProps,
+    style,
+    content,
+    refreshControl,
+    scrollAnimatedValue,
+    nativeStickyAvailable,
+  } = prepareScrollView(props)
   // The node ref backs the imperative handle; it attaches to the scroll-view element below
   // (passing `ref` through createElement props binds it to the SymbioteNode, as TextInput does).
   const ref = useRef<SymbioteNode | null>(null)
   useImperativeHandle(forwardedRef, () => buildScrollViewHandle(ref), [])
+  // Drive the sticky scroll value on the native UI thread (RN attachNativeEvent). No-op on a
+  // host without the native animated module — the JS sticky path stays in effect.
+  useNativeStickyScrollAttach(ref, scrollAnimatedValue, nativeStickyAvailable)
 
   // Base style under user style so an explicit user value wins; undefined base (vertical)
   // passes the user style through unchanged.

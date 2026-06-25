@@ -6,12 +6,14 @@
 // (AndroidSwipeRefreshLayout is the parent, ScrollView nested inside). So the .ios/.android
 // files assemble the final element; the filename selects, no Platform.OS read.
 
-import { createElement, useRef, useState, type ReactElement, type ReactNode, type RefObject } from 'react'
+import { createElement, useEffect, useRef, useState, type ReactElement, type ReactNode, type RefObject } from 'react'
 import {
   AnimatedValue,
+  attachNativeEvent,
   dispatchViewCommand,
   dlog,
   event as animatedEvent,
+  isNativeAnimatedAvailable,
   type SymbioteEvent,
   type SymbioteNode,
 } from '@symbiote/shared'
@@ -238,6 +240,11 @@ export interface PreparedScrollView {
   style: ViewStyle | undefined
   content: ReactElement
   refreshControl: ReactElement<ClonableRefreshControl> | undefined
+  // The scroll-offset AnimatedValue driving the sticky headers (RN's _scrollAnimatedValue), and
+  // whether the native driver is available for it. The platform file feeds both to
+  // useNativeStickyScrollAttach so the scroll event binds to the value on the UI thread.
+  scrollAnimatedValue: AnimatedValue
+  nativeStickyAvailable: boolean
 }
 
 export function prepareScrollView(rawProps: ScrollViewProps): PreparedScrollView {
@@ -316,14 +323,25 @@ export function prepareScrollView(rawProps: ScrollViewProps): PreparedScrollView
   // onScroll: when sticky headers are active, the offset must reach the AnimatedValue, so
   // we wrap the user's handler with Animated.event (it fires the listener passthrough). RN
   // does the same with _scrollAnimatedValueAttachment. Without sticky headers, forward as-is.
+  const nativeStickyAvailable = hasStickyHeaders && isNativeAnimatedAvailable()
   if (hasStickyHeaders) {
-    outerProps.onScroll = animatedEvent(
-      [{ nativeEvent: { contentOffset: { y: scrollAnimatedValue } } }],
-      onScroll === undefined ? undefined : { listener: (...args) => forwardScrollEvent(onScroll, args) },
-    )
-    // Animated.event needs to fire often enough to drive the headers smoothly; default to
-    // every frame when the caller didn't ask for a coarser throttle.
-    outerProps.scrollEventThrottle = scrollEventThrottle ?? 16
+    if (nativeStickyAvailable) {
+      // Native path (RN attachNativeEvent): the scroll value is driven on the UI thread by the
+      // imperative attach in the platform component's effect (useNativeStickyScrollAttach), so
+      // onScroll only forwards to the user — zero JS per frame. RN uses throttle 1 when sticky
+      // (ScrollView.js:1798); the native driver can afford it.
+      if (onScroll !== undefined) outerProps.onScroll = onScroll
+      outerProps.scrollEventThrottle = scrollEventThrottle ?? 1
+    } else {
+      // JS fallback (no native module): Animated.event drives the value each frame and forwards
+      // the user's handler as the listener passthrough. Correct, but lags a frame under fast
+      // scroll (the jitter) — which the native path above removes on a real host.
+      outerProps.onScroll = animatedEvent(
+        [{ nativeEvent: { contentOffset: { y: scrollAnimatedValue } } }],
+        onScroll === undefined ? undefined : { listener: (...args) => forwardScrollEvent(onScroll, args) },
+      )
+      outerProps.scrollEventThrottle = scrollEventThrottle ?? 16
+    }
   } else {
     if (onScroll !== undefined) outerProps.onScroll = onScroll
     if (scrollEventThrottle !== undefined) outerProps.scrollEventThrottle = scrollEventThrottle
@@ -385,10 +403,40 @@ export function prepareScrollView(rawProps: ScrollViewProps): PreparedScrollView
   // View-flattened away"). iOS doesn't flatten, so this is a no-op there.
   const content = createElement(contentIntrinsic, contentProps, contentChildren)
 
-  return { scrollViewIntrinsic, scrollViewBaseStyle, outerProps, style, content, refreshControl }
+  return {
+    scrollViewIntrinsic,
+    scrollViewBaseStyle,
+    outerProps,
+    style,
+    content,
+    refreshControl,
+    scrollAnimatedValue,
+    nativeStickyAvailable,
+  }
 }
 
 // Forward a wrapped scroll event to the user's ScrollHandler. The Animated.event listener
+// Attach the scroll event to the scroll-offset value on the NATIVE driver — RN's
+// _updateAnimatedNodeAttachment / AnimatedImplementation.attachNativeEvent (ScrollView.js:1087).
+// Called by each platform ScrollView with its committed scroll-node ref; the value then tracks
+// scroll on the UI thread and the sticky-header interpolations ride it natively (no JS jitter).
+// No-op when native sticky is unavailable or the node hasn't committed. Detaches on unmount.
+export function useNativeStickyScrollAttach(
+  scrollNodeRef: RefObject<SymbioteNode | null>,
+  scrollAnimatedValue: AnimatedValue,
+  enabled: boolean,
+): void {
+  useEffect(() => {
+    if (!enabled) return
+    const node = scrollNodeRef.current
+    if (node === null) return
+    const attachment = attachNativeEvent(node, 'onScroll', [
+      { nativeEvent: { contentOffset: { y: scrollAnimatedValue } } },
+    ])
+    return () => attachment.detach()
+  }, [scrollNodeRef, scrollAnimatedValue, enabled])
+}
+
 // hands raw args; the first is the original SymbioteEvent, which we narrow with a runtime
 // guard (no cast) and pass through unchanged so the user sees the same event RN would deliver.
 function forwardScrollEvent(handler: ScrollHandler, args: readonly unknown[]): void {

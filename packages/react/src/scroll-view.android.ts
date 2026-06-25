@@ -15,18 +15,30 @@ import {
   buildScrollViewHandle,
   prepareScrollView,
   splitLayoutProps,
+  useNativeStickyScrollAttach,
   type ScrollViewHandle,
   type ScrollViewProps,
 } from './scroll-view-shared'
 export type { ScrollViewProps, ScrollViewHandle } from './scroll-view-shared'
 
 export const ScrollView = forwardRef<ScrollViewHandle, ScrollViewProps>((props, forwardedRef) => {
-  const { scrollViewIntrinsic, scrollViewBaseStyle, outerProps, style, content, refreshControl } =
-    prepareScrollView(props)
+  const {
+    scrollViewIntrinsic,
+    scrollViewBaseStyle,
+    outerProps,
+    style,
+    content,
+    refreshControl,
+    scrollAnimatedValue,
+    nativeStickyAvailable,
+  } = prepareScrollView(props)
   // The node ref backs the imperative handle; it attaches to the inner scroll-view element
   // (the wrap shape leaves the scroll view as the command target, not the RefreshControl).
   const ref = useRef<SymbioteNode | null>(null)
   useImperativeHandle(forwardedRef, () => buildScrollViewHandle(ref), [])
+  // Drive the sticky scroll value on the native UI thread (RN attachNativeEvent). No-op on a
+  // host without the native animated module — the JS sticky path stays in effect.
+  useNativeStickyScrollAttach(ref, scrollAnimatedValue, nativeStickyAvailable)
   dlog('ScrollView.ANDROID refreshControl=' + (refreshControl === undefined ? 'NONE(1child)' : 'WRAP'))
 
   if (refreshControl === undefined) {

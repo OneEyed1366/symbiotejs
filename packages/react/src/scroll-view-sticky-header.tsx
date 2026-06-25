@@ -12,19 +12,27 @@ import {
   Children,
   createElement,
   isValidElement,
+  useCallback,
   useEffect,
+  useRef,
   useState,
   type ComponentType,
   type ReactElement,
   type ReactNode,
 } from 'react'
-import { AnimatedInterpolation, AnimatedValue, dlog, type SymbioteEvent } from '@symbiote/shared'
+import { AnimatedInterpolation, AnimatedValue, Platform, dlog, type SymbioteEvent } from '@symbiote/shared'
 import { Animated } from './animated'
 
 // RN gives the sticky wrapper zIndex:10 (ScrollViewStickyHeader.js styles.header) so the
 // pinned header paints OVER the rows that scroll up under it. Without it the next rows (later
 // siblings) paint on top and bleed through the header.
 const STICKY_HEADER_Z_INDEX = 10
+
+// RN debounces the Fabric ShadowTree transform sync (ScrollViewStickyHeader.js): the smooth pin
+// rides the native driver, but the committed transform must catch up for hit-testing. Android
+// needs the tighter window because its tap hit-detection moves to JS on finger-move.
+const STICKY_DEBOUNCE_ANDROID_MS = 15
+const STICKY_DEBOUNCE_IOS_MS = 64
 
 // The props RN passes a sticky header wrapper (ScrollViewStickyHeader.js). A custom
 // StickyHeaderComponent must accept the same shape.
@@ -62,19 +70,46 @@ function firstChild(children: ReactNode): ReactElement | undefined {
   return isValidElement(first) ? first : undefined
 }
 
-// One sticky header. Measures its own y/height via onLayout, then interpolates the shared
-// scroll offset into a translateY that keeps it pinned to the top (or bottom, inverted) until
-// the next header collides with it. Ported from ScrollViewStickyHeader.js — the per-frame
-// debounce / Fabric setNativeProps paths are dropped (our Animated graph drives the transform
-// directly through the AnimatedInterpolation binding).
+// One sticky header. Measures its own y/height via onLayout, interpolates the shared scroll
+// offset into a translateY that keeps it pinned to the top (or bottom, inverted) until the next
+// header collides with it, and drives that translate through the native driver when available so
+// the pin tracks scroll on the UI thread (no JS jitter). Ported faithfully from
+// ScrollViewStickyHeader.js, including the Fabric ShadowTree debounce path.
 export const ScrollViewStickyHeader: StickyHeaderComponentType = (props) => {
   const { inverted, scrollViewHeight, scrollAnimatedValue, nextHeaderLayoutY, children } = props
   const [measured, setMeasured] = useState(false)
   const [layoutY, setLayoutY] = useState(0)
   const [layoutHeight, setLayoutHeight] = useState(0)
-  const [translateY, setTranslateY] = useState<AnimatedInterpolation>(() =>
+  // The animated node that drives the transform (RN's animatedTranslateY). When the scroll value
+  // is native (attachNativeEvent), this interpolation runs on the UI thread — the smooth pin.
+  const [animatedTranslateY, setAnimatedTranslateY] = useState<AnimatedInterpolation>(() =>
     scrollAnimatedValue.interpolate({ inputRange: [-1, 0], outputRange: [0, 0] }),
   )
+  // The debounced EXPLICIT translateY pushed to the committed transform via
+  // passthroughAnimatedPropExplicitValues, so the Fabric ShadowTree (hit-testing) knows the pinned
+  // position while the native driver animates. null until the listener first fires.
+  const [translateY, setTranslateY] = useState<number | null>(null)
+  const haveReceivedInitialZeroTranslateY = useRef(true)
+  const debounceTimer = useRef<number | null>(null)
+
+  useEffect(() => {
+    if (translateY !== 0 && translateY !== null) haveReceivedInitialZeroTranslateY.current = false
+  }, [translateY])
+
+  // The animated value updates several times per frame during scroll; debounce it and push the
+  // settled value into the committed transform so hit detection stays current (RN: a Fabric-only
+  // issue — symbiote is always Fabric — and worse on Android).
+  const animatedValueListener = useCallback(({ value }: { value: number | string }): void => {
+    if (typeof value !== 'number') return
+    const timeout = Platform.OS === 'android' ? STICKY_DEBOUNCE_ANDROID_MS : STICKY_DEBOUNCE_IOS_MS
+    // A freshly-rebuilt interpolation re-emits 0 to its listeners; swallow that first zero (RN).
+    if (value === 0 && !haveReceivedInitialZeroTranslateY.current) {
+      haveReceivedInitialZeroTranslateY.current = true
+      return
+    }
+    if (debounceTimer.current !== null) clearTimeout(debounceTimer.current)
+    debounceTimer.current = setTimeout(() => setTranslateY(value), timeout)
+  }, [])
 
   useEffect(() => {
     const inputRange: number[] = [-1, 0]
@@ -111,8 +146,16 @@ export const ScrollViewStickyHeader: StickyHeaderComponentType = (props) => {
         }
       }
     }
-    setTranslateY(scrollAnimatedValue.interpolate({ inputRange, outputRange }))
-  }, [measured, layoutY, layoutHeight, scrollViewHeight, nextHeaderLayoutY, inverted, scrollAnimatedValue])
+    const newAnimatedTranslateY = scrollAnimatedValue.interpolate({ inputRange, outputRange })
+    // symbiote is always Fabric: listen to the settled value to keep the ShadowTree transform
+    // current for hit-testing (RN attaches this listener only under Fabric).
+    const listenerId = newAnimatedTranslateY.addListener(animatedValueListener)
+    setAnimatedTranslateY(newAnimatedTranslateY)
+    return () => {
+      newAnimatedTranslateY.removeListener(listenerId)
+      if (debounceTimer.current !== null) clearTimeout(debounceTimer.current)
+    }
+  }, [measured, layoutY, layoutHeight, scrollViewHeight, nextHeaderLayoutY, inverted, scrollAnimatedValue, animatedValueListener])
 
   const onLayout = (event: SymbioteEvent): void => {
     const y = readLayoutNumber(event, 'y')
@@ -126,15 +169,22 @@ export const ScrollViewStickyHeader: StickyHeaderComponentType = (props) => {
     childOnLayout?.(event)
   }
 
-  // collapsable:false so Yoga keeps the wrapper as a real node — its translateY must not be
-  // flattened into the child (RN's sticky wrapper is likewise a real Animated.View). `style`
-  // is `unknown` on Animated.View, so the AnimatedInterpolation transform passes with no cast.
-  // TODO(jitter): RN drives this transform with useNativeDriver + Fabric setNativeProps so the
-  // pin tracks scroll on the UI thread; our JS-driven Animated graph can lag/jitter under fast
-  // scroll until that native path is wired.
+  // The EXPLICIT debounced translateY overrides the committed transform for hit-testing, while
+  // `animatedTranslateY` does the smooth (native-driven) pin — RN ScrollViewStickyHeader.js.
+  const passthroughAnimatedPropExplicitValues =
+    translateY !== null ? { style: { transform: [{ translateY }] } } : null
+
+  // collapsable:false keeps the wrapper a real Yoga node; zIndex makes the pinned header paint
+  // OVER the rows scrolling under it. `style` is `unknown` on Animated.View, so the interpolation
+  // transform passes with no cast.
   return createElement(
     Animated.View,
-    { style: { transform: [{ translateY }], zIndex: STICKY_HEADER_Z_INDEX }, onLayout, collapsable: false },
+    {
+      style: { transform: [{ translateY: animatedTranslateY }], zIndex: STICKY_HEADER_Z_INDEX },
+      onLayout,
+      collapsable: false,
+      passthroughAnimatedPropExplicitValues,
+    },
     children,
   )
 }
