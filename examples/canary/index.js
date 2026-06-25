@@ -2,7 +2,7 @@
  * @format
  *
  * Symbiote canary entry. App code uses our own AppRegistry — the RN-identical
- * `registerComponent(appKey, () => App)` — which mounts via @symbiote/shared, not
+ * `registerComponent(appKey, () => App)` — which mounts via @symbiote/engine, not
  * React Native's renderer. setHostRegistrar hands it RN's AppRegistry so the
  * native Fabric host can find our runnable by app key and call it with the
  * surface's rootTag; our renderer drives nativeFabricUIManager directly from there.
@@ -20,7 +20,7 @@ import {
   setColorProcessor,
   setDeviceEventSource,
   setNativeViewConfigSource,
-} from '@symbiote/shared';
+} from '@symbiote/engine';
 import App from './App';
 import { name as appName } from './app.json';
 
@@ -57,5 +57,5 @@ setNativeViewConfigSource(name => {
 setHostRegistrar(RNAppRegistry);
 
 // RN-identical app entry: registerComponent stores a runnable that mounts via
-// @symbiote/shared (not React Native's renderer) and bridges it to the host above.
+// @symbiote/engine (not React Native's renderer) and bridges it to the host above.
 AppRegistry.registerComponent(appName, () => App);

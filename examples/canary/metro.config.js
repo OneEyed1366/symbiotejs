@@ -3,8 +3,8 @@ const { getDefaultConfig, mergeConfig } = require('@react-native/metro-config');
 
 const projectRoot = __dirname;
 const repoRoot = path.resolve(projectRoot, '../..');
-const sharedPkg = path.resolve(repoRoot, 'packages/shared');
-const reactPkg = path.resolve(repoRoot, 'packages/react');
+const enginePkg = path.resolve(repoRoot, 'core/engine');
+const reactPkg = path.resolve(repoRoot, 'adapters/react');
 
 /**
  * Metro is pointed straight at our packages' TypeScript source — there is no
@@ -15,10 +15,10 @@ const reactPkg = path.resolve(repoRoot, 'packages/react');
  * @type {import('@react-native/metro-config').MetroConfig}
  */
 const config = {
-  watchFolders: [sharedPkg, reactPkg],
+  watchFolders: [enginePkg, reactPkg],
   resolver: {
     extraNodeModules: {
-      '@symbiote/shared': sharedPkg,
+      '@symbiote/engine': enginePkg,
       '@symbiote/react': reactPkg,
       react: path.resolve(projectRoot, 'node_modules/react'),
       'react-reconciler': path.resolve(projectRoot, 'node_modules/react-reconciler'),
