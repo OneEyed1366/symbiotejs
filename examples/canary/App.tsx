@@ -24,6 +24,7 @@ import {
   Modal,
   FlatList,
   SectionList,
+  KeyboardAvoidingView,
   SafeAreaView,
   RefreshControl,
   StatusBar,
@@ -826,6 +827,17 @@ function App() {
   const [statusBarRed, setStatusBarRed] = useState(false)
   const [statusBarTranslucent, setStatusBarTranslucent] = useState(false)
 
+  // Feature-parity device checks — state for the cluster before the final logo.
+  const [retentionMove, setRetentionMove] = useState({ dx: 0, dy: 0 })
+  const [mvcpItems, setMvcpItems] = useState(() =>
+    Array.from({ length: 20 }, (_value, index) => ({ id: `row-${index}`, label: `item ${index}` })),
+  )
+  const mvcpHead = useRef(0)
+  // native-driver scroll value: Animated.event attaches it on the UI thread, so the
+  // header opacity/translateY are driven without a JS frame per scroll tick.
+  const parityScrollY = useRef(new Animated.Value(0)).current
+  const [kavEnabled, setKavEnabled] = useState(true)
+
   // Tier B runtime modules, read live: the hooks pull from Dimensions/Appearance,
   // appState tracks foreground/background through AppState's device events.
   const window = useWindowDimensions()
@@ -1186,6 +1198,214 @@ function App() {
           </View>
         )}
       />
+
+      {/* ===== feature-parity device checks ===== */}
+
+      {/* Press-retention measured rect. PASS: press, then drag DOWN ~100px — the panel
+          STAYS highlighted (inside the measured rect + 80px bottom retention). Drag UP
+          off the top — highlight drops. Proves measured-rect retention replaced the old
+          symmetric-radius approximation. The dx/dy readout tracks the move offset. */}
+      <Pressable
+        hitSlop={{ top: 0, bottom: 40, left: 0, right: 0 }}
+        pressRetentionOffset={{ top: 0, bottom: 80, left: 0, right: 0 }}
+        onPressMove={event =>
+          setRetentionMove({
+            dx: Math.round(event.nativeEvent.locationX),
+            dy: Math.round(event.nativeEvent.locationY),
+          })
+        }
+        style={({ pressed }) => ({
+          height: 64,
+          borderRadius: 14,
+          alignItems: 'center',
+          justifyContent: 'center',
+          backgroundColor: pressed ? '#2b6cb0' : '#13243a',
+        })}>
+        <Text style={{ color: '#cbd5e1', fontSize: 14 }}>
+          {`drag me · dx ${retentionMove.dx} · dy ${retentionMove.dy}`}
+        </Text>
+      </Pressable>
+
+      {/* maintainVisibleContentPosition. PASS: scroll down a bit, tap Prepend — the rows
+          you are looking at DO NOT jump; new items appear above without shifting the
+          viewport. FAIL: the list jumps to the top. */}
+      <Text style={{ color: '#41506a', fontSize: 13 }}>MVCP · prepend without jump</Text>
+      <FlatList
+        data={mvcpItems}
+        keyExtractor={item => item.id}
+        maintainVisibleContentPosition={{ minIndexForVisible: 0 }}
+        style={{ height: 160, borderRadius: 12, backgroundColor: '#0f1e30' }}
+        renderItem={({ item }) => (
+          <View style={{ paddingVertical: 10, paddingHorizontal: 14 }}>
+            <Text style={{ color: '#cbd5e1', fontSize: 15 }}>{item.label}</Text>
+          </View>
+        )}
+      />
+      <Button
+        title="Prepend 5"
+        color="#7fb5ff"
+        onPress={() => {
+          mvcpHead.current -= 5
+          const head = mvcpHead.current
+          const prepended = Array.from({ length: 5 }, (_value, index) => {
+            const n = head + index
+            return { id: `row-${n}`, label: `item ${n}` }
+          })
+          setMvcpItems(items => [...prepended, ...items])
+        }}
+      />
+
+      {/* Animated.ScrollView scroll-driven header (native driver). PASS: drag INSIDE the
+          box below (not the page) — the bright bar above SMOOTHLY fades to near-invisible
+          and lifts, on the UI thread (no jank, no per-frame JS). Proves Animated.ScrollView
+          + Animated.event native attach. */}
+      <Animated.View
+        style={{
+          backgroundColor: '#2b6cb0',
+          borderRadius: 12,
+          paddingVertical: 12,
+          alignItems: 'center',
+          opacity: parityScrollY.interpolate({
+            inputRange: [0, 120],
+            outputRange: [1, 0.12],
+            extrapolate: 'clamp',
+          }),
+          transform: [
+            {
+              translateY: parityScrollY.interpolate({
+                inputRange: [0, 120],
+                outputRange: [0, -16],
+                extrapolate: 'clamp',
+              }),
+            },
+          ],
+        }}>
+        <Text style={{ color: '#ffffff', fontSize: 15, fontWeight: 'bold' }}>
+          HEADER — fades as you scroll ↓
+        </Text>
+      </Animated.View>
+      <Animated.ScrollView
+        style={{ height: 160, borderRadius: 12, backgroundColor: '#0f1e30' }}
+        scrollEventThrottle={16}
+        onScroll={Animated.event(
+          [{ nativeEvent: { contentOffset: { y: parityScrollY } } }],
+          { useNativeDriver: true },
+        )}>
+        {Array.from({ length: 6 }, (_value, index) => (
+          <View key={index} style={{ height: 80, justifyContent: 'center', paddingHorizontal: 14 }}>
+            <Text style={{ color: '#cbd5e1', fontSize: 15 }}>{`scroll me · row ${index}`}</Text>
+          </View>
+        ))}
+      </Animated.ScrollView>
+      <Text style={{ color: '#41506a', fontSize: 12, textAlign: 'center' }}>
+        ↑ drag inside the box — the bar above reacts
+      </Text>
+
+      {/* Modern style props reaching Fabric's C++ parser. Each is an A/B so the effect
+          is unmistakable on the dark theme. */}
+      {/* boxShadow — a BLUE glow (a black shadow is invisible on the near-black bg).
+          PASS: a soft blue halo bleeds out around the panel. */}
+      <View
+        style={{
+          height: 64,
+          borderRadius: 12,
+          backgroundColor: '#13243a',
+          alignItems: 'center',
+          justifyContent: 'center',
+          boxShadow: '0px 0px 22px 3px rgba(127,181,255,0.85)',
+        }}>
+        <Text style={{ color: '#cbd5e1', fontSize: 13 }}>boxShadow · blue glow</Text>
+      </View>
+      {/* filter — same base colour both sides; the right one is darkened by
+          brightness(0.5). PASS: the right panel is clearly darker than the left. */}
+      <View style={{ flexDirection: 'row', gap: 12 }}>
+        <View
+          style={{
+            flex: 1,
+            height: 64,
+            borderRadius: 12,
+            backgroundColor: '#2b6cb0',
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}>
+          <Text style={{ color: '#ffffff', fontSize: 13 }}>no filter</Text>
+        </View>
+        <View
+          style={{
+            flex: 1,
+            height: 64,
+            borderRadius: 12,
+            backgroundColor: '#2b6cb0',
+            alignItems: 'center',
+            justifyContent: 'center',
+            filter: [{ brightness: 0.5 }],
+          }}>
+          <Text style={{ color: '#ffffff', fontSize: 13 }}>brightness 0.5</Text>
+        </View>
+      </View>
+      {/* transformOrigin — the panel rotates around its TOP-LEFT corner, not its centre.
+          PASS: the left edge stays put while the bottom-right swings down. */}
+      <View
+        style={{
+          height: 64,
+          borderRadius: 12,
+          backgroundColor: '#2b6cb0',
+          alignItems: 'center',
+          justifyContent: 'center',
+          transformOrigin: 'top left',
+          transform: [{ rotate: '4deg' }],
+        }}>
+        <Text style={{ color: '#ffffff', fontSize: 13 }}>transformOrigin · top-left</Text>
+      </View>
+
+      {/* Image web aliases. PASS: the logo loads via the web-alias fold (src→source uri,
+          width/height→style); a screen reader reads "React logo" (alt→accessibilityLabel). */}
+      <Image
+        src="https://reactnative.dev/img/tiny_logo.png"
+        alt="React logo"
+        width={48}
+        height={48}
+        style={{ borderRadius: 8, alignSelf: 'center' }}
+      />
+
+      {/* KeyboardAvoidingView enabled toggle. PASS: with enabled ON, focusing the field
+          lifts it above the keyboard AND the keyboard is the email layout (proves
+          autoComplete/inputMode fold); with enabled OFF the keyboard covers the field. */}
+      <View
+        style={{
+          flexDirection: 'row',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          paddingHorizontal: 4,
+        }}>
+        <Text style={{ color: '#cbd5e1', fontSize: 16 }}>avoid keyboard</Text>
+        <Switch
+          value={kavEnabled}
+          onValueChange={setKavEnabled}
+          trackColor={{ false: '#334155', true: '#2b6cb0' }}
+        />
+      </View>
+      <KeyboardAvoidingView
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        enabled={kavEnabled}>
+        <TextInput
+          autoComplete="email"
+          inputMode="email"
+          enterKeyHint="done"
+          placeholder="email — focus me near the bottom…"
+          placeholderTextColor="#41506a"
+          style={{
+            height: 44,
+            borderRadius: 10,
+            borderWidth: 1,
+            borderColor: '#2b6cb0',
+            paddingHorizontal: 14,
+            color: '#ffffff',
+            fontSize: 18,
+            backgroundColor: '#0f1e30',
+          }}
+        />
+      </KeyboardAvoidingView>
 
       <Image
         source={{ uri: 'https://reactnative.dev/img/tiny_logo.png' }}
