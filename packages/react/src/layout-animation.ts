@@ -161,6 +161,22 @@ const Presets = {
   },
 } as const satisfies Readonly<Record<string, LayoutAnimationConfig>>
 
+// ---- enabled gate --------------------------------------------------------
+
+// Whether `configureNext` actually arms the next commit. RN seeds this from a
+// feature flag (LayoutAnimation.js:45) and exposes `setEnabled` to toggle it;
+// here it defaults on (our Fabric path always supports it) and `configureNext`
+// short-circuits when it is off, mirroring RN's `if (!isLayoutAnimationEnabled)
+// return` (LayoutAnimation.js:69).
+let isLayoutAnimationEnabled = true
+
+// Gates whether the next commit animates. RN's own `setLayoutAnimationEnabled`
+// (LayoutAnimation.js:48) is a no-op due to a self-assignment bug; we implement
+// the intended behaviour — a disabled state makes `configureNext` a no-op.
+function setLayoutAnimationEnabled(value: boolean): void {
+  isLayoutAnimationEnabled = value
+}
+
 // ---- configureNext -------------------------------------------------------
 
 // Configures the next commit to be animated. NATIVE drives completion:
@@ -182,6 +198,13 @@ function configureNext(
   onAnimationDidEnd?: OnAnimationDidEndCallback,
   onAnimationDidFail?: OnAnimationDidFailCallback,
 ): void {
+  // RN bails before touching native when animations are disabled
+  // (LayoutAnimation.js:69).
+  if (!isLayoutAnimationEnabled) {
+    dlog('LayoutAnimation.configureNext: disabled; no-op')
+    return
+  }
+
   const manager = resolveUIManager()
   if (manager === null || manager.configureNextLayoutAnimation === undefined) {
     dlog('LayoutAnimation.configureNext: no native UIManager; no-op')
@@ -238,6 +261,20 @@ class LayoutAnimationImpl {
 
   spring(onAnimationDidEnd?: OnAnimationDidEndCallback): void {
     configureNext(Presets.spring, onAnimationDidEnd)
+  }
+
+  // RN exposes this as both `setLayoutAnimationEnabled` and the `setEnabled`
+  // alias (LayoutAnimation.js:48,222); we surface the primary name. A disabled
+  // state makes `configureNext` a no-op.
+  setLayoutAnimationEnabled(enabled: boolean): void {
+    setLayoutAnimationEnabled(enabled)
+  }
+
+  // RN's dev-time config validator. It has been retired upstream
+  // (LayoutAnimation.js:204) — the live impl only logs that it is disabled, so
+  // we mirror that and keep the call a no-op rather than re-add dead validation.
+  checkConfig(..._args: unknown[]): void {
+    dlog('LayoutAnimation.checkConfig(...) has been disabled.')
   }
 }
 

@@ -14,6 +14,20 @@ import {
   dlog,
 } from '@symbiote/shared'
 import { blurTextInput, currentlyFocusedInput } from './text-input-state'
+import { LayoutAnimation, type LayoutAnimationType } from './layout-animation'
+
+// RN's scheduleLayoutAnimation falls back to the 'keyboard' animation type when the
+// event's easing string isn't a known LayoutAnimation type (Keyboard.js:200).
+const KEYBOARD_ANIMATION_TYPE = 'keyboard'
+
+// Map a raw easing string onto a LayoutAnimationType without a cast: RN does
+// `LayoutAnimation.Types[easing] || 'keyboard'`, which only yields a real type when
+// the string is a key of the Types table. We mirror that by checking membership in
+// the frozen table before trusting the value.
+function easingToAnimationType(easing: string): LayoutAnimationType {
+  const types: Readonly<Record<string, LayoutAnimationType>> = LayoutAnimation.Types
+  return types[easing] ?? KEYBOARD_ANIMATION_TYPE
+}
 
 // The native module name RN registers the keyboard observer under — confirmed
 // from its spec (specs_DEPRECATED/modules/NativeKeyboardObserver.js:20,
@@ -156,6 +170,20 @@ export const Keyboard = {
   // undefined. RN's metrics().
   metrics(): KeyboardMetrics | undefined {
     return currentlyShowing?.endCoordinates
+  },
+
+  // Syncs an accessory view's layout with the keyboard transition: configure the next
+  // commit to animate over the keyboard's own duration/easing. RN's
+  // scheduleLayoutAnimation (Keyboard.js:193) — skipped when duration is absent or 0,
+  // since a zero-length animation is a no-op.
+  scheduleLayoutAnimation(event: KeyboardEvent): void {
+    const { duration, easing } = event
+    if (duration === 0) return
+    dlog(`Keyboard.scheduleLayoutAnimation -> duration ${duration}, easing ${easing}`)
+    LayoutAnimation.configureNext({
+      duration,
+      update: { duration, type: easingToAnimationType(easing) },
+    })
   },
 
   // RN's dismissKeyboard blurs the currently-focused input (TextInputState); blurring

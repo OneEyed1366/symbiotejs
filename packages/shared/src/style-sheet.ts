@@ -83,6 +83,49 @@ function compose<A, B>(style1: A, style2: B): A | B | [A, B] {
   return [style1, style2]
 }
 
+// Per-attribute style preprocessors, keyed by property name. RN keeps these in
+// ReactNativeStyleAttributes and runs them as a value passes to native; here the
+// registry is consulted by `flatten` (the one place a style collapses to the flat
+// payload before commit), so a registered process() rewrites the matching key.
+type StylePreprocessor = (value: unknown) => unknown
+const stylePreprocessors = new Map<string, StylePreprocessor>()
+
+// Register a value-rewriter for one style property (RN's setStyleAttributePreprocessor,
+// StyleSheetExports.js:151). EXPERIMENTAL in RN; used internally for color/transform.
+// Overwriting an existing preprocessor warns, matching RN's __DEV__ guard.
+function setStyleAttributePreprocessor(property: string, process: StylePreprocessor): void {
+  if (stylePreprocessors.has(property)) {
+    dlog(`StyleSheet.setStyleAttributePreprocessor: overwriting "${property}" preprocessor`)
+  }
+  stylePreprocessors.set(property, process)
+}
+
+// Flatten, then run any registered preprocessor over the matching keys. Kept as a
+// wrapper over the single flattenStyle collapse so the preprocessor map is applied
+// exactly once, at the same seam RN applies it (the style->payload boundary), without
+// reaching into the commit path.
+function flattenWithPreprocessors(style: unknown): Record<string, unknown> {
+  const flat = flattenStyle(style)
+  if (stylePreprocessors.size === 0) return flat
+  for (const [property, process] of stylePreprocessors) {
+    if (Object.hasOwn(flat, property)) {
+      flat[property] = process(flat[property])
+    }
+  }
+  return flat
+}
+
+// Snap a dp size to the nearest value that maps to a whole number of device pixels.
+// RN's StyleSheet.roundToNearestPixel delegates to PixelRatio.roundToNearestPixel
+// (Math.round(size * scale) / scale). PixelRatio lives in the react adapter, which
+// shared cannot import, so the same math runs here over the scale shared already
+// resolves; an unresolvable scale (headless) leaves the value unrounded.
+function roundToNearestPixel(value: number): number {
+  const scale = resolveScreenScale()
+  if (scale === null) return value
+  return Math.round(value * scale) / scale
+}
+
 export const StyleSheet = {
   // Identity, like RN: returns the same object, each key keeping its inferred type.
   create<S extends Record<string, StyleObject>>(styles: S): S {
@@ -90,10 +133,14 @@ export const StyleSheet = {
   },
 
   // Reuse the single flatten implementation; do not reimplement the clone-on-write
-  // collapse here.
-  flatten: flattenStyle,
+  // collapse here. The wrapper additionally applies any registered per-attribute
+  // preprocessor as the style collapses to its flat payload.
+  flatten: flattenWithPreprocessors,
 
   compose,
+
+  setStyleAttributePreprocessor,
+  roundToNearestPixel,
 
   absoluteFill,
   absoluteFillObject: absoluteFill,

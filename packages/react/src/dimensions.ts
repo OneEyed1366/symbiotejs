@@ -179,12 +179,19 @@ function ensureResolved(): DimensionsSet {
 
 export interface DimensionsStatic {
   get(dim: DimensionsKey): DisplayMetrics
+  set(dims: DimensionsPayload): void
   addEventListener(type: 'change', listener: DimensionsChangeListener): EventSubscription
 }
 
 export const Dimensions: DimensionsStatic = {
   get(dim: DimensionsKey): DisplayMetrics {
     return ensureResolved()[dim]
+  },
+
+  // RN exposes this as a public static (Dimensions.js:63); native pushes metrics
+  // through it. Delegates to the internal setter, which caches and fires 'change'.
+  set(dims: DimensionsPayload): void {
+    setDimensions(dims)
   },
 
   // `_type` is fixed to 'change' for RN signature parity; Dimensions emits no other.
