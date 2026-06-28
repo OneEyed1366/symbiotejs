@@ -1,14 +1,14 @@
 // The Vue canary, authored in Vue JSX (.tsx). @vue/babel-plugin-jsx compiles the JSX in
 // setup()'s render fn to @vue/runtime-core createVNode calls (Metro aliases 'vue' →
-// @vue/runtime-core), so every vnode still recommits through @symbiote/engine into Fabric —
-// React Native's renderer never in the path (M3 / R4). Same engine, same components, same
-// palette as the SFC canary (examples/vue-sfc); only the authoring differs — the proof the
+// @vue/runtime-core), so every vnode still recommits through @symbiote/engine into Fabric,
+// with React Native's renderer never in the path (M3 / R4). Same engine, same components, same
+// palette as the SFC canary (examples/vue-sfc); only the authoring differs; the proof the
 // Vue slice is template-agnostic.
 //
 // Mirrors the TOP slice of examples/react/App.tsx (the ориентир): a SafeAreaView → ScrollView
-// (with a pull-to-refresh RefreshControl) wrapping the content — View · Text · Switch ·
+// (with a pull-to-refresh RefreshControl) wrapping the content: View · Text · Switch ·
 // ActivityIndicator. Beyond static paint it exercises the same control flow React's canary does:
-// CONDITIONAL render (a ternary — spinner vs a muted label) and ITERATION (&& empty-state + a
+// CONDITIONAL render (a ternary: spinner vs a muted label) and ITERATION (&& empty-state + a
 // keyed .map over a tap log). The ONLY visual difference between the three examples is the badge
 // line naming which one is rendering.
 
@@ -47,7 +47,7 @@ export default defineComponent({
     }
 
     // Image statics parity (examples/react/App.tsx): getSize resolves the rendered logo's real pixel
-    // dimensions through the ImageLoader native module — the same asset the <Image> below paints.
+    // dimensions through the ImageLoader native module, the same asset the <Image> below paints.
     const imageSize = ref('measuring…')
     onMounted(() => {
       Image.getSize(LOGO_URI)
@@ -116,7 +116,7 @@ export default defineComponent({
   },
 })
 
-// Static styles, grouped in one StyleSheet.create at the bottom — same convention and palette
+// Static styles, grouped in one StyleSheet.create at the bottom, same convention and palette
 // as examples/react/App.tsx. Referenced from the render fn above (runs after module init, so a
 // below-component const is TDZ-safe).
 const styles = StyleSheet.create({

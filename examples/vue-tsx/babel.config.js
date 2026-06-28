@@ -24,6 +24,6 @@ module.exports = {
   // transform: babel applies `plugins` before `presets`, so the Vue plugin rewrites every
   // JSXElement into a @vue/runtime-core createVNode call, leaving no JSX for the React
   // transform to touch (it no-ops). The helper imports it injects come `from 'vue'`, which
-  // metro.config.js aliases to @vue/runtime-core — the one Vue runtime the adapter renders on.
+  // metro.config.js aliases to @vue/runtime-core, the one Vue runtime the adapter renders on.
   plugins: ['@vue/babel-plugin-jsx', inlineDebugFlag],
 };

@@ -9,7 +9,7 @@
 const upstreamTransformer = require('@react-native/metro-babel-transformer');
 const { parse, compileScript } = require('@vue/compiler-sfc');
 
-// A short, stable id per file — used as the SFC scope id (we have no scoped styles, but
+// A short, stable id per file, used as the SFC scope id (we have no scoped styles, but
 // compileScript wants one). Deterministic so Metro's cache stays warm.
 function scopeIdFor(filename) {
   let hash = 0;
@@ -27,14 +27,14 @@ function compileSfc(src, filename) {
   if (descriptor.scriptSetup == null && descriptor.script == null) {
     throw new Error(`Vue SFC ${filename} has no <script> / <script setup> block`);
   }
-  // inlineTemplate folds the <template> render fn into setup() — one module, one `export
+  // inlineTemplate folds the <template> render fn into setup(): one module, one `export
   // default`. Only valid with <script setup>, which the canary uses.
   const compiled = compileScript(descriptor, {
     id: scopeIdFor(filename),
     inlineTemplate: true,
   });
   // Point every Vue import (the compiler's injected helpers AND the user's own
-  // `import { ref } from 'vue'`) at runtime-core — the same singleton the @symbiote/vue
+  // `import { ref } from 'vue'`) at runtime-core, the same singleton the @symbiote/vue
   // adapter builds its custom renderer on. No vue/runtime-dom in a native bundle.
   return compiled.content.replace(/from\s*(['"])vue\1/g, 'from "@vue/runtime-core"');
 }

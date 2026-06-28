@@ -1,7 +1,7 @@
 /**
- * Symbiote canary app. Every primitive here — View, Text, ScrollView, TextInput,
+ * Symbiote canary app. Every primitive here (View, Text, ScrollView, TextInput,
  * Image, Switch, ActivityIndicator, Button, Pressable, Modal, FlatList,
- * RefreshControl — comes from @symbiote/react, not react-native. The tree is
+ * RefreshControl) comes from @symbiote/react, not react-native. The tree is
  * rendered by our own react-reconciler host config straight onto Fabric; React
  * Native's renderer is never involved. Run with DEBUG=1 to watch each interaction
  * commit incrementally (created=0, only the touched branch clones) in Metro's logs.
@@ -53,7 +53,7 @@ import {
   type IFlatListHandle,
   type ISection,
 } from '@symbiote/react'
-// A real third-party native view, used straight from the library — no symbiote
+// A real third-party native view, used straight from the library, with no symbiote
 // wrapper. symbiote derives RNCSlider's events and prop processors from its own
 // ViewConfig at runtime; this is the "install the package, use its component" path.
 import Slider from '@react-native-community/slider'
@@ -70,7 +70,7 @@ const chips = Array.from({ length: 24 }, (_, index) => ({
 
 const SLIDE_DISTANCE = 220
 
-// Animated, both drivers side by side. The pulse runs on the NATIVE driver — the
+// Animated, both drivers side by side. The pulse runs on the NATIVE driver: the
 // curve lives in NativeAnimated, so zero JS runs per frame (DEBUG shows a single
 // `native: startAnimatingNode`, no per-frame commits). The two slide dots run the
 // SAME timing on different drivers: the JS one commits a clone every frame (DEBUG
@@ -123,7 +123,7 @@ function AnimatedDemo() {
     slide(nativeSlide, nativeForward, setNativeForward, true)
     const until = Date.now() + 1500
     while (Date.now() < until) {
-      // Intentionally block the JS thread — no requestAnimationFrame can fire here.
+      // Intentionally block the JS thread: no requestAnimationFrame can fire here.
     }
   }
 
@@ -211,7 +211,7 @@ function AnimatedParityDemo() {
   const [leadForward, setLeadForward] = useState(false)
   useEffect(() => {
     // Set up once: follow tracks lead. Every lead change re-aims the spring, so the
-    // follower lags and chases rather than jumping — the tracking signature.
+    // follower lags and chases rather than jumping, the tracking signature.
     Animated.spring(follow, { toValue: lead, useNativeDriver: false }).start()
     return () => follow.stopAnimation()
   }, [follow, lead])
@@ -284,23 +284,23 @@ function AnimatedParityDemo() {
   )
 }
 
-// The three runtime modules added this pass, each read live so it only resolves on a
+// Three runtime modules, each read live so it only resolves on a
 // real host: I18nManager (RTL layout constants), Settings (a value round-tripped
 // through iOS NSUserDefaults via SettingsManager), and Image's static methods
 // (getSize / queryCache / prefetch, which hit the ImageLoader native module).
 const LOGO_URI = 'https://reactnative.dev/img/tiny_logo.png'
 // A distinct cache key for the prefetch demo: same asset, different URL (query
 // string), so nothing has loaded it yet. The cache starts cold and the button
-// visibly warms it — unlike LOGO_URI, which getSize + the <Image> already pulled in.
+// visibly warms it, unlike LOGO_URI, which getSize + the <Image> already pulled in.
 const PREFETCH_URI = 'https://reactnative.dev/img/tiny_logo.png?warm=symbiote'
 const TAP_KEY = 'symbiote.tapCount'
 
 function NativeModulesDemo() {
-  // I18nManager — RTL constants, read once at render. A non-throwing read proves the
+  // I18nManager: RTL constants, read once at render. A non-throwing read proves the
   // module name resolved; the values flip if you force RTL and relaunch.
   const rtl = I18nManager.getConstants()
 
-  // Settings — a counter persisted to NSUserDefaults: read back on mount, bumped and
+  // Settings is a counter persisted to NSUserDefaults: read back on mount, bumped and
   // re-saved on tap, and watched so an external write to the key reflects live. It
   // survives a relaunch, which is the whole point of the module.
   const [persisted, setPersisted] = useState(() => {
@@ -320,7 +320,7 @@ function NativeModulesDemo() {
     setPersisted(next)
   }
 
-  // Image statics — getSize resolves the rendered logo's real pixel dimensions
+  // Image statics: getSize resolves the rendered logo's real pixel dimensions
   // through ImageLoader (the <Image> below paints that same asset).
   const [imageSize, setImageSize] = useState('measuring…')
   useEffect(() => {
@@ -330,7 +330,7 @@ function NativeModulesDemo() {
   }, [])
 
   // Prefetch on a COLD url nothing has loaded: queryCache shows it absent, the
-  // button warms it, and a re-query flips the readout — the visible effect.
+  // button warms it, and a re-query flips the readout, the visible effect.
   const [cacheState, setCacheState] = useState('checking…')
   const refreshCache = useCallback((): void => {
     Image.queryCache([PREFETCH_URI])
@@ -351,7 +351,7 @@ function NativeModulesDemo() {
         Runtime modules · I18nManager / Settings / Image statics
       </Text>
 
-      {/* I18nManager — RTL layout constants, read live */}
+      {/* I18nManager: RTL layout constants, read live */}
       <Text style={styles.infoText}>
         {`RTL: ${rtl.isRTL ? 'on' : 'off'} · swap L/R: ${rtl.doLeftAndRightSwapInRTL ? 'yes' : 'no'}`}
       </Text>
@@ -361,13 +361,13 @@ function NativeModulesDemo() {
         color="#7fb5ff"
       />
 
-      {/* Settings — counter persisted to NSUserDefaults, survives a relaunch */}
+      {/* Settings: counter persisted to NSUserDefaults, survives a relaunch */}
       <Text style={styles.infoText}>
         {`persisted taps: ${persisted} · survives relaunch`}
       </Text>
       <Button title="Persist a tap" onPress={persistTap} color="#7fb5ff" />
 
-      {/* Image statics — the rendered asset + getSize's measurement of it */}
+      {/* Image statics: the rendered asset + getSize's measurement of it */}
       <View style={styles.rowAlignCenter}>
         <Image
           source={{ uri: LOGO_URI }}
@@ -384,11 +384,11 @@ function NativeModulesDemo() {
   )
 }
 
-// Imperative host-ref API — the seam reanimated / gesture-handler reach through.
+// Imperative host-ref API: the seam reanimated / gesture-handler reach through.
 // `measure` returns the box's real on-screen frame (only a live host can answer it);
 // `setNativeProps` recolors the box bypassing React entirely (no state, no re-render);
 // `findNodeHandle` reads the committed native tag. The flash holds until the next React
-// commit re-applies the declarative style — exactly RN's imperative-override semantics.
+// commit re-applies the declarative style, exactly RN's imperative-override semantics.
 function RefApiDemo() {
   const boxRef = useRef<IHostInstance | null>(null)
   const flashedRef = useRef(false)
@@ -447,7 +447,7 @@ function RefApiDemo() {
 // become iOS UIColor selectors, and the dynamic tuple flips with the system
 // appearance. The opaque color objects flow through the same color seam as CSS
 // strings (processColor), so no special handling reaches Fabric. Name resolution is
-// device-only — a wrong name silently falls back, so this is verified on simulator.
+// device-only: a wrong name silently falls back, so this is verified on simulator.
 function PlatformColorDemo() {
   const scheme = useColorScheme()
   return (
@@ -477,17 +477,17 @@ function PlatformColorDemo() {
   )
 }
 
-// Responder — the gesture capabilities the rewrite unlocked, shown so the grabbed
+// Responder: the gesture capabilities exposed here, shown so the grabbed
 // element is the one that moves. Each chip is its OWN responder: it grabs on touch
 // start and drags ITSELF (onResponderMove translates that chip). Drag a chip past a
-// threshold and the surrounding strip STEALS the gesture — its onMoveShouldSetResponder
+// threshold and the surrounding strip STEALS the gesture: its onMoveShouldSetResponder
 // fires once the finger has travelled far enough, the chip yields (onResponder-
 // TerminationRequest -> terminate, so it snaps back) and the strip pans the whole row.
-// A small drag moves the digit; a big drag hands off to the strip — move-should-set and
+// A small drag moves the digit; a big drag hands off to the strip: move-should-set and
 // transfer, each visible (and the separate "transfer" line lights on the hand-off).
 // DEBUG logcat shows "responder transferred ... -> ..." at that moment.
 const RESPONDER_CHIPS = [0, 1, 2, 3, 4]
-// Horizontal travel (in the touch's page units — px on Android, pt on iOS, so the feel
+// Horizontal travel (in the touch's page units: px on Android, pt on iOS, so the feel
 // differs a little per platform) after which the strip steals the gesture from the chip.
 const RESPONDER_STEAL_DX = 64
 
@@ -503,7 +503,7 @@ function firstTouchX(event: ISymbioteEvent): number {
 }
 
 // nativeEvent is a framework-agnostic Record<string, unknown>, so a numeric field
-// (locationX/locationY…) arrives untyped — narrow it here instead of casting.
+// (locationX/locationY…) arrives untyped, narrow it here instead of casting.
 function nativeNumber(event: ISymbioteEvent, key: string): number {
   const value = event.nativeEvent[key]
   return typeof value === 'number' ? value : 0
@@ -525,13 +525,13 @@ function ResponderDemo() {
         Responder · drag a chip vs hand-off to the strip
       </Text>
       <Text style={styles.infoText}>{status}</Text>
-      {/* the separate transfer indicator — lit only when the strip steals the gesture */}
+      {/* the separate transfer indicator, lit only when the strip steals the gesture */}
       <Text style={[styles.transferText, { color: transfer ? '#f6ad55' : '#41506a' }]}>
         {transfer || 'transfer: —'}
       </Text>
       <View
         // Claims the gesture only once the finger has travelled past the threshold,
-        // stealing it from whichever chip currently holds it — the transfer path.
+        // stealing it from whichever chip currently holds it, the transfer path.
         onMoveShouldSetResponder={(event) =>
           grabbed.current !== null &&
           Math.abs(firstTouchX(event) - startX.current) > RESPONDER_STEAL_DX
@@ -587,7 +587,7 @@ function ResponderDemo() {
   )
 }
 
-// Accessibility — the props reach native unchanged (accessibilityLabel -> Android
+// Accessibility: the props reach native unchanged (accessibilityLabel -> Android
 // content-desc / iOS accessibilityLabel; accessibilityState -> checked/selected/enabled),
 // the web aria-*/role aliases FOLD to accessibility* in our wrapper (raw aria-* must
 // never reach native), and AccessibilityInfo reads device state + drives announce.
@@ -610,9 +610,9 @@ function AccessibilityDemo() {
       <Text style={styles.sectionLabel}>
         Accessibility · props → native · aria/role transform · AccessibilityInfo
       </Text>
-      {/* getter readout — 'off' (no screen reader) proves the module resolved */}
+      {/* getter readout: 'off' (no screen reader) proves the module resolved */}
       <Text style={styles.infoText}>{`screen reader: ${screenReader}`}</Text>
-      {/* canonical accessibility* — content-desc 'a11y-canonical-label' + role=header */}
+      {/* canonical accessibility*: content-desc 'a11y-canonical-label' + role=header */}
       <View
         accessible
         accessibilityRole="header"
@@ -620,7 +620,7 @@ function AccessibilityDemo() {
         style={styles.a11yCard}>
         <Text style={styles.infoText}>canonical label + role=header</Text>
       </View>
-      {/* web aria and role aliases — MUST fold: content-desc should be
+      {/* web aria and role aliases MUST fold: content-desc should be
           'a11y-aria-label', a raw aria-label attribute must not reach the native node */}
       <View
         accessible
@@ -629,7 +629,7 @@ function AccessibilityDemo() {
         style={styles.a11yCard}>
         <Text style={styles.infoText}>aria-label + role=button</Text>
       </View>
-      {/* accessibilityState — uiautomator shows enabled=false / selected=true */}
+      {/* accessibilityState: uiautomator shows enabled=false / selected=true */}
       <View
         accessible
         accessibilityLabel="a11y-state"
@@ -641,7 +641,7 @@ function AccessibilityDemo() {
   )
 }
 
-// Verification panel for the freshly-wired feature-parity tails — five behaviors with
+// Verification panel for five feature-parity behaviors with
 // no prior canary surface: Text.onLongPress synthesis, Keyboard.dismiss (blur the
 // focused input), animated VirtualizedList scroll, sticky SectionList headers, and
 // Android setAccessibilityFocus. Each leaves a dlog seam (DEBUG=1 -> logcat) and a
@@ -670,7 +670,7 @@ function ParityDemo() {
         Parity checks · longPress · dismiss · animated scroll · sticky · a11y focus
       </Text>
 
-      {/* #10 Text.onLongPress synthesis — hold ~0.5s (suppresses tap) vs quick tap */}
+      {/* #10 Text.onLongPress synthesis: hold ~0.5s (suppresses tap) vs quick tap */}
       <Text
         onLongPress={() => setLongPressMsg('long press! (tap was suppressed)')}
         onPress={() => setLongPressMsg('tap')}
@@ -678,7 +678,7 @@ function ParityDemo() {
         {longPressMsg}
       </Text>
 
-      {/* #15 Keyboard.dismiss — blurs whatever input holds focus, no ref needed */}
+      {/* #15 Keyboard.dismiss: blurs whatever input holds focus without needing a ref */}
       <TextInput
         placeholder="focus me…"
         placeholderTextColor="#41506a"
@@ -689,8 +689,8 @@ function ParityDemo() {
       <Text style={styles.noteText}>{dismissMsg}</Text>
       <Button title="Hide keyboard" onPress={() => Keyboard.dismiss()} color="#7fb5ff" />
 
-      {/* #12 animated VirtualizedList scroll — smooth (native command) vs instant.
-          A fixed height with no wrapper: the vertical ScrollView now clips to its own
+      {/* #12 animated VirtualizedList scroll: smooth (native command) vs instant.
+          A fixed height with no wrapper: the vertical ScrollView clips to its own
           frame (overflow:'scroll' base, like RN), so rows stay inside the box on iOS too. */}
       <Text style={styles.sectionLabel}>FlatList · animated scrollToOffset</Text>
       <FlatList
@@ -714,9 +714,9 @@ function ParityDemo() {
         </View>
       </View>
 
-      {/* #13 sticky section headers — drag the inner list: each header pins at the top.
+      {/* #13 sticky section headers. Drag the inner list: each header pins at the top.
           Cross-talk check: as the NEXT header reaches the top it should PUSH the pinned
-          one off (nextHeaderLayoutY not yet wired — watch push vs overlap). */}
+          one off (nextHeaderLayoutY not yet wired, watch push vs overlap). */}
       <Text style={styles.sectionLabel}>SectionList · sticky (scroll: next header should push prev off)</Text>
       <SectionList
         sections={paritySections}
@@ -735,7 +735,7 @@ function ParityDemo() {
         )}
       />
 
-      {/* #14 a11y focus — node-based sendAccessibilityEvent routes through the Fabric
+      {/* #14 a11y focus: node-based sendAccessibilityEvent routes through the Fabric
           slot on both platforms (enable TalkBack/VoiceOver to feel the focus jump) */}
       <Button
         title="Focus the panel title (a11y)"
@@ -761,11 +761,11 @@ function App() {
   const [keyboardHeight, setKeyboardHeight] = useState(0)
   const [statusBarHidden, setStatusBarHidden] = useState(false)
   const [darkStatusBar, setDarkStatusBar] = useState(false)
-  // #6 Android-only StatusBar window flags — the blank-risk pair (device-verify-pending).
+  // #6 Android-only StatusBar window flags: the blank-risk pair (device-verify-pending).
   const [statusBarRed, setStatusBarRed] = useState(false)
   const [statusBarTranslucent, setStatusBarTranslucent] = useState(false)
 
-  // Feature-parity device checks — state for the cluster before the final logo.
+  // Feature-parity device checks: state for the cluster before the final logo.
   const [retentionMove, setRetentionMove] = useState({ dx: 0, dy: 0 })
   const [mvcpItems, setMvcpItems] = useState(() =>
     Array.from({ length: 20 }, (_value, index) => ({ id: `row-${index}`, label: `item ${index}` })),
@@ -822,7 +822,7 @@ function App() {
   }, [])
 
   // JS -> native imperative modules. A Promise reject (no native module / user
-  // cancel) is expected, so it's swallowed — this is a demo, not a flow to handle.
+  // cancel) is expected, so it's swallowed; this is a demo, not a flow to handle.
   const onShare = useCallback(() => {
     void Share.share({ message: 'Sent from symbiote', url: 'https://reactnative.dev' }).catch(
       () => {},
@@ -850,12 +850,13 @@ function App() {
   return (
     <SafeAreaView style={styles.screen}>
     <ScrollView
+      testID="canary-scroll"
       style={styles.screen}
       contentContainerStyle={styles.scrollContent}
       refreshControl={
         <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#7fb5ff" />
       }>
-      {/* JS->native: StatusBar renders nothing — it drives the iOS status bar
+      {/* JS->native: StatusBar renders nothing; it drives the iOS status bar
           (the top strip: clock, wi-fi, battery) imperatively from these props. */}
       <StatusBar
         barStyle={darkStatusBar ? 'dark-content' : 'light-content'}
@@ -885,7 +886,7 @@ function App() {
         {`${Math.round(window.width)}×${Math.round(window.height)} @${PixelRatio.get()}x` +
           ` · ${colorScheme ?? 'no-scheme'} · ${appState}`}
       </Text>
-      {/* JS->native StatusBar controls — watch the top strip react */}
+      {/* JS->native StatusBar controls: watch the top strip react */}
       <View style={styles.row}>
         <View style={styles.flex1}>
           <Button
@@ -902,9 +903,9 @@ function App() {
           />
         </View>
       </View>
-      {/* #6 Android-only window flags — the blank-risk pair. PASS: the top strip turns
+      {/* #6 Android-only window flags: the blank-risk pair. PASS: the top strip turns
           red / goes translucent and the app STAYS rendered. FAIL: the surface blanks
-          (white screen) — watch logcat for stopSurface / "reactInstance is null". */}
+          (white screen); watch logcat for stopSurface / "reactInstance is null". */}
       {Platform.OS === 'android' && (
         <View style={styles.row}>
           <View style={styles.flex1}>
@@ -931,13 +932,13 @@ function App() {
           </View>
         </View>
       )}
-      {/* JS->native imperative modules — tap to fire the real native UI / haptics.
+      {/* JS->native imperative modules: tap to fire the real native UI / haptics.
           Each working button proves its module name resolved on the bridgeless host. */}
       <View style={styles.row}>
         <View style={styles.flex1}>
           <Button title="Alert" onPress={onAlert} color="#7fb5ff" />
         </View>
-        {/* ActionSheetIOS drives the iOS-only ActionSheetManager — no Android native
+        {/* ActionSheetIOS drives the iOS-only ActionSheetManager; no Android native
             module exists, so the control is iOS-only by design (not a gap). */}
         {Platform.OS !== 'android' && (
           <View style={styles.flex1}>
@@ -957,7 +958,7 @@ function App() {
 
       {/* The native UIRefreshControl spinner only shows while iOS holds the scroll
           view pulled-down; our full re-commit snaps the offset back, so we drive
-          our OWN indicator from the same `refreshing` flag — guaranteed visible. */}
+          our OWN indicator from the same `refreshing` flag, guaranteed visible. */}
       {refreshing ? (
         <View style={styles.refreshRow}>
           <ActivityIndicator color="#7fb5ff" />
@@ -1001,10 +1002,10 @@ function App() {
       </View>
       <ActivityIndicator animating={spinning} color="#7fb5ff" size="large" />
 
-      {/* Slider — a THIRD-PARTY native view (@react-native-community/slider). symbiote
+      {/* Slider: a THIRD-PARTY native view (@react-native-community/slider). symbiote
           ships zero metadata for it: shared derives its onValueChange event and the
           track/thumb tint processors from the library's own ViewConfig at runtime.
-          Drag it — the value updates live; the colored track proves color derivation. */}
+          Drag it: the value updates live; the colored track proves color derivation. */}
       <View style={styles.sectionTight}>
         <Text style={styles.switchLabel}>
           {`volume · ${Math.round(volume * 100)}%`}
@@ -1023,28 +1024,28 @@ function App() {
         />
       </View>
 
-      {/* Animated — JS driver vs native driver, side by side */}
+      {/* Animated: JS driver vs native driver, side by side */}
       <AnimatedDemo />
 
-      {/* Animated — ValueXY, tracking, diffClamp */}
+      {/* Animated: ValueXY, tracking, diffClamp */}
       <AnimatedParityDemo />
 
-      {/* Runtime modules — I18nManager, Settings, Image statics */}
+      {/* Runtime modules: I18nManager, Settings, Image statics */}
       <NativeModulesDemo />
 
-      {/* Imperative host-ref API — measure / setNativeProps / findNodeHandle */}
+      {/* Imperative host-ref API: measure / setNativeProps / findNodeHandle */}
       <RefApiDemo />
 
-      {/* PlatformColor / DynamicColorIOS — native semantic + appearance-aware colors */}
+      {/* PlatformColor / DynamicColorIOS: native semantic + appearance-aware colors */}
       <PlatformColorDemo />
 
-      {/* Accessibility — a11y props to native, aria/role transform, AccessibilityInfo */}
+      {/* Accessibility: a11y props to native, aria/role transform, AccessibilityInfo */}
       <AccessibilityDemo />
 
-      {/* Responder — drag-vs-tap + mid-gesture transfer (move-should-set / takeover) */}
+      {/* Responder: drag-vs-tap + mid-gesture transfer (move-should-set / takeover) */}
       <ResponderDemo />
 
-      {/* Parity checks — longPress · Keyboard.dismiss · animated scroll · sticky · a11y focus */}
+      {/* Parity checks: longPress · Keyboard.dismiss · animated scroll · sticky · a11y focus */}
       <ParityDemo />
 
       {/* Button opens a Modal */}
@@ -1067,7 +1068,7 @@ function App() {
         )}
       </Pressable>
 
-      {/* Horizontal FlatList — real windowing */}
+      {/* Horizontal FlatList: real windowing */}
       <Text style={styles.sectionLabel}>FlatList · 24 chips, windowed</Text>
       <FlatList
         data={chips}
@@ -1090,9 +1091,9 @@ function App() {
 
       {/* ===== feature-parity device checks ===== */}
 
-      {/* Press-retention measured rect. PASS: press, then drag DOWN ~100px — the panel
+      {/* Press-retention measured rect. PASS: press, then drag DOWN ~100px: the panel
           STAYS highlighted (inside the measured rect + 80px bottom retention). Drag UP
-          off the top — highlight drops. Proves measured-rect retention replaced the old
+          off the top: highlight drops. Proves measured-rect retention rather than a
           symmetric-radius approximation. The dx/dy readout tracks the move offset. */}
       <Pressable
         hitSlop={{ top: 0, bottom: 40, left: 0, right: 0 }}
@@ -1112,7 +1113,7 @@ function App() {
         </Text>
       </Pressable>
 
-      {/* maintainVisibleContentPosition. PASS: scroll down a bit, tap Prepend — the rows
+      {/* maintainVisibleContentPosition. PASS: scroll down a bit, tap Prepend: the rows
           you are looking at DO NOT jump; new items appear above without shifting the
           viewport. FAIL: the list jumps to the top. */}
       <Text style={styles.sectionLabel}>MVCP · prepend without jump</Text>
@@ -1142,7 +1143,7 @@ function App() {
       />
 
       {/* Animated.ScrollView scroll-driven header (native driver). PASS: drag INSIDE the
-          box below (not the page) — the bright bar above SMOOTHLY fades to near-invisible
+          box below (not the page): the bright bar above SMOOTHLY fades to near-invisible
           and lifts, on the UI thread (no jank, no per-frame JS). Proves Animated.ScrollView
           + Animated.event native attach. */}
       <Animated.View
@@ -1195,7 +1196,7 @@ function App() {
         onPress={() => {
           const until = Date.now() + 3000
           while (Date.now() < until) {
-            // Intentionally block the JS thread — no JS frame can run here, so any
+            // Intentionally block the JS thread: no JS frame can run here, so any
             // header motion during the freeze must be coming from the native driver.
           }
         }}
@@ -1206,12 +1207,12 @@ function App() {
 
       {/* Modern style props reaching Fabric's C++ parser. Each is an A/B so the effect
           is unmistakable on the dark theme. */}
-      {/* boxShadow — a BLUE glow (a black shadow is invisible on the near-black bg).
+      {/* boxShadow: a BLUE glow (a black shadow is invisible on the near-black bg).
           PASS: a soft blue halo bleeds out around the panel. */}
       <View style={styles.shadowCard}>
         <Text style={styles.noteText}>boxShadow · blue glow</Text>
       </View>
-      {/* filter — same base colour both sides; the right one is darkened by
+      {/* filter: same base colour both sides; the right one is darkened by
           brightness(0.5). PASS: the right panel is clearly darker than the left. */}
       <View style={styles.row}>
         <View style={styles.filterTile}>
@@ -1221,7 +1222,7 @@ function App() {
           <Text style={styles.tileText}>brightness 0.5</Text>
         </View>
       </View>
-      {/* transformOrigin — the panel rotates around its TOP-LEFT corner, not its centre.
+      {/* transformOrigin: the panel rotates around its TOP-LEFT corner, not its centre.
           PASS: the left edge stays put while the bottom-right swings down. */}
       <View style={styles.rotatedCard}>
         <Text style={styles.tileText}>transformOrigin · top-left</Text>

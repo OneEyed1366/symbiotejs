@@ -1,8 +1,8 @@
 /**
  * @format
  *
- * Symbiote canary entry. App code uses our own AppRegistry — the RN-identical
- * `registerComponent(appKey, () => App)` — which mounts via @symbiote/engine, not
+ * Symbiote canary entry. App code uses our own AppRegistry (the RN-identical
+ * `registerComponent(appKey, () => App)`) which mounts via @symbiote/engine, not
  * React Native's renderer. setHostRegistrar hands it RN's AppRegistry so the
  * native Fabric host can find our runnable by app key and call it with the
  * surface's rootTag; our renderer drives nativeFabricUIManager directly from there.
@@ -32,11 +32,11 @@ globalThis.__SYMBIOTE_DEBUG__ = process.env.DEBUG === '1';
 setColorProcessor(processColor);
 
 // require('./x.png') asset ids and {uri} sources are resolved by RN's own
-// resolver before they reach Fabric, keeping @symbiote/react react-native-free.
+// resolver before they reach Fabric, so @symbiote/react stays react-native-free.
 setImageSourceResolver(source => RNImage.resolveAssetSource(source));
 
 // Native device events (keyboard, app-state, …) are delivered by RN's own
-// RCTDeviceEventEmitter — the JS module native actually invokes. We subscribe
+// RCTDeviceEventEmitter, the JS module native actually invokes. We subscribe
 // through it rather than registering our own (native ignores a duplicate name).
 setDeviceEventSource(DeviceEventEmitter);
 
