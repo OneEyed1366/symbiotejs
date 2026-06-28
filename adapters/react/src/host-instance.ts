@@ -1,10 +1,10 @@
-// The public instance a host ref hands back — RN's ReactFabricHostComponent. The
+// The public instance a host ref hands back, RN's ReactFabricHostComponent. The
 // reconciler's getPublicInstance augments the retained node with the imperative API
 // libraries reach through (reanimated, gesture-handler, react-navigation): measure /
 // measureInWindow / measureLayout / setNativeProps / focus / blur. The methods are
 // attached onto the node object itself (not its props, so they never reach Fabric);
 // each resolves the node's CURRENT committed handle at call time through shared, so a
-// clone-on-write commit between calls is transparent. findNodeHandle lives here too —
+// clone-on-write commit between calls is transparent. findNodeHandle lives here too,
 // it is the same "ref -> native tag" lookup.
 
 import {
@@ -20,39 +20,39 @@ import {
   type IMeasureOnSuccess,
   type IMeasureInWindowOnSuccess,
   type IMeasureLayoutOnSuccess,
-} from '@symbiote/engine'
+} from '@symbiote/engine';
 
-const FOCUS_COMMAND = 'focus'
-const BLUR_COMMAND = 'blur'
+const FOCUS_COMMAND = 'focus';
+const BLUR_COMMAND = 'blur';
 
 export interface IHostInstance extends ISymbioteNode {
-  measure(callback: IMeasureOnSuccess): void
-  measureInWindow(callback: IMeasureInWindowOnSuccess): void
+  measure(callback: IMeasureOnSuccess): void;
+  measureInWindow(callback: IMeasureInWindowOnSuccess): void;
   measureLayout(
     relativeToNativeNode: IHostInstance | number,
     onSuccess: IMeasureLayoutOnSuccess,
     onFail?: () => void,
-  ): void
-  setNativeProps(nativeProps: Record<string, unknown>): void
-  focus(): void
-  blur(): void
+  ): void;
+  setNativeProps(nativeProps: Record<string, unknown>): void;
+  focus(): void;
+  blur(): void;
 }
 
 function isHostInstance(node: ISymbioteNode): node is IHostInstance {
-  return typeof Reflect.get(node, 'measure') === 'function'
+  return typeof Reflect.get(node, 'measure') === 'function';
 }
 
 // Augment the retained node with the public-instance methods, once. The same node
-// instance persists across commits, so attaching once is enough — every method reads
+// instance persists across commits, so attaching once is enough, every method reads
 // the live handle through shared on each call.
 export function toPublicInstance(node: ISymbioteNode): IHostInstance {
-  if (isHostInstance(node)) return node
+  if (isHostInstance(node)) return node;
   return Object.assign(node, {
     measure(callback: IMeasureOnSuccess): void {
-      sharedMeasure(node, callback)
+      sharedMeasure(node, callback);
     },
     measureInWindow(callback: IMeasureInWindowOnSuccess): void {
-      sharedMeasureInWindow(node, callback)
+      sharedMeasureInWindow(node, callback);
     },
     measureLayout(
       relativeToNativeNode: IHostInstance | number,
@@ -60,21 +60,21 @@ export function toPublicInstance(node: ISymbioteNode): IHostInstance {
       onFail?: () => void,
     ): void {
       if (!isSymbioteNode(relativeToNativeNode)) {
-        dlog('measureLayout: relative target must be a host ref')
-        return
+        dlog('measureLayout: relative target must be a host ref');
+        return;
       }
-      sharedMeasureLayout(node, relativeToNativeNode, onSuccess, onFail)
+      sharedMeasureLayout(node, relativeToNativeNode, onSuccess, onFail);
     },
     setNativeProps(nativeProps: Record<string, unknown>): void {
-      sharedSetNativeProps(node, nativeProps)
+      sharedSetNativeProps(node, nativeProps);
     },
     focus(): void {
-      dispatchViewCommand(node, FOCUS_COMMAND, [])
+      dispatchViewCommand(node, FOCUS_COMMAND, []);
     },
     blur(): void {
-      dispatchViewCommand(node, BLUR_COMMAND, [])
+      dispatchViewCommand(node, BLUR_COMMAND, []);
     },
-  })
+  });
 }
 
 // The committed native tag of a host ref (or a bare tag, idempotent). RN's
@@ -83,8 +83,8 @@ export function toPublicInstance(node: ISymbioteNode): IHostInstance {
 export function findNodeHandle(
   componentOrHandle: IHostInstance | ISymbioteNode | number | null | undefined,
 ): number | null {
-  if (componentOrHandle === null || componentOrHandle === undefined) return null
-  if (typeof componentOrHandle === 'number') return componentOrHandle
-  if (isSymbioteNode(componentOrHandle)) return getNativeTag(componentOrHandle) ?? null
-  return null
+  if (componentOrHandle === null || componentOrHandle === undefined) return null;
+  if (typeof componentOrHandle === 'number') return componentOrHandle;
+  if (isSymbioteNode(componentOrHandle)) return getNativeTag(componentOrHandle) ?? null;
+  return null;
 }

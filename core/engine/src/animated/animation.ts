@@ -4,13 +4,13 @@
 // fires exactly once. This interface is the seam between AnimatedValue and the
 // drivers, so it lives here, free of any concrete driver.
 
-import type { AnimatedValue } from './value'
+import type { AnimatedValue } from './value';
 
 export interface IEndResult {
-  finished: boolean
+  finished: boolean;
 }
 
-export type IEndCallback = (result: IEndResult) => void
+export type IEndCallback = (result: IEndResult) => void;
 
 export interface IAnimation {
   start(
@@ -19,6 +19,6 @@ export interface IAnimation {
     onEnd: IEndCallback,
     previousAnimation: IAnimation | null,
     animatedValue: AnimatedValue,
-  ): void
-  stop(): void
+  ): void;
+  stop(): void;
 }

@@ -1,59 +1,59 @@
-// TimingAnimation — ported from RN's animations/TimingAnimation.js, JS path
+// TimingAnimation: ported from RN's animations/TimingAnimation.js, JS path
 // only (ADR 0016). Walks a value from `fromValue` to `toValue` over `duration`
 // ms, shaping progress through an easing function. The native-frame export and
 // __startAnimationIfNative branch are dropped.
 
-import type { IAnimation, IEndCallback } from '../animation'
-import type { AnimatedValue } from '../value'
-import { Easing, type IEasingFunction } from '../easing'
-import { dlog } from '../../debug'
-import type { INativeAnimationConfig } from '../native/native-animated'
-import { BaseAnimation, type IAnimationConfig } from './base'
-import { cancelFrame, clearTimer, requestFrame, setTimer, type ITimerHandle } from './raf'
+import type { IAnimation, IEndCallback } from '../animation';
+import type { AnimatedValue } from '../value';
+import { Easing, type IEasingFunction } from '../easing';
+import { dlog } from '../../debug';
+import type { INativeAnimationConfig } from '../native/native-animated';
+import { BaseAnimation, type IAnimationConfig } from './base';
+import { cancelFrame, clearTimer, requestFrame, setTimer, type ITimerHandle } from './raf';
 
 export interface ITimingAnimationConfig extends IAnimationConfig {
-  toValue: number
-  easing?: IEasingFunction
-  duration?: number
-  delay?: number
+  toValue: number;
+  easing?: IEasingFunction;
+  duration?: number;
+  delay?: number;
 }
 
-let cachedEaseInOut: IEasingFunction | undefined
+let cachedEaseInOut: IEasingFunction | undefined;
 function easeInOut(): IEasingFunction {
   if (cachedEaseInOut === undefined) {
-    cachedEaseInOut = Easing.inOut(Easing.ease)
+    cachedEaseInOut = Easing.inOut(Easing.ease);
   }
-  return cachedEaseInOut
+  return cachedEaseInOut;
 }
 
 export class TimingAnimation extends BaseAnimation {
-  private startTime = 0
-  private fromValue = 0
-  private readonly toValue: number
-  private readonly duration: number
-  private readonly delay: number
-  private readonly easing: IEasingFunction
-  private onUpdate: (value: number) => void = () => {}
-  private animationFrame: number | null = null
-  private timeout: ITimerHandle | null = null
+  private startTime = 0;
+  private fromValue = 0;
+  private readonly toValue: number;
+  private readonly duration: number;
+  private readonly delay: number;
+  private readonly easing: IEasingFunction;
+  private onUpdate: (value: number) => void = () => {};
+  private animationFrame: number | null = null;
+  private timeout: ITimerHandle | null = null;
 
   constructor(config: ITimingAnimationConfig) {
-    super(config)
-    this.toValue = config.toValue
-    this.easing = config.easing ?? easeInOut()
-    this.duration = config.duration ?? 500
-    this.delay = config.delay ?? 0
+    super(config);
+    this.toValue = config.toValue;
+    this.easing = config.easing ?? easeInOut();
+    this.duration = config.duration ?? 500;
+    this.delay = config.delay ?? 0;
   }
 
   // Native: hand the easing curve to native as a per-frame sample table.
   protected override getNativeAnimationConfig(): INativeAnimationConfig {
-    const frameDuration = 1000 / 60
-    const numFrames = Math.round(this.duration / frameDuration)
-    const frames: number[] = []
+    const frameDuration = 1000 / 60;
+    const numFrames = Math.round(this.duration / frameDuration);
+    const frames: number[] = [];
     for (let frame = 0; frame < numFrames; frame++) {
-      frames.push(this.easing(frame / numFrames))
+      frames.push(this.easing(frame / numFrames));
     }
-    frames.push(this.easing(1))
+    frames.push(this.easing(1));
     return {
       type: 'frames',
       frames,
@@ -61,7 +61,7 @@ export class TimingAnimation extends BaseAnimation {
       iterations: this.__iterations,
       platformConfig: this.__platformConfig,
       debugID: this.__getDebugID(),
-    }
+    };
   }
 
   override start(
@@ -71,57 +71,57 @@ export class TimingAnimation extends BaseAnimation {
     _previousAnimation: IAnimation | null,
     animatedValue: AnimatedValue,
   ): void {
-    this.begin(onEnd)
-    this.fromValue = fromValue
-    this.onUpdate = onUpdate
+    this.begin(onEnd);
+    this.fromValue = fromValue;
+    this.onUpdate = onUpdate;
 
     const begin = (): void => {
-      this.startTime = Date.now()
+      this.startTime = Date.now();
       // Native took over → the JS rAF loop is skipped entirely.
-      if (this.startNativeIfNeeded(animatedValue)) return
+      if (this.startNativeIfNeeded(animatedValue)) return;
       if (this.duration === 0) {
-        this.onUpdate(this.toValue)
-        this.__notifyAnimationEnd({ finished: true })
+        this.onUpdate(this.toValue);
+        this.__notifyAnimationEnd({ finished: true });
       } else {
-        this.animationFrame = requestFrame(() => this.onFrame())
+        this.animationFrame = requestFrame(() => this.onFrame());
       }
-    }
+    };
 
     if (this.delay !== 0) {
-      this.timeout = setTimer(begin, this.delay)
+      this.timeout = setTimer(begin, this.delay);
     } else {
-      begin()
+      begin();
     }
   }
 
   private onFrame(): void {
-    const now = Date.now()
+    const now = Date.now();
     if (now >= this.startTime + this.duration) {
-      this.onUpdate(this.fromValue + this.easing(1) * (this.toValue - this.fromValue))
-      this.__notifyAnimationEnd({ finished: true })
-      return
+      this.onUpdate(this.fromValue + this.easing(1) * (this.toValue - this.fromValue));
+      this.__notifyAnimationEnd({ finished: true });
+      return;
     }
 
     this.onUpdate(
       this.fromValue +
         this.easing((now - this.startTime) / this.duration) * (this.toValue - this.fromValue),
-    )
+    );
     if (this.__active) {
-      this.animationFrame = requestFrame(() => this.onFrame())
+      this.animationFrame = requestFrame(() => this.onFrame());
     }
   }
 
   override stop(): void {
-    super.stop()
+    super.stop();
     if (this.timeout !== null) {
-      clearTimer(this.timeout)
-      this.timeout = null
+      clearTimer(this.timeout);
+      this.timeout = null;
     }
     if (this.animationFrame !== null) {
-      cancelFrame(this.animationFrame)
-      this.animationFrame = null
+      cancelFrame(this.animationFrame);
+      this.animationFrame = null;
     }
-    dlog('timing animation stopped')
-    this.__notifyAnimationEnd({ finished: false })
+    dlog('timing animation stopped');
+    this.__notifyAnimationEnd({ finished: false });
   }
 }

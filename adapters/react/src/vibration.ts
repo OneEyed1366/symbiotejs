@@ -1,7 +1,5 @@
-// Vibration — base / default build (web, headless tsx, any target without a dedicated
-// platform file). Metro overrides this with vibration.ios.ts / vibration.android.ts on a
-// real iOS/Android host; off those, the iOS build is the fallback (its Vibration module
-// resolves null elsewhere → graceful no-op). The barrel imports './vibration', which
-// resolves here under tsc/tsx and to the platform file under Metro. See ADR 0019.
+// Vibration now lives framework-agnostic in @symbiote/engine (imperative native-bridge
+// module, no visual, no lifecycle). The React adapter re-exports it verbatim; the
+// platform split (vibration.ios/vibration.android) lives inside engine. See ADR 0019.
 
-export * from './vibration.ios'
+export { Vibration } from '@symbiote/engine';

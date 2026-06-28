@@ -1,50 +1,35 @@
-// Button — the minimal cross-platform button, rendered in its iOS shape per RN's
-// Button.js: a TouchableOpacity wrapping a Text. On iOS `color` tints the text
-// (on Android it would tint the background; iOS-first here). `disabled` greys the
-// label and drops the press handler.
+// Button is the minimal cross-platform button, rendered in its iOS shape per RN's Button.js: a
+// TouchableOpacity wrapping a Text. The base text style, the role constant, and the color fold
+// (caller color tints the label; disabled greys it) are shared in @symbiote/components/view; here
+// React only composes its TouchableOpacity + Text and forwards the native-only props.
 
-import { createElement, type FC } from 'react'
-import { Text } from './components'
-import { TouchableOpacity } from './touchable'
-import type { ISymbioteEvent } from '@symbiote/engine'
-import type { IAccessibilityProps, IAriaProps } from '@symbiote/components'
-import type { ITextStyle } from './styles'
-
-const IOS_BUTTON_BLUE = '#007AFF'
-const IOS_DISABLED_GREY = '#cdcdcd'
-
-const buttonTextStyle: ITextStyle = {
-  color: IOS_BUTTON_BLUE,
-  textAlign: 'center',
-  padding: 8,
-  fontSize: 18,
-}
-
-// RN's Button is `accessibilityRole="button"`; the role string is a native
-// accessibility enum value, fine inline.
-const BUTTON_ACCESSIBILITY_ROLE = 'button'
+import { createElement, type FC } from 'react';
+import { Text } from './components';
+import { TouchableOpacity } from './touchable';
+import { BUTTON_ACCESSIBILITY_ROLE, resolveButtonTextStyle } from '@symbiote/components';
+import type { ISymbioteEvent } from '@symbiote/engine';
+import type { IAccessibilityProps, IAriaProps } from '@symbiote/components';
 
 export interface IButtonProps extends IAccessibilityProps, IAriaProps {
-  title: string
-  onPress?: (event: ISymbioteEvent) => void
-  color?: string
-  disabled?: boolean
-  // Suppress the native tap sound (Button.js:50). Forwarded to the pressable, which
-  // owns sound suppression via android_disableSound.
-  touchSoundDisabled?: boolean
+  title: string;
+  onPress?: (event: ISymbioteEvent) => void;
+  color?: string;
+  disabled?: boolean;
+  // Suppress the native tap sound (Button.js:50). Forwarded to the pressable, which owns sound
+  // suppression via android_disableSound.
+  touchSoundDisabled?: boolean;
   // Locate this button in end-to-end tests (Button.js:144). Forwarded to the root.
-  testID?: string
-  // tvOS / Android-TV focus props (Button.js:68,79). Typed and forwarded; inert on
-  // a phone host, where native ignores them.
-  hasTVPreferredFocus?: boolean
-  nextFocusDown?: number
-  nextFocusForward?: number
-  nextFocusLeft?: number
-  nextFocusRight?: number
-  nextFocusUp?: number
+  testID?: string;
+  // tvOS / Android-TV focus props (Button.js:68,79). Typed and forwarded; inert on a phone host.
+  hasTVPreferredFocus?: boolean;
+  nextFocusDown?: number;
+  nextFocusForward?: number;
+  nextFocusLeft?: number;
+  nextFocusRight?: number;
+  nextFocusUp?: number;
 }
 
-export const Button: FC<IButtonProps> = (props) => {
+export const Button: FC<IButtonProps> = props => {
   const {
     title,
     onPress,
@@ -59,30 +44,25 @@ export const Button: FC<IButtonProps> = (props) => {
     nextFocusRight,
     nextFocusUp,
     ...accessibilityRest
-  } = props
+  } = props;
 
-  const textStyle: ITextStyle = { ...buttonTextStyle }
-  if (color !== undefined) textStyle.color = color
-  if (disabled === true) textStyle.color = IOS_DISABLED_GREY
+  const textStyle = resolveButtonTextStyle(color, disabled);
 
-  // The pressable / native View props that TouchableOpacity does not type but
-  // forwards to Fabric (testID + TV-focus). Carried as a plain record — the same
-  // pass-through idiom Image uses — so excess-property typing does not reject the
-  // native-only keys at the TouchableOpacity boundary. TV-focus is inert on a phone.
-  const nativeForward: Record<string, unknown> = { testID }
-  if (hasTVPreferredFocus !== undefined) nativeForward.hasTVPreferredFocus = hasTVPreferredFocus
-  if (nextFocusDown !== undefined) nativeForward.nextFocusDown = nextFocusDown
-  if (nextFocusForward !== undefined) nativeForward.nextFocusForward = nextFocusForward
-  if (nextFocusLeft !== undefined) nativeForward.nextFocusLeft = nextFocusLeft
-  if (nextFocusRight !== undefined) nativeForward.nextFocusRight = nextFocusRight
-  if (nextFocusUp !== undefined) nativeForward.nextFocusUp = nextFocusUp
+  // The pressable / native View props TouchableOpacity does not type but forwards to Fabric
+  // (testID + TV-focus). Carried as a plain record (the pass-through idiom Image uses) so
+  // excess-property typing does not reject the native-only keys. TV-focus is inert on a phone.
+  const nativeForward: Record<string, unknown> = { testID };
+  if (hasTVPreferredFocus !== undefined) nativeForward.hasTVPreferredFocus = hasTVPreferredFocus;
+  if (nextFocusDown !== undefined) nativeForward.nextFocusDown = nextFocusDown;
+  if (nextFocusForward !== undefined) nativeForward.nextFocusForward = nextFocusForward;
+  if (nextFocusLeft !== undefined) nativeForward.nextFocusLeft = nextFocusLeft;
+  if (nextFocusRight !== undefined) nativeForward.nextFocusRight = nextFocusRight;
+  if (nextFocusUp !== undefined) nativeForward.nextFocusUp = nextFocusUp;
 
-  // RN's Button sets role=button, is accessible, and propagates the disabled
-  // accessibility state (Button.js: accessibilityRole="button",
-  // accessible={accessible}, accessibilityState={_accessibilityState}). The
-  // caller's accessibility props pass through, but Button's fixed role / accessible
-  // / disabled-state win — applied after the spread. touchSoundDisabled maps to the
-  // pressable's android_disableSound (Button.js:50 -> the native touchable's sound).
+  // RN's Button sets role=button, is accessible, and propagates the disabled accessibility state.
+  // The caller's accessibility props pass through, but Button's fixed role / accessible /
+  // disabled-state win, applied after the spread. touchSoundDisabled maps to the pressable's
+  // android_disableSound.
   return createElement(
     TouchableOpacity,
     {
@@ -96,5 +76,5 @@ export const Button: FC<IButtonProps> = (props) => {
       accessibilityState: { disabled },
     },
     createElement(Text, { style: textStyle }, title),
-  )
-}
+  );
+};

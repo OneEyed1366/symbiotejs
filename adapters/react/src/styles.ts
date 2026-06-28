@@ -13,4 +13,4 @@ export type {
   IDropShadowValue,
   IFilterFunction,
   IBlendMode,
-} from '@symbiote/engine'
+} from '@symbiote/engine';

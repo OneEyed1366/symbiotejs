@@ -3,78 +3,79 @@
 // reconciler maps those to shared's mutation API, which resolves them to Fabric
 // view names at commit.
 
-import { createElement, type FC, type Ref, type ReactNode } from 'react'
-import type { ISymbioteEvent } from '@symbiote/engine'
-import type { IHostInstance } from './host-instance'
-import { resolveAccessibilityProps, type IAccessibilityProps, type IAriaProps } from '@symbiote/components'
-import type { IResponderProps } from './responder-props'
-import type { IStyleProp, ITextStyle, IViewStyle } from './styles'
+import { createElement, type FC, type Ref, type ReactNode } from 'react';
+import type { ISymbioteEvent } from '@symbiote/engine';
+import type { IHostInstance } from './host-instance';
+import {
+  resolveAccessibilityProps,
+  type IAccessibilityProps,
+  type IAriaProps,
+} from '@symbiote/components';
+import type { IResponderProps } from './responder-props';
+import type { IStyleProp, ITextStyle, IViewStyle } from './styles';
 
 export interface IViewProps extends IAccessibilityProps, IAriaProps, IResponderProps {
-  style?: IStyleProp<IViewStyle>
-  onPress?: (event: ISymbioteEvent) => void
+  style?: IStyleProp<IViewStyle>;
+  onPress?: (event: ISymbioteEvent) => void;
   // Touch lifecycle around a press, synthesized from the touch stream (events.ts),
-  // mirroring RN's Pressability — onPressIn fires on touch-down, onPressOut on release.
-  onPressIn?: (event: ISymbioteEvent) => void
-  onPressOut?: (event: ISymbioteEvent) => void
+  // mirroring RN's Pressability: onPressIn fires on touch-down, onPressOut on release.
+  onPressIn?: (event: ISymbioteEvent) => void;
+  onPressOut?: (event: ISymbioteEvent) => void;
   // The most-used View event: fires with the measured frame once Fabric lays the view
   // out. A listener also raises the onLayout flag prop so native actually measures.
-  onLayout?: (event: ISymbioteEvent) => void
-  // Bubbling focus/blur (RN's FocusEventProps) — declared on the base View, so any
+  onLayout?: (event: ISymbioteEvent) => void;
+  // Bubbling focus/blur (RN's FocusEventProps), declared on the base View, so any
   // view emits them; registered in shared's view-config BASE_EVENTS.
-  onFocus?: (event: ISymbioteEvent) => void
-  onBlur?: (event: ISymbioteEvent) => void
+  onFocus?: (event: ISymbioteEvent) => void;
+  onBlur?: (event: ISymbioteEvent) => void;
   // Gate touch handling without changing layout: 'none' lets touches fall through,
   // 'box-none' makes the view itself transparent to touches but not its children.
-  pointerEvents?: 'auto' | 'none' | 'box-none' | 'box-only'
+  pointerEvents?: 'auto' | 'none' | 'box-none' | 'box-only';
   // Enlarge the touch target past the view's visual bounds without affecting layout.
-  hitSlop?: number | { top?: number; left?: number; bottom?: number; right?: number }
-  testID?: string
-  // A stable native handle (focus anchor / native-side lookup), distinct from testID.
-  nativeID?: string
+  hitSlop?: number | { top?: number; left?: number; bottom?: number; right?: number };
+  // testID / nativeID are inherited from IAccessibilityProps (the shared host-anchor base).
   // RN's modern W3C alias for nativeID. Folded into nativeID before commit (id wins
   // when both are set, matching RN's View.js), never sent to Fabric raw.
-  id?: string
-  focusable?: boolean
+  id?: string;
+  focusable?: boolean;
   // Yoga collapses a non-interactive view into its parent unless this is false.
-  collapsable?: boolean
-  removeClippedSubviews?: boolean
-  renderToHardwareTextureAndroid?: boolean
-  shouldRasterizeIOS?: boolean
-  needsOffscreenAlphaCompositing?: boolean
+  collapsable?: boolean;
+  removeClippedSubviews?: boolean;
+  renderToHardwareTextureAndroid?: boolean;
+  shouldRasterizeIOS?: boolean;
+  needsOffscreenAlphaCompositing?: boolean;
   // A host ref hands back the public instance (measure / setNativeProps / focus).
-  ref?: Ref<IHostInstance>
-  children?: ReactNode
+  ref?: Ref<IHostInstance>;
+  children?: ReactNode;
 }
 
 export interface ITextProps extends IAccessibilityProps, IAriaProps {
-  style?: IStyleProp<ITextStyle>
-  onPress?: (event: ISymbioteEvent) => void
+  style?: IStyleProp<ITextStyle>;
+  onPress?: (event: ISymbioteEvent) => void;
   // Synthesized from a long touch hold by shared/events.ts (a hold timer armed on
-  // touch start, fired after 500ms, suppressing the tap on release) — like RN's Text.
-  onLongPress?: (event: ISymbioteEvent) => void
+  // touch start, fired after 500ms, suppressing the tap on release), like RN's Text.
+  onLongPress?: (event: ISymbioteEvent) => void;
   // Touch lifecycle around a press (RN's ITextProps), synthesized from the touch stream.
-  onPressIn?: (event: ISymbioteEvent) => void
-  onPressOut?: (event: ISymbioteEvent) => void
+  onPressIn?: (event: ISymbioteEvent) => void;
+  onPressOut?: (event: ISymbioteEvent) => void;
   // The view-frame layout event (RN's ITextProps onLayout), distinct from onTextLayout's
   // per-glyph frames; a listener raises the onLayout flag prop so native measures.
-  onLayout?: (event: ISymbioteEvent) => void
-  // Fires after glyph layout with per-line frames — wired as a direct event (RCTText).
-  onTextLayout?: (event: ISymbioteEvent) => void
-  numberOfLines?: number
-  ellipsizeMode?: 'head' | 'middle' | 'tail' | 'clip'
-  selectable?: boolean
-  adjustsFontSizeToFit?: boolean
-  minimumFontScale?: number
-  allowFontScaling?: boolean
-  maxFontSizeMultiplier?: number | null
-  // A color prop — the shared commit layer already runs `selectionColor` through the
+  onLayout?: (event: ISymbioteEvent) => void;
+  // Fires after glyph layout with per-line frames, wired as a direct event (RCTText).
+  onTextLayout?: (event: ISymbioteEvent) => void;
+  numberOfLines?: number;
+  ellipsizeMode?: 'head' | 'middle' | 'tail' | 'clip';
+  selectable?: boolean;
+  adjustsFontSizeToFit?: boolean;
+  minimumFontScale?: number;
+  allowFontScaling?: boolean;
+  maxFontSizeMultiplier?: number | null;
+  // A color prop: the shared commit layer already runs `selectionColor` through the
   // platform color processor (commit.ts COLOR_PROPS), so it reaches Fabric correctly.
-  selectionColor?: string
-  testID?: string
-  nativeID?: string
-  ref?: Ref<IHostInstance>
-  children?: ReactNode
+  selectionColor?: string;
+  // testID / nativeID inherited from IAccessibilityProps (shared host-anchor base).
+  ref?: Ref<IHostInstance>;
+  children?: ReactNode;
 }
 
 // RN's modern `id` is just a W3C-named alias for `nativeID`: View.js copies it over
@@ -82,11 +83,11 @@ export interface ITextProps extends IAccessibilityProps, IAriaProps {
 // blank the alias so a raw `id` never reaches Fabric (every non-function prop passes
 // through to the slot otherwise).
 function resolveId({ id, ...rest }: IViewProps): IViewProps {
-  if (id === undefined) return rest
-  return { ...rest, nativeID: id }
+  if (id === undefined) return rest;
+  return { ...rest, nativeID: id };
 }
 
-export const View: FC<IViewProps> = (props) =>
-  createElement('symbiote-view', resolveAccessibilityProps(resolveId(props)))
-export const Text: FC<ITextProps> = (props) =>
-  createElement('symbiote-text', resolveAccessibilityProps(props))
+export const View: FC<IViewProps> = props =>
+  createElement('symbiote-view', resolveAccessibilityProps(resolveId(props)));
+export const Text: FC<ITextProps> = props =>
+  createElement('symbiote-text', resolveAccessibilityProps(props));

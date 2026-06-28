@@ -1,8 +1,8 @@
 // The Animated namespace for @symbiote/react. createAnimatedComponent applied to
 // the adapter's primitives gives Animated.View / Text / Image; the value graph,
 // easing and imperative drivers come from @symbiote/engine (framework-agnostic,
-// JS-driven — ADR 0016). Both halves meet here in one `Animated` object so the
-// familiar surface — `Animated.timing(new Animated.Value(0), …).start()` — works.
+// JS-driven, ADR 0016). Both halves meet here in one `Animated` object so the
+// familiar surface (`Animated.timing(new Animated.Value(0), …).start()`) works.
 
 import {
   AnimatedValue,
@@ -27,38 +27,38 @@ import {
   event,
   forkEvent,
   unforkEvent,
-} from '@symbiote/engine'
-import { View, Text } from '../components'
-import { Image } from '../image'
-import { ScrollView } from '../scroll-view'
-import { FlatList } from '../flat-list'
-import { SectionList } from '../section-list'
-import { createAnimatedComponent } from './create-animated-component'
-import { AnimatedMock } from '@symbiote/engine'
+} from '@symbiote/engine';
+import { View, Text } from '../components';
+import { Image } from '../image';
+import { ScrollView } from '../scroll-view';
+import { FlatList } from '../flat-list';
+import { SectionList } from '../section-list';
+import { createAnimatedComponent } from './create-animated-component';
+import { AnimatedMock } from '@symbiote/engine';
 
-export { createAnimatedComponent } from './create-animated-component'
+export { createAnimatedComponent } from './create-animated-component';
 // The pure graph leaves now live in @symbiote/engine (they extend AnimatedWithChildren,
 // no React); re-exported here so @symbiote/react's Animated surface is unchanged.
-export { AnimatedProps, AnimatedStyle, AnimatedTransform } from '@symbiote/engine'
+export { AnimatedProps, AnimatedStyle, AnimatedTransform } from '@symbiote/engine';
 
-// View/Text/Image are pure host primitives — wrap them eagerly.
-const AnimatedView = createAnimatedComponent(View)
-const AnimatedText = createAnimatedComponent(Text)
-const AnimatedImage = createAnimatedComponent(Image)
+// View/Text/Image are pure host primitives, so wrap them eagerly.
+const AnimatedView = createAnimatedComponent(View);
+const AnimatedText = createAnimatedComponent(Text);
+const AnimatedImage = createAnimatedComponent(Image);
 
 // RN's AnimatedExports.js:13-58 exposes all six animated components. The scrolling
 // containers (ScrollView/FlatList/SectionList) are wrapped behind LAZY getters,
 // mirroring RN's `get ScrollView() { return require(...) }`: ScrollView's module
-// chain pulls in scroll-view-sticky-header, which imports this Animated namespace
-// back — a static `createAnimatedComponent(ScrollView)` at init would read ScrollView
+// chain pulls in scroll-view/sticky-header, which imports this Animated namespace
+// back, and a static `createAnimatedComponent(ScrollView)` at init would read ScrollView
 // inside its own TDZ. A memoized getter defers the wrap past module init, so the
-// cycle never fires. The wrappers carry no per-component animation logic — they only
-// add animated-prop support, keeping the adapter thin (invariant adapters_stay_thin).
+// cycle never fires. The wrappers carry no per-component animation logic; they only
+// add animated-prop support, so the adapter stays thin (invariant adapters_stay_thin).
 // The native scroll-event attach (Animated.event onto contentOffset) is owned by
 // ScrollView itself.
-let animatedScrollView: ReturnType<typeof createAnimatedComponent> | undefined
-let animatedFlatList: ReturnType<typeof createAnimatedComponent> | undefined
-let animatedSectionList: ReturnType<typeof createAnimatedComponent> | undefined
+let animatedScrollView: ReturnType<typeof createAnimatedComponent> | undefined;
+let animatedFlatList: ReturnType<typeof createAnimatedComponent> | undefined;
+let animatedSectionList: ReturnType<typeof createAnimatedComponent> | undefined;
 
 // The live, JS-driven driver namespace (real frames). RN's AnimatedImplementation.
 const liveDrivers = {
@@ -83,32 +83,32 @@ const liveDrivers = {
   event,
   forkEvent,
   unforkEvent,
-}
+};
 
 // RN's AnimatedExports.js:21 swaps the WHOLE namespace for the mock when the host
 // reports isDisableAnimations (reduced motion / test env): the mock keeps the same
 // surface but jumps each animation to its final value synchronously, no frames.
 // The animated COMPONENTS (View/Text/Image + the lazy container getters) are live in
-// both branches — only the drivers/value/operators/events half is swapped, exactly
+// both branches; only the drivers/value/operators/events half is swapped, exactly
 // like RN spreading `...Animated` (impl or mock) over the same component getters.
-const drivers = Platform.isDisableAnimations ? AnimatedMock : liveDrivers
+const drivers = Platform.isDisableAnimations ? AnimatedMock : liveDrivers;
 
 export const Animated = {
   View: AnimatedView,
   Text: AnimatedText,
   Image: AnimatedImage,
   get ScrollView(): ReturnType<typeof createAnimatedComponent> {
-    animatedScrollView ??= createAnimatedComponent(ScrollView)
-    return animatedScrollView
+    animatedScrollView ??= createAnimatedComponent(ScrollView);
+    return animatedScrollView;
   },
   get FlatList(): ReturnType<typeof createAnimatedComponent> {
-    animatedFlatList ??= createAnimatedComponent(FlatList)
-    return animatedFlatList
+    animatedFlatList ??= createAnimatedComponent(FlatList);
+    return animatedFlatList;
   },
   get SectionList(): ReturnType<typeof createAnimatedComponent> {
-    animatedSectionList ??= createAnimatedComponent(SectionList)
-    return animatedSectionList
+    animatedSectionList ??= createAnimatedComponent(SectionList);
+    return animatedSectionList;
   },
   createAnimatedComponent,
   ...drivers,
-}
+};

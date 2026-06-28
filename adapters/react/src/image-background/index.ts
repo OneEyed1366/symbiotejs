@@ -1,0 +1,81 @@
+// ImageBackground: the React lifecycle half. The composition (the absolute-fill Image behind
+// the children, the dimension-proxy + style-merge math) lives framework-agnostic in
+// @symbiote/components/renderImageBackground and is shared verbatim with Vue; here React only
+// folds aria/role, splits the typed Image transform fields from the forward-only rest, bridges
+// the Descriptor to elements, and appends the user children ON TOP of the inner image.
+
+import { createElement, type ReactElement, type ReactNode } from 'react';
+import {
+  renderImageBackground,
+  resolveAccessibilityProps,
+  type IDescriptorChild,
+  type IImageProps,
+} from '@symbiote/components';
+import { descriptorToReact } from '../descriptor-to-react';
+import type { IStyleProp, IViewStyle } from '../styles';
+
+// Inherit every forwarding Image prop (source, defaultSource, loadingIndicatorSource,
+// resizeMode, resizeMethod, tintColor, blurRadius, capInsets, fadeDuration, load events); they
+// flow onto the inner Image. `style` is overridden to mean the WRAPPER View's style;
+// `imageStyle` targets the inner Image.
+export interface IImageBackgroundProps extends Omit<IImageProps, 'style'> {
+  // Wrapper View style; its width/height are reapplied to the inner Image.
+  style?: IStyleProp<IViewStyle>;
+  // Style merged onto the inner absolute-fill Image, after the proxied dimensions.
+  imageStyle?: IStyleProp<IViewStyle>;
+  children?: ReactNode;
+}
+
+function toChild(child: IDescriptorChild): ReactElement | string {
+  return typeof child === 'string' ? child : descriptorToReact(child);
+}
+
+export function ImageBackground(props: IImageBackgroundProps): ReactElement {
+  const { children, style, imageStyle, ...imageProps } = props;
+  // The W3C source aliases (src/srcSet/crossOrigin/referrerPolicy) and width/height become typed
+  // Image view fields (consumed by the source/style fold), so they never leak to Fabric via
+  // passthrough; everything else (events, blurRadius, the folded accessibility*, testID) forwards.
+  const {
+    source,
+    defaultSource,
+    loadingIndicatorSource,
+    resizeMode,
+    tintColor,
+    src,
+    srcSet,
+    alt,
+    width,
+    height,
+    crossOrigin,
+    referrerPolicy,
+    ...passthrough
+  } = resolveAccessibilityProps(imageProps);
+
+  const wrapper = renderImageBackground({
+    style,
+    imageStyle,
+    image: {
+      source,
+      defaultSource,
+      loadingIndicatorSource,
+      resizeMode,
+      tintColor,
+      src,
+      srcSet,
+      alt,
+      width,
+      height,
+      crossOrigin,
+      referrerPolicy,
+      passthrough,
+    },
+  });
+
+  // wrapper = symbiote-view > [imageDescriptor]; the user children paint AFTER the image (on top).
+  return createElement(
+    wrapper.type,
+    { key: wrapper.key, ...wrapper.props },
+    ...wrapper.children.map(toChild),
+    children,
+  );
+}

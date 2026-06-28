@@ -1,7 +1,6 @@
-// Share — base / default build (web, headless tsx, any target without a dedicated
-// platform file). Metro overrides this with share.ios.ts / share.android.ts on a real
-// iOS/Android host; off those, the iOS build is the fallback (its ActionSheetManager
-// resolves null elsewhere → graceful reject). The barrel imports './share', which
-// resolves here under tsc/tsx and to the platform file under Metro. See ADR 0019.
+// Share now lives framework-agnostic in @symbiote/engine (imperative native-bridge
+// module, no visual, no lifecycle). The React adapter re-exports it verbatim; the
+// platform split (share.ios/share.android) lives inside engine. See ADR 0019.
 
-export * from './share.ios'
+export { Share } from '@symbiote/engine';
+export type { IShareContent, IShareOptions, IShareAction } from '@symbiote/engine';

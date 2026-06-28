@@ -2,30 +2,30 @@
 // Same root cause as boxShadow: `filter` registers with enableNativeCSSParsing()
 // (DEFAULT FALSE), so RN parses the CSS string / array in JS and forwards only the
 // structured result. symbiote forwarded the raw value; the array form already worked
-// (Fabric accepts it raw — `filter:[{brightness:0.5}]` was device-verified), but the
+// (Fabric accepts it raw, `filter:[{brightness:0.5}]` was device-verified), but the
 // CSS-string form and drop-shadow color processing were missing. This restores them.
 //
 // processColor is referenced from ./commit at RUNTIME only (inside function bodies),
 // never at module-init, so the cyclic import (commit -> here -> commit) has no TDZ hazard.
 
-import { processColor } from './commit'
-import { isOpaqueColorValue } from './platform-color'
-import { dlog } from './debug'
+import { processColor } from './commit';
+import { isOpaqueColorValue } from './platform-color';
+import { dlog } from './debug';
 
-// RN processFilter.js:19-24 — pre-compiled patterns.
-const NEWLINE_REGEX = /\n/g
-const FILTER_FUNCTION_REGEX = /([\w-]+)\(([^()]*|\([^()]*\)|[^()]*\([^()]*\)[^()]*)\)/g
-const ARGS_WITH_UNITS_REGEX = /([+-]?\d*(\.\d+)?)([a-zA-Z%]+)?/g
-const WHITESPACE_SPLIT_REGEX = /\s+(?![^(]*\))/
-const LENGTH_PARSE_REGEX = /([+-]?\d*(\.\d+)?)([\w\W]+)?/g
+// RN processFilter.js:19-24: pre-compiled patterns.
+const NEWLINE_REGEX = /\n/g;
+const FILTER_FUNCTION_REGEX = /([\w-]+)\(([^()]*|\([^()]*\)|[^()]*\([^()]*\)[^()]*)\)/g;
+const ARGS_WITH_UNITS_REGEX = /([+-]?\d*(\.\d+)?)([a-zA-Z%]+)?/g;
+const WHITESPACE_SPLIT_REGEX = /\s+(?![^(]*\))/;
+const LENGTH_PARSE_REGEX = /([+-]?\d*(\.\d+)?)([\w\W]+)?/g;
 
 // RN processFilter.js:26-43. Each entry names exactly one filter; `color` on a parsed
 // drop-shadow is whatever the platform processor returns, hence unknown.
 export interface IParsedDropShadow {
-  offsetX: number
-  offsetY: number
-  standardDeviation?: number
-  color?: unknown
+  offsetX: number;
+  offsetY: number;
+  standardDeviation?: number;
+  color?: unknown;
 }
 
 export type IParsedFilter =
@@ -38,33 +38,33 @@ export type IParsedFilter =
   | { opacity: number }
   | { saturate: number }
   | { sepia: number }
-  | { dropShadow: IParsedDropShadow }
+  | { dropShadow: IParsedDropShadow };
 
-// The structured input shapes — declared locally so shared does not import @symbiote/react.
+// The structured input shapes, declared locally so shared does not import @symbiote/react.
 // Read loosely (callers pass plain records); each field is narrowed at the point of use.
-type IRawDropShadow = Record<string, unknown>
-type IRawFilterFunction = Record<string, unknown>
+type IRawDropShadow = Record<string, unknown>;
+type IRawFilterFunction = Record<string, unknown>;
 
-const RADIANS_TO_DEGREES = 180 / Math.PI
+const RADIANS_TO_DEGREES = 180 / Math.PI;
 
 function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null
+  return typeof value === 'object' && value !== null;
 }
 
 // A length field may be a CSS string or a number; resolve to a number or null.
 function resolveLength(value: unknown): number | null {
-  if (typeof value === 'string') return parseLength(value)
-  if (typeof value === 'number') return value
-  return null
+  if (typeof value === 'string') return parseLength(value);
+  if (typeof value === 'number') return value;
+  return null;
 }
 
 // A drop-shadow color may already be a platform int (number) or undefined; processColor
 // only types CSS strings / opaque PlatformColor objects. Number passes through, anything
-// else (incl. undefined) is null — unprocessable, like RN.
+// else (incl. undefined) is null: unprocessable, like RN.
 function processShadowColor(color: unknown): unknown {
-  if (typeof color === 'number') return color
-  if (typeof color === 'string' || isOpaqueColorValue(color)) return processColor(color)
-  return null
+  if (typeof color === 'number') return color;
+  if (typeof color === 'string' || isOpaqueColorValue(color)) return processColor(color);
+  return null;
 }
 
 // RN processFilter.js:45-124. Returns [] on any invalid primitive (web semantics: an
@@ -72,67 +72,64 @@ function processShadowColor(color: unknown): unknown {
 export function processFilter(
   filter: ReadonlyArray<IRawFilterFunction> | string | undefined,
 ): IParsedFilter[] {
-  const result: IParsedFilter[] = []
+  const result: IParsedFilter[] = [];
   if (filter == null) {
-    return result
+    return result;
   }
 
   if (typeof filter === 'string') {
-    const text = filter.replace(NEWLINE_REGEX, ' ')
+    const text = filter.replace(NEWLINE_REGEX, ' ');
 
     // Matches functions with args and nested functions like
     // "drop-shadow(10 10 10 rgba(0, 0, 0, 1))".
-    FILTER_FUNCTION_REGEX.lastIndex = 0
-    let matches: RegExpExecArray | null
+    FILTER_FUNCTION_REGEX.lastIndex = 0;
+    let matches: RegExpExecArray | null;
     while ((matches = FILTER_FUNCTION_REGEX.exec(text)) !== null) {
-      const filterName = matches[1].toLowerCase()
+      const filterName = matches[1].toLowerCase();
       if (filterName === 'drop-shadow') {
-        const dropShadow = parseDropShadow(matches[2])
+        const dropShadow = parseDropShadow(matches[2]);
         if (dropShadow != null) {
-          result.push({ dropShadow })
+          result.push({ dropShadow });
         } else {
-          dlog(`processFilter reject: invalid drop-shadow "${matches[2]}"`)
-          return []
+          dlog(`processFilter reject: invalid drop-shadow "${matches[2]}"`);
+          return [];
         }
       } else {
-        const camelizedName =
-          filterName === 'hue-rotate' ? 'hueRotate' : filterName
-        const amount = getFilterAmount(camelizedName, matches[2])
+        const camelizedName = filterName === 'hue-rotate' ? 'hueRotate' : filterName;
+        const amount = getFilterAmount(camelizedName, matches[2]);
         if (amount != null) {
-          result.push(filterEntry(camelizedName, amount))
+          result.push(filterEntry(camelizedName, amount));
         } else {
-          dlog(`processFilter reject: invalid ${camelizedName} "${matches[2]}"`)
-          return []
+          dlog(`processFilter reject: invalid ${camelizedName} "${matches[2]}"`);
+          return [];
         }
       }
     }
   } else if (Array.isArray(filter)) {
     for (const filterFunction of filter) {
-      const [filterName, filterValue] = Object.entries(filterFunction)[0]
+      const [filterName, filterValue] = Object.entries(filterFunction)[0];
       if (filterName === 'dropShadow') {
-        const dropShadow = isDropShadowValue(filterValue)
-          ? parseDropShadow(filterValue)
-          : null
+        const dropShadow = isDropShadowValue(filterValue) ? parseDropShadow(filterValue) : null;
         if (dropShadow == null) {
-          dlog(`processFilter reject: invalid dropShadow in array`)
-          return []
+          dlog(`processFilter reject: invalid dropShadow in array`);
+          return [];
         }
-        result.push({ dropShadow })
+        result.push({ dropShadow });
       } else {
-        const amount = getFilterAmount(filterName, filterValue)
+        const amount = getFilterAmount(filterName, filterValue);
         if (amount != null) {
-          result.push(filterEntry(filterName, amount))
+          result.push(filterEntry(filterName, amount));
         } else {
-          dlog(`processFilter reject: invalid ${filterName} in array`)
-          return []
+          dlog(`processFilter reject: invalid ${filterName} in array`);
+          return [];
         }
       }
     }
   } else {
-    throw new TypeError(`${typeof filter} filter is not a string or array`)
+    throw new TypeError(`${typeof filter} filter is not a string or array`);
   }
 
-  return result
+  return result;
 }
 
 // RN sets `filterFunction[camelizedName] = amount` and pushes the loose object. We
@@ -140,65 +137,65 @@ export function processFilter(
 function filterEntry(name: string, amount: number): IParsedFilter {
   switch (name) {
     case 'brightness':
-      return { brightness: amount }
+      return { brightness: amount };
     case 'blur':
-      return { blur: amount }
+      return { blur: amount };
     case 'contrast':
-      return { contrast: amount }
+      return { contrast: amount };
     case 'grayscale':
-      return { grayscale: amount }
+      return { grayscale: amount };
     case 'hueRotate':
-      return { hueRotate: amount }
+      return { hueRotate: amount };
     case 'invert':
-      return { invert: amount }
+      return { invert: amount };
     case 'opacity':
-      return { opacity: amount }
+      return { opacity: amount };
     case 'saturate':
-      return { saturate: amount }
+      return { saturate: amount };
     default:
-      return { sepia: amount }
+      return { sepia: amount };
   }
 }
 
 function isDropShadowValue(value: unknown): value is IRawDropShadow | string {
-  return typeof value === 'string' || (isRecord(value) && 'offsetX' in value)
+  return typeof value === 'string' || (isRecord(value) && 'offsetX' in value);
 }
 
 // RN processFilter.js:126-186.
 function getFilterAmount(filterName: string, filterArgs: unknown): number | undefined {
-  let filterArgAsNumber: number
-  let unit: string | undefined
+  let filterArgAsNumber: number;
+  let unit: string | undefined;
   if (typeof filterArgs === 'string') {
     // Matches args with units like "1.5 5% -80deg".
-    ARGS_WITH_UNITS_REGEX.lastIndex = 0
-    const match = ARGS_WITH_UNITS_REGEX.exec(filterArgs)
+    ARGS_WITH_UNITS_REGEX.lastIndex = 0;
+    const match = ARGS_WITH_UNITS_REGEX.exec(filterArgs);
     if (!match || isNaN(Number(match[1]))) {
-      return undefined
+      return undefined;
     }
-    filterArgAsNumber = Number(match[1])
-    unit = match[3]
+    filterArgAsNumber = Number(match[1]);
+    unit = match[3];
   } else if (typeof filterArgs === 'number') {
-    filterArgAsNumber = filterArgs
+    filterArgAsNumber = filterArgs;
   } else {
-    return undefined
+    return undefined;
   }
 
   switch (filterName) {
     // hueRotate takes an angle that can carry a unit and be negative; bare 0 is allowed.
     case 'hueRotate':
       if (filterArgAsNumber === 0) {
-        return 0
+        return 0;
       }
       if (unit !== 'deg' && unit !== 'rad') {
-        return undefined
+        return undefined;
       }
-      return unit === 'rad' ? RADIANS_TO_DEGREES * filterArgAsNumber : filterArgAsNumber
+      return unit === 'rad' ? RADIANS_TO_DEGREES * filterArgAsNumber : filterArgAsNumber;
     // blur takes any non-negative CSS length that is not a percent; RN only has DIPs.
     case 'blur':
       if ((unit != null && unit !== 'px') || filterArgAsNumber < 0) {
-        return undefined
+        return undefined;
       }
-      return filterArgAsNumber
+      return filterArgAsNumber;
     // The rest take a non-negative number or percentage (50% == 0.5).
     case 'brightness':
     case 'contrast':
@@ -208,144 +205,142 @@ function getFilterAmount(filterName: string, filterArgs: unknown): number | unde
     case 'saturate':
     case 'sepia':
       if ((unit != null && unit !== '%' && unit !== 'px') || filterArgAsNumber < 0) {
-        return undefined
+        return undefined;
       }
-      return unit === '%' ? filterArgAsNumber / 100 : filterArgAsNumber
+      return unit === '%' ? filterArgAsNumber / 100 : filterArgAsNumber;
     default:
-      return undefined
+      return undefined;
   }
 }
 
 // RN processFilter.js:188-256.
-function parseDropShadow(
-  rawDropShadow: string | IRawDropShadow,
-): IParsedDropShadow | null {
+function parseDropShadow(rawDropShadow: string | IRawDropShadow): IParsedDropShadow | null {
   const dropShadow =
-    typeof rawDropShadow === 'string' ? parseDropShadowString(rawDropShadow) : rawDropShadow
+    typeof rawDropShadow === 'string' ? parseDropShadowString(rawDropShadow) : rawDropShadow;
   if (dropShadow == null) {
-    return null
+    return null;
   }
 
-  const parsedDropShadow: IParsedDropShadow = { offsetX: 0, offsetY: 0 }
-  let offsetX: number | undefined
-  let offsetY: number | undefined
+  const parsedDropShadow: IParsedDropShadow = { offsetX: 0, offsetY: 0 };
+  let offsetX: number | undefined;
+  let offsetY: number | undefined;
 
   for (const arg of Object.keys(dropShadow)) {
     switch (arg) {
       case 'offsetX': {
-        const value = resolveLength(dropShadow.offsetX)
+        const value = resolveLength(dropShadow.offsetX);
         if (value == null) {
-          return null
+          return null;
         }
-        offsetX = value
-        break
+        offsetX = value;
+        break;
       }
       case 'offsetY': {
-        const value = resolveLength(dropShadow.offsetY)
+        const value = resolveLength(dropShadow.offsetY);
         if (value == null) {
-          return null
+          return null;
         }
-        offsetY = value
-        break
+        offsetY = value;
+        break;
       }
       case 'standardDeviation': {
-        const value = resolveLength(dropShadow.standardDeviation)
+        const value = resolveLength(dropShadow.standardDeviation);
         if (value == null || value < 0) {
-          return null
+          return null;
         }
-        parsedDropShadow.standardDeviation = value
-        break
+        parsedDropShadow.standardDeviation = value;
+        break;
       }
       case 'color': {
-        const color = processShadowColor(dropShadow.color)
+        const color = processShadowColor(dropShadow.color);
         if (color == null) {
-          return null
+          return null;
         }
-        parsedDropShadow.color = color
-        break
+        parsedDropShadow.color = color;
+        break;
       }
       default:
-        return null
+        return null;
     }
   }
 
   if (offsetX == null || offsetY == null) {
-    return null
+    return null;
   }
 
-  parsedDropShadow.offsetX = offsetX
-  parsedDropShadow.offsetY = offsetY
-  return parsedDropShadow
+  parsedDropShadow.offsetX = offsetX;
+  parsedDropShadow.offsetY = offsetY;
+  return parsedDropShadow;
 }
 
 // RN processFilter.js:258-312.
 function parseDropShadowString(rawDropShadow: string): IRawDropShadow | null {
-  const dropShadow: IRawDropShadow = { offsetX: 0, offsetY: 0 }
-  let offsetX: string | undefined
-  let offsetY: string | undefined
-  let lengthCount = 0
-  let keywordDetectedAfterLength = false
+  const dropShadow: IRawDropShadow = { offsetX: 0, offsetY: 0 };
+  let offsetX: string | undefined;
+  let offsetY: string | undefined;
+  let lengthCount = 0;
+  let keywordDetectedAfterLength = false;
 
   for (const arg of rawDropShadow.split(WHITESPACE_SPLIT_REGEX)) {
-    const processedColor = processColor(arg)
+    const processedColor = processColor(arg);
     if (processedColor != null) {
       if (dropShadow.color != null) {
-        return null
+        return null;
       }
       if (offsetX != null) {
-        keywordDetectedAfterLength = true
+        keywordDetectedAfterLength = true;
       }
-      dropShadow.color = arg
-      continue
+      dropShadow.color = arg;
+      continue;
     }
 
     switch (lengthCount) {
       case 0:
-        offsetX = arg
-        lengthCount++
-        break
+        offsetX = arg;
+        lengthCount++;
+        break;
       case 1:
         if (keywordDetectedAfterLength) {
-          return null
+          return null;
         }
-        offsetY = arg
-        lengthCount++
-        break
+        offsetY = arg;
+        lengthCount++;
+        break;
       case 2:
         if (keywordDetectedAfterLength) {
-          return null
+          return null;
         }
-        dropShadow.standardDeviation = arg
-        lengthCount++
-        break
+        dropShadow.standardDeviation = arg;
+        lengthCount++;
+        break;
       default:
-        return null
+        return null;
     }
   }
   if (offsetX == null || offsetY == null) {
-    return null
+    return null;
   }
 
-  dropShadow.offsetX = offsetX
-  dropShadow.offsetY = offsetY
-  return dropShadow
+  dropShadow.offsetX = offsetX;
+  dropShadow.offsetY = offsetY;
+  return dropShadow;
 }
 
 // RN processFilter.js:314-332. Accepts a unitless 0 or any `<n>px`; rejects a non-zero
 // unitless length or a non-px unit.
 function parseLength(length: string): number | null {
-  LENGTH_PARSE_REGEX.lastIndex = 0
-  const match = LENGTH_PARSE_REGEX.exec(length)
+  LENGTH_PARSE_REGEX.lastIndex = 0;
+  const match = LENGTH_PARSE_REGEX.exec(length);
   if (!match || isNaN(Number(match[1]))) {
-    return null
+    return null;
   }
   if (match[3] != null && match[3] !== 'px') {
-    return null
+    return null;
   }
   if (match[3] == null && match[1] !== '0') {
-    return null
+    return null;
   }
-  return Number(match[1])
+  return Number(match[1]);
 }
 
-export type { IRawDropShadow, IRawFilterFunction }
+export type { IRawDropShadow, IRawFilterFunction };

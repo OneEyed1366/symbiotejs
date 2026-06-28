@@ -1,7 +1,7 @@
 // Minimal driver base, ported from RN's animations/Animation.js with every
 // native path removed (ADR 0016): no NativeAnimatedHelper, no
 // __startAnimationIfNative, no shouldUseNativeDriver, no FeatureFlags. What
-// remains is the JS-only contract — hold the end callback, track whether the
+// remains is the JS-only contract: hold the end callback, track whether the
 // animation is still active, and fire onEnd at most once.
 //
 // start() / stop() are abstract: each concrete driver (timing / spring / decay)
@@ -9,57 +9,57 @@
 // class fields) so a subclass override is not shadowed under
 // useDefineForClassFields.
 
-import type { IAnimation, IEndCallback, IEndResult } from '../animation'
-import type { AnimatedValue } from '../value'
-import { flushValue } from '../graph'
-import { dlog, isDebug } from '../../debug'
+import type { IAnimation, IEndCallback, IEndResult } from '../animation';
+import type { AnimatedValue } from '../value';
+import { flushValue } from '../graph';
+import { dlog, isDebug } from '../../debug';
 import {
   generateNativeAnimationId,
   isNativeAnimatedAvailable,
   nativeAnimated,
   type INativeAnimationConfig,
   type IPlatformConfig,
-} from '../native/native-animated'
+} from '../native/native-animated';
 
 export interface IAnimationConfig {
-  isInteraction?: boolean
-  iterations?: number
+  isInteraction?: boolean;
+  iterations?: number;
   // ADR 0017: offload the curve to the stock native module (zero JS per frame).
   // Honoured only when the module is present; otherwise the JS path runs.
-  useNativeDriver?: boolean
+  useNativeDriver?: boolean;
   // RN threads both into every native animation config (Animation.js:30-34): the
   // platform bag rides through to native unread; debugID labels the animation in
-  // native diagnostics. Optional — current callers pass nothing.
-  platformConfig?: IPlatformConfig
-  debugID?: string
+  // native diagnostics. Optional. Current callers pass nothing.
+  platformConfig?: IPlatformConfig;
+  debugID?: string;
 }
 
 export abstract class BaseAnimation implements IAnimation {
   // `protected` so subclasses read it inside their rAF loop to decide whether to
   // schedule the next frame; cleared by stop().
-  protected __active = false
-  protected __iterations: number
+  protected __active = false;
+  protected __iterations: number;
   // RN's Animation holds `_platformConfig` / `__debugID` and folds them into the
   // native config (Animation.js:60-62). Subclasses read them via the protected
   // accessors below so every driver's config carries them uniformly.
-  protected readonly __platformConfig: IPlatformConfig | undefined
-  private readonly __debugID: string | undefined
+  protected readonly __platformConfig: IPlatformConfig | undefined;
+  private readonly __debugID: string | undefined;
 
-  private onEndCallback: IEndCallback | null = null
-  private readonly nativeDriverRequested: boolean
-  private nativeId: number | undefined
+  private onEndCallback: IEndCallback | null = null;
+  private readonly nativeDriverRequested: boolean;
+  private nativeId: number | undefined;
 
   constructor(config: IAnimationConfig) {
-    this.__iterations = config.iterations ?? 1
-    this.nativeDriverRequested = config.useNativeDriver === true
-    this.__platformConfig = config.platformConfig
-    this.__debugID = config.debugID
+    this.__iterations = config.iterations ?? 1;
+    this.nativeDriverRequested = config.useNativeDriver === true;
+    this.__platformConfig = config.platformConfig;
+    this.__debugID = config.debugID;
   }
 
   // Mirrors RN's Animation.__getDebugID (Animation.js:192). Returns the label only
   // under DEBUG so production native configs stay lean, undefined otherwise.
   protected __getDebugID(): string | undefined {
-    return isDebug() ? this.__debugID : undefined
+    return isDebug() ? this.__debugID : undefined;
   }
 
   abstract start(
@@ -68,66 +68,66 @@ export abstract class BaseAnimation implements IAnimation {
     onEnd: IEndCallback,
     previousAnimation: IAnimation | null,
     animatedValue: AnimatedValue,
-  ): void
+  ): void;
 
   // Subclasses call super.start(...) shape via this helper to wire the end
   // callback and arm the active flag before launching their loop.
   protected begin(onEnd: IEndCallback): void {
-    this.onEndCallback = onEnd
-    this.__active = true
+    this.onEndCallback = onEnd;
+    this.__active = true;
   }
 
   // A native driver overrides this with its curve config (`{type:'frames'|'spring'|'decay', …}`).
   protected getNativeAnimationConfig(): INativeAnimationConfig {
-    throw new Error('This animation type cannot be offloaded to the native driver')
+    throw new Error('This animation type cannot be offloaded to the native driver');
   }
 
   // If useNativeDriver was requested and the module is present, mirror the value
-  // graph into native and hand the curve to native — the JS rAF loop is then
+  // graph into native and hand the curve to native. The JS rAF loop is then
   // skipped entirely. Returns true when native took over. Falls back to JS (false)
   // when the module is missing (ADR 0016 path), so an app without RCTAnimation
   // still animates.
   protected startNativeIfNeeded(animatedValue: AnimatedValue): boolean {
-    if (!this.nativeDriverRequested) return false
+    if (!this.nativeDriverRequested) return false;
     if (!isNativeAnimatedAvailable()) {
-      dlog('useNativeDriver requested but native animated module is missing; using JS driver')
-      return false
+      dlog('useNativeDriver requested but native animated module is missing; using JS driver');
+      return false;
     }
-    const config = this.getNativeAnimationConfig()
+    const config = this.getNativeAnimationConfig();
     // RN hands the curve's platform bag down to the value node (Animation.js:137)
     // so the node's create config carries it too.
-    animatedValue.__makeNative(this.__platformConfig)
-    this.nativeId = generateNativeAnimationId()
+    animatedValue.__makeNative(this.__platformConfig);
+    this.nativeId = generateNativeAnimationId();
     nativeAnimated.startAnimatingNode(
       this.nativeId,
       animatedValue.__getNativeTag(),
       config,
-      (result) => {
-        this.__notifyAnimationEnd({ finished: result.finished })
+      result => {
+        this.__notifyAnimationEnd({ finished: result.finished });
         // Sync the JS value to native's final value, then run leaf callbacks once.
         if (result.value !== undefined) {
-          animatedValue.__onNativeUpdate(result.value, result.offset)
-          flushValue(animatedValue)
+          animatedValue.__onNativeUpdate(result.value, result.offset);
+          flushValue(animatedValue);
         }
       },
-    )
-    return true
+    );
+    return true;
   }
 
   stop(): void {
     if (this.nativeId !== undefined) {
-      nativeAnimated.stopAnimation(this.nativeId)
+      nativeAnimated.stopAnimation(this.nativeId);
     }
-    this.__active = false
+    this.__active = false;
   }
 
   // Fire the completion callback at most once. start() and stop() each run at
   // most once over an animation's life, and so does this.
   protected __notifyAnimationEnd(result: IEndResult): void {
-    const callback = this.onEndCallback
+    const callback = this.onEndCallback;
     if (callback !== null) {
-      this.onEndCallback = null
-      callback(result)
+      this.onEndCallback = null;
+      callback(result);
     }
   }
 }
