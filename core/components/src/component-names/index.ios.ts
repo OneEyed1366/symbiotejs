@@ -3,8 +3,8 @@
 // Fabric names are the codegen spec's registered name (the new-arch name), not the legacy
 // paperComponentName (RCTSwitch, …).
 
-import { buildDescriptors, makeDescriptorFor, type ISymbioteIntrinsic } from './component-names-shared'
-export type { ISymbioteIntrinsic, IComponentDescriptor } from './component-names-shared'
+import { buildDescriptors, makeDescriptorFor, type ISymbioteIntrinsic } from './shared';
+export type { ISymbioteIntrinsic, IComponentDescriptor } from './shared';
 
 const IOS_NAMES: Readonly<Record<ISymbioteIntrinsic, string>> = {
   'symbiote-view': 'RCTView',
@@ -12,7 +12,7 @@ const IOS_NAMES: Readonly<Record<ISymbioteIntrinsic, string>> = {
   'symbiote-image': 'RCTImageView',
   'symbiote-scroll-view': 'RCTScrollView',
   'symbiote-scroll-content': 'RCTScrollContentView',
-  // iOS uses one scroll view for both axes — horizontal is RCTScrollView with the
+  // iOS uses one scroll view for both axes; horizontal is RCTScrollView with the
   // `horizontal` prop set, so these resolve identically to the vertical pair.
   'symbiote-horizontal-scroll-view': 'RCTScrollView',
   'symbiote-horizontal-scroll-content': 'RCTScrollContentView',
@@ -24,7 +24,7 @@ const IOS_NAMES: Readonly<Record<ISymbioteIntrinsic, string>> = {
   'symbiote-modal': 'ModalHostView',
   'symbiote-refresh-control': 'PullToRefreshView',
   'symbiote-input-accessory-view': 'RCTInputAccessoryView',
-}
+};
 
-export const COMPONENT_DESCRIPTORS = buildDescriptors(IOS_NAMES)
-export const descriptorFor = makeDescriptorFor(COMPONENT_DESCRIPTORS)
+export const COMPONENT_DESCRIPTORS = buildDescriptors(IOS_NAMES);
+export const descriptorFor = makeDescriptorFor(COMPONENT_DESCRIPTORS);

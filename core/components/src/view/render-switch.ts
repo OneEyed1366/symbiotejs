@@ -1,39 +1,39 @@
-// Switch — the render half (framework-agnostic). Maps the resolved props onto the single
+// Switch: the render half (framework-agnostic). Maps the resolved props onto the single
 // `symbiote-switch` host node: the strict value fold lands as the `value` Fabric prop, the
 // track colors take platform-specific prop NAMES (iOS onTintColor/tintColor vs Android
-// trackColorFor*/trackTintColor — supplied via `platform`), thumbColor → thumbTintColor, and
+// trackColorFor*/trackTintColor, supplied via `platform`), thumbColor → thumbTintColor, and
 // ios_backgroundColor folds into the style as the pill that shows through the shrunken track.
-// Pure and prop-driven; no hooks, no events — the adapter owns those.
+// Pure and prop-driven; no hooks, no events. The adapter owns those.
 
-import { dlog } from '@symbiote/engine'
-import type { IStyleProp, IViewStyle } from '@symbiote/engine'
-import { el } from '../descriptor'
-import type { IDescriptor } from '../descriptor'
+import { dlog } from '@symbiote/engine';
+import type { IStyleProp, IViewStyle } from '@symbiote/engine';
+import { el } from '../descriptor';
+import type { IDescriptor } from '../descriptor';
 
-export type ISwitchTrackColor = { false?: string; true?: string }
+export type ISwitchTrackColor = { false?: string; true?: string };
 
 // The per-platform piece the render needs: the track-color prop NAMES differ between hosts
 // (iOS onTintColor/tintColor vs Android trackColorForTrue/trackColorForFalse + trackTintColor
 // for the current value). The adapter's .ios/.android file supplies the mapping.
 export type ISwitchPlatform = {
-  trackColorProps: (value: boolean, trackColor?: ISwitchTrackColor) => Record<string, unknown>
-}
+  trackColorProps: (value: boolean, trackColor?: ISwitchTrackColor) => Record<string, unknown>;
+};
 
 // The pre-resolved inputs the render fn paints from. `value` arrives already folded to a
 // strict boolean by the adapter; accessibility / testID / the ref + onChange handler arrive
 // folded into `passthrough` and land on the host node untouched.
 export type ISwitchViewProps = {
-  value: boolean
-  disabled?: boolean
-  trackColor?: ISwitchTrackColor
-  thumbColor?: string
-  ios_backgroundColor?: string
-  style?: IStyleProp<IViewStyle>
-  passthrough: Record<string, unknown>
-}
+  value: boolean;
+  disabled?: boolean;
+  trackColor?: ISwitchTrackColor;
+  thumbColor?: string;
+  ios_backgroundColor?: string;
+  style?: IStyleProp<IViewStyle>;
+  passthrough: Record<string, unknown>;
+};
 
 // RN rounds the iOS background pill to this radius when ios_backgroundColor is set.
-const IOS_BACKGROUND_BORDER_RADIUS = 16
+const IOS_BACKGROUND_BORDER_RADIUS = 16;
 
 // Fold ios_backgroundColor into the style, matching RN's iOS branch: it paints the
 // background that shows through the shrunken track. Untouched when unset, so a caller's own
@@ -42,12 +42,12 @@ function foldIosBackground(
   style: IStyleProp<IViewStyle> | undefined,
   color: string | undefined,
 ): IStyleProp<IViewStyle> | undefined {
-  if (color === undefined) return style
-  return [style, { backgroundColor: color, borderRadius: IOS_BACKGROUND_BORDER_RADIUS }]
+  if (color === undefined) return style;
+  return [style, { backgroundColor: color, borderRadius: IOS_BACKGROUND_BORDER_RADIUS }];
 }
 
 export function renderSwitch(view: ISwitchViewProps, platform: ISwitchPlatform): IDescriptor {
-  dlog(`Switch render value=${view.value} disabled=${String(view.disabled)}`)
+  dlog(`Switch render value=${view.value} disabled=${String(view.disabled)}`);
 
   // These color props reach Fabric as ordinary props: the shared ViewConfig declares
   // Switch's only event as `change`, so routeProp sends the on*-prefixed color names through
@@ -59,7 +59,7 @@ export function renderSwitch(view: ISwitchViewProps, platform: ISwitchPlatform):
     ...platform.trackColorProps(view.value, view.trackColor),
     thumbTintColor: view.thumbColor,
     style: foldIosBackground(view.style, view.ios_backgroundColor),
-  }
+  };
 
-  return el('symbiote-switch', props)
+  return el('symbiote-switch', props);
 }

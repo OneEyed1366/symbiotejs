@@ -2,12 +2,12 @@
 // color and no extra native props. Also the base (activity-indicator.ts re-exports it) for
 // headless / web. Mirrors the React adapter's iOS binding. See ADR 0020.
 
-import { createActivityIndicator } from './activity-indicator-shared'
+import { createActivityIndicator } from './shared';
 
 // RN's iOS default spinner color (Libraries/.../ActivityIndicator.js GRAY).
-const IOS_DEFAULT_COLOR = '#999999'
+const IOS_DEFAULT_COLOR = '#999999';
 
 export const ActivityIndicator = createActivityIndicator({
   defaultColor: IOS_DEFAULT_COLOR,
   nativeExtras: {},
-})
+});

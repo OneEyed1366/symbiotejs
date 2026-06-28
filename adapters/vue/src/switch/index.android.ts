@@ -3,7 +3,7 @@
 // `setNativeValue` command. Metro picks this on an Android host; no Platform.OS read.
 // Mirrors the React adapter's Android binding. See ADR 0020.
 
-import { createSwitch } from './switch-shared'
+import { createSwitch } from './shared';
 
 export const Switch = createSwitch({
   snapBackCommand: 'setNativeValue',
@@ -12,4 +12,4 @@ export const Switch = createSwitch({
     trackColorForTrue: trackColor?.true,
     trackTintColor: value ? trackColor?.true : trackColor?.false,
   }),
-})
+});

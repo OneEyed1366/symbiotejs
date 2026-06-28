@@ -3,8 +3,8 @@
 // device-verify-pending: source-confirmed from RN's Android ViewManagers, proven on a
 // real host by the absence of a "Can't find ViewManager '<name>'" red box.
 
-import { buildDescriptors, makeDescriptorFor, type ISymbioteIntrinsic } from './component-names-shared'
-export type { ISymbioteIntrinsic, IComponentDescriptor } from './component-names-shared'
+import { buildDescriptors, makeDescriptorFor, type ISymbioteIntrinsic } from './shared';
+export type { ISymbioteIntrinsic, IComponentDescriptor } from './shared';
 
 const ANDROID_NAMES: Readonly<Record<ISymbioteIntrinsic, string>> = {
   'symbiote-view': 'RCTView',
@@ -14,7 +14,7 @@ const ANDROID_NAMES: Readonly<Record<ISymbioteIntrinsic, string>> = {
   // RN's VScrollContentViewNativeComponent is `Platform.OS === 'android' ? View : …`,
   // so a vertical scroll's content is a plain RCTView on Android, not RCTScrollContentView.
   'symbiote-scroll-content': 'RCTView',
-  // Horizontal scroll on Android is its own ViewManager — RCTScrollView is vertical-only and
+  // Horizontal scroll on Android is its own ViewManager; RCTScrollView is vertical-only and
   // ignores `horizontal`. RN routes it to AndroidHorizontalScrollView with a dedicated content
   // view (HScrollViewNativeComponents.js: `Platform.OS === 'android' ? AndroidHorizontal… : …`).
   'symbiote-horizontal-scroll-view': 'AndroidHorizontalScrollView',
@@ -30,7 +30,7 @@ const ANDROID_NAMES: Readonly<Record<ISymbioteIntrinsic, string>> = {
   // iOS-only primitive; RN ships no Android InputAccessoryView. Degrade to a plain
   // container so an iOS-targeted usage doesn't red-box on Android.
   'symbiote-input-accessory-view': 'RCTView',
-}
+};
 
-export const COMPONENT_DESCRIPTORS = buildDescriptors(ANDROID_NAMES)
-export const descriptorFor = makeDescriptorFor(COMPONENT_DESCRIPTORS)
+export const COMPONENT_DESCRIPTORS = buildDescriptors(ANDROID_NAMES);
+export const descriptorFor = makeDescriptorFor(COMPONENT_DESCRIPTORS);
