@@ -6,13 +6,13 @@
 // child stays a plain unwrapped content child (B9), sticky sets a numeric scrollEventThrottle on the
 // outer scroll node (B10), [0,2] yields two wrappers with the last header's nextHeaderLayoutY
 // undefined pre-layout (B11), and the cross-talk feeds the earlier header the later header's y while
-// the last stays undefined (B12 — proven with a spy StickyHeaderComponent override, the Vue twin of
+// the last stays undefined (B12, proven with a spy StickyHeaderComponent override, the Vue twin of
 // React's SpyStickyHeader). Props/structure are read off the COMMITTED tree.
 
 import { defineComponent, h, isVNode, type VNode } from '@vue/runtime-core'
 import { mount } from '../../adapters/vue/src/index'
 import { ScrollView, Text, View } from '../../adapters/vue/src/index'
-import { ScrollViewStickyHeader } from '../../adapters/vue/src/scroll-view-sticky-header'
+import { ScrollViewStickyHeader } from '../../adapters/vue/src/scroll-view/sticky-header'
 
 // ---- fake Fabric slot (committed-tree + events) -------------------------
 
@@ -81,7 +81,7 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null
 }
 // The engine wraps every commit in one synthetic box-none root (RN's AppContainer); unwrap to the
-// app's real root node — here the RCTScrollView.
+// app's real root node, here the RCTScrollView.
 function appRootChild(): IFakeNode {
   check('A1 one synthetic box-none root', committed.length === 1 && committed[0]?.props.pointerEvents === 'box-none')
   return committed[0].children[0]
@@ -99,7 +99,7 @@ function subtreeContains(node: IFakeNode, predicate: (n: IFakeNode) => boolean):
 }
 const tick = (): Promise<void> => new Promise((resolve) => setTimeout(resolve, 0))
 
-// ---- Mount 1: [0,2] over [Text, View, Text] — wrap structure (B6-B11) ----
+// ---- Mount 1: [0,2] over [Text, View, Text], wrap structure (B6-B11) ----
 
 reset()
 mount(
@@ -118,7 +118,7 @@ await tick()
   const content = scroll.children[0]
   const wrappers = content.children.filter(isStickyWrapper)
 
-  // B6: the flagged Text (index 0) is wrapped — it must NOT be a direct content child, it sits one
+  // B6: the flagged Text (index 0) is wrapped; it must NOT be a direct content child, it sits one
   // level deeper inside the sticky wrapper.
   const isText = (node: IFakeNode): boolean => node.viewName === 'RCTText' || node.viewName === 'RCTParagraph'
   const textDirectlyUnderContent = content.children.some(isText)
@@ -132,7 +132,7 @@ await tick()
     Array.isArray(node.props.transform) && node.props.transform.some((entry) => isRecord(entry) && 'translateY' in entry)
   check('B8 sticky wrapper carries a translateY transform', wrappers.length > 0 && wrappers.every(hasTranslateY))
 
-  // B9: the non-sticky View (index 1) stays an unwrapped direct content child — a plain RCTView with
+  // B9: the non-sticky View (index 1) stays an unwrapped direct content child, a plain RCTView with
   // no sticky transform.
   const plainView = content.children.find((child) => !isStickyWrapper(child) && child.viewName === 'RCTView')
   check('B9 non-sticky View stays an unwrapped direct child', plainView !== undefined)

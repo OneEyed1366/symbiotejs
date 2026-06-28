@@ -8,7 +8,7 @@ const componentsPkg = path.resolve(repoRoot, 'core/components');
 const reactPkg = path.resolve(repoRoot, 'adapters/react');
 
 /**
- * Metro is pointed straight at our packages' TypeScript source — there is no
+ * Metro is pointed straight at our packages' TypeScript source. There is no
  * build step. @react-native/babel-preset strips the types. react and
  * react-reconciler are pinned to the app's single copies so our adapter and the
  * app share one React instance.
@@ -16,7 +16,10 @@ const reactPkg = path.resolve(repoRoot, 'adapters/react');
  * @type {import('@react-native/metro-config').MetroConfig}
  */
 const config = {
-  watchFolders: [enginePkg, componentsPkg, reactPkg],
+  // Watch the whole monorepo: examples/* are now pnpm-workspace packages whose deps
+  // (react, @babel/runtime, …) are symlinked into the repo-root `.pnpm` store, so Metro
+  // must treat repoRoot as a watched root to follow those symlinks (ADR 0025 / 0026).
+  watchFolders: [repoRoot],
   resolver: {
     extraNodeModules: {
       '@symbiote/engine': enginePkg,
@@ -25,7 +28,12 @@ const config = {
       react: path.resolve(projectRoot, 'node_modules/react'),
       'react-reconciler': path.resolve(projectRoot, 'node_modules/react-reconciler'),
     },
-    nodeModulesPaths: [path.resolve(projectRoot, 'node_modules')],
+    // App's own node_modules first, then the hoisted repo-root store where pnpm places
+    // transitive deps like @babel/runtime.
+    nodeModulesPaths: [
+      path.resolve(projectRoot, 'node_modules'),
+      path.resolve(repoRoot, 'node_modules'),
+    ],
   },
 };
 

@@ -10,9 +10,13 @@
     ".": "./src/index.ts"
   },
   "scripts": {
-    "typecheck": "tsc --build"
+    "typecheck": "tsc --build",
+    "format": "prettier --write \"src/**/*.{ts,tsx}\""
   },
   "peerDependencies": {
     "react-native": ">=0.86"
+  },
+  "devDependencies": {
+    "@symbiote/test-utils": "workspace:*"
   }
 }

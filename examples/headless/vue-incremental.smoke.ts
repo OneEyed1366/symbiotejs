@@ -1,7 +1,7 @@
 // Vue path proof: the Vue renderer drives the SAME incremental clone-on-write engine as
 // React, and anchor nodes (v-if/fragment placeholders) create ZERO native views. Drives
 // the @symbiote/vue renderer against a counting fake slot and asserts:
-//   1. first mount creates every real node once — and the v-if anchor adds NO native node,
+//   1. first mount creates every real node once, and the v-if anchor adds NO native node,
 //   2. a reactive text change re-clones only that branch (nothing is rebuilt),
 //   3. flipping a v-if from false->true creates exactly one native node (the revealed view).
 
@@ -100,7 +100,7 @@ mount(ROOT_TAG, App)
 await tick()
 
 // synthetic flex root + View + Text + raw-text = 4 createNode. The anchor for the false
-// v-if creates ZERO — that is the whole point of skipping anchors at commit.
+// v-if creates ZERO. That is the whole point of skipping anchors at commit.
 check('mount creates exactly the real nodes (4, anchor excluded)', counters.createNode === 4)
 check('mount commits once', counters.completeRoot === 1)
 

@@ -10,9 +10,9 @@ const vuePkg = path.resolve(repoRoot, 'adapters/vue');
 const defaultConfig = getDefaultConfig(projectRoot);
 
 /**
- * Metro is pointed straight at our packages' TypeScript source — there is no build step.
+ * Metro is pointed straight at our packages' TypeScript source; there is no build step.
  * @react-native/babel-preset strips the types. react and @vue/runtime-core are pinned to
- * the app's single copies so the Vue adapter and the app share one Vue runtime — Vue's
+ * the app's single copies so the Vue adapter and the app share one Vue runtime. Vue's
  * reactivity is a singleton, so two copies would silently fail to react.
  *
  * @type {import('@react-native/metro-config').MetroConfig}
@@ -23,7 +23,10 @@ const config = {
   // No custom transformer: JSX is compiled by @vue/babel-plugin-jsx in babel.config.js, the
   // stock RN babel transformer runs as usual (unlike the SFC canary, which needs a Metro
   // transformer to compile .vue).
-  watchFolders: [enginePkg, componentsPkg, vuePkg],
+  // Watch the whole monorepo: examples/* are now pnpm-workspace packages whose deps
+  // (react, @babel/runtime, …) are symlinked into the repo-root `.pnpm` store, so Metro
+  // must treat repoRoot as a watched root to follow those symlinks (ADR 0025 / 0026).
+  watchFolders: [repoRoot],
   resolver: {
     extraNodeModules: {
       '@symbiote/engine': enginePkg,
@@ -37,7 +40,10 @@ const config = {
       // string rewrite).
       vue: runtimeCore,
     },
-    nodeModulesPaths: [path.resolve(projectRoot, 'node_modules')],
+    nodeModulesPaths: [
+      path.resolve(projectRoot, 'node_modules'),
+      path.resolve(repoRoot, 'node_modules'),
+    ],
   },
 };
 

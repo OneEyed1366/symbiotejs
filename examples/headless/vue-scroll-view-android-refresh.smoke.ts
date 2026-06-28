@@ -1,6 +1,6 @@
 // Headless parity proof of the Vue ANDROID ScrollView RefreshControl WRAP (ADR 0024 Phase 2), the
 // Vue twin of scroll-view-android-refresh.smoke.tsx. On Android a ScrollView hosts one child, so a
-// RefreshControl can't be a sibling of the content the way iOS allows — it WRAPS the scroll view
+// RefreshControl can't be a sibling of the content the way iOS allows, so it WRAPS the scroll view
 // (AndroidSwipeRefreshLayout is the parent). Vue has no cloneElement, so the wrap RE-INVOKES the
 // user's RefreshControl component type via h(): same type, its own props + the injected outer/layout
 // style, and the inner scroll view as the default slot. The bug this guards: the user `style` landing
@@ -11,12 +11,12 @@
 // LIMITATION (per the smoke spec): the intrinsic->native-name table resolves to the iOS build under
 // tsx, so the RefreshControl node serializes as iOS 'PullToRefreshView', not 'AndroidSwipeRefreshLayout'.
 // Every assertion below therefore keys off node ROLE/STRUCTURE (the node whose child is the inner
-// RCTScrollView), NEVER off the native name — the wrap LOGIC is what's under test, not the name.
+// RCTScrollView), NEVER off the native name: the wrap LOGIC is what's under test, not the name.
 
 import { defineComponent, h } from '@vue/runtime-core'
 import { mount } from '../../adapters/vue/src/index'
 import { View } from '../../adapters/vue/src/index'
-import { ScrollView } from '../../adapters/vue/src/scroll-view.android'
+import { ScrollView } from '../../adapters/vue/src/scroll-view/index.android'
 import { RefreshControl } from '../../adapters/vue/src/refresh-control'
 import { SafeAreaView } from '../../adapters/vue/src/safe-area-view'
 
@@ -89,7 +89,7 @@ function appRootChild(label: string): IFakeNode {
   return committed[0].children[0]
 }
 // Find a committed node by native name (used ONLY for RCTScrollView, which is stable across the
-// iOS/Android tables — never for the refresh-control node, whose name is the ambiguous one).
+// iOS/Android tables, never for the refresh-control node, whose name is the ambiguous one).
 function findInCommitted(predicate: (n: IFakeNode) => boolean): IFakeNode | undefined {
   const stack: IFakeNode[] = [...committed]
   while (stack.length) {
@@ -107,7 +107,7 @@ const tick = (): Promise<void> => new Promise((resolve) => setTimeout(resolve, 0
 
 // ---- C: Android RefreshControl wrap -------------------------------------
 // A VERTICAL ScrollView WITH a refreshControl and a style mixing LAYOUT (margin, height) and
-// VISUAL (backgroundColor, padding) props — exactly the split the wrap must route.
+// VISUAL (backgroundColor, padding) props: exactly the split the wrap must route.
 
 reset()
 mount(
@@ -131,32 +131,32 @@ await tick()
 {
   const wrapper = appRootChild('C1 one synthetic box-none root')
 
-  // C2 — refresh WRAPS the scroll view: the committed app-root subtree ENDS with the nested
+  // C2, refresh WRAPS the scroll view: the committed app-root subtree ENDS with the nested
   // scroll-view triple. The wrapper's own (ambiguous) name is the prefix, so we match the tail.
   const expectedTail = '(RCTScrollView(RCTScrollContentView(RCTView)))'
   check('C2 refresh wraps scroll view (subtree ends with the nested triple)', serializeNode(wrapper).endsWith(expectedTail))
 
-  // C3 — wrapper is the parent of the inner RCTScrollView (structural find off RCTScrollView, the
-  // stable name — never off the refresh-control name).
+  // C3, wrapper is the parent of the inner RCTScrollView (structural find off RCTScrollView, the
+  // stable name, never off the refresh-control name).
   const inner = findInCommitted((n) => n.viewName === 'RCTScrollView')
   check('C3 inner RCTScrollView found', inner !== undefined)
   const wrapperOfInner = inner !== undefined ? findParentOf(inner) : undefined
   check('C3b wrapper is the parent of the inner scroll view', wrapperOfInner !== undefined && wrapperOfInner === wrapper)
 
   if (inner !== undefined) {
-    // C4 — layout `margin:4` on the wrapper, NOT on the inner.
+    // C4, layout `margin:4` on the wrapper, NOT on the inner.
     check('C4 layout margin:4 on wrapper, not on inner', wrapper.props.margin === 4 && !('margin' in inner.props))
-    // C5 — layout `height:200` sizes the laid-out box (the wrapper).
+    // C5, layout `height:200` sizes the laid-out box (the wrapper).
     check('C5 layout height:200 on wrapper', wrapper.props.height === 200)
-    // C6 — visual backgroundColor + padding paint the inner scroll view.
+    // C6, visual backgroundColor + padding paint the inner scroll view.
     check('C6 visual backgroundColor:#123 + padding:8 on inner', inner.props.backgroundColor === '#123' && inner.props.padding === 8)
-    // C7 — visual props do NOT leak onto the non-scrolling wrapper.
+    // C7, visual props do NOT leak onto the non-scrolling wrapper.
     check('C7 visual not on wrapper', !('backgroundColor' in wrapper.props) && !('padding' in wrapper.props))
-    // C8 — the inner carries NO hardcoded flex (base uses flexGrow/flexShrink, not flex:1).
+    // C8, the inner carries NO hardcoded flex (base uses flexGrow/flexShrink, not flex:1).
     check('C8 inner has no hardcoded flex', !('flex' in inner.props))
-    // C9 — the inner keeps its vertical base (the clip): overflow:scroll + flexDirection:column.
+    // C9, the inner keeps its vertical base (the clip): overflow:scroll + flexDirection:column.
     check('C9 inner keeps base overflow:scroll + flexDirection:column', inner.props.overflow === 'scroll' && inner.props.flexDirection === 'column')
-    // C10 — the wrap's gesture wiring: the inner handles the scroll before the refresh parent.
+    // C10, the wrap's gesture wiring: the inner handles the scroll before the refresh parent.
     check('C10 inner nestedScrollEnabled === true', inner.props.nestedScrollEnabled === true)
   }
 

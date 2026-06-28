@@ -1,9 +1,9 @@
 // Headless parity proof of the Vue Image primitive over the same fake Fabric slot as the React
-// image.smoke.tsx — the Vue twin. It checks the things only Image does, all shared verbatim from
+// image.smoke.tsx, the Vue twin. It checks the things only Image does, all shared verbatim from
 // @symbiote/components/renderImage and reached through the Vue functional bridge: `source` lands
 // native as an ARRAY, a require()-style number is expanded by the injected resolver, the onLoad
 // event round-trips, and the W3C aliases fold (src→source uri, alt→accessibilityLabel + accessible;
-// the raw src/alt never reach native). Same four cases as React — proof the fold is adapter-agnostic.
+// the raw src/alt never reach native). Same four cases as React, proof the fold is adapter-agnostic.
 
 import { defineComponent, h } from '@vue/runtime-core'
 import { mount } from '../../adapters/vue/src/index'
@@ -113,7 +113,7 @@ await tick()
   check('A4 onLoad fires from the captured native event', loadedWith !== undefined)
 }
 
-// ---- case 4: W3C aliases — `src` folds to a source uri, `alt` to a11y ----
+// ---- case 4: W3C aliases: `src` folds to a source uri, `alt` to a11y ----
 
 reset()
 mount(83, defineComponent({ setup: () => () => h(Image, { src: 'http://x/z.png', alt: 'a kitten' }) }))

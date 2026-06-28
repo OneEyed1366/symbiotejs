@@ -6,14 +6,20 @@
     "android": "react-native run-android",
     "ios": "react-native run-ios",
     "lint": "eslint .",
-    "start": "react-native start"
+    "start": "react-native start",
+    "test": "vitest run"
   },
   "dependencies": {
+    "@symbiote/vue": "workspace:*",
+    "@symbiote/engine": "workspace:*",
+    "@symbiote/components": "workspace:*",
     "@vue/runtime-core": "^3.5.13",
     "react": "19.2.3",
     "react-native": "0.86.0"
   },
   "devDependencies": {
+    "@symbiote/test-utils": "workspace:*",
+    "vitest": "^4.1.9",
     "@babel/core": "^7.25.2",
     "@babel/preset-env": "^7.25.3",
     "@babel/runtime": "^7.25.0",

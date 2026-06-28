@@ -10,7 +10,8 @@
     ".": "./src/index.ts"
   },
   "scripts": {
-    "typecheck": "tsc --build"
+    "typecheck": "tsc --build",
+    "format": "prettier --write \"src/**/*.{ts,tsx}\""
   },
   "dependencies": {
     "@symbiote/components": "workspace:*",
@@ -22,6 +23,7 @@
     "react-native": ">=0.86"
   },
   "devDependencies": {
+    "@symbiote/test-utils": "workspace:*",
     "@types/react": "^19.0.0",
     "@types/react-reconciler": "^0.32.2",
     "react": "^19.1.0"

@@ -1,5 +1,5 @@
 // Headless proof of the Vue Animated surface (ADR 0024 Phase 3a), over the same fake Fabric slot
-// the React animated smokes use — so the shared @symbiote/engine graph (AnimatedValue, the
+// the React animated smokes use, so the shared @symbiote/engine graph (AnimatedValue, the
 // AnimatedProps leaf, Animated.event) is exercised through Vue's reactive lifecycle: a render that
 // rebuilds the leaf + a post-commit reconcile (onMounted/onUpdated) + a function ref that captures
 // the host node (held in a shallowRef, the reactivity rule). It mirrors the React twins
@@ -8,7 +8,7 @@
 //      value.setValue -> flushValue -> AnimatedProps.update() -> setNativeProps path), and the
 //      FIRST render already carries the reduced (current) value.
 //   2. Animated.event: firing the registered onScroll handler drives the bound value, which
-//      re-paints a sibling Animated.View's translateY — and Animated.ScrollView resolves through
+//      re-paints a sibling Animated.View's translateY, and Animated.ScrollView resolves through
 //      its lazy getter without tripping the scroll-view <-> animated module cycle.
 //   3. Animated.timing drives a value over the JS/rAF path and lands the committed opacity on 1.
 

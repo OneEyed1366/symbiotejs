@@ -2,7 +2,7 @@
 // so the shared @symbiote/components logic (the lastNativeReport reducer + the snap-back
 // decision) is exercised through Vue's reactive lifecycle: a ref for state and a flush:'post'
 // watch. It checks the `value` passthrough + iOS color mapping, the onChange -> onValueChange
-// derivation, the controlled SNAP-BACK command on a rejected toggle (case 3 — the host node is
+// derivation, the controlled SNAP-BACK command on a rejected toggle (case 3, the host node is
 // held in a shallowRef so the engine's mirror resolves it; a plain ref would hand back a
 // reactive Proxy and the command would silently no-op), and that an accepted toggle issues no
 // command. The React twin (switch.smoke.tsx) proves the same contract through useLayoutEffect.
@@ -90,8 +90,8 @@ function fireChange(node: IFakeNode, nativeEvent: Record<string, unknown>): void
   if (!eventHandler) throw new Error('no event handler was registered')
   eventHandler(node.instanceHandle, 'topChange', nativeEvent)
 }
-// A macrotask boundary drains ALL pending microtasks — the engine's coalesced commit AND the
-// adapter's one-microtask-deferred snap-back command — before the assert reads them.
+// A macrotask boundary drains ALL pending microtasks: the engine's coalesced commit AND the
+// adapter's one-microtask-deferred snap-back command, before the assert reads them.
 const tick = (): Promise<void> => new Promise((resolve) => setTimeout(resolve, 0))
 
 // ---- case 1: value passthrough + iOS color mapping ----------------------

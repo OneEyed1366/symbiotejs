@@ -1,5 +1,5 @@
 // Regression: Vue mounts a Fragment (what v-for / v-if-lists compile to) with EMPTY text
-// nodes as its start/end anchors — hostCreateText(''), not comments. Those land in a non-Text
+// nodes as its start/end anchors: hostCreateText(''), not comments. Those land in a non-Text
 // container (a View), where a raw text is invalid in Fabric. The renderer must map an empty
 // createText to an anchor (skipped at commit), or the mount throws
 //   Text string "" must be rendered inside a <Text>
@@ -81,7 +81,7 @@ const App = defineComponent({
     dropRow = (): void => {
       rows.value.pop()
     }
-    // An explicit Fragment is exactly what `v-for` compiles to — Vue brackets it with
+    // An explicit Fragment is exactly what `v-for` compiles to. Vue brackets it with
     // empty-text anchors, the case that used to throw on insert into the View.
     return () =>
       h(View, null, () => [
@@ -102,7 +102,7 @@ mount(ROOT_TAG, App)
 await tick()
 
 // flex root + View + 2x(Text + raw-text) = 6. The two empty-text fragment anchors create
-// ZERO native nodes — that is the fix.
+// ZERO native nodes. That is the fix.
 check('fragment mount does not throw and creates only real nodes (6)', counters.createNode === 6)
 check('fragment mount commits once', counters.completeRoot === 1)
 

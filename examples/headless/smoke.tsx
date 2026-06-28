@@ -1,7 +1,7 @@
 // Headless proof of the JS pipeline: a fake nativeFabricUIManager records the
 // Fabric calls our renderer makes. This validates R2 (shared's mutation ->
 // clone-on-write translation), the React mutation host config, and the event
-// round-trip end to end — with no simulator. A failure here is in JS, not
+// round-trip end to end, with no simulator. A failure here is in JS, not
 // native, which is exactly the isolation the React canary is meant to provide.
 
 import { useState, type ReactElement } from 'react'
@@ -128,7 +128,7 @@ if (!view) {
   failures += 1
 } else {
   // Fire a tap: Fabric hands the View's instanceHandle straight back. A press is
-  // an honest gesture — a touch that starts and ends on the same node.
+  // a touch that starts and ends on the same node.
   eventHandler(view.instanceHandle, 'topTouchStart', {})
   eventHandler(view.instanceHandle, 'topTouchEnd', {})
   expect(

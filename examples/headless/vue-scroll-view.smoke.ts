@@ -4,12 +4,12 @@
 // reactive lifecycle. It mirrors scroll-view.smoke.tsx case-for-case: the nested
 // RCTScrollView > RCTScrollContentView shape, contentContainerStyle/horizontal -> content node,
 // the base style under user style, the onScroll round-trip (A); the synthesized onContentSizeChange
-// + its dedupe (B); and the imperative handle via expose() + a template ref (D — the host node is
+// + its dedupe (B); and the imperative handle via expose() + a template ref (D, the host node is
 // held in a shallowRef so the engine's mirror resolves it, a plain ref would hand back a reactive
 // Proxy the command would miss). Props/structure are read off the COMMITTED tree (the Vue slot
 // pushes intermediate clones into allCreated, so a find-by-name there can be stale).
 //
-// RefreshControl + sticky headers are Phase 2/3 — accepted/typed, not rendered (no case here).
+// RefreshControl + sticky headers are Phase 2/3: accepted/typed, not rendered (no case here).
 
 import { defineComponent, h, ref } from '@vue/runtime-core'
 import { mount } from '../../adapters/vue/src/index'

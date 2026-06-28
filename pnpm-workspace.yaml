@@ -2,6 +2,14 @@ packages:
   - 'core/*'
   - 'adapters/*'
   - 'packages/*'
-  - 'examples/headless'
+  - 'examples/*'
 allowBuilds:
+  detox: true
+  dtrace-provider: true
   esbuild: true
+minimumReleaseAgeExclude:
+  - prettier@3.9.1
+overrides:
+  # One react copy across the monorepo (matches the canary pin) so the adapter's reconciler
+  # and the app's elements/hooks share one instance — otherwise Vitest hits "Invalid hook call".
+  react: 19.2.3

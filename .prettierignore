@@ -1,0 +1,11 @@
+# Prettier already skips node_modules by default; the rest are build/generated
+# artifacts and the RN example apps, which own their formatting via the
+# @react-native eslint/prettier toolchain (see examples/*/.prettierrc.js).
+build/
+dist/
+*.tsbuildinfo
+*.jsbundle
+pnpm-lock.yaml
+ios/Pods/
+
+examples/

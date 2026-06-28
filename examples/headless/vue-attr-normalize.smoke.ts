@@ -3,7 +3,7 @@
 // arrives kebab-keyed; without folding, a consumed prop is silently dropped (lost padding) and a
 // VNode-valued prop leaks to Fabric (Android `JS Functions are not convertible to dynamic`). These
 // cases drive components with KEBAB keys over the fake slot and assert the committed tree got the
-// camelCase contract — and that no raw kebab key (nor an un-consumed VNode) reached native.
+// camelCase contract, and that no raw kebab key (nor an un-consumed VNode) reached native.
 
 import { defineComponent, h } from '@vue/runtime-core'
 import { mount } from '../../adapters/vue/src/index'
@@ -95,13 +95,13 @@ await tick()
 
 {
   const scroll = appRootChild()
-  // The kebab key (and its camel form as a raw prop) must NOT sit on the scroll node — it is consumed
+  // The kebab key (and its camel form as a raw prop) must NOT sit on the scroll node; it is consumed
   // and applied to the inner content container, not forwarded.
   check('N2 no raw content-container-style on the scroll node', !('content-container-style' in scroll.props))
   check('N2 no raw contentContainerStyle on the scroll node', !('contentContainerStyle' in scroll.props))
 }
 
-// ---- N3: kebab `refresh-control` (a VNode) is folded + consumed — no Fabric leak --
+// ---- N3: kebab `refresh-control` (a VNode) is folded + consumed, no Fabric leak --
 // This is the exact Android `JS Functions are not convertible to dynamic` case: a VNode-valued prop
 // must be consumed by the platform assemble, never forwarded to native as a raw prop.
 
@@ -118,7 +118,7 @@ await tick()
 {
   check('N3 no raw refresh-control key reached native', !anyNodeHasKey('refresh-control'))
   check('N3 no raw refreshControl VNode key reached native', !anyNodeHasKey('refreshControl'))
-  // The RefreshControl was consumed by the assemble — its host node IS in the committed tree.
+  // The RefreshControl was consumed by the assemble, so its host node IS in the committed tree.
   check('N3 RefreshControl committed as a real node', allCreated.some((n) => n.viewName === 'PullToRefreshView' || n.viewName === 'RCTRefreshControl' || n.viewName.includes('Refresh')))
 }
 
