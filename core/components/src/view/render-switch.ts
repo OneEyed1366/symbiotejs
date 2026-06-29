@@ -6,11 +6,26 @@
 // Pure and prop-driven; no hooks, no events. The adapter owns those.
 
 import { dlog } from '@symbiote/engine';
-import type { IStyleProp, IViewStyle } from '@symbiote/engine';
+import type { IStyleProp, IViewStyle, ISymbioteEvent } from '@symbiote/engine';
 import { el } from '../descriptor';
 import type { IDescriptor } from '../descriptor';
+import type { IAccessibilityProps, IAriaProps } from '../accessibility-props';
 
 export type ISwitchTrackColor = { false?: string; true?: string };
+
+// Author-facing props: the framework-agnostic public surface every adapter exposes (the
+// controlled value/onValueChange contract, track/thumb colors, style). Identical across
+// adapters; each supplies only its hook + bridge.
+export interface ISwitchProps extends IAccessibilityProps, IAriaProps {
+  value?: boolean;
+  onValueChange?: (value: boolean) => void;
+  onChange?: (event: ISymbioteEvent) => void;
+  disabled?: boolean;
+  trackColor?: ISwitchTrackColor;
+  thumbColor?: string;
+  ios_backgroundColor?: string;
+  style?: IStyleProp<IViewStyle>;
+}
 
 // The per-platform piece the render needs: the track-color prop NAMES differ between hosts
 // (iOS onTintColor/tintColor vs Android trackColorForTrue/trackColorForFalse + trackTintColor

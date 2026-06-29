@@ -19,33 +19,20 @@ import {
   shouldSnapBack,
   valueFromChange,
 } from '@symbiote/components';
-import type { ISwitchPlatform, ISwitchTrackColor } from '@symbiote/components';
+import type { ISwitchPlatform, ISwitchProps } from '@symbiote/components';
 import {
   dispatchViewCommand,
   dlog,
   type ISymbioteEvent,
   type ISymbioteNode,
 } from '@symbiote/engine';
-import {
-  resolveAccessibilityProps,
-  type IAccessibilityProps,
-  type IAriaProps,
-} from '@symbiote/components';
+import { resolveAccessibilityProps } from '@symbiote/components';
 import { descriptorToReact } from '../descriptor-to-react';
-import type { IStyleProp, IViewStyle } from '../styles';
 
-export type { ISwitchTrackColor } from '@symbiote/components';
-
-export interface ISwitchProps extends IAccessibilityProps, IAriaProps {
-  value?: boolean;
-  onValueChange?: (value: boolean) => void;
-  onChange?: (event: ISymbioteEvent) => void;
-  disabled?: boolean;
-  trackColor?: ISwitchTrackColor;
-  thumbColor?: string;
-  ios_backgroundColor?: string;
-  style?: IStyleProp<IViewStyle>;
-}
+// ISwitchProps is framework-agnostic (the controlled value contract, no ref / children), so it
+// lives in @symbiote/components and every adapter re-exports it; React supplies only the hook
+// (useReducer + the snap-back useLayoutEffect) and the descriptor bridge.
+export type { ISwitchProps, ISwitchTrackColor } from '@symbiote/components';
 
 // The platform piece: the view's track-color name mapping plus the lifecycle's snap-back
 // command name. Supplied whole by switch.ios.ts / switch.android.ts (Metro filename-selected).

@@ -4,6 +4,19 @@
 
 export { mount, unmount } from './render';
 export { View, Text } from './components';
+// Accessibility / ARIA prop types: framework-agnostic, shared verbatim from
+// @symbiote/components (the same source the React adapter re-exports).
+export type {
+  IAccessibilityProps,
+  IAriaProps,
+  IAccessibilityRole,
+  IRole,
+  IAccessibilityStateValue,
+  IAccessibilityValue,
+  IAccessibilityActionInfo,
+  // Gesture-responder props: framework-agnostic, the shared base of View props.
+  IResponderProps,
+} from '@symbiote/components';
 // findNodeHandle: RN's ref -> native reactTag lookup, the Vue twin of the React adapter's
 // host-instance resolution. IHostInstance is the raw engine node (Vue host refs fall
 // through to it; imperative methods live on each component's expose() handle).
@@ -25,9 +38,11 @@ export type {
 // agnostic renderActivityIndicator through descriptorToVue. Proof the layer is reusable:
 // the render fn is shared verbatim with React; Vue supplies only the bridge.
 export { ActivityIndicator } from './activity-indicator';
+export type { IActivityIndicatorProps } from '@symbiote/components';
 // First component to bring the state half into Vue (the lastNativeReport reducer + the
 // snap-back watch); render shared verbatim with React, Vue supplies the reactive lifecycle.
 export { Switch } from './switch';
+export type { ISwitchProps, ISwitchTrackColor } from '@symbiote/components';
 // ScrollView. Full parity (ADR 0024): vertical + horizontal, every pass-through prop, the
 // synthesized onContentSizeChange, the imperative handle via expose() + shallowRef, RefreshControl
 // (iOS sibling / Android wrap, Phase 2), and sticky headers (Phase 3: the scroll AnimatedValue,
@@ -48,6 +63,7 @@ export type {
   IRippleBackground,
 } from './touchable-native-feedback';
 export { Button } from './button';
+export type { IButtonProps } from '@symbiote/components';
 // TextInput. Full parity with React (the 3-layer split): the value/selection folds + the
 // controlled-write predicate live in @symbiote/components; Vue supplies the reactivity
 // (shallowRef host node, post-flush watch) + the imperative handle via expose().
@@ -201,6 +217,23 @@ export {
   isDebug,
 } from '@symbiote/engine';
 export type { ISymbioteEvent, ISymbioteNode, IRootTag } from '@symbiote/engine';
+// Style + Platform value types and the native-view-config seam: pure / seam-backed, so
+// they live in the engine and both adapters re-export them (parity with the React adapter).
+export type {
+  IViewStyle,
+  ITextStyle,
+  IFlexAlign,
+  IFlexJustify,
+  IPlatformStatic,
+  IPlatformOSType,
+  IPlatformConstantsIOS,
+  IPlatformConstantsAndroid,
+  IPlatformSelectSpec,
+} from '@symbiote/engine';
+// Wired once by the app entry on a real host (like setColorProcessor): hands the engine
+// RN's ViewConfig registry so third-party Fabric views auto-derive their metadata.
+export { setNativeViewConfigSource } from '@symbiote/engine';
+export type { INativeViewConfig, INativeViewConfigSource } from '@symbiote/engine';
 // Pure utilities that moved to the engine (single source, both adapters re-export):
 // PixelRatio + PanResponder, plus the color builders and the interaction scheduler.
 export {

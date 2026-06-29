@@ -7,29 +7,14 @@
 // indeterminate) are supplied by the .ios/.android files via `IActivityIndicatorPlatform`.
 
 import type { FC } from 'react';
-import { renderActivityIndicator } from '@symbiote/components';
-import type { IActivityIndicatorPlatform, IActivityIndicatorSize } from '@symbiote/components';
-import type { ISymbioteEvent } from '@symbiote/engine';
-import {
-  resolveAccessibilityProps,
-  type IAccessibilityProps,
-  type IAriaProps,
-} from '@symbiote/components';
+import { renderActivityIndicator, resolveAccessibilityProps } from '@symbiote/components';
+import type { IActivityIndicatorPlatform, IActivityIndicatorProps } from '@symbiote/components';
 import { descriptorToReact } from '../descriptor-to-react';
-import type { IStyleProp, IViewStyle } from '../styles';
 
-export type { IActivityIndicatorPlatform } from '@symbiote/components';
-
-export interface IActivityIndicatorProps extends IAccessibilityProps, IAriaProps {
-  animating?: boolean;
-  color?: string;
-  size?: IActivityIndicatorSize;
-  hidesWhenStopped?: boolean;
-  style?: IStyleProp<IViewStyle>;
-  // testID / nativeID / accessibility surface are inherited. RN spreads `...props` onto
-  // the centering wrapper View, so they land on the wrapper, not the spinner.
-  onLayout?: (event: ISymbioteEvent) => void;
-}
+// IActivityIndicatorProps is framework-agnostic (no ref / children), so it lives in
+// @symbiote/components and every adapter re-exports it; the React adapter supplies only the
+// lifecycle (render-only here) + the descriptor bridge.
+export type { IActivityIndicatorPlatform, IActivityIndicatorProps } from '@symbiote/components';
 
 export function createActivityIndicator(
   platform: IActivityIndicatorPlatform,

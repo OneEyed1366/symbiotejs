@@ -10,11 +10,26 @@
 // file supplies those bits via `platform`.
 
 import { dlog } from '@symbiote/engine';
-import type { IStyleProp, IViewStyle } from '@symbiote/engine';
+import type { IStyleProp, IViewStyle, ISymbioteEvent } from '@symbiote/engine';
 import { el } from '../descriptor';
 import type { IDescriptor } from '../descriptor';
+import type { IAccessibilityProps, IAriaProps } from '../accessibility-props';
 
 export type IActivityIndicatorSize = 'small' | 'large' | number;
+
+// Author-facing props: the framework-agnostic public surface every adapter exposes. The
+// fields are identical across adapters (no framework element / ref / children), so they live
+// here once; each adapter only supplies its lifecycle + descriptor bridge.
+export interface IActivityIndicatorProps extends IAccessibilityProps, IAriaProps {
+  animating?: boolean;
+  color?: string;
+  size?: IActivityIndicatorSize;
+  hidesWhenStopped?: boolean;
+  style?: IStyleProp<IViewStyle>;
+  // testID / nativeID / accessibility surface are inherited. RN spreads `...props` onto the
+  // centering wrapper View, so they land on the wrapper, not the spinner.
+  onLayout?: (event: ISymbioteEvent) => void;
+}
 
 // The pre-resolved inputs the render fn paints from. State and visual enter only through
 // these props; accessibility / testID / onLayout arrive folded into `passthrough` and land

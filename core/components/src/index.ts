@@ -35,13 +35,22 @@ export type { ISymbioteIntrinsic, IComponentDescriptor } from './component-names
 
 export { renderActivityIndicator } from './view/render-activity-indicator';
 export type {
+  IActivityIndicatorProps,
   IActivityIndicatorViewProps,
   IActivityIndicatorPlatform,
   IActivityIndicatorSize,
 } from './view/render-activity-indicator';
 
 export { renderSwitch } from './view/render-switch';
-export type { ISwitchViewProps, ISwitchPlatform, ISwitchTrackColor } from './view/render-switch';
+export type {
+  ISwitchProps,
+  ISwitchViewProps,
+  ISwitchPlatform,
+  ISwitchTrackColor,
+} from './view/render-switch';
+
+// Gesture-responder props, the framework-agnostic base of every adapter's View props.
+export type { IResponderProps } from './responder-props';
 
 // Switch is the first STATE machine off this layer (ActivityIndicator was render-only):
 // the reducer + the two pure predicates are the logic half, the adapter supplies the hook.
@@ -201,6 +210,7 @@ export {
   buttonTextStyle,
   resolveButtonTextStyle,
 } from './view/render-button';
+export type { IButtonProps } from './view/render-button';
 
 // TextInput: the controlled-value / event-count handshake. The logic half is the pure
 // folds/maps + the controlled-write predicate (not a single reducer: count must re-render the

@@ -7,27 +7,11 @@ import { createElement, type FC } from 'react';
 import { Text } from './components';
 import { TouchableOpacity } from './touchable';
 import { BUTTON_ACCESSIBILITY_ROLE, resolveButtonTextStyle } from '@symbiote/components';
-import type { ISymbioteEvent } from '@symbiote/engine';
-import type { IAccessibilityProps, IAriaProps } from '@symbiote/components';
+import type { IButtonProps } from '@symbiote/components';
 
-export interface IButtonProps extends IAccessibilityProps, IAriaProps {
-  title: string;
-  onPress?: (event: ISymbioteEvent) => void;
-  color?: string;
-  disabled?: boolean;
-  // Suppress the native tap sound (Button.js:50). Forwarded to the pressable, which owns sound
-  // suppression via android_disableSound.
-  touchSoundDisabled?: boolean;
-  // Locate this button in end-to-end tests (Button.js:144). Forwarded to the root.
-  testID?: string;
-  // tvOS / Android-TV focus props (Button.js:68,79). Typed and forwarded; inert on a phone host.
-  hasTVPreferredFocus?: boolean;
-  nextFocusDown?: number;
-  nextFocusForward?: number;
-  nextFocusLeft?: number;
-  nextFocusRight?: number;
-  nextFocusUp?: number;
-}
+// IButtonProps is framework-agnostic (it takes a `title` string, no children / ref), so it lives
+// in @symbiote/components and every adapter re-exports it; React only composes TouchableOpacity + Text.
+export type { IButtonProps } from '@symbiote/components';
 
 export const Button: FC<IButtonProps> = props => {
   const {

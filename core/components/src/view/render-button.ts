@@ -3,7 +3,29 @@
 // the color fold (caller color tints the label; disabled greys it) live here so every adapter
 // paints the identical button. The adapter only composes its TouchableOpacity + Text around them.
 
-import type { ITextStyle } from '@symbiote/engine';
+import type { ITextStyle, ISymbioteEvent } from '@symbiote/engine';
+import type { IAccessibilityProps, IAriaProps } from '../accessibility-props';
+
+// Author-facing props: the framework-agnostic public surface every adapter exposes. Button has
+// no children (it takes a `title` string), so the whole surface is agnostic and lives here once.
+export interface IButtonProps extends IAccessibilityProps, IAriaProps {
+  title: string;
+  onPress?: (event: ISymbioteEvent) => void;
+  color?: string;
+  disabled?: boolean;
+  // Suppress the native tap sound (Button.js:50). Forwarded to the pressable, which owns sound
+  // suppression via android_disableSound.
+  touchSoundDisabled?: boolean;
+  // Locate this button in end-to-end tests (Button.js:144). Forwarded to the root.
+  testID?: string;
+  // tvOS / Android-TV focus props (Button.js:68,79). Typed and forwarded; inert on a phone host.
+  hasTVPreferredFocus?: boolean;
+  nextFocusDown?: number;
+  nextFocusForward?: number;
+  nextFocusLeft?: number;
+  nextFocusRight?: number;
+  nextFocusUp?: number;
+}
 
 const IOS_BUTTON_BLUE = '#007AFF';
 const IOS_DISABLED_GREY = '#cdcdcd';
