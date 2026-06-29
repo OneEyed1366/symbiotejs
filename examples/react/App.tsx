@@ -53,10 +53,11 @@ import {
   type IFlatListHandle,
   type ISection,
 } from '@symbiote/react'
-// A real third-party native view, used straight from the library, with no symbiote
-// wrapper. symbiote derives RNCSlider's events and prop processors from its own
-// ViewConfig at runtime; this is the "install the package, use its component" path.
-import Slider from '@react-native-community/slider'
+// A real third-party native view, driven through symbiote's own wrapper (@symbiote/slider)
+// rather than the library's React component: the wrapper registers RNCSlider's ViewConfig and
+// renders the native leaf through the engine, so the SAME slider works on Vue/Angular too. App
+// code and the app manifest name only @symbiote/slider; the native package is the wrapper's dep.
+import { Slider } from '@symbiote/slider/react'
 
 const CHIP_WIDTH = 72
 const CHIP_GAP = 12
@@ -1013,10 +1014,10 @@ function App() {
       </View>
       <ActivityIndicator testID="spinner-indicator" animating={spinning} color="#7fb5ff" size="large" />
 
-      {/* Slider: a THIRD-PARTY native view (@react-native-community/slider). symbiote
-          ships zero metadata for it: shared derives its onValueChange event and the
-          track/thumb tint processors from the library's own ViewConfig at runtime.
-          Drag it: the value updates live; the colored track proves color derivation. */}
+      {/* Slider: a THIRD-PARTY native view (@react-native-community/slider) driven via the
+          @symbiote/slider native-proxy wrapper. The engine derives the onValueChange event and
+          the track/thumb tint processors from the library's own ViewConfig at runtime. Drag it:
+          the value updates live; the colored track proves color derivation. */}
       <View style={styles.sectionTight}>
         <Text style={styles.switchLabel}>
           {`volume · ${Math.round(volume * 100)}%`}

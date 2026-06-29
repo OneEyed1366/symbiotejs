@@ -51,6 +51,9 @@ import {
   Share,
   type ISymbioteEvent,
 } from '@symbiote/vue'
+// A third-party native view via symbiote's own wrapper (not the library's React component); the
+// engine derives RNCSlider's events + tint processors from its ViewConfig. Same wrapper as React.
+import { Slider } from '@symbiote/slider/vue'
 
 import AnimatedDemo from './components/AnimatedDemo.vue'
 import AnimatedParityDemo from './components/AnimatedParityDemo.vue'
@@ -84,6 +87,7 @@ function nativeNumber(event: ISymbioteEvent, key: string): number {
 const count = ref(0)
 const name = ref('')
 const spinning = ref(true)
+const volume = ref(0.5)
 const modalVisible = ref(false)
 const refreshing = ref(false)
 const refreshes = ref(0)
@@ -291,6 +295,7 @@ const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: '#1b2a36' },
   scrollContent: { paddingVertical: 64, paddingHorizontal: 24, alignItems: 'stretch', gap: 28 },
   sectionTight: { gap: 8 },
+  slider: { height: 40, alignSelf: 'stretch' },
   row: { flexDirection: 'row', gap: 12 },
   flex1: { flex: 1 },
   sectionLabel: { color: '#3b5266', fontSize: 13 },
@@ -442,6 +447,25 @@ const styles = StyleSheet.create({
         <Switch testID="spinner-switch" :value="spinning" @value-change="(next) => { spinning = next }" :track-color="{ false: '#334155', true: '#369870' }" />
       </View>
       <ActivityIndicator testID="spinner-indicator" :animating="spinning" color="#42b883" size="large" />
+
+      <!-- Slider: the @react-native-community/slider native view via @symbiote/slider/vue. The
+           engine derives its events + tint processors from the library's ViewConfig; same wrapper
+           backs the React canary. -->
+      <View :style="styles.sectionTight">
+        <Text :style="styles.switchLabel">{{ `volume · ${Math.round(volume * 100)}%` }}</Text>
+        <Slider
+          testID="volume-slider"
+          :value="volume"
+          @value-change="(next) => { volume = next }"
+          :minimum-value="0"
+          :maximum-value="1"
+          :step="0.01"
+          minimum-track-tint-color="#42b883"
+          maximum-track-tint-color="#334155"
+          thumb-tint-color="#ffffff"
+          :style="styles.slider"
+        />
+      </View>
 
       <!-- Animated: JS driver vs native driver, side by side -->
       <AnimatedDemo />

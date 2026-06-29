@@ -13,6 +13,7 @@ export default defineConfig({
     include: [
       'core/**/src/**/*.test.{ts,tsx}',
       'adapters/**/src/**/*.test.{ts,tsx}',
+      'packages/**/src/**/*.test.{ts,tsx}',
       'examples/*/**/*.test.{ts,tsx}',
     ],
     // `**/e2e/**` keeps the Detox on-device suite (jest, decision 0025) out of the vitest run.

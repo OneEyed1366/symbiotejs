@@ -93,6 +93,10 @@ export type {
 
 export type { IViewStyle, ITextStyle, IFlexAlign, IFlexJustify } from './utils/styles';
 export { mount, unmount } from './render';
+// descriptorToReact: the @symbiote/components Descriptor → React.createElement bridge. Exported so
+// an external wrapper package (e.g. @symbiote/slider/react over a third-party native view) can map
+// a shared render fn's Descriptor onto React elements through the SAME bridge the adapter uses.
+export { descriptorToReact } from './descriptor-to-react';
 export { findNodeHandle } from './host-instance';
 export type { IHostInstance } from './host-instance';
 // AppRegistry: RN's app entry point over `mount`. setHostRegistrar wires RN's own

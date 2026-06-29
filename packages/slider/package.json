@@ -1,0 +1,69 @@
+{
+  "name": "@symbiote/slider",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "main": "src/core/index.ts",
+  "module": "src/core/index.ts",
+  "types": "src/core/index.ts",
+  "exports": {
+    ".": "./src/core/index.ts",
+    "./vue": "./src/vue/index.ts",
+    "./react": "./src/react/index.ts"
+  },
+  "codegenConfig": {
+    "name": "RNCSlider",
+    "type": "components",
+    "jsSrcsDir": "node_modules/@react-native-community/slider/src",
+    "android": {
+      "javaPackageName": "com.reactnativecommunity.slider"
+    },
+    "ios": {
+      "componentProvider": {
+        "RNCSlider": "RNCSliderComponentView"
+      }
+    }
+  },
+  "scripts": {
+    "typecheck": "tsc --build",
+    "format": "prettier --write \"src/**/*.{ts,tsx}\""
+  },
+  "dependencies": {
+    "@react-native-community/slider": "catalog:",
+    "@symbiote/components": "workspace:*",
+    "@symbiote/engine": "workspace:*"
+  },
+  "peerDependencies": {
+    "@symbiote/react": "workspace:*",
+    "@symbiote/vue": "workspace:*",
+    "@vue/runtime-core": "^3.5.13",
+    "react": ">=19.0.0",
+    "react-native": ">=0.86",
+    "vue": ">=3.5.0"
+  },
+  "peerDependenciesMeta": {
+    "@symbiote/react": {
+      "optional": true
+    },
+    "@symbiote/vue": {
+      "optional": true
+    },
+    "@vue/runtime-core": {
+      "optional": true
+    },
+    "react": {
+      "optional": true
+    },
+    "vue": {
+      "optional": true
+    }
+  },
+  "devDependencies": {
+    "@symbiote/react": "workspace:*",
+    "@symbiote/test-utils": "workspace:*",
+    "@symbiote/vue": "workspace:*",
+    "@types/react": "catalog:",
+    "@vue/runtime-core": "catalog:",
+    "react": "catalog:"
+  }
+}

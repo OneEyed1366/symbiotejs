@@ -56,6 +56,11 @@ import {
   type IFlatListHandle,
   type ISection,
 } from '@symbiote/vue'
+// A third-party native view (@react-native-community/slider) driven through symbiote's own
+// wrapper — NOT the library's React component (which uses hooks and throws under Vue's null
+// dispatcher). The engine derives RNCSlider's events + tint processors from the library's
+// ViewConfig; the same wrapper backs the React canary. App code names only @symbiote/*.
+import { Slider } from '@symbiote/slider/vue'
 
 const CHIP_WIDTH = 72
 const CHIP_GAP = 12
@@ -780,6 +785,7 @@ const App = defineComponent({
     const count = ref(0)
     const name = ref('')
     const spinning = ref(true)
+    const volume = ref(0.5)
     const modalVisible = ref(false)
     const refreshing = ref(false)
     const refreshes = ref(0)
@@ -1047,6 +1053,27 @@ const App = defineComponent({
           />
         </View>
         <ActivityIndicator testID="spinner-indicator" animating={spinning.value} color="#42b883" size="large" />
+
+        {/* Slider: the @react-native-community/slider native view via @symbiote/slider/vue. Drag
+            it — onValueChange streams live; the colored track proves the engine ran the tint
+            processors it derived from the library's ViewConfig. Same wrapper as the React canary. */}
+        <View style={styles.sectionTight}>
+          <Text style={styles.switchLabel}>
+            {`volume · ${Math.round(volume.value * 100)}%`}
+          </Text>
+          <Slider
+            testID="volume-slider"
+            value={volume.value}
+            onValueChange={(next: number) => { volume.value = next }}
+            minimumValue={0}
+            maximumValue={1}
+            step={0.01}
+            minimumTrackTintColor="#42b883"
+            maximumTrackTintColor="#334155"
+            thumbTintColor="#ffffff"
+            style={styles.slider}
+          />
+        </View>
 
         {/* Animated: JS driver vs native driver, side by side */}
         <AnimatedDemo />
@@ -1317,6 +1344,7 @@ const styles = StyleSheet.create({
   scrollContent: { paddingVertical: 64, paddingHorizontal: 24, alignItems: 'stretch', gap: 28 },
   section: { gap: 12 },
   sectionTight: { gap: 8 },
+  slider: { height: 40, alignSelf: 'stretch' },
   row: { flexDirection: 'row', gap: 12 },
   rowTight: { flexDirection: 'row', gap: 8 },
   flex1: { flex: 1 },

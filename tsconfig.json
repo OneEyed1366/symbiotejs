@@ -4,6 +4,7 @@
     { "path": "core/engine" },
     { "path": "core/components" },
     { "path": "adapters/react" },
-    { "path": "adapters/vue" }
+    { "path": "adapters/vue" },
+    { "path": "packages/slider" }
   ]
 }
