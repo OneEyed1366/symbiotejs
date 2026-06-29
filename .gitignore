@@ -17,5 +17,8 @@ DerivedData/
 # misc
 .DS_Store
 
+# raw simulator screen recordings — convert to an optimized gif under assets/ instead
+*.mov
+
 # hidden folders are local-only (.docs, .claude, .notes, .vendors, …); dotfiles stay tracked
 .*/

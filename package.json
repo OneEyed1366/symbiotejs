@@ -9,9 +9,26 @@
   },
   "scripts": {
     "typecheck": "tsc --build",
-    "typecheck:watch": "tsc --build --watch"
+    "typecheck:watch": "tsc --build --watch",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "format": "prettier --write \"{core,adapters,packages}/**/*.{ts,tsx,js,json}\" \"*.{ts,json}\"",
+    "format:check": "prettier --check \"{core,adapters,packages}/**/*.{ts,tsx,js,json}\" \"*.{ts,json}\"",
+    "lint": "eslint \"{core,adapters,packages}/**/*.{ts,tsx}\"",
+    "lint:fix": "eslint --fix \"{core,adapters,packages}/**/*.{ts,tsx}\"",
+    "prepare": "husky"
   },
   "devDependencies": {
-    "typescript": "^5.7.2"
+    "@eslint/js": "^10.0.1",
+    "eslint": "^10.6.0",
+    "eslint-config-prettier": "^10.1.8",
+    "eslint-plugin-react-hooks": "^7.1.1",
+    "globals": "^17.7.0",
+    "husky": "^9.1.7",
+    "lint-staged": "^17.0.8",
+    "prettier": "^3.9.1",
+    "typescript": "^5.7.2",
+    "typescript-eslint": "^8.62.0",
+    "vitest": "^4.1.9"
   }
 }
