@@ -18,6 +18,35 @@ function inlineDebugFlag({ types: t }) {
   };
 }
 
+// The RN preset's dev React-JSX transform injects __self={this} and __source={...} on every
+// JSXElement. Under React they are inert dev annotations, but @vue/babel-plugin-jsx copies them
+// verbatim into the Vue vnode's PROPS — and at module scope `this` is the Hermes global HostObject.
+// Any Vue dev warn then formats that prop for its component trace, the formatter reads
+// Symbol.toStringTag off the HostObject, that throws, and the throw unwinds the whole mount → blank
+// screen. Strip both attributes on JSXOpeningElement exit: the self/source plugins add them on enter
+// (so they exist by exit), and the Vue plugin reads attributes on JSXElement exit, which fires after
+// this child-level exit — so the props never carry them.
+function stripReactJsxDevAttrs() {
+  const DEV_ATTRS = new Set(['__self', '__source']);
+  return {
+    name: 'strip-react-jsx-dev-attrs',
+    visitor: {
+      JSXOpeningElement: {
+        exit(path) {
+          path.node.attributes = path.node.attributes.filter(
+            attr =>
+              !(
+                attr.type === 'JSXAttribute' &&
+                attr.name.type === 'JSXIdentifier' &&
+                DEV_ATTRS.has(attr.name.name)
+              ),
+          );
+        },
+      },
+    },
+  };
+}
+
 module.exports = {
   presets: ['module:@react-native/babel-preset'],
   // @vue/babel-plugin-jsx is listed FIRST so it runs before the RN preset's React-JSX
@@ -25,5 +54,5 @@ module.exports = {
   // JSXElement into a @vue/runtime-core createVNode call, leaving no JSX for the React
   // transform to touch (it no-ops). The helper imports it injects come `from 'vue'`, which
   // metro.config.js aliases to @vue/runtime-core, the one Vue runtime the adapter renders on.
-  plugins: ['@vue/babel-plugin-jsx', inlineDebugFlag],
+  plugins: ['@vue/babel-plugin-jsx', stripReactJsxDevAttrs, inlineDebugFlag],
 };
