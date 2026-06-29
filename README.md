@@ -4,9 +4,9 @@
 
 ### Want to ship a real native iOS/Android app, but you don't write React? Today you can't.
 
-**Alpha** · iOS + Android · one native core, N framework adapters
+**Beta** · iOS + Android · React + Vue · one native core, N framework adapters
 
-[Architecture](#how-it-works) · [Design decisions](#design-decisions) · [Milestones](#milestones) · [Prior art](https://github.com/OneEyed1366/wolf-tui)
+[Architecture](#how-it-works) · [Testing](#testing) · [Design decisions](#design-decisions) · [Milestones](#milestones) · [Prior art](https://github.com/OneEyed1366/wolf-tui)
 
 </div>
 
@@ -141,18 +141,43 @@ export default function App() {
 That tree paints real native views, and the tap re-commits through `@symbiote/engine` into
 Fabric — no React Native renderer in the path.
 
+**The same app, in Vue.** The Vue canary reaches the *same* `registerRunnable` seam — only the
+adapter changes. Its entry hands the `rootTag` to `mount` from `@symbiote/vue`, which drives the
+engine through `@vue/runtime-core`'s `createRenderer`; RN's renderer is never in the path here
+either:
+
+```js
+// examples/vue-tsx/index.js — the Vue canary entry (same seam, different adapter)
+import { AppRegistry as RNAppRegistry } from 'react-native';
+import { mount } from '@symbiote/vue';
+import App from './App';
+import { name as appName } from './app.json';
+
+// registerRunnable (not registerComponent): RN stores a raw mount callback and never
+// renders it with its own renderer. We mount the Vue app onto the surface's rootTag.
+RNAppRegistry.registerRunnable(appName, ({ rootTag }) => {
+  mount(rootTag, App);
+});
+```
+
+The full canary exists in two Vue flavors — [`examples/vue-tsx`](./examples/vue-tsx) (TSX) and
+[`examples/vue-sfc`](./examples/vue-sfc) (single-file components) — both rendering the same
+primitives, runtime modules, `Animated`, gestures, and lists as React.
+
 ---
 
 ## Status
 
 > [!WARNING]
-> **Alpha. Not published to npm, no stable API yet.** The architecture is proven: React Native's
-> renderer is extracted and the React adapter drives the framework-agnostic core on iOS + Android,
-> with RN's own renderer never in the path — the canary runs green on both. iOS stays the
-> reference surface (most real-hardware time, widest prop-edge coverage). It is not yet a product
-> you can ship a real app on — APIs will still move, the long-tail prop surface is hardening, and
-> the `create-symbiote` scaffolder doesn't exist yet. **Vue ([M3](#milestones)) is next:** a
-> second framework on the same untouched core, proving the renderer is genuinely framework-agnostic.
+> **Beta. Not published to npm, no stable API yet.** The thesis is now proven *twice over*: React
+> Native's renderer is extracted, and **two** frameworks — React and Vue 3 — drive the same untouched
+> framework-agnostic core on iOS + Android, with RN's own renderer never in the path. The Vue canary
+> ([M3](#milestones) / R4) renders the same surface as the React one — a second, non-React,
+> mutation-oriented framework on the validated core, which is the proof the renderer is genuinely
+> framework-agnostic. It is not yet a product you can ship a real app on — APIs will still move, the
+> long-tail prop surface is hardening, automated device coverage is just coming online, and the
+> `create-symbiote` scaffolder doesn't exist yet. iOS stays the reference surface (most real-hardware
+> time, widest prop-edge coverage); Android is at canary parity.
 
 **Done:** the native pipe, bootstrap, and `@symbiote/engine`'s mutation→clone-on-write engine
 are proven on a real iOS 26 simulator via the React canary (R1 + R2 + R3 — decision
@@ -198,6 +223,19 @@ branch. iOS stays the reference surface (more real-hardware time, wider prop-edg
 `ActionSheetIOS` is iOS-only by design, and `Vibration` needs the app to declare the `VIBRATE`
 permission (RN's standard requirement, owned by the future scaffolder).
 
+**Vue — the same canary, on the same core (M3 / R4).** Vue 3 drives `@symbiote/engine` through
+`@vue/runtime-core`'s `createRenderer` + a nodeOps reconciler — RN's own renderer still never in the
+path. Two example apps render the full canary surface: [`examples/vue-tsx`](./examples/vue-tsx)
+(JSX/TSX authoring) and [`examples/vue-sfc`](./examples/vue-sfc) (single-file components). Both reach
+the same primitives, runtime modules, `Animated` on both drivers, gestures, accessibility, and the
+`VirtualizedList` family as React — the component logic is written **once** in `@symbiote/components`
+and both adapters inherit it (so parity is structural, not hand-copied). The one deliberate gap is
+third-party *React component* packages such as `@react-native-community/slider`: their body calls
+React hooks off the React dispatcher, so they run only under the React adapter until symbiote ships a
+thin per-component wrapper over the native view (the `<third_party_rn_packages_are_react_only>`
+invariant). Vue has had the most hands-on time on the iOS simulator; the Android projects and e2e
+harness are wired and at parity intent.
+
 **The bar for "done" is the canary, not a percentage.** [`examples/react/App.tsx`](./examples/react/App.tsx)
 is the working spec — it exercises the real surface (every primitive, the runtime modules,
 `Animated` on both drivers, gestures, a11y, a third-party native view) and it runs green on
@@ -209,6 +247,30 @@ tracked and fixed when a real screen needs them.
 
 **In progress:** widening the canary's surface (long-tail components and prop edges) and
 bringing Android fully level with the iOS reference.
+
+---
+
+## Testing
+
+symbiote never forks the native core, so a symbiote app **is** a stock React Native app underneath.
+That has a quiet payoff: **any tool that hooks RN's internals works on symbiote unchanged — for every
+adapter, for free.** We didn't build a test framework; we inherited RN's. The same lever that lets a
+non-React renderer drive Fabric lets RN's testing, debugging, and native-module ecosystem come along
+without per-framework reinvention.
+
+- **Headless — `vitest`.** Colocated unit + smoke tests drive the engine against a fake
+  `nativeFabricUIManager` slot (`installFabric`) and read the committed Fabric props back — the real
+  commit path, no simulator, mirroring RN's own Fantom approach. ~500 tests run in Node in seconds,
+  and because the engine and `@symbiote/components` are the shared layer, one suite covers the logic
+  every adapter rides on. `pnpm test` at the workspace root.
+- **On-device — `Detox`.** End-to-end user-journey tests run against the real app on a
+  simulator/emulator. One `canary-journeys` spec is mirrored across `examples/react`,
+  `examples/vue-tsx`, and `examples/vue-sfc` — the *same* journeys, proving each adapter paints and
+  responds identically on device. Detox attaches with zero symbiote-specific glue, because to Detox
+  it is just an RN app (`e2e:build:ios` / `e2e:test:ios`, and the `android` equivalents).
+
+This is the strategic reason testing was worth wiring now: it is the same bet as the renderer
+itself — stay on RN's internals, and the whole RN ecosystem is yours across every framework.
 
 ---
 
@@ -236,8 +298,11 @@ that each further adapter inherits as it lands.
 | ↳ M2.4 | Third-party native views | `@react-native-community/slider` via runtime ViewConfig derivation — zero symbiote metadata | ✅ done |
 | ↳ M2.5 | Gestures & events | responder lifecycle, capture→bubble phases, `Pressable`/`Touchable*`/`PanResponder`, a11y prop layer | ✅ done |
 | ↳ M2.6 | Long-tail prop edges | continuous hardening of remaining components and per-prop edges as the canary surface widens — not a gate on M2 | 🔁 ongoing |
-| **M3** | Vue adapter | `createRenderer` + nodeOps on the validated core — first non-React framework (R4) | ⏳ next |
-| **M4** | Angular adapter | a second mutation-oriented framework, template/renderer seam | ⏳ planned |
+| **M3** | **Vue adapter (R4)** | `createRenderer` + nodeOps on the validated core — first non-React framework, same canary surface | ✅ done |
+| ↳ M3.1 | Vue canary parity | `examples/vue-tsx` (TSX) + `examples/vue-sfc` (SFC) render the React canary's surface, minus React-only third-party components | ✅ done |
+| ↳ M3.2 | Shared component layer | `VirtualizedList` family + component logic extracted to `@symbiote/components`, inherited by React **and** Vue | ✅ done |
+| ↳ M3.3 | Test harness per adapter | colocated `vitest` (headless, fake Fabric slot) + `Detox` e2e mirrored across all three example apps | ✅ done |
+| **M4** | Angular adapter | a second mutation-oriented framework, template/renderer seam | ⏳ next |
 | **M5** | Svelte adapter | compiled-output framework driving the engine's mutation API | ⏳ planned |
 | **M6** | Solid adapter | fine-grained reactivity driving the engine's mutation API | ⏳ planned |
 | **M7** | Web *(stretch)* | the same trees rendered to the web as a default platform target | 💭 maybe |
@@ -256,15 +321,21 @@ localizable.
 
 ```
 core/
-  engine/      @symbiote/engine  — retained tree + clone-on-write commit engine + events
+  engine/      @symbiote/engine     — retained tree + clone-on-write commit engine + events
+  components/  @symbiote/components  — framework-agnostic component logic (state + render), shared by every adapter
 adapters/
-  react/       @symbiote/react   — react-reconciler host config (mutation mode) + primitives
+  react/       @symbiote/react      — react-reconciler host config (mutation mode) + primitives
+  vue/         @symbiote/vue         — @vue/runtime-core createRenderer + nodeOps over the engine
 packages/
-  android/     @symbiote/android — autolinked native host shims (keyboard, settings) for Android
+  android/     @symbiote/android    — autolinked native host shims (keyboard, settings) for Android
 examples/
-  canary/      stock RN 0.86 app whose entry drives symbiote on the iOS simulator
-  headless/    fake-slot smoke tests — the engine runs green in Node, no simulator
+  react/       stock RN 0.86 app driven by @symbiote/react (the reference canary)
+  vue-tsx/     the same canary in Vue 3, authored in TSX
+  vue-sfc/     the same canary in Vue 3, authored in single-file components
 ```
+
+Tests are **colocated** next to the code they cover (`*.test.ts(x)` for `vitest`, `e2e/` per
+example app for `Detox`) rather than gathered in one directory.
 
 ---
 
@@ -274,16 +345,18 @@ Requires Node ≥ 20 and pnpm 11.
 
 ```bash
 pnpm install
-pnpm typecheck            # tsc --build across the workspace
-DEBUG=1 node examples/headless/<smoke>.tsx   # run a headless smoke (engine, no simulator)
+pnpm typecheck           # tsc --build across the workspace
+pnpm test                # vitest — headless engine/adapter tests against a fake Fabric slot
+DEBUG=1 pnpm test        # same, with diagnostic logs on
 ```
 
-To run the canary on the iOS simulator, `examples/react` is a stock React Native 0.86 app
-(driven by symbiote via a registered runnable). Requires Node ≥ 22 and the
+To run a canary on a simulator, each `examples/*` is a stock React Native 0.86 app (driven by
+symbiote via a registered runnable). `examples/react` is the reference; `examples/vue-tsx` and
+`examples/vue-sfc` run **identically** — just swap the directory. Requires Node ≥ 22 and the
 [RN environment setup](https://reactnative.dev/docs/set-up-your-environment) (Xcode, CocoaPods):
 
 ```bash
-cd examples/react
+cd examples/react              # or examples/vue-tsx, examples/vue-sfc
 npm install
 bundle install                 # first time only — installs CocoaPods itself
 bundle exec pod install        # (cd ios && pod install) — fetch native pods
@@ -294,6 +367,14 @@ DEBUG=1 npm start --reset-cache
 # terminal 2 — build + launch on a simulator/emulator
 npm run ios                    # iOS simulator (full surface)
 npm run android                # Android emulator (manual-links @symbiote/android)
+```
+
+End-to-end journeys run through Detox against the built app (the *same* spec in every example):
+
+```bash
+npm run e2e:build:ios          # build the app for Detox (once per native change)
+npm run e2e:test:ios           # run the canary journeys on the iOS simulator
+# …or the android equivalents: e2e:build:android / e2e:test:android
 ```
 
 Press <kbd>R</kbd> in the simulator to reload. Because `DEBUG` is Babel-inlined into the
@@ -331,10 +412,15 @@ its native C++/Obj-C++/JNI sources are never touched. symbiote replaces only the
 it to validate the native pipe and the commit engine first means that when Vue/Svelte/Solid/
 Angular break, the failure isolates to *that adapter* — not the native stack underneath it.
 
-**Can I use it today?** Not for a real app yet — it's alpha: no stable API, no `create-symbiote`
-scaffolder. The architecture is proven, though — the React adapter drives the agnostic core on
-iOS + Android with RN's renderer never in the path. You can read the architecture, run the
-headless smokes, drive the canary, and follow the milestones.
+**Can I use it today?** Not for a real app yet — it's beta: no stable API, no `create-symbiote`
+scaffolder. The thesis is proven, though — **two** frameworks (React and Vue 3) drive the agnostic
+core on iOS + Android with RN's renderer never in the path. You can read the architecture, run the
+`vitest` suite and the `Detox` journeys, drive any of the three canaries, and follow the milestones.
+
+**Do I have to write tests from scratch?** No — and that's a feature of the design. Because a
+symbiote app is a stock RN app underneath, RN's testing tools apply unchanged: a headless `vitest`
+harness against a fake Fabric slot and on-device `Detox` journeys, both already wired across every
+example app. See [Testing](#testing).
 
 ---
 
