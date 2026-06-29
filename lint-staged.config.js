@@ -7,9 +7,13 @@
 //
 // examples/* are linted+formatted by their own @react-native toolchain, so the eslint
 // rule below scopes to the library packages only; prettier still tidies root configs.
+//
+// Touching any manifest or the catalog → syncpack guards that no literal version
+// slipped past the pnpm catalog (it scans the whole workspace, so args are ignored).
 export default {
   '{core,adapters,packages}/**/*.{ts,tsx}': ['eslint --fix', 'prettier --write'],
   '{core,adapters,packages}/**/*.{js,json}': 'prettier --write',
   '*.{ts,js,json}': 'prettier --write',
   '**/*.{ts,tsx}': () => 'tsc --build',
+  '{**/package.json,pnpm-workspace.yaml}': () => 'syncpack lint',
 };

@@ -16,7 +16,7 @@
   "dependencies": {
     "@symbiote/components": "workspace:*",
     "@symbiote/engine": "workspace:*",
-    "@vue/runtime-core": "^3.5.13"
+    "@vue/runtime-core": "catalog:"
   },
   "peerDependencies": {
     "vue": ">=3.5.0",

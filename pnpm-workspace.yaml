@@ -9,7 +9,86 @@ allowBuilds:
   esbuild: true
 minimumReleaseAgeExclude:
   - prettier@3.9.1
-overrides:
-  # One react copy across the monorepo (matches the canary pin) so the adapter's reconciler
-  # and the app's elements/hooks share one instance — otherwise Vitest hits "Invalid hook call".
+
+# Single source of truth for dependency versions (pnpm catalogs).
+# A package references a version with `catalog:` (default) or `catalog:<name>`
+# instead of a literal, so a bump happens HERE, in one place. The guard that
+# nobody slips a literal version past this file is syncpack (`pnpm deps:check`).
+#
+# peerDependencies are deliberately NOT catalogued — they are compatibility
+# ranges (`>=19.0.0`, `>=0.86`) a consumer satisfies, not a pinned version.
+catalog:
+  # framework runtimes — exactly one copy across the monorepo (the RN/react
+  # singleton the `overrides` below also guards transitively)
   react: 19.2.3
+  react-native: 0.86.0
+  react-reconciler: ^0.33.0
+  '@vue/runtime-core': ^3.5.13
+  '@vue/compiler-sfc': ^3.5.13
+  '@vue/babel-plugin-jsx': ^1.5.0
+  '@angular/core': ^22
+  '@angular/compiler': ^22
+  '@angular/compiler-cli': ^22
+
+  # type packages
+  '@types/react': ^19.2.0
+  '@types/react-reconciler': ^0.32.2
+  '@types/jest': ^29.5.12
+  '@types/node': ^26.0.0
+
+  # workspace tooling (builds/lints/tests the library packages)
+  typescript: ^5.8.3
+  vitest: ^4.1.9
+  eslint: ^10.6.0
+  prettier: ^3.9.1
+  '@eslint/js': ^10.0.1
+  eslint-config-prettier: ^10.1.8
+  eslint-plugin-react-hooks: ^7.1.1
+  typescript-eslint: ^8.62.0
+  globals: ^17.7.0
+  husky: ^9.1.7
+  lint-staged: ^17.0.8
+  syncpack: ^15.3.2
+
+  # React Native app toolchain — single-versioned, used only by examples/*
+  '@react-native/babel-preset': 0.86.0
+  '@react-native/metro-config': 0.86.0
+  '@react-native/eslint-config': 0.86.0
+  '@react-native/typescript-config': 0.86.0
+  '@react-native/new-app-screen': 0.86.0
+  '@react-native-community/cli': 20.1.0
+  '@react-native-community/cli-platform-android': 20.1.0
+  '@react-native-community/cli-platform-ios': 20.1.0
+  '@react-native-community/slider': ^5.2.0
+  react-native-safe-area-context: ^5.5.2
+  '@babel/core': ^7.25.2
+  '@babel/preset-env': ^7.25.3
+  '@babel/runtime': ^7.25.0
+  jest: ^29.7.0
+  jest-circus: ^29.7.0
+  ts-jest: ^29.2.5
+  detox: ^20.51.4
+
+catalogs:
+  # Angular 22's compiler requires TypeScript >=6.0 <6.1, while the rest of the
+  # workspace remains on TS 5.x until all packages are ready to move together.
+  angular-app:
+    typescript: ^6.0.0
+
+  # eslint is the ONE dependency that cannot share the workspace version:
+  # @react-native/eslint-config@0.86 peers `eslint ^8 || ^9` (never 10) and the
+  # examples lint through legacy `.eslintrc.js`; eslint 10 no longer reads it
+  # (flat-config only). Collapsing to eslint 10 needs both a flat-config rewrite
+  # of every example AND an eslint-10-capable RN config upstream.
+  # prettier and typescript ARE unified in the default catalog.
+  # RN's config peers `prettier >=2`, so prettier 3 is fine.
+  rn-app:
+    eslint: ^8.19.0
+
+overrides:
+  # One react copy across the monorepo (matches the canary pin) so the adapter's
+  # reconciler and app elements/hooks share one instance — otherwise Vitest hits
+  # "Invalid hook call". `catalog:` keeps this in lock-step with catalog.react.
+  # The catalog handles direct declarations; this override handles transitive
+  # react pulled in by any nested dependency.
+  react: 'catalog:'

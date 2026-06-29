@@ -1,0 +1,19 @@
+{
+  "versionGroups": [
+    {
+      "label": "Local @symbiote/* packages use the pnpm workspace protocol, not the catalog",
+      "dependencies": ["@symbiote/**"],
+      "isIgnored": true
+    },
+    {
+      "label": "peerDependencies are compatibility ranges, deliberately not catalog-pinned",
+      "dependencyTypes": ["peer"],
+      "isIgnored": true
+    },
+    {
+      "label": "Every prod & dev dependency must resolve through a pnpm catalog (pnpm-workspace.yaml)",
+      "dependencyTypes": ["prod", "dev"],
+      "policy": "catalog"
+    }
+  ]
+}
