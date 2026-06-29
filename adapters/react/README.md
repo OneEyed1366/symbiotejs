@@ -9,6 +9,12 @@ This is the **reference adapter**: the known-good driver used to validate the na
 commit engine before any other framework lands, so a break in Vue/Svelte/Solid isolates to *that*
 adapter, not the core.
 
+<div align="center">
+
+![React driving real native iOS views through symbiote](../../assets/react-demo.gif)
+
+</div>
+
 > New to symbiote? The [root README](../../README.md) has the architecture and the one fact it
 > rests on — React is just *one client* of `nativeFabricUIManager`.
 
