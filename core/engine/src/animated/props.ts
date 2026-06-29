@@ -15,12 +15,24 @@
 import { AnimatedNode, AnimatedWithChildren } from './graph';
 import { setNativeProps, getNativeTag } from '../commit';
 import { isSymbioteNode, type ISymbioteNode } from '../node';
+import { registerPostCommit } from '../post-commit';
 import { nativeAnimated, type INativeNodeConfig } from './native/native-animated';
 import { AnimatedStyle } from './style';
 
 function isAnimatedNode(value: unknown): value is AnimatedNode {
   return value instanceof AnimatedNode;
 }
+
+// Leaves that went native before their view's Fabric tag existed. Under an async-batched
+// commit (Vue/Svelte schedule completeRoot on a microtask) a native animation started in
+// onMounted cascades to the leaf BEFORE the first commit assigns the tag, so connectToView
+// finds no tag. We hold the leaf here and retry it once each commit assigns tags — the
+// third connect trigger alongside setNativeView and __makeNative. React commits
+// synchronously, so its leaves never land here.
+const pendingViewConnects = new Set<AnimatedProps>();
+registerPostCommit(() => {
+  for (const leaf of pendingViewConnects) leaf.retryViewConnect();
+});
 
 // Split the incoming props into (1) the AnimatedNodes to subscribe to and (2) the
 // props map with `style` wrapped in an AnimatedStyle when it holds animated values.
@@ -120,6 +132,7 @@ export class AnimatedProps extends AnimatedWithChildren {
   }
 
   override __detach(): void {
+    pendingViewConnects.delete(this);
     if (this.__isNative()) {
       // Reset the view's animated props to their defaults (native no longer
       // tracks them) and unbind, before the graph drops the native node.
@@ -144,9 +157,21 @@ export class AnimatedProps extends AnimatedWithChildren {
   private connectToView(): void {
     if (this.target === null || this.connectedViewTag !== null) return;
     const viewTag = getNativeTag(this.target);
-    if (viewTag === undefined) return;
+    if (viewTag === undefined) {
+      // The view isn't committed yet (async-batched commit): retry after the commit
+      // that assigns its tag, via the post-commit hook.
+      pendingViewConnects.add(this);
+      return;
+    }
+    pendingViewConnects.delete(this);
     nativeAnimated.connectAnimatedNodeToView(this.__getNativeTag(), viewTag);
     this.connectedViewTag = viewTag;
+  }
+
+  // Post-commit retry of a connect deferred because the view tag wasn't assigned yet.
+  // No-op once connected (connectToView short-circuits on connectedViewTag).
+  retryViewConnect(): void {
+    this.connectToView();
   }
 
   private disconnectFromView(): void {

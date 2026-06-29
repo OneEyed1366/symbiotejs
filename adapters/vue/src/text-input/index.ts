@@ -13,7 +13,14 @@
 // Android's folly::dynamic. The imperative module (blurTextInput / setInput*) is imported from
 // @symbiote/engine, the same framework-agnostic singleton both adapters share.
 
-import { defineComponent, ref, shallowRef, watch, type SetupContext } from '@vue/runtime-core';
+import {
+  defineComponent,
+  onBeforeUnmount,
+  ref,
+  shallowRef,
+  watch,
+  type SetupContext,
+} from '@vue/runtime-core';
 import {
   resolveAccessibilityProps,
   resolveTextInputProps,
@@ -33,11 +40,12 @@ import {
   blurTextInput,
   setInputFocused,
   setInputBlurred,
+  whenCommitted,
   type ISymbioteEvent,
   type ISymbioteNode,
 } from '@symbiote/engine';
-import { descriptorToVue } from './descriptor-to-vue';
-import { normalizeVueAttrs } from './normalize-attrs';
+import { descriptorToVue } from '../descriptor-to-vue';
+import { normalizeVueAttrs } from '../normalize-attrs';
 
 export type { ITextInputProps, ITextInputHandle } from '@symbiote/components';
 
@@ -202,18 +210,23 @@ export const TextInput = defineComponent({
       { flush: 'post' },
     );
 
-    // autoFocus is driven in JS, not as a native prop: when the node first commits, command `focus`
-    // down once (RN does the same via TextInputState.focusInput). flush:'post' so the node exists.
+    // autoFocus is driven in JS, not as a native prop: once the node first commits, command `focus`
+    // down once (RN does the same via TextInputState.focusInput). The watch fires when nodeRef is
+    // set (mount), but under Vue's async-batched commit the node has no Fabric tag yet at post-flush,
+    // so the focus command would be skipped with no retry. whenCommitted defers it to the commit that
+    // assigns the tag. Cancelled on unmount so an un-committed pending focus can't leak.
+    let cancelAutoFocus: (() => void) | undefined;
     watch(
       nodeRef,
       node => {
         if (autoFocused || node === null || rawAttrs.autoFocus !== true) return;
         autoFocused = true;
         dlog('TextInput autoFocus -> focus command');
-        dispatchViewCommand(node, 'focus', []);
+        cancelAutoFocus = whenCommitted(node, () => dispatchViewCommand(node, 'focus', []));
       },
       { flush: 'post' },
     );
+    onBeforeUnmount(() => cancelAutoFocus?.());
 
     // The imperative API RN exposes on the ref. The methods read nodeRef.value / the count LIVE,
     // so no stale capture: the Vue twin of React's useImperativeHandle. focus/blur drive native

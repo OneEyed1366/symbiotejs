@@ -15,7 +15,7 @@
 //     the view with zero JS per event.
 
 import { dlog } from '../debug';
-import { getNativeTag } from '../commit';
+import { getNativeTag, whenCommitted } from '../commit';
 import { isSymbioteNode, type ISymbioteNode } from '../node';
 import { AnimatedNode, flushValue } from './graph';
 import { isNativeAnimatedAvailable, nativeAnimated } from './native/native-animated';
@@ -219,15 +219,25 @@ export function attachNativeEvent(
   eventName: string,
   argMapping: readonly IMapping[],
 ): INativeEventAttachment {
-  const viewTag = getNativeTag(node);
   const animatedEvent = new AnimatedEvent(argMapping);
-  if (viewTag !== undefined) {
+  let attachedTag: number | undefined;
+
+  // Bind once the node is committed: now if it already has a Fabric tag, else after the commit that
+  // assigns it. Vue/Svelte batch commits on a microtask, so the adapter can wire this — e.g. the
+  // sticky-header scroll — before the tag exists; whenCommitted defers instead of silently binding
+  // nothing. React commits synchronously and binds on the first try.
+  const cancel = whenCommitted(node, () => {
+    const viewTag = getNativeTag(node);
+    if (viewTag === undefined) return;
     dlog(`attachNativeEvent: ${eventName} -> view=${viewTag}`);
     animatedEvent.__attach(viewTag, eventName);
-  }
+    attachedTag = viewTag;
+  });
+
   return {
     detach(): void {
-      if (viewTag !== undefined) animatedEvent.__detach(viewTag, eventName);
+      cancel();
+      if (attachedTag !== undefined) animatedEvent.__detach(attachedTag, eventName);
     },
   };
 }
@@ -237,8 +247,8 @@ export function attachNativeEvent(
 // raw mapping for ScrollView's internal sticky value), this REUSES the caller's handler,
 // so createAnimatedComponent can offload `onScroll={Animated.event(…, {useNativeDriver})}`
 // to the UI thread, and the __makeNative cascade carries the bound interpolations/props
-// native with it. Returns undefined (caller keeps the JS path) when the prop is not a
-// native event handler, or the node has no committed tag yet.
+// native with it. Returns undefined (caller keeps the JS path) when the prop is not a native
+// event handler; if it IS but the node has no tag yet, the bind defers to the commit (same race).
 export function attachNativeEventHandler(
   node: unknown,
   eventName: string,
@@ -249,10 +259,22 @@ export function attachNativeEventHandler(
   if (typeof accessor !== 'function') return undefined;
   const animatedEvent: unknown = accessor.call(handler);
   if (!(animatedEvent instanceof AnimatedEvent) || !animatedEvent.__isNative()) return undefined;
-  const viewTag = getNativeTag(node);
-  if (viewTag === undefined) return undefined;
-  animatedEvent.__attach(viewTag, eventName);
-  return { detach: () => animatedEvent.__detach(viewTag, eventName) };
+  const event = animatedEvent;
+  let attachedTag: number | undefined;
+
+  const cancel = whenCommitted(node, () => {
+    const viewTag = getNativeTag(node);
+    if (viewTag === undefined) return;
+    event.__attach(viewTag, eventName);
+    attachedTag = viewTag;
+  });
+
+  return {
+    detach: (): void => {
+      cancel();
+      if (attachedTag !== undefined) event.__detach(attachedTag, eventName);
+    },
+  };
 }
 
 // Combine an existing event handler with an extra listener (RN
