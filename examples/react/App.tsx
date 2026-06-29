@@ -134,6 +134,7 @@ function AnimatedDemo() {
       {/* native-driven perpetual pulse */}
       <View style={styles.pulseFrame}>
         <Animated.View
+          testID="pulse-dot"
           style={[
             styles.pulseDot,
             { opacity: pulseOpacity, transform: [{ scale: pulseScale }] },
@@ -144,10 +145,12 @@ function AnimatedDemo() {
       {/* JS-driven slide: a commit per frame */}
       <View style={styles.slideTrack}>
         <Animated.View
+          testID="slide-js-dot"
           style={[styles.jsSlideDot, { transform: [{ translateX: jsX }] }]}
         />
       </View>
       <Button
+        testID="slide-js-btn"
         title="Slide (JS driver)"
         onPress={() => slide(jsSlide, jsForward, setJsForward, false)}
         color="#f6ad55"
@@ -156,10 +159,12 @@ function AnimatedDemo() {
       {/* native-driven slide: offloaded, zero JS frames */}
       <View style={styles.slideTrack}>
         <Animated.View
+          testID="slide-native-dot"
           style={[styles.nativeSlideDot, { transform: [{ translateX: nativeX }] }]}
         />
       </View>
       <Button
+        testID="slide-native-btn"
         title="Slide (native driver)"
         onPress={() => slide(nativeSlide, nativeForward, setNativeForward, true)}
         color="#68d391"
@@ -259,10 +264,11 @@ function AnimatedParityDemo() {
       </View>
       <View style={styles.trackRow}>
         <Animated.View
+          testID="follow-dot"
           style={[styles.followDot, { transform: [{ translateX: follow }] }]}
         />
       </View>
-      <Button title="Move target (follower chases)" onPress={moveLead} color="#4299e1" />
+      <Button testID="track-btn" title="Move target (follower chases)" onPress={moveLead} color="#4299e1" />
 
       {/* diffClamp collapsing header */}
       <View style={styles.collapseFrame}>
@@ -362,10 +368,10 @@ function NativeModulesDemo() {
       />
 
       {/* Settings: counter persisted to NSUserDefaults, survives a relaunch */}
-      <Text style={styles.infoText}>
+      <Text testID="persist-count" style={styles.infoText}>
         {`persisted taps: ${persisted} · survives relaunch`}
       </Text>
-      <Button title="Persist a tap" onPress={persistTap} color="#7fb5ff" />
+      <Button testID="persist-btn" title="Persist a tap" onPress={persistTap} color="#7fb5ff" />
 
       {/* Image statics: the rendered asset + getSize's measurement of it */}
       <View style={styles.rowAlignCenter}>
@@ -373,7 +379,7 @@ function NativeModulesDemo() {
           source={{ uri: LOGO_URI }}
           style={styles.logoThumb}
         />
-        <Text style={styles.infoTextFlex}>
+        <Text testID="logo-size" style={styles.infoTextFlex}>
           {`logo size: ${imageSize}`}
         </Text>
       </View>
@@ -425,15 +431,16 @@ function RefApiDemo() {
       </Text>
       <View
         ref={boxRef}
+        testID="ref-box"
         style={styles.refBox}>
         <Text style={styles.refBoxText}>
           {`native tag ${tag ?? '—'}`}
         </Text>
       </View>
-      <Text style={styles.infoText}>{`frame: ${frame}`}</Text>
+      <Text testID="measure-frame" style={styles.infoText}>{`frame: ${frame}`}</Text>
       <View style={styles.row}>
         <View style={styles.flex1}>
-          <Button title="Measure" onPress={onMeasure} color="#7fb5ff" />
+          <Button testID="measure-btn" title="Measure" onPress={onMeasure} color="#7fb5ff" />
         </View>
         <View style={styles.flex1}>
           <Button title="Flash (setNativeProps)" onPress={onFlash} color="#f6ad55" />
@@ -719,6 +726,7 @@ function ParityDemo() {
           one off (nextHeaderLayoutY not yet wired, watch push vs overlap). */}
       <Text style={styles.sectionLabel}>SectionList · sticky (scroll: next header should push prev off)</Text>
       <SectionList
+        testID="sticky-section-list"
         sections={paritySections}
         keyExtractor={item => item.id}
         stickySectionHeadersEnabled
@@ -972,22 +980,24 @@ function App() {
 
       {/* View + press-to-increment */}
       <View
+        testID="counter-card"
         onPress={() => setCount(value => value + 1)}
         style={styles.counterCard}>
-        <Text style={styles.counterText}>
+        <Text testID="counter-value" style={styles.counterText}>
           {`tapped ${count}×`}
         </Text>
       </View>
 
       {/* TextInput + greeting */}
       <TextInput
+        testID="greeting-input"
         value={name}
         onChangeText={setName}
         placeholder="type your name…"
         placeholderTextColor="#41506a"
         style={styles.textInput}
       />
-      <Text style={styles.greeting}>
+      <Text testID="greeting-output" style={styles.greeting}>
         {name ? `Hello, ${name}` : 'Hello, stranger'}
       </Text>
 
@@ -995,12 +1005,13 @@ function App() {
       <View style={styles.switchRow}>
         <Text style={styles.switchLabel}>spinner</Text>
         <Switch
+          testID="spinner-switch"
           value={spinning}
           onValueChange={setSpinning}
           trackColor={{ false: '#334155', true: '#2b6cb0' }}
         />
       </View>
-      <ActivityIndicator animating={spinning} color="#7fb5ff" size="large" />
+      <ActivityIndicator testID="spinner-indicator" animating={spinning} color="#7fb5ff" size="large" />
 
       {/* Slider: a THIRD-PARTY native view (@react-native-community/slider). symbiote
           ships zero metadata for it: shared derives its onValueChange event and the
@@ -1049,7 +1060,7 @@ function App() {
       <ParityDemo />
 
       {/* Button opens a Modal */}
-      <Button title="Open modal" onPress={() => setModalVisible(true)} color="#7fb5ff" />
+      <Button testID="modal-open" title="Open modal" onPress={() => setModalVisible(true)} color="#7fb5ff" />
 
       {/* Pressable card with pressed-state feedback */}
       <Pressable
@@ -1071,6 +1082,7 @@ function App() {
       {/* Horizontal FlatList: real windowing */}
       <Text style={styles.sectionLabel}>FlatList · 24 chips, windowed</Text>
       <FlatList
+        testID="chips-list"
         data={chips}
         horizontal
         keyExtractor={item => item.id}
@@ -1279,14 +1291,14 @@ function App() {
         onRequestClose={() => setModalVisible(false)}>
         {/* transparent modal => paint our own dim layer (the RN pattern) */}
         <View style={styles.modalOverlay}>
-          <View style={styles.modalCard}>
+          <View testID="modal-card" style={styles.modalCard}>
             <Text style={styles.modalTitle}>
               It's a Modal
             </Text>
             <Text style={styles.modalBody}>
               Rendered through ModalHostView — its own native window, same Fabric tree.
             </Text>
-            <Button title="Close" onPress={() => setModalVisible(false)} color="#7fb5ff" />
+            <Button testID="modal-close" title="Close" onPress={() => setModalVisible(false)} color="#7fb5ff" />
           </View>
         </View>
       </Modal>

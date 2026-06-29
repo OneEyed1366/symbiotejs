@@ -84,6 +84,14 @@ android {
         targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode 1
         versionName "1.0"
+        // Detox (e2e, decision 0025). DetoxButler (optional ANR/dialog suppressor) is NOT
+        // used: its 1.1.0 needs minSdk 26 and the canary floor is 24 — so the stock Detox
+        // runner drives the tests directly.
+        testBuildType System.getProperty('testBuildType', 'debug')
+        testInstrumentationRunner 'androidx.test.runner.AndroidJUnitRunner'
+        // Detox's AAR ships a `detox` flavor dimension (full/lite); the app declares no
+        // flavors, so it must pick one or the build fails to resolve the dimension.
+        missingDimensionStrategy 'detox', 'full'
     }
     signingConfigs {
         debug {
@@ -116,4 +124,7 @@ dependencies {
     } else {
         implementation jscFlavor
     }
+
+    // Detox e2e (decision 0025) — androidTest-only; absent from the shipped app.
+    androidTestImplementation('com.wix:detox:+')
 }

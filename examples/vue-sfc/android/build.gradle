@@ -1,4 +1,7 @@
 buildscript {
+    // Detox (e2e, decision 0025): rninfo.gradle exposes RN version metadata Detox's AAR needs.
+    // `detox` is a direct devDep of this app, so pnpm symlinks it under ./node_modules.
+    apply from: "../node_modules/detox/android/rninfo.gradle"
     ext {
         buildToolsVersion = "36.0.0"
         minSdkVersion = 24
@@ -15,6 +18,15 @@ buildscript {
         classpath("com.android.tools.build:gradle")
         classpath("com.facebook.react:react-native-gradle-plugin")
         classpath("org.jetbrains.kotlin:kotlin-gradle-plugin")
+    }
+}
+
+allprojects {
+    repositories {
+        google()
+        mavenCentral()
+        // Detox AAR (resolves after `pnpm add -D detox` symlinks ./node_modules/detox).
+        maven { url "$rootDir/../node_modules/detox/Detox-android" }
     }
 }
 
