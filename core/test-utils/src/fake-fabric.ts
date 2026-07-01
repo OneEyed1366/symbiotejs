@@ -3,9 +3,13 @@
 // renderer committed. It replaces the per-file slot the smokes each copy-pasted (×65).
 //
 // Faithful persistent (clone-on-write) semantics, identical to what the engine drives
-// against real Fabric: every clone is a NEW identity; `*NewProps` replaces the payload;
-// the `*Children` variants reset children (the engine re-appends). A persistence bug in
-// the fake is now fixed once, here, for every test, mirroring `clone_on_write_lives_in_engine`.
+// against real Fabric: every clone is a NEW identity; `*NewProps` MERGES the payload onto
+// the previous props (the engine always sends a minimal diff — see `diffProps` in
+// commit.ts — and relies on native Fabric to merge it onto the retained props; a removed
+// key arrives as literal `null` and is kept as `null`, not deleted, so a test can still see
+// "explicitly reset" distinct from "never set"); the `*Children` variants reset children
+// (the engine re-appends). A persistence bug in the fake is now fixed once, here, for every
+// test, mirroring `clone_on_write_lives_in_engine`.
 
 export interface IFakeNode {
   tag: number;
@@ -46,6 +50,16 @@ export interface IFabricRecorder {
   reset(): void;
 }
 
+// Mirrors real Fabric's clone*WithNewProps merge: `diff` is a minimal payload (only changed
+// keys, plus a removed key sent as literal `null` — kept as `null` here, not deleted, so a
+// test can tell "explicitly reset to default" apart from "never set").
+function mergeFabricProps(
+  previous: Record<string, unknown>,
+  diff: Record<string, unknown>,
+): Record<string, unknown> {
+  return { ...previous, ...diff };
+}
+
 export function installFabric(): IFabricRecorder {
   let committed: IFakeNode[] = [];
   const created: IFakeNode[] = [];
@@ -68,13 +82,13 @@ export function installFabric(): IFabricRecorder {
     },
     cloneNodeWithNewProps: (node: IFakeNode, newProps: Record<string, unknown>): IFakeNode => ({
       ...node,
-      props: newProps,
+      props: mergeFabricProps(node.props, newProps),
     }),
     cloneNodeWithNewChildren: (node: IFakeNode): IFakeNode => ({ ...node, children: [] }),
     cloneNodeWithNewChildrenAndProps: (
       node: IFakeNode,
       newProps: Record<string, unknown>,
-    ): IFakeNode => ({ ...node, props: newProps, children: [] }),
+    ): IFakeNode => ({ ...node, props: mergeFabricProps(node.props, newProps), children: [] }),
     createChildSet: (): IFakeNode[] => [],
     appendChild(parent: IFakeNode, child: IFakeNode): IFakeNode {
       parent.children.push(child);
