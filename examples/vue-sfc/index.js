@@ -1,12 +1,11 @@
 /**
  * @format
  *
- * Symbiote Vue canary entry (M3 / R4 on-device proof). We register a RUNNABLE with RN's
- * own AppRegistry, not a component, so the native Fabric host invokes it by app key
- * with the surface's rootTag, and we mount the Vue app via @symbiote/engine. RN's own
- * renderer is never in the path. (The React canary reaches the same registerRunnable seam
- * through @symbiote/react's AppRegistry; the Vue slice has no AppRegistry yet, so we call
- * it directly. It moves into @symbiote/components with the rest of the runtime layer.)
+ * Symbiote Vue canary entry (M3 / R4 on-device proof). Our own AppRegistry (the RN-identical
+ * `registerComponent(appKey, () => App)`) mounts via @symbiote/engine, not React Native's
+ * renderer. setHostRegistrar hands it RN's AppRegistry so the native Fabric host can find our
+ * runnable by app key and call it with the surface's rootTag; our renderer drives
+ * nativeFabricUIManager directly from there — the same entry point the React canary uses.
  */
 
 import {
@@ -20,7 +19,7 @@ import {
   setDeviceEventSource,
   setNativeViewConfigSource,
 } from '@symbiote/engine';
-import { mount } from '@symbiote/vue';
+import { AppRegistry, setHostRegistrar } from '@symbiote/vue';
 import App from './App';
 import { name as appName } from './app.json';
 
@@ -45,9 +44,10 @@ setNativeViewConfigSource(name => {
   }
 });
 
-// Native invokes this runnable by app key with the surface's rootTag; it mounts the Vue
-// app through @symbiote/engine. registerRunnable (not registerComponent) means RN stores
-// a raw mount callback and never renders it with its own renderer.
-RNAppRegistry.registerRunnable(appName, ({ rootTag }) => {
-  mount(rootTag, App);
-});
+// Give our AppRegistry RN's own registrar so the native Fabric host finds our
+// runnable by app key (native drives RN's AppRegistry, not ours).
+setHostRegistrar(RNAppRegistry);
+
+// RN-identical app entry: registerComponent stores a runnable that mounts via
+// @symbiote/engine (not React Native's renderer) and bridges it to the host above.
+AppRegistry.registerComponent(appName, () => App);

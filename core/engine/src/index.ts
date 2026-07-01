@@ -257,6 +257,22 @@ export { Appearance } from './appearance';
 export type { IColorSchemeName, IColorSchemePreference } from './appearance';
 export { AppState } from './app-state';
 export type { IAppStateStatus, IAppStateEvent } from './app-state';
+// AppRegistry core: registry bookkeeping + host-registrar bridge + headless tasks, shared by
+// every adapter. Each adapter calls createAppRegistry with its own runnableFor (the one
+// framework-specific seam — how to build a runnable from a component provider).
+export { createAppRegistry } from './app-registry';
+export type {
+  IAppRegistry,
+  ICreateAppRegistryResult,
+  IAppParameters,
+  IRunnable,
+  IHostRegistrar,
+  IRegistry,
+  IHeadlessTask,
+  ITaskProvider,
+  ITaskCanceller,
+  ITaskCancelProvider,
+} from './app-registry';
 export { Keyboard, KEYBOARD_EVENT } from './keyboard';
 export type { IKeyboardEventName, IKeyboardEvent, IKeyboardMetrics } from './keyboard';
 export {

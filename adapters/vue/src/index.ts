@@ -187,6 +187,21 @@ export type {
 // StatusBar: declarative component + the shared imperative API.
 export { StatusBar } from './modules/status-bar';
 export type { IStatusBarProps, IStatusBarStyle } from './modules/status-bar';
+// AppRegistry: RN's app entry point over `mount`. setHostRegistrar wires RN's own
+// registrar so the native Fabric host finds our runnable by app key.
+export { AppRegistry, setHostRegistrar } from './modules/app-registry';
+export type {
+  IComponentProvider,
+  IAppParameters,
+  IRunnable,
+  IHostRegistrar,
+  IWrapperComponentProvider,
+  IRegistry,
+  IHeadlessTask,
+  ITaskProvider,
+  ITaskCanceller,
+  ITaskCancelProvider,
+} from './modules/app-registry';
 // Vue composables over the core device-state modules.
 export { useColorScheme } from './composables/use-color-scheme';
 export { useWindowDimensions } from './composables/use-window-dimensions';
