@@ -161,4 +161,24 @@ describe('Vue Slider wrapper', () => {
     await mountSlider({ value: 0.2, onValueChange: () => undefined });
     expect(typeof sliderNode().props.onValueChange).not.toBe('function');
   });
+
+  it('accepts modelValue as an alias for value, never forwarding it to the native node', async () => {
+    await mountSlider({ modelValue: 0.6 });
+    const props = sliderNode().props;
+    expect(props.value).toBe(0.6);
+    expect('modelValue' in props, 'modelValue must not reach Fabric').toBe(false);
+  });
+
+  it('emits update:modelValue and update:value alongside valueChange', async () => {
+    let modelValueUpdate: number | undefined;
+    let valueUpdate: number | undefined;
+    await mountSlider({
+      modelValue: 0.2,
+      'onUpdate:modelValue': (value: number) => (modelValueUpdate = value),
+      'onUpdate:value': (value: number) => (valueUpdate = value),
+    });
+    fabric.fireEvent(sliderNode().instanceHandle, 'topChange', { value: 0.7 });
+    expect(modelValueUpdate).toBe(0.7);
+    expect(valueUpdate).toBe(0.7);
+  });
 });

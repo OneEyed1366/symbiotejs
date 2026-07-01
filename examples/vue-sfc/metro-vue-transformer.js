@@ -5,6 +5,11 @@
 // of what @vitejs/plugin-vue does for Vite; the 'vue'→runtime-core rewrite is wolf-tui's
 // pattern (a custom, non-DOM renderer needs the compiler helpers from @vue/runtime-core,
 // not from vue/runtime-dom).
+//
+// Retargeted at @symbiote/vue/runtime-helpers rather than bare @vue/runtime-core: that shim
+// re-exports runtime-core verbatim PLUS supplies our own `vShow` (compiled v-show imports it by
+// name, and only @vue/runtime-dom's DOM-based version exists otherwise — see the
+// vue-adapter-directives skill).
 
 const upstreamTransformer = require('@react-native/metro-babel-transformer');
 const { parse, compileScript } = require('@vue/compiler-sfc');
@@ -34,9 +39,10 @@ function compileSfc(src, filename) {
     inlineTemplate: true,
   });
   // Point every Vue import (the compiler's injected helpers AND the user's own
-  // `import { ref } from 'vue'`) at runtime-core, the same singleton the @symbiote/vue
-  // adapter builds its custom renderer on. No vue/runtime-dom in a native bundle.
-  return compiled.content.replace(/from\s*(['"])vue\1/g, 'from "@vue/runtime-core"');
+  // `import { ref } from 'vue'`) at the runtime-helpers shim, which re-exports the same
+  // @vue/runtime-core singleton the @symbiote/vue adapter builds its custom renderer on, plus
+  // our own directive implementations. No vue/runtime-dom in a native bundle.
+  return compiled.content.replace(/from\s*(['"])vue\1/g, 'from "@symbiote/vue/runtime-helpers"');
 }
 
 module.exports.transform = function transform(params) {

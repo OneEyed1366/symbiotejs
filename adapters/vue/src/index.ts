@@ -152,6 +152,10 @@ export { descriptorToVue } from './descriptor-to-vue';
 // external wrapper package (e.g. @symbiote/slider/vue over a third-party native view) can fold
 // its incoming attrs through the SAME transform rather than reimplementing it.
 export { normalizeVueAttrs } from './utils/normalize-attrs';
+// resolveModelValue/emitModelUpdate: the v-model (Rule 6, vue-adapter-events skill) helper every
+// controlled-value component uses. Exported for the same external-package reason as
+// normalizeVueAttrs above (e.g. @symbiote/slider/vue).
+export { resolveModelValue, emitModelUpdate } from './utils/model-binding';
 export { createSymbioteRenderer } from './renderer';
 // Animated (ADR 0024 Phase 3a): Animated.View/Text/Image + the lazy Animated.ScrollView over the
 // Vue primitives, with the value graph / easing / drivers spread from @symbiote/engine. The wrap

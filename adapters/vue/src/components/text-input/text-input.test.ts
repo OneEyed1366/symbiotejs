@@ -122,6 +122,78 @@ describe('Vue TextInput on the engine', () => {
     expect('onChangeText' in node.props, 'onChangeText must not reach Fabric').toBe(false);
   });
 
+  it('accepts modelValue as an alias for value, never forwarding it to Fabric', async () => {
+    mount(ROOT_TAG, defineComponent({ setup: () => () => h(TextInput, { modelValue: 'hi' }) }));
+    await tick();
+
+    const node = inputNode(SINGLELINE);
+    expect(node.props.text).toBe('hi');
+    expect('modelValue' in node.props, 'modelValue must not reach Fabric').toBe(false);
+  });
+
+  it('emits update:modelValue and update:value alongside changeText', async () => {
+    let modelValueUpdate: string | undefined;
+    let valueUpdate: string | undefined;
+    mount(
+      ROOT_TAG,
+      defineComponent({
+        setup: () => () =>
+          h(TextInput, {
+            modelValue: 'hi',
+            'onUpdate:modelValue': (text: string) => {
+              modelValueUpdate = text;
+            },
+            'onUpdate:value': (text: string) => {
+              valueUpdate = text;
+            },
+          }),
+      }),
+    );
+    await tick();
+
+    const node = inputNode(SINGLELINE);
+    fabric.fireEvent(node.instanceHandle, 'topChange', {
+      text: 'hix',
+      eventCount: 1,
+      selection: { start: 3, end: 3 },
+    });
+    await tick();
+    expect(modelValueUpdate).toBe('hix');
+    expect(valueUpdate).toBe('hix');
+  });
+
+  it('commands setTextAndSelection on a v-model divergence, not just the value prop', async () => {
+    // Regression case for the read-every-site gotcha (vue-adapter-events skill, Rule 6): the
+    // controlled-write watch must also resolve modelValue, not only the raw `value` attr.
+    const Forced = defineComponent({
+      setup() {
+        const value = ref('');
+        return () =>
+          h(TextInput, {
+            modelValue: value.value,
+            'onUpdate:modelValue': (text: string) => {
+              value.value = text.toUpperCase();
+            },
+          });
+      },
+    });
+    mount(ROOT_TAG, Forced);
+    await tick();
+
+    const node = inputNode(SINGLELINE);
+    fabric.fireEvent(node.instanceHandle, 'topChange', {
+      text: 'ab',
+      eventCount: ACK_COUNT,
+      selection: { start: 2, end: 2 },
+    });
+    await tick();
+
+    const setText = commands.find(c => c.name === 'setTextAndSelection');
+    expect(setText, 'a setTextAndSelection command was dispatched').toBeDefined();
+    expect(setText!.args[0]).toBe(ACK_COUNT);
+    expect(setText!.args[1]).toBe('AB');
+  });
+
   it('commands setTextAndSelection with the acked count on a divergent controlled write', async () => {
     // A real controlled component whose onChangeText UPPERCASES the text: native reports "ab" at
     // ACK_COUNT, the parent stores "AB", so the post-flush watch must command "AB" down.

@@ -41,11 +41,14 @@ import {
 } from '@symbiote/engine';
 import { descriptorToVue } from '../../descriptor-to-vue';
 import { normalizeVueAttrs } from '../../utils/normalize-attrs';
+import { resolveModelValue, emitModelUpdate } from '../../utils/model-binding';
 
 export type ITextInputProps = Omit<
   ITextInputBaseProps,
   'onChangeText' | 'onChange' | 'onFocus' | 'onBlur'
->;
+> & {
+  modelValue?: string;
+};
 export type { ITextInputHandle };
 
 type ITextInputEmits = {
@@ -53,6 +56,8 @@ type ITextInputEmits = {
   change: (event: ISymbioteEvent) => boolean;
   focus: (event: ISymbioteEvent) => boolean;
   blur: (event: ISymbioteEvent) => boolean;
+  'update:modelValue': (text: string) => boolean;
+  'update:value': (text: string) => boolean;
 };
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -61,6 +66,10 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 
 function asString(value: unknown): string | undefined {
   return typeof value === 'string' ? value : undefined;
+}
+
+function isString(value: unknown): value is string {
+  return typeof value === 'string';
 }
 
 function asBoolean(value: unknown): boolean | undefined {
@@ -82,6 +91,7 @@ function normalizeSelection(value: unknown): ITextInputSelection | undefined {
 // wrapped handlers; onChangeText is pure JS and must never reach Fabric.
 const HANDLED_ATTRS = [
   'value',
+  'modelValue',
   'defaultValue',
   'multiline',
   'selection',
@@ -134,7 +144,10 @@ export const TextInput = defineComponent<ITextInputProps, ITextInputEmits>(
     // The last text native holds, as far as JS knows. Seeded from the mount-time value (the `text`
     // prop already carries it down via createNode, so the FIRST controlled value is not a
     // divergence and must NOT re-command). A setup-scope `let`: no render needed when it changes.
-    let lastNativeText = foldText(asString(rawAttrs.value), asString(rawAttrs.defaultValue));
+    let lastNativeText = foldText(
+      resolveModelValue(rawAttrs, isString),
+      asString(rawAttrs.defaultValue),
+    );
     // JS-side focus state, mirrored from the focus/blur events for isFocused(): native exposes no
     // synchronous focus getter (RN's TextInputState holds the same).
     let focused = false;
@@ -155,6 +168,7 @@ export const TextInput = defineComponent<ITextInputProps, ITextInputEmits>(
         // stands for.
         lastNativeText = text;
         emit('changeText', text);
+        emitModelUpdate<string>(emit, text);
       }
       const count = eventCountFromChange(event);
       if (count !== undefined) mostRecentEventCount.value = count;
@@ -182,7 +196,7 @@ export const TextInput = defineComponent<ITextInputProps, ITextInputEmits>(
     // a change). flush:'post' so the engine has committed the node before the command reads its
     // Fabric handle; the predicate makes it a no-op on mount (value === the seed).
     watch(
-      () => asString(rawAttrs.value),
+      () => resolveModelValue(rawAttrs, isString),
       value => {
         const node = nodeRef.value;
         if (node === null) return;
@@ -276,7 +290,7 @@ export const TextInput = defineComponent<ITextInputProps, ITextInputEmits>(
         showSoftInputOnFocus: asBoolean(attrs.showSoftInputOnFocus),
         underlineColorAndroid: asString(attrs.underlineColorAndroid),
       });
-      const text = foldText(asString(attrs.value), asString(attrs.defaultValue));
+      const text = foldText(resolveModelValue(attrs, isString), asString(attrs.defaultValue));
       return descriptorToVue(
         renderTextInput({
           multiline,
@@ -303,6 +317,8 @@ export const TextInput = defineComponent<ITextInputProps, ITextInputEmits>(
       change: (_event: ISymbioteEvent): boolean => true,
       focus: (_event: ISymbioteEvent): boolean => true,
       blur: (_event: ISymbioteEvent): boolean => true,
+      'update:modelValue': (_text: string): boolean => true,
+      'update:value': (_text: string): boolean => true,
     },
   },
 );

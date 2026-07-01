@@ -9,7 +9,14 @@
 // <third_party_rn_packages_are_react_only> and ADR 0027.
 
 import { defineComponent, h, ref, type SetupContext, type VNode } from '@vue/runtime-core';
-import { descriptorToVue, normalizeVueAttrs, Image, type IImageSourceProp } from '@symbiote/vue';
+import {
+  descriptorToVue,
+  normalizeVueAttrs,
+  resolveModelValue,
+  emitModelUpdate,
+  Image,
+  type IImageSourceProp,
+} from '@symbiote/vue';
 import { dlog, type ISymbioteEvent } from '@symbiote/engine';
 import {
   sanitizeSliderValue,
@@ -51,13 +58,17 @@ import {
 export type ISliderProps = Omit<
   ISliderBaseProps,
   'onValueChange' | 'onSlidingStart' | 'onSlidingComplete' | 'onAccessibilityAction'
->;
+> & {
+  modelValue?: number;
+};
 
 type ISliderEmits = {
   valueChange: (value: number) => boolean;
   slidingStart: (value: number) => boolean;
   slidingComplete: (value: number) => boolean;
   accessibilityAction: (event: ISymbioteEvent) => boolean;
+  'update:modelValue': (value: number) => boolean;
+  'update:value': (value: number) => boolean;
 };
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -66,6 +77,10 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 
 function asNumber(value: unknown): number | undefined {
   return typeof value === 'number' ? value : undefined;
+}
+
+function isNumber(value: unknown): value is number {
+  return typeof value === 'number';
 }
 
 function asBoolean(value: unknown): boolean | undefined {
@@ -89,6 +104,7 @@ function asAccessibilityState(value: unknown): ISliderAccessibilityState | undef
 // re-supplied as the native event handlers in `passthrough`.
 const HANDLED_ATTRS = [
   'value',
+  'modelValue',
   'minimumValue',
   'maximumValue',
   'step',
@@ -129,6 +145,7 @@ export function createSlider(platform: ISliderPlatform) {
         if (value === undefined) return;
         reportedValue.value = value;
         emit('valueChange', value);
+        emitModelUpdate<number>(emit, value);
       };
       const handleSlidingStart = (event: ISymbioteEvent): void => {
         const value = valueFromSliderEvent(event);
@@ -175,7 +192,7 @@ export function createSlider(platform: ISliderPlatform) {
           : undefined;
 
         const view: ISliderViewProps = {
-          value: sanitizeSliderValue(asNumber(attrs.value)),
+          value: sanitizeSliderValue(resolveModelValue(attrs, isNumber)),
           minimumValue,
           maximumValue,
           step,
@@ -254,6 +271,8 @@ export function createSlider(platform: ISliderPlatform) {
         slidingStart: (_value: number): boolean => true,
         slidingComplete: (_value: number): boolean => true,
         accessibilityAction: (_event: ISymbioteEvent): boolean => true,
+        'update:modelValue': (_value: number): boolean => true,
+        'update:value': (_value: number): boolean => true,
       },
     },
   );

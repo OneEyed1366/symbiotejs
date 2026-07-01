@@ -89,6 +89,7 @@ const name = ref('');
 const spinning = ref(true);
 const volume = ref(0.5);
 const modalVisible = ref(false);
+const bannerVisible = ref(true);
 const refreshing = ref(false);
 const refreshes = ref(0);
 const keyboardHeight = ref(0);
@@ -420,6 +421,13 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     boxShadow: '0px 0px 22px 3px rgba(127,181,255,0.85)',
   },
+  vshowCard: {
+    height: 64,
+    borderRadius: 12,
+    backgroundColor: '#369870',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   filterTile: {
     flex: 1,
     height: 64,
@@ -590,15 +598,10 @@ const styles = StyleSheet.create({
         }}</Text>
       </View>
 
-      <!-- TextInput + greeting -->
+      <!-- TextInput + greeting, via v-model (our resolveModelValue/emitModelUpdate shim) -->
       <TextInput
         testID="greeting-input"
-        :value="name"
-        @change-text="
-          text => {
-            name = text;
-          }
-        "
+        v-model="name"
         placeholder="type your name…"
         placeholder-text-color="#3b5266"
         :style="styles.textInput"
@@ -607,17 +610,12 @@ const styles = StyleSheet.create({
         name ? `Hello, ${name}` : 'Hello, stranger'
       }}</Text>
 
-      <!-- Switch drives the ActivityIndicator -->
+      <!-- Switch drives the ActivityIndicator, via v-model -->
       <View :style="styles.switchRow">
         <Text :style="styles.switchLabel">spinner</Text>
         <Switch
           testID="spinner-switch"
-          :value="spinning"
-          @value-change="
-            next => {
-              spinning = next;
-            }
-          "
+          v-model="spinning"
           :track-color="{ false: '#334155', true: '#369870' }"
         />
       </View>
@@ -637,12 +635,7 @@ const styles = StyleSheet.create({
         }}</Text>
         <Slider
           testID="volume-slider"
-          :value="volume"
-          @value-change="
-            next => {
-              volume = next;
-            }
-          "
+          v-model="volume"
           :minimum-value="0"
           :maximum-value="1"
           :step="0.01"
@@ -651,6 +644,25 @@ const styles = StyleSheet.create({
           thumb-tint-color="#ffffff"
           :style="styles.slider"
         />
+      </View>
+
+      <!-- v-show: our runtime-helpers shim (vue-adapter-directives). Unlike the v-if/v-else
+           above, the banner stays mounted and toggles native display:none, so its state
+           survives a hide/show round-trip. -->
+      <View :style="styles.switchRow">
+        <Text :style="styles.switchLabel">show banner (v-show)</Text>
+        <Switch
+          testID="vshow-toggle"
+          v-model="bannerVisible"
+          :track-color="{ false: '#334155', true: '#369870' }"
+        />
+      </View>
+      <View
+        v-show="bannerVisible"
+        testID="vshow-banner"
+        :style="styles.vshowCard"
+      >
+        <Text :style="styles.tileText">v-show · toggled without unmount</Text>
       </View>
 
       <!-- Animated: JS driver vs native driver, side by side -->
@@ -823,12 +835,7 @@ const styles = StyleSheet.create({
       <View :style="styles.switchRow">
         <Text :style="styles.switchLabel">avoid keyboard</Text>
         <Switch
-          :value="kavEnabled"
-          @value-change="
-            next => {
-              kavEnabled = next;
-            }
-          "
+          v-model="kavEnabled"
           :track-color="{ false: '#334155', true: '#369870' }"
         />
       </View>

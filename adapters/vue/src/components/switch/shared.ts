@@ -31,17 +31,22 @@ import {
 } from '@symbiote/engine';
 import { descriptorToVue } from '../../descriptor-to-vue';
 import { normalizeVueAttrs } from '../../utils/normalize-attrs';
+import { resolveModelValue, emitModelUpdate } from '../../utils/model-binding';
 
 // The platform piece: the view's track-color name mapping plus the lifecycle's snap-back
 // command name. Supplied whole by switch.ios.ts / switch.android.ts (Metro filename-selected).
 type ISwitchHostPlatform = ISwitchPlatform & { snapBackCommand: string };
 
-export type ISwitchProps = Omit<ISwitchBaseProps, 'onChange' | 'onValueChange'>;
+export type ISwitchProps = Omit<ISwitchBaseProps, 'onChange' | 'onValueChange'> & {
+  modelValue?: boolean;
+};
 export type { ISwitchTrackColor };
 
 type ISwitchEmits = {
   change: (event: ISymbioteEvent) => boolean;
   valueChange: (value: boolean) => boolean;
+  'update:modelValue': (value: boolean) => boolean;
+  'update:value': (value: boolean) => boolean;
 };
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -50,6 +55,10 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 
 function asString(value: unknown): string | undefined {
   return typeof value === 'string' ? value : undefined;
+}
+
+function isBoolean(value: unknown): value is boolean {
+  return typeof value === 'boolean';
 }
 
 // trackColor arrives untyped; keep only the string false/true entries the render fn reads.
@@ -72,6 +81,7 @@ function isViewStyleObject(value: unknown): value is IViewStyle {
 // is pure JS and must never reach Fabric.
 const HANDLED_ATTRS = [
   'value',
+  'modelValue',
   'disabled',
   'trackColor',
   'thumbColor',
@@ -117,6 +127,7 @@ export function createSwitch(platform: ISwitchHostPlatform) {
         );
         if (next === undefined) return;
         emit('valueChange', next);
+        emitModelUpdate<boolean>(emit, next);
         state.value = switchReducer(state.value, { type: 'native-reported', value: next });
       };
 
@@ -126,7 +137,10 @@ export function createSwitch(platform: ISwitchHostPlatform) {
       // command name is platform-imperative. flush:'post' so the engine has committed the node
       // before the command reads its Fabric handle.
       watch(
-        () => ({ fabricValue: rawAttrs.value === true, switchState: state.value }),
+        () => ({
+          fabricValue: resolveModelValue(rawAttrs, isBoolean) === true,
+          switchState: state.value,
+        }),
         ({ fabricValue, switchState }) => {
           const node = nodeRef.value;
           if (node === null) return;
@@ -149,7 +163,7 @@ export function createSwitch(platform: ISwitchHostPlatform) {
         return descriptorToVue(
           renderSwitch(
             {
-              value: attrs.value === true,
+              value: resolveModelValue(attrs, isBoolean) === true,
               disabled: typeof attrs.disabled === 'boolean' ? attrs.disabled : undefined,
               trackColor: normalizeTrackColor(attrs.trackColor),
               thumbColor: asString(attrs.thumbColor),
@@ -168,6 +182,8 @@ export function createSwitch(platform: ISwitchHostPlatform) {
       emits: {
         change: (_event: ISymbioteEvent): boolean => true,
         valueChange: (_value: boolean): boolean => true,
+        'update:modelValue': (_value: boolean): boolean => true,
+        'update:value': (_value: boolean): boolean => true,
       },
     },
   );

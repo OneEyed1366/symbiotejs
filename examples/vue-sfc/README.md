@@ -19,9 +19,11 @@ metro.config.js            sourceExts += 'vue', babelTransformerPath → the SFC
 `App.vue` is an ordinary Vue SFC. Metro has no Vue plugin (unplugin-vue ships
 vite/webpack/esbuild/rollup adapters, not Metro), so `metro-vue-transformer.js` does the
 single-pass compile itself with `@vue/compiler-sfc` — `parse` → `compileScript` with
-`inlineTemplate`, then rewrites every `from 'vue'` to `@vue/runtime-core` (the custom,
-non-DOM renderer needs the compiler helpers from runtime-core, not vue/runtime-dom — the
-wolf-tui pattern). The compiled module is handed to `@react-native/babel-preset` as `.tsx`
+`inlineTemplate`, then rewrites every `from 'vue'` to `@symbiote/vue/runtime-helpers` (the
+custom, non-DOM renderer needs the compiler helpers from `@vue/runtime-core`, not
+`vue/runtime-dom` — the wolf-tui pattern; the shim also supplies `vShow`, since `v-show`
+compiles to an import runtime-core alone doesn't export — see the `vue-adapter-directives`
+skill). The compiled module is handed to `@react-native/babel-preset` as `.tsx`
 so it strips the `lang="ts"` types. The tap is the raw responder protocol
 (`@start-should-set-responder` + `@responder-release`), not `Pressable` — the press-retention
 controller lands with `@symbiote/components`. `ActivityIndicator` is the first
