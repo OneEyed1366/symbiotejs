@@ -18,8 +18,10 @@ export type ISwitchTrackColor = { false?: string; true?: string };
 // adapters; each supplies only its hook + bridge.
 export interface ISwitchProps extends IAccessibilityProps, IAriaProps {
   value?: boolean;
-  onValueChange?: (value: boolean) => void;
-  onChange?: (event: ISymbioteEvent) => void;
+  // Fires once per native toggle, value first (the common case, plain boolean) plus the raw
+  // event as a second argument for callers who need it — there is only ever one underlying
+  // native event, never two (see the adapter's handleChange).
+  onValueChange?: (value: boolean, event: ISymbioteEvent) => void;
   disabled?: boolean;
   trackColor?: ISwitchTrackColor;
   thumbColor?: string;

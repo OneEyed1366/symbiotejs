@@ -331,8 +331,10 @@ export type ITextInputProps = IAccessibilityProps &
     inputAccessoryViewID?: string;
     style?: ITextStyle;
 
-    onChangeText?: (text: string) => void;
-    onChange?: ITextInputEventHandler;
+    // Fires once per native change, text first (the common case, plain string) plus the raw
+    // event as a second argument for callers who need it (e.g. nativeEvent.eventCount/target) —
+    // there is only ever one underlying native event, never two (see the adapter's handleChange).
+    onValueChange?: (text: string, event: ISymbioteEvent) => void;
     onFocus?: ITextInputEventHandler;
     onBlur?: ITextInputEventHandler;
     onEndEditing?: ITextInputEventHandler;

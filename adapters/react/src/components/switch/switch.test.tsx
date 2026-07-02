@@ -1,7 +1,7 @@
 // Co-located React-driven pipeline test (ADR 0025), ported from the headless
 // `switch.smoke`. Proves the Switch primitive: the Fabric view name `Switch`, the
 // `value` prop as a strict boolean, the trackColor/thumbColor/ios_backgroundColor ->
-// native prop mapping, the onChange -> onValueChange derivation from nativeEvent.value,
+// native prop mapping, onValueChange's (value, event) derivation from nativeEvent.value,
 // and the controlled snap-back: a rejected toggle commands the JS value back down via
 // a `setValue` view command. No simulator: a failure here is in JS, not native.
 
@@ -74,17 +74,15 @@ describe('React Switch on the engine', () => {
     expect(props.backgroundColor).toBe('#3e3e3e');
   });
 
-  it('derives onValueChange and the raw onChange event from nativeEvent.value', () => {
+  it('derives onValueChange with both the value and the raw event from nativeEvent.value', () => {
     let changedValue: boolean | undefined;
     let rawEventValue: unknown;
     mount(
       ROOT_TAG,
       <Switch
         value={false}
-        onValueChange={v => {
+        onValueChange={(v, event) => {
           changedValue = v;
-        }}
-        onChange={event => {
           rawEventValue = event.nativeEvent.value;
         }}
       />,

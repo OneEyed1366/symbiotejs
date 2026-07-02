@@ -19,7 +19,7 @@ import {
   shouldSnapBack,
   valueFromChange,
 } from '@symbiote/components';
-import type { ISwitchPlatform, ISwitchProps } from '@symbiote/components';
+import type { ISwitchPlatform, ISwitchProps as ISwitchBaseProps } from '@symbiote/components';
 import {
   dispatchViewCommand,
   dlog,
@@ -29,10 +29,14 @@ import {
 import { resolveAccessibilityProps } from '@symbiote/components';
 import { descriptorToReact } from '../../descriptor-to-react';
 
-// ISwitchProps is framework-agnostic (the controlled value contract, no ref / children), so it
-// lives in @symbiote/components and every adapter re-exports it; React supplies only the hook
+// ISwitchProps is otherwise framework-agnostic (the controlled value contract, no ref /
+// children), so its base lives in @symbiote/components; React supplies only the hook
 // (useReducer + the snap-back useLayoutEffect) and the descriptor bridge.
-export type { ISwitchProps, ISwitchTrackColor } from '@symbiote/components';
+export type { ISwitchTrackColor } from '@symbiote/components';
+
+// className is React's own field per <prop_types_split_agnostic_vs_per_adapter>; not destructured
+// below, so it falls into `...passthrough` and lands on the single host node, like `style`.
+export type ISwitchProps = ISwitchBaseProps & { className?: string };
 
 // The platform piece: the view's track-color name mapping plus the lifecycle's snap-back
 // command name. Supplied whole by switch.ios.ts / switch.android.ts (Metro filename-selected).
@@ -47,7 +51,6 @@ export function createSwitch(platform: ISwitchHostPlatform): FC<ISwitchProps> {
     const {
       value,
       onValueChange,
-      onChange,
       disabled,
       trackColor,
       thumbColor,
@@ -61,16 +64,15 @@ export function createSwitch(platform: ISwitchHostPlatform): FC<ISwitchProps> {
 
     const handleChange = useCallback(
       (event: ISymbioteEvent): void => {
-        onChange?.(event);
         const next = valueFromChange(event);
         dlog(
           `Switch onChange value=${String(next)} eventCount=${String(event.nativeEvent.eventCount)}`,
         );
         if (next === undefined) return;
-        onValueChange?.(next);
+        onValueChange?.(next, event);
         dispatch({ type: 'native-reported', value: next });
       },
-      [onChange, onValueChange],
+      [onValueChange],
     );
 
     // value is a real Fabric prop, folded to a strict boolean: RN sends `value === true`, so

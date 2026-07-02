@@ -2,8 +2,8 @@
 // adapters/react/src/text-input/text-input.test.tsx. Proves the TextInput contract through Vue's
 // reactive lifecycle (shallowRef host node, post-flush controlled-write watch, expose() handle)
 // over the shared fake Fabric slot: the controlled value -> private `text` fold + the
-// onChange -> onChangeText derivation, the engine style-key hoist (paddingBottom lands at the
-// node top level, never nested under `style`), onChangeText NEVER reaching Fabric as a raw prop,
+// native change -> onValueChange derivation, the engine style-key hoist (paddingBottom lands at
+// the node top level, never nested under `style`), onValueChange NEVER reaching Fabric as a raw prop,
 // the setTextAndSelection controlled write on value divergence (and none on mount), and the
 // imperative handle (focus/blur land as view commands, proving shallowRef identity through the
 // engine mirror, plus isFocused / clear / setSelection). Reactivity is async, so each driving
@@ -57,7 +57,7 @@ function inputNode(viewName: string): IFakeNode {
 }
 
 describe('Vue TextInput on the engine', () => {
-  it('folds the controlled value to text + mostRecentEventCount and derives onChangeText', async () => {
+  it('folds the controlled value to text + mostRecentEventCount and derives onValueChange', async () => {
     let changedText: string | undefined;
     mount(
       ROOT_TAG,
@@ -65,7 +65,7 @@ describe('Vue TextInput on the engine', () => {
         setup: () => () =>
           h(TextInput, {
             value: 'hi',
-            onChangeText: (text: string) => {
+            onValueChange: (text: string) => {
               changedText = text;
             },
           }),
@@ -109,17 +109,17 @@ describe('Vue TextInput on the engine', () => {
     expect('style' in node.props, 'style is flattened, not nested').toBe(false);
   });
 
-  it('never forwards onChangeText to the committed native node', async () => {
+  it('never forwards onValueChange to the committed native node', async () => {
     mount(
       ROOT_TAG,
       defineComponent({
-        setup: () => () => h(TextInput, { value: 'x', onChangeText: () => {} }),
+        setup: () => () => h(TextInput, { value: 'x', onValueChange: () => {} }),
       }),
     );
     await tick();
 
     const node = inputNode(SINGLELINE);
-    expect('onChangeText' in node.props, 'onChangeText must not reach Fabric').toBe(false);
+    expect('onValueChange' in node.props, 'onValueChange must not reach Fabric').toBe(false);
   });
 
   it('accepts modelValue as an alias for value, never forwarding it to Fabric', async () => {
@@ -131,7 +131,7 @@ describe('Vue TextInput on the engine', () => {
     expect('modelValue' in node.props, 'modelValue must not reach Fabric').toBe(false);
   });
 
-  it('emits update:modelValue and update:value alongside changeText', async () => {
+  it('emits update:modelValue and update:value alongside valueChange', async () => {
     let modelValueUpdate: string | undefined;
     let valueUpdate: string | undefined;
     mount(
@@ -195,7 +195,7 @@ describe('Vue TextInput on the engine', () => {
   });
 
   it('commands setTextAndSelection with the acked count on a divergent controlled write', async () => {
-    // A real controlled component whose onChangeText UPPERCASES the text: native reports "ab" at
+    // A real controlled component whose onValueChange UPPERCASES the text: native reports "ab" at
     // ACK_COUNT, the parent stores "AB", so the post-flush watch must command "AB" down.
     const Forced = defineComponent({
       setup() {
@@ -203,7 +203,7 @@ describe('Vue TextInput on the engine', () => {
         return () =>
           h(TextInput, {
             value: value.value,
-            onChangeText: (text: string) => {
+            onValueChange: (text: string) => {
               value.value = text.toUpperCase();
             },
           });

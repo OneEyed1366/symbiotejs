@@ -6,8 +6,9 @@
 // twin of the React adapter's useReducer + useLayoutEffect + dispatchViewCommand.
 //
 // Inputs arrive as attrs (untyped), so each is narrowed with a runtime guard rather than a
-// cast. onValueChange MUST be stripped from the forwarded attrs: it is not a ViewConfig event,
-// so leaking it would reach Fabric as a function prop and crash Android's folly::dynamic.
+// cast. onValueChange MUST be stripped from the forwarded attrs: it is not a ViewConfig event
+// (it's derived from the native onChange), so leaking it would reach Fabric as a function prop
+// and crash Android's folly::dynamic.
 
 import { defineComponent, ref, shallowRef, watch } from '@vue/runtime-core';
 import {
@@ -25,6 +26,7 @@ import {
   dispatchViewCommand,
   isSymbioteNode,
   dlog,
+  type IClassNameValue,
   type ISymbioteEvent,
   type ISymbioteNode,
   type IViewStyle,
@@ -37,14 +39,17 @@ import { resolveModelValue, emitModelUpdate } from '../../utils/model-binding';
 // command name. Supplied whole by switch.ios.ts / switch.android.ts (Metro filename-selected).
 type ISwitchHostPlatform = ISwitchPlatform & { snapBackCommand: string };
 
-export type ISwitchProps = Omit<ISwitchBaseProps, 'onChange' | 'onValueChange'> & {
+// ISwitchProps lives framework-agnostic in @symbiote/components; `class` can't join it there,
+// so it's added locally, exactly like Image's IImageProps. Not in HANDLED_ATTRS below, so it
+// rides into `passthrough` and lands on the SAME symbiote-switch node `style` targets.
+export type ISwitchProps = Omit<ISwitchBaseProps, 'onValueChange'> & {
   modelValue?: boolean;
+  class?: IClassNameValue;
 };
 export type { ISwitchTrackColor };
 
 type ISwitchEmits = {
-  change: (event: ISymbioteEvent) => boolean;
-  valueChange: (value: boolean) => boolean;
+  valueChange: (value: boolean, event: ISymbioteEvent) => boolean;
   'update:modelValue': (value: boolean) => boolean;
   'update:value': (value: boolean) => boolean;
 };
@@ -77,8 +82,7 @@ function isViewStyleObject(value: unknown): value is IViewStyle {
 }
 
 // The prop/handler keys the lifecycle consumes itself; everything else (accessibility,
-// testID, …) forwards onto the host node. onChange is re-supplied as our handler; onValueChange
-// is pure JS and must never reach Fabric.
+// testID, …) forwards onto the host node. onValueChange is pure JS and must never reach Fabric.
 const HANDLED_ATTRS = [
   'value',
   'modelValue',
@@ -87,7 +91,6 @@ const HANDLED_ATTRS = [
   'thumbColor',
   'ios_backgroundColor',
   'style',
-  'onChange',
   'onValueChange',
 ];
 
@@ -118,15 +121,14 @@ export function createSwitch(platform: ISwitchHostPlatform) {
       };
 
       const handleChange = (event: ISymbioteEvent): void => {
-        // Vue-facing events are emitted here; the host still receives this internal onChange
+        // Vue-facing event is emitted here; the host still receives this internal onChange
         // handler so the controlled snap-back state stays synchronized with native.
-        emit('change', event);
         const next = valueFromChange(event);
         dlog(
           `Switch onChange value=${String(next)} eventCount=${String(event.nativeEvent.eventCount)}`,
         );
         if (next === undefined) return;
-        emit('valueChange', next);
+        emit('valueChange', next, event);
         emitModelUpdate<boolean>(emit, next);
         state.value = switchReducer(state.value, { type: 'native-reported', value: next });
       };
@@ -180,8 +182,7 @@ export function createSwitch(platform: ISwitchHostPlatform) {
       name: 'Switch',
       inheritAttrs: false,
       emits: {
-        change: (_event: ISymbioteEvent): boolean => true,
-        valueChange: (_value: boolean): boolean => true,
+        valueChange: (_value: boolean, _event: ISymbioteEvent): boolean => true,
         'update:modelValue': (_value: boolean): boolean => true,
         'update:value': (_value: boolean): boolean => true,
       },

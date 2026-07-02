@@ -8,10 +8,10 @@
 // useLayoutEffect + useImperativeHandle.
 //
 // Inputs arrive as attrs (untyped), so each is narrowed with a runtime guard rather than a cast.
-// onChangeText MUST be stripped from the forwarded attrs: it is not a ViewConfig event (RN
-// derives it from onChange), so leaking it would reach Fabric as a function prop and crash
-// Android's folly::dynamic. The imperative module (blurTextInput / setInput*) is imported from
-// @symbiote/engine, the same framework-agnostic singleton both adapters share.
+// onValueChange MUST be stripped from the forwarded attrs: it is not a ViewConfig event (it's
+// derived from the native onChange), so leaking it would reach Fabric as a function prop and
+// crash Android's folly::dynamic. The imperative module (blurTextInput / setInput*) is imported
+// from @symbiote/engine, the same framework-agnostic singleton both adapters share.
 
 import { defineComponent, onBeforeUnmount, ref, shallowRef, watch } from '@vue/runtime-core';
 import {
@@ -36,6 +36,7 @@ import {
   setInputFocused,
   setInputBlurred,
   whenCommitted,
+  type IClassNameValue,
   type ISymbioteEvent,
   type ISymbioteNode,
 } from '@symbiote/engine';
@@ -43,17 +44,17 @@ import { descriptorToVue } from '../../descriptor-to-vue';
 import { normalizeVueAttrs } from '../../utils/normalize-attrs';
 import { resolveModelValue, emitModelUpdate } from '../../utils/model-binding';
 
-export type ITextInputProps = Omit<
-  ITextInputBaseProps,
-  'onChangeText' | 'onChange' | 'onFocus' | 'onBlur'
-> & {
+// ITextInputProps lives framework-agnostic in @symbiote/components; `class` can't join it
+// there, so it's added locally, exactly like Image's IImageProps. Not in HANDLED_ATTRS below
+// (neither is `style`), so it rides through forwardAttrs onto the SAME host node style targets.
+export type ITextInputProps = Omit<ITextInputBaseProps, 'onValueChange' | 'onFocus' | 'onBlur'> & {
   modelValue?: string;
+  class?: IClassNameValue;
 };
 export type { ITextInputHandle };
 
 type ITextInputEmits = {
-  changeText: (text: string) => boolean;
-  change: (event: ISymbioteEvent) => boolean;
+  valueChange: (text: string, event: ISymbioteEvent) => boolean;
   focus: (event: ISymbioteEvent) => boolean;
   blur: (event: ISymbioteEvent) => boolean;
   'update:modelValue': (text: string) => boolean;
@@ -87,8 +88,8 @@ function normalizeSelection(value: unknown): ITextInputSelection | undefined {
 
 // The prop/handler keys the lifecycle consumes itself (mirrors the React adapter's destructure);
 // everything else (placeholder, secureTextEntry, the remaining native events, accessibility,
-// testID, style…) forwards onto the host node. onChange/onFocus/onBlur are re-supplied as our
-// wrapped handlers; onChangeText is pure JS and must never reach Fabric.
+// testID, style…) forwards onto the host node. onFocus/onBlur are re-supplied as our wrapped
+// handlers; onValueChange is pure JS and must never reach Fabric.
 const HANDLED_ATTRS = [
   'value',
   'modelValue',
@@ -111,8 +112,7 @@ const HANDLED_ATTRS = [
   'autoFocus',
   'showSoftInputOnFocus',
   'underlineColorAndroid',
-  'onChange',
-  'onChangeText',
+  'onValueChange',
   'onFocus',
   'onBlur',
 ];
@@ -167,12 +167,11 @@ export const TextInput = defineComponent<ITextInputProps, ITextInputEmits>(
         // Record the text first, then the count, so the count never runs ahead of the text it
         // stands for.
         lastNativeText = text;
-        emit('changeText', text);
+        emit('valueChange', text, event);
         emitModelUpdate<string>(emit, text);
       }
       const count = eventCountFromChange(event);
       if (count !== undefined) mostRecentEventCount.value = count;
-      emit('change', event);
     };
 
     const handleFocus = (event: ISymbioteEvent): void => {
@@ -313,8 +312,7 @@ export const TextInput = defineComponent<ITextInputProps, ITextInputEmits>(
     name: 'TextInput',
     inheritAttrs: false,
     emits: {
-      changeText: (_text: string): boolean => true,
-      change: (_event: ISymbioteEvent): boolean => true,
+      valueChange: (_text: string, _event: ISymbioteEvent): boolean => true,
       focus: (_event: ISymbioteEvent): boolean => true,
       blur: (_event: ISymbioteEvent): boolean => true,
       'update:modelValue': (_text: string): boolean => true,

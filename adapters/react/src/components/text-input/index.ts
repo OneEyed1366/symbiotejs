@@ -36,10 +36,19 @@ import {
   INITIAL_EVENT_COUNT,
   SELECTION_NONE,
 } from '@symbiote/components';
-import type { ITextInputProps, ITextInputHandle } from '@symbiote/components';
+import type {
+  ITextInputProps as ITextInputBaseProps,
+  ITextInputHandle,
+} from '@symbiote/components';
 import { descriptorToReact } from '../../descriptor-to-react';
 
-export type { ITextInputProps, ITextInputHandle } from '@symbiote/components';
+export type { ITextInputHandle } from '@symbiote/components';
+
+// ITextInputProps is otherwise framework-agnostic, so its base lives in @symbiote/components;
+// className is React's own field per <prop_types_split_agnostic_vs_per_adapter>. Not destructured
+// below, so it falls into `...passthrough` and lands on the single host node, like `style` (also
+// left un-destructured, forwarded the same way).
+export type ITextInputProps = ITextInputBaseProps & { className?: string };
 
 export const TextInput = forwardRef<ITextInputHandle, ITextInputProps>((rawProps, forwardedRef) => {
   // TextInput is its own host element (not a View wrapper), so it folds aria/role here.
@@ -51,8 +60,7 @@ export const TextInput = forwardRef<ITextInputHandle, ITextInputProps>((rawProps
     defaultValue,
     multiline,
     selection,
-    onChange,
-    onChangeText,
+    onValueChange,
     onFocus,
     onBlur,
     inputMode,
@@ -111,7 +119,7 @@ export const TextInput = forwardRef<ITextInputHandle, ITextInputProps>((rawProps
     (event: ISymbioteEvent): void => {
       // Event seam: the controlled handshake hinges on the change payload carrying `text`
       // (+ `eventCount`). iOS and Android Fabric can key these differently, so log the actual
-      // shape here; a missing `text` means onChangeText never fires.
+      // shape here; a missing `text` means onValueChange never fires.
       dlog(
         `TextInput change keys=[${Object.keys(event.nativeEvent).join(',')}] ` +
           `text=${JSON.stringify(event.nativeEvent.text)} count=${JSON.stringify(event.nativeEvent.eventCount)}`,
@@ -119,15 +127,14 @@ export const TextInput = forwardRef<ITextInputHandle, ITextInputProps>((rawProps
       const text = textFromChange(event);
       if (text !== undefined) {
         lastNativeText.current = text;
-        onChangeText?.(text);
+        onValueChange?.(text, event);
       }
       // Ordering matters: record the text first, then bump the acknowledged count, so the count
       // never runs ahead of the text it stands for.
       const count = eventCountFromChange(event);
       if (count !== undefined) setMostRecentEventCount(count);
-      onChange?.(event);
     },
-    [onChange, onChangeText],
+    [onValueChange],
   );
 
   const text = foldText(value, defaultValue);

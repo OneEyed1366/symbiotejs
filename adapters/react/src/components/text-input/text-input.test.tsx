@@ -4,7 +4,7 @@
 // `installFabric()` harness because TextInput drives a `dispatchCommand`
 // (setTextAndSelection / blur) view command, which the shared recorder does not capture.
 // It checks the fold (value/defaultValue -> private `text` + mostRecentEventCount), the
-// onChange -> onChangeText derivation, the multiline intrinsic, a forced controlled write
+// the native change -> onValueChange derivation, the multiline intrinsic, a forced controlled write
 // that goes down as a setTextAndSelection command carrying the acknowledged event count,
 // Keyboard.dismiss blurring the focused input, the W3C alias folds, and the
 // underlineColorAndroid default.
@@ -106,13 +106,13 @@ beforeEach(() => {
 afterEach(() => unmount(ROOT_TAG));
 
 describe('TextInput', () => {
-  it('folds the controlled value to text + mostRecentEventCount and derives onChangeText', () => {
+  it('folds the controlled value to text + mostRecentEventCount and derives onValueChange', () => {
     let changedText: string | undefined;
     mount(
       ROOT_TAG,
       <TextInput
         value="hi"
-        onChangeText={text => {
+        onValueChange={text => {
           changedText = text;
         }}
       />,
@@ -132,11 +132,11 @@ describe('TextInput', () => {
   });
 
   it('commands setTextAndSelection with the acked count on a divergent controlled write', () => {
-    // A real controlled component whose onChangeText UPPERCASES the text: native reports
+    // A real controlled component whose onValueChange UPPERCASES the text: native reports
     // "ab" at ACK_COUNT, the parent stores "AB", so the component must command "AB" down.
     function Forced(): ReactElement {
       const [value, setValue] = useState('');
-      return <TextInput value={value} onChangeText={text => setValue(text.toUpperCase())} />;
+      return <TextInput value={value} onValueChange={text => setValue(text.toUpperCase())} />;
     }
     mount(ROOT_TAG, <Forced />);
 
