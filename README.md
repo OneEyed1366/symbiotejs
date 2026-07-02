@@ -1,5 +1,7 @@
 <div align="center">
 
+<img src="./assets/logo.svg" width="96" height="96" alt="symbiote logo">
+
 # symbiote
 
 ### Want to ship a real native iOS/Android app, but you don't write React? Today you can't.
@@ -90,8 +92,8 @@ The only thing symbiote replaces is the JS renderer.
 
 ## See It Work
 
-The *same* native app — same `@symbiote/engine`, same stock Fabric core — driven by two different
-frameworks on the iOS simulator. React Native's own renderer is never in the path of either:
+The *same* native app — same `@symbiote/engine`, same stock Fabric core — driven by three different
+frameworks on the iOS simulator. React Native's own renderer is never in the path of any of them:
 
 <div align="center">
 
@@ -99,10 +101,12 @@ frameworks on the iOS simulator. React Native's own renderer is never in the pat
 <tr>
 <td align="center"><b>React</b></td>
 <td align="center"><b>Vue 3</b></td>
+<td align="center"><b>Angular</b></td>
 </tr>
 <tr>
-<td><img src="./assets/react-demo.gif" width="300" alt="React driving real native iOS views through symbiote"></td>
-<td><img src="./assets/vue-demo.gif" width="300" alt="Vue 3 driving real native iOS views through symbiote"></td>
+<td><img src="./assets/react-demo.gif" width="240" alt="React driving real native iOS views through symbiote"></td>
+<td><img src="./assets/vue-demo.gif" width="240" alt="Vue 3 driving real native iOS views through symbiote"></td>
+<td><img src="./assets/angular-demo.gif" width="240" alt="Angular driving real native iOS views through symbiote"></td>
 </tr>
 </table>
 
@@ -134,6 +138,7 @@ live in the per-adapter READMEs:
 
 - **[`adapters/react`](./adapters/react)** — `@symbiote/react`, the reference adapter (full RN surface, iOS + Android).
 - **[`adapters/vue`](./adapters/vue)** — `@symbiote/vue`, Vue 3 on the same core (`examples/vue-tsx`, `examples/vue-sfc`).
+- **[`adapters/angular`](./adapters/angular)** — `@symbiote/angular`, `Renderer2`/`RendererFactory2` on the same core (`examples/angular`).
 
 ---
 
@@ -153,7 +158,7 @@ live in the per-adapter READMEs:
 `Alert` / `Share` / …), `Animated` on **both** the JS and native drivers, the gesture/responder
 lifecycle, accessibility, and RN's JS style processors — all committing through `@symbiote/engine`
 into Fabric. Each adapter's full surface and what's verified where lives in its README:
-[**React →**](./adapters/react) · [**Vue →**](./adapters/vue).
+[**React →**](./adapters/react) · [**Vue →**](./adapters/vue) · [**Angular →**](./adapters/angular).
 
 **The bar for "done" is the canary, not a percentage.** The example apps are the working spec —
 they exercise the real surface and run green on an iOS simulator and an Android emulator. RN's own
@@ -253,7 +258,7 @@ example app for `Detox`) rather than gathered in one directory.
 
 ## Develop
 
-Requires Node ≥ 20 and pnpm 11.
+Requires Node ≥ 22.13 and pnpm 11.
 
 ```bash
 pnpm install
