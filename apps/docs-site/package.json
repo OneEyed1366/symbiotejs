@@ -1,0 +1,23 @@
+{
+  "name": "@symbiote/docs-site",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "astro dev",
+    "build": "astro build",
+    "preview": "astro preview",
+    "typecheck": "astro check"
+  },
+  "dependencies": {
+    "@astrojs/starlight": "catalog:",
+    "astro": "catalog:"
+  },
+  "devDependencies": {
+    "@astrojs/check": "catalog:",
+    "typescript": "catalog:"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

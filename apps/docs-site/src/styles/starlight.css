@@ -1,0 +1,167 @@
+/*
+  Docs chrome reads the same tokens.css the landing page bonds to, so
+  switching frameworks re-skins the whole site, not just the hero.
+*/
+:root,
+:root[data-theme='dark'] {
+  --sl-color-accent-low: color-mix(in srgb, var(--accent) 22%, var(--core-bg));
+  --sl-color-accent: var(--accent);
+  --sl-color-accent-high: var(--accent);
+  --sl-color-text-accent: var(--accent);
+  --sl-color-text-invert: var(--accent-ink);
+  --sl-color-white: var(--core-text);
+  --sl-color-bg: var(--core-bg);
+  --sl-color-bg-nav: color-mix(in srgb, var(--core-bg) 88%, transparent);
+  --sl-color-bg-sidebar: var(--core-bg-2);
+  --sl-color-hairline-light: var(--core-line);
+  --sl-color-hairline: rgba(255, 255, 255, 0.08);
+
+  --sl-font: var(--font-body);
+  --sl-font-mono: var(--font-mono);
+  --sl-content-width: 52rem;
+  --sl-sidebar-width: 18rem;
+
+  /* code blocks (Expressive Code) share the landing's surfaces + per-skin radius */
+  --ec-brdRad: var(--radius);
+  --ec-brdCol: var(--core-line);
+  --ec-codeBg: var(--core-bg-2);
+  --ec-frm-edBg: var(--core-bg-2);
+  --ec-frm-edTabBarBg: var(--core-bg);
+  --ec-frm-edTabBarBrdBtmCol: var(--core-line);
+  --ec-frm-edActTabIndBtmCol: var(--accent);
+}
+
+.header {
+  backdrop-filter: blur(18px);
+}
+
+/* Starlight's own logo <img> is a static file baked with React's cyan, so
+   swapping it to the bonded framework's color needs JS — and since every docs
+   nav is a full page load (no client router), that JS can only run after
+   first paint, flashing the wrong color on every navigation. Hide the <img>
+   and paint the mark with this pseudo-element instead: its color comes from
+   --gradient, a plain CSS var already resolved pre-paint (same mechanism the
+   landing nav's .brand-mark uses), so it never flashes. */
+.site-title {
+  gap: 10px;
+  font-family: var(--font-display);
+  letter-spacing: -0.04em;
+}
+
+.site-title img {
+  display: none;
+}
+
+.site-title::before {
+  content: '';
+  display: inline-block;
+  width: 14px;
+  height: 14px;
+  border-radius: 4px 8px 5px 9px;
+  background: var(--gradient);
+  box-shadow: 0 0 0 4px var(--glow);
+  transition:
+    background var(--bond-ms) ease,
+    box-shadow var(--bond-ms) ease;
+}
+
+/* ── content typography ─────────────────────────────────────── */
+.sl-markdown-content :is(h1, h2, h3, h4, h5, h6) {
+  font-family: var(--font-display);
+  letter-spacing: -0.02em;
+}
+
+.sl-markdown-content a:not(:where(.not-content *)) {
+  color: var(--sl-color-text-accent);
+  transition: color var(--bond-ms) ease;
+}
+
+.sl-markdown-content code:not(:where(.not-content *)) {
+  border: 1px solid var(--sl-color-hairline);
+  border-radius: 5px;
+  background-color: var(--surface-2);
+  margin-inline: 0.15em;
+  padding-inline: 0.45em;
+}
+
+/* tables: a bordered card like every other landing surface, with predictable
+   row heights — `baseline` (Starlight's default) makes a wrapped multi-line
+   cell float away from its single-line neighbours in the same row */
+.sl-markdown-content table {
+  border: 1px solid var(--core-line);
+  border-radius: 10px;
+  overflow: hidden;
+  font-size: 0.9em;
+}
+
+.sl-markdown-content :is(th, td) {
+  padding-inline: 0.75rem;
+  vertical-align: top;
+  line-height: 1.7;
+}
+
+/* the card border already reads as the table's edge — the zero inline-padding
+   Starlight puts on the first/last cell (meant for a border-less table) would
+   otherwise crowd text against that edge */
+.sl-markdown-content :is(th:first-child, td:first-child),
+.sl-markdown-content :is(th:last-child, td:last-child) {
+  padding-inline: 0.75rem;
+}
+
+/* a cell that mixes a code span with plain wrapping words (an explicit value
+   plus its sugar form) gets its own line for each via an authored <br />,
+   never a browser-decided wrap point mid-alternative */
+.sl-markdown-content td code + br + code {
+  margin-top: 0.35em;
+}
+
+.sl-markdown-content th {
+  background: var(--surface);
+}
+
+/* "On this page" reads as the landing's mono eyebrow label */
+#starlight__on-this-page {
+  color: var(--accent);
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  transition: color var(--bond-ms) ease;
+}
+
+/* callouts pick up the landing's per-skin radius; the note/tip/caution/danger
+   hue stays untouched — that's a severity signal, not a brand color */
+.starlight-aside {
+  border-radius: var(--radius);
+  background-color: color-mix(in srgb, var(--sl-color-asides-border) 12%, var(--surface));
+}
+
+.starlight-aside__title {
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+/* sidebar current page — the tinted-fill language of the landing's chips */
+[aria-current='page'] {
+  border-radius: 6px;
+  background-color: color-mix(in srgb, var(--accent) 16%, transparent);
+  color: var(--accent);
+  transition: background-color var(--bond-ms) ease;
+}
+
+.pagination-links a {
+  border-color: var(--core-line);
+  border-radius: 14px;
+  background: var(--surface);
+  transition:
+    border-color 0.2s ease,
+    background 0.2s ease;
+}
+
+.pagination-links a:hover {
+  border-color: var(--accent);
+}

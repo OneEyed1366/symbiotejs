@@ -1,0 +1,88 @@
+---
+title: Vue guide
+description: How to write Symbiote apps with the Vue adapter.
+---
+
+The Vue adapter lets Vue 3 drive the same native Fabric engine as React. The
+native output is not DOM and not a WebView: Vue renderer operations become
+engine mutations, then Fabric commits real native views.
+
+## SFC or JSX — your choice
+
+Vue components can be authored as a `.vue` single-file component or as Vue
+JSX/TSX (`@vue/babel-plugin-jsx` compiling to `createVNode` calls) — both
+compile down to the exact same `@vue/runtime-core` vnode tree, so both drive
+the identical adapter, the identical component surface, and the identical
+native output. Neither is a reduced mode of the other.
+
+<img src="/vue-demo.gif" alt="Vue SFC driving a native symbiote demo" width="260" />
+
+*Vue SFC (`.vue`) — the reference canary at `examples/vue-sfc`.*
+
+<img src="/vue-tsx-demo.gif" alt="Vue TSX driving a native symbiote demo" width="260" />
+
+*Vue JSX/TSX (`.tsx`) — the same canary, authored render-function-first at
+`examples/vue-tsx`, proving the component surface is template-agnostic.*
+
+## Minimal component
+
+```vue
+<script setup lang="ts">
+import { ref } from 'vue';
+import { Pressable, Text, View } from '@symbiote/vue';
+
+const count = ref(0);
+</script>
+
+<template>
+  <View class="root">
+    <Pressable @press="count++" v-slot="{ pressed }">
+      <Text :class="pressed ? 'pressed' : 'label'"> Count is {{ count }} </Text>
+    </Pressable>
+  </View>
+</template>
+
+<style scoped>
+.root { flex: 1; align-items: center; justify-content: center; }
+.label { font-size: 24px; }
+.pressed { font-size: 24px; opacity: 0.6; }
+</style>
+```
+
+`StyleSheet.create` works identically if you'd rather keep style objects
+inline instead of an SFC `<style>` block — see the
+[Styling guide](/docs/learn/styling/) for both paths.
+
+## Vue contract
+
+Vue uses Vue-shaped APIs where the framework semantics differ from React:
+
+- framework events are typed emits such as `@press` and `@value-change`
+  (shared by `Switch` and `TextInput`);
+- dynamic children use slots and scoped slots instead of React render props;
+- template attributes can use kebab-case, and the adapter folds them to the
+  native camelCase contract before commit;
+- imperative handles are exposed through Vue template refs;
+- controlled-value components (`Switch`, `TextInput`, the [Slider](/docs/packages/slider/)
+  wrapper) support real Vue `v-model`, alongside the explicit `value`/`@change-*` pair;
+- `v-show` works on any symbiote host node — it toggles native `display: none`
+  instead of unmounting, same semantics as Vue's DOM `v-show`.
+
+```vue
+<Switch v-model="enabled" />
+<TextInput v-model="text" />
+<View v-show="visible">
+  <Text>Hidden without unmounting</Text>
+</View>
+```
+
+`v-model` is sugar over the same contract that was already there: `Switch`
+and `TextInput` both still accept the explicit `:value`/`@value-change` pair
+— `TextInput`'s `@value-change` fires with `(text, event)`, so the raw native
+event is still reachable without a separate handler. Bare `v-model="x"`
+compiles to `:model-value="x"` + `@update:model-value`; every model-capable
+component also accepts the named form `v-model:value="x"`. Mixing `v-model`
+with the explicit `value`/`@value-change` pair on the same element is
+redundant but harmless — both fire.
+
+Read the exact API surface in the [Vue API reference](/docs/api/vue/).

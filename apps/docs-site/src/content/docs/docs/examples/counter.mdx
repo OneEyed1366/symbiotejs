@@ -1,0 +1,99 @@
+---
+title: Counter example
+description: The smallest useful Symbiote app in React, Vue, and Angular.
+---
+
+This example shows state, native layout, text, and a press event.
+
+## React
+
+```tsx
+import './App.css';
+import { useState } from 'react';
+import { Text, View } from '@symbiote/react';
+
+export default function App() {
+  const [count, setCount] = useState(0);
+
+  return (
+    <View className="root" onPress={() => setCount(value => value + 1)}>
+      <Text className="text">Count is {count}</Text>
+    </View>
+  );
+}
+```
+
+```css
+/* App.css */
+.root { flex: 1; align-items: center; justify-content: center; }
+.text { font-size: 24px; }
+```
+
+## Vue
+
+```vue
+<script setup lang="ts">
+import { ref } from 'vue';
+import { Text, View } from '@symbiote/vue';
+
+const count = ref(0);
+</script>
+
+<template>
+  <View class="root" @press="count += 1">
+    <Text class="text">Count is {{ count }}</Text>
+  </View>
+</template>
+
+<style scoped>
+.root { flex: 1; align-items: center; justify-content: center; }
+.text { font-size: 24px; }
+</style>
+```
+
+## Angular
+
+```ts
+import { Component } from '@angular/core';
+import { Pressable, Text, View } from '@symbiote/angular';
+import './app.css';
+
+@Component({
+  selector: 'app-root',
+  standalone: true,
+  imports: [Pressable, Text, View],
+  template: `
+    <View class="root">
+      <Pressable (press)="count = count + 1">
+        <Text class="text">Count is {{ count }}</Text>
+      </Pressable>
+    </View>
+  `,
+})
+export class App {
+  count = 0;
+}
+```
+
+```css
+/* app.css */
+.root { flex: 1; align-items: center; justify-content: center; }
+.text { font-size: 24px; }
+```
+
+## What changed
+
+| Concern     | React                                  | Vue                       | Angular                          |
+| ----------- | --------------------------------------- | -------------------------- | ----------------------------------- |
+| State       | `useState()`                            | `ref()`                    | plain class field                   |
+| Press event | `onPress` directly on `View`            | `@press` directly on `View`| `(press)` on a `Pressable` wrapper  |
+| Styling     | `className="root"` + `App.css`         | `class="root"` + SFC `<style>` | `class="root"` + `app.css`      |
+| Native path | shared engine                           | shared engine               | shared engine                       |
+
+`View` itself carries `onPress`/`onPressIn`/`onPressOut` — React and Vue's
+simplest counter reaches for it directly rather than wrapping in `Pressable`.
+Angular's counter uses `Pressable` here since its non-function-children form
+is the idiomatic starting point on that adapter; either works on every
+adapter (see the [Pressable example](/docs/examples/pressable/)).
+`StyleSheet.create` works identically to a CSS class if you'd rather keep
+style objects inline — see the [Styling guide](/docs/learn/styling/).

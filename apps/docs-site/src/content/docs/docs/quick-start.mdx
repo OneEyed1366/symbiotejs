@@ -1,0 +1,90 @@
+---
+title: Quick start
+description: Run the existing symbiote examples and inspect the first native app driven through the shared engine.
+---
+
+:::note Run from source
+symbiote is a renderer project under active development. The quickest way to try
+it today is to run one of the repository examples instead of starting from a
+published scaffolder.
+:::
+
+## Prerequisites
+
+- Node.js `>=20`
+- pnpm `11.x`
+- A React Native iOS or Android development environment
+- Xcode for iOS simulator runs, or Android Studio/SDK for Android runs
+
+## Install dependencies
+
+From the repository root:
+
+```sh
+pnpm install
+```
+
+## Run the React canary
+
+```sh
+cd examples/react
+pnpm ios
+```
+
+For Android:
+
+```sh
+cd examples/react
+pnpm android
+```
+
+The React example is the reference canary: it drives the symbiote engine through
+a React reconciler in mutation mode, then the engine commits to Fabric.
+
+## Run the Vue example
+
+```sh
+cd examples/vue-sfc
+pnpm ios
+```
+
+or, for the TSX-flavored Vue example:
+
+```sh
+cd examples/vue-tsx
+pnpm ios
+```
+
+The Vue examples prove the same native engine can be driven by Vue's renderer
+operations rather than React's host config.
+
+## Run the Angular example
+
+```sh
+cd examples/angular
+pnpm ios
+```
+
+For Android:
+
+```sh
+cd examples/angular
+pnpm android
+```
+
+The Angular example proves the same native engine driven a third way: a custom
+`Renderer2`/`RendererFactory2` — Angular's own framework-agnostic rendering
+seam — maps Angular's operations onto the engine mutation API, with a
+DOM-less bootstrap (no `platform-browser`, no zone.js).
+
+## What to look for
+
+The visible demo is intentionally small: a native tap-to-increment counter. The
+important part is the route it takes:
+
+1. Framework state changes.
+2. The adapter calls `insert`, `remove`, `setProp`, or `commit` on the engine.
+3. The engine translates mutations into Fabric's persistent clone-on-write model.
+4. React Native Fabric updates real native views.
+
+Next, read [how it works](/docs/how-it-works/) to understand the render pipeline.

@@ -1,0 +1,88 @@
+---
+title: Core API
+description: The shared engine and component layers behind every adapter.
+---
+
+Most app code should import from `@symbiote/react` or `@symbiote/vue`. The core
+packages explain why those adapters can stay thin and consistent.
+
+## @symbiote/engine
+
+The engine owns the native route:
+
+```txt
+adapter mutation → retained tree → Fabric clone-on-write commit → native views
+```
+
+Its public surface includes:
+
+- the mutation API used by adapters: `createElement`, `appendChild`,
+  `insertBefore`, `removeChild`, `setProp`, `setEventListener`, `commit`-related
+  operations through surfaces;
+- host instance helpers such as `measure`, `setNativeProps`, and
+  `dispatchViewCommand`;
+- style utilities such as `StyleSheet`, `flattenStyle`, and native style
+  processors;
+- platform/runtime utilities such as `Platform`, `PixelRatio`, `Dimensions`,
+  `Appearance`, `Alert`, `Share`, `Linking`, and `Keyboard`;
+- native-view metadata hooks such as `setNativeViewConfigSource`;
+- `createAppRegistry`, the framework-agnostic core of `AppRegistry` (registry
+  bookkeeping, sections, the native host-registrar bridge, headless tasks) —
+  see [App entry point](#app-entry-point-appregistry) below.
+
+Users normally reach these through adapter re-exports.
+
+## App entry point (`AppRegistry`)
+
+Every adapter exports the same `AppRegistry.registerComponent(appKey, () => App)`
+entry point RN apps already use, plus `setHostRegistrar` to hand it RN's own
+`AppRegistry` so the native Fabric host can find the registered runnable by app
+key:
+
+```ts
+import { AppRegistry, setHostRegistrar } from '@symbiote/react'; // or '@symbiote/vue'
+import { AppRegistry as RNAppRegistry } from 'react-native';
+
+setHostRegistrar(RNAppRegistry);
+AppRegistry.registerComponent('MyApp', () => App);
+```
+
+`registerSection`, `runApplication`, `unmountApplicationComponentAtRootTag`,
+`setWrapperComponentProvider`, and the headless-task methods
+(`registerHeadlessTask`, `registerCancellableHeadlessTask`,
+`startHeadlessTask`, `cancelHeadlessTask`) round out the same surface RN's
+`AppRegistry` exposes. All of this bookkeeping lives once in
+`@symbiote/engine`'s `createAppRegistry` — the only framework-specific piece
+each adapter supplies is `runnableFor`, the function that turns a component
+provider into a mount call (`createElement` + `mount` for React, `createApp`/`h`
+for Vue, `createComponent` for Angular).
+
+## @symbiote/components
+
+The component package owns framework-agnostic component logic:
+
+- pure state machines, for example `Switch`, `Pressable`, `TextInput`, and list
+  windowing logic;
+- pure render helpers that produce `Descriptor` trees;
+- shared accessibility folding and native component-name resolution;
+- shared event payload helpers and command helpers.
+
+Adapters provide only lifecycle and element bridges:
+
+| Layer                  | React                | Vue                     | Angular                                       |
+| ---------------------- | -------------------- | ----------------------- | ---------------------------------------------- |
+| State lifecycle        | hooks / refs         | refs / watches / expose | zoneless change detection (signals / fields)   |
+| Render bridge          | `descriptorToReact`  | `descriptorToVue`       | `DescriptorOutlet` (proven on some components, migration in progress) |
+| Public framework shape | callbacks / children | emits / slots           | `@Output()` EventEmitters / `<ng-content>`     |
+
+## Wrapper authors
+
+Native-view wrapper packages can use the same seam:
+
+- derive native metadata with `setNativeViewConfigSource`;
+- keep shared view logic in a framework-agnostic package;
+- expose thin React, Vue, and Angular wrappers that map framework props/events
+  to engine props and native events.
+
+Do not import a third-party React Native JavaScript component into Vue. Wrap the
+native view, not the React component body.

@@ -1,0 +1,54 @@
+---
+title: 'How to: handle press/change events'
+description: Wiring the same native event across React, Vue, and Angular.
+---
+
+import { Aside } from '@astrojs/starlight/components';
+
+You need to react to a native event (a tap, a value change), and the public
+shape of that event differs by framework.
+
+## React — callback props
+
+```tsx
+<Pressable onPress={() => setCount(count + 1)} />
+<Switch value={enabled} onValueChange={setEnabled} />
+<TextInput value={name} onValueChange={setName} />
+```
+
+## Vue — typed emits, or `v-model` on controlled components
+
+```vue
+<Pressable @press="count++" />
+<Switch v-model="enabled" />
+<TextInput v-model="name" />
+```
+
+## Angular — real `@Output()` `EventEmitter`s
+
+```ts
+template: `
+  <Pressable (press)="count = count + 1" />
+  <Switch [value]="enabled" (valueChange)="setEnabled($event)" />
+  <TextInput [value]="name" (valueChange)="setName($event)" />
+`
+```
+
+<Aside type="caution" title="Scroll events are the one exception">
+  `onScroll`/`onScrollBeginDrag`/`onScrollEndDrag`/`onMomentumScrollBegin`/
+  `onMomentumScrollEnd` stay plain callback `@Input()`s on Angular, even on
+  `ScrollView` and the lists — RN's scroll callbacks can carry an
+  `Animated.event(...)` marker, and `@Output()` can only bind a template
+  listener expression, not an arbitrary value.
+</Aside>
+
+## Same payload, different naming
+
+`TextInput`'s React/Vue callback merges what used to be two native callbacks
+into one `onValueChange(text, event)` — an `EventEmitter` can't carry two
+values, so Angular keeps `(valueChange)` text-only and adds a separate
+`(change)` output for the raw event.
+
+For the full event-naming table and why a given event became a Vue emit vs
+stayed a raw passthrough listener, see the [Events guide](/docs/learn/events/)
+and the [Components API](/docs/api/components/).

@@ -1,0 +1,111 @@
+---
+title: 'How to: style a component'
+description: Styling with a CSS class or CSS Modules (preferred), or StyleSheet.create.
+---
+
+You need to style a native view and want the shortest path for your framework.
+
+## Any adapter — a plain CSS class
+
+A standalone `.css`/`.module.css` file import (`className` on React,
+`class`/`[class]` on Vue/Angular) works identically on every adapter — this
+is what every current example app (`examples/react`, `examples/vue-sfc`,
+`examples/vue-tsx`, `examples/angular`) actually does:
+
+```tsx
+import './App.css';
+import { Text, View } from '@symbiote/react';
+
+<View className="card">
+  <Text>Native surface</Text>
+</View>;
+```
+
+`@symbiote/css-parser` compiles the rule at build time; `className="card"`
+resolves it back at render time through a runtime class registry shared by
+every adapter. Plain CSS, CSS Modules, plus optional SCSS/Sass, Less, and
+Stylus preprocessing (`<style lang="scss">`, `.module.scss`, …) — no
+pseudo-classes, no media queries, nothing that needs a DOM to match.
+
+## Vue also gets an inline SFC `<style>` block
+
+A Vue SFC `<style>` block (including `scoped`) compiles to the same native
+style objects at build time — no CSS ships in the bundle, no runtime CSS
+engine exists:
+
+```vue
+<template>
+  <View class="card"><Text>Native surface</Text></View>
+</template>
+
+<style scoped>
+.card {
+  padding: 16px;
+  border-radius: 12px;
+  background-color: #111827;
+}
+</style>
+```
+
+## The alternative — `StyleSheet.create`
+
+Every adapter re-exports `StyleSheet` from `@symbiote/engine`. It's still
+fully supported and needs no build-time CSS step — reach for it for a value
+that's genuinely computed at runtime, or if you'd rather skip CSS entirely:
+
+```tsx
+import { StyleSheet, Text, View } from '@symbiote/react';
+
+const styles = StyleSheet.create({
+  card: { padding: 16, borderRadius: 12, backgroundColor: '#111827' },
+});
+
+<View style={styles.card}>
+  <Text>Native surface</Text>
+</View>;
+```
+
+`StyleSheet.create()` is identity at runtime — the engine flattens plain
+objects too. Its value is preserving literal types and giving the file one
+predictable style block at the bottom, not a different rendering path from
+CSS.
+
+## Want typo-safe `.module.css` keys
+
+A bare `.module.css` import type-checks as `Record<string, string>` unless
+you wire two pieces from `@symbiote/css-parser` — add it as a devDependency:
+
+```sh
+pnpm add -D @symbiote/css-parser
+```
+
+```json
+// package.json
+{ "scripts": { "pretypecheck": "css-dts ." } }
+```
+
+```json
+// tsconfig.json
+{
+  "compilerOptions": {
+    "plugins": [{ "name": "@symbiote/css-parser/typescript-plugin" }]
+  }
+}
+```
+
+`pretypecheck`'s `css-dts .` writes a real, narrowed `.d.ts` next to every
+`.module.css` file so a typo fails `tsc`; the `typescript-plugin` gives you
+matching autocomplete live in the editor, no watch process needed. See the
+[Styling guide](/docs/learn/styling/#real-key-narrowing-css-dts-and-the-typescript-plugin)
+for what each piece covers.
+
+## Choose based on your adapter
+
+- Want CSS syntax → a standalone `.css`/`.module.css` file import works on
+  every adapter; Vue additionally supports an inline SFC `<style>` block,
+  which reads more like ordinary Vue.
+- Want inline, type-checked style objects with no separate file →
+  `StyleSheet.create` works identically on every adapter.
+
+For the full model (what compiles, what doesn't, the `:global()` escape
+hatch, CSS Modules status), see the [Styling guide](/docs/learn/styling/).

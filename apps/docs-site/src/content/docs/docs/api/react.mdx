@@ -1,0 +1,155 @@
+---
+title: React API
+description: The React adapter public contract.
+---
+
+Import app-facing APIs from `@symbiote/react`:
+
+```tsx
+import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from '@symbiote/react';
+```
+
+The React adapter intentionally feels close to React Native. The difference is
+below the component surface: host mutations go through `@symbiote/engine`.
+
+## Component shape
+
+| Concern         | React API                                                  |
+| --------------- | ---------------------------------------------------------- |
+| Event callbacks | `onPress`, `onValueChange` (shared by `Switch`/`TextInput`), `onLayout` |
+| Children        | `children?: ReactNode`                                     |
+| Render children | `(state) => ReactNode`, for components such as `Pressable` |
+| Refs            | React refs to host instances or component handles          |
+| Styles          | `style={styles.root}` with React Native-style objects, or `className` for a registered CSS class (see the [Styling guide](/docs/learn/styling/)) |
+
+## Common events
+
+```tsx
+<Pressable onPress={event => {}} onLongPress={event => {}} />
+<Switch value={enabled} onValueChange={(value, event) => setEnabled(value)} />
+<TextInput value={text} onValueChange={(text, event) => setText(text)} />
+<View onLayout={event => {}} />
+```
+
+## Refs and handles
+
+Host primitives expose the shared host instance where available. Composed
+components expose component-specific handles:
+
+```tsx
+import { useRef } from 'react';
+import { TextInput, type ITextInputHandle } from '@symbiote/react';
+
+const inputRef = useRef<ITextInputHandle>(null);
+
+<TextInput ref={inputRef} value="" onValueChange={() => {}} />;
+inputRef.current?.focus();
+```
+
+## Runtime modules
+
+The adapter re-exports stable runtime utilities and modules so app code can keep
+one import root:
+
+```tsx
+import { Alert, Dimensions, Platform, StyleSheet } from '@symbiote/react';
+```
+
+Some modules are pure engine utilities (`Platform`, `StyleSheet`, `PixelRatio`,
+`PlatformColor`, `DynamicColorIOS`). Others are native-bridge consumers
+(`Alert`, `Share`, `Linking`, `Keyboard`, `Vibration`, `ActionSheetIOS`,
+`BackHandler`, `ToastAndroid`, `PermissionsAndroid`, `AccessibilityInfo`,
+`I18nManager`, `Settings`, `LayoutAnimation`, `InteractionManager`,
+`StatusBar`) that are shared or thinly adapted depending on lifecycle needs.
+`useWindowDimensions`/`useColorScheme` hooks and `findNodeHandle` are also
+re-exported.
+
+## Animations and gestures
+
+`Animated` (both the JS and native driver) and `PanResponder` are re-exported
+from `@symbiote/react` — see the [Animations guide](/docs/learn/animations/)
+for the full surface and per-driver tradeoffs.
+
+## Portals
+
+```tsx
+import { createPortal } from '@symbiote/react';
+
+createPortal(children, containerNodeOrRef, key?);
+```
+
+`createPortal` renders `children` into a different node than the calling
+component's own place in the tree — the same primitive React DOM's
+`createPortal` provides, backed by `react-reconciler`'s Fiber-level portal
+instead of a DOM node. Stock React Native cannot support this: its Fabric host
+config runs in persistent mode and never implements the mutation-mode
+container operations a portal needs. `@symbiote/react` is mutation-mode, so
+this works structurally where it never could in real RN.
+
+The target (`containerNodeOrRef`) must be an already-mounted symbiote host
+node or `SymbioteSurface` — typically a ref to a persistent "overlay host"
+`View` near the app root — not a CSS-selector-style string. **v1 scope:** the
+target must live in the *same* surface as the portal's call site; portaling
+into a second, independently-mounted surface isn't wired yet.
+
+Vue has the equivalent through its own `Teleport` — see the
+[Vue API reference](/docs/api/vue/#portals-teleport).
+
+## Cross-surface content (`createTunnel`)
+
+```tsx
+import { createTunnel } from '@symbiote/react';
+
+const overlayTunnel = createTunnel(); // module-level singleton, importable from both surfaces
+
+function OverlayHost() {
+  return (
+    <View style={styles.overlayHost}>
+      <overlayTunnel.Out />
+    </View>
+  );
+}
+
+function Toast() {
+  return toastVisible ? (
+    <overlayTunnel.In>
+      <ToastCard />
+    </overlayTunnel.In>
+  ) : null;
+}
+```
+
+`createPortal` only reaches a target in the *same* surface. `createTunnel` is
+for two independently `mount()`-ed surfaces that share no Fabric tree at all —
+a split-screen embed, a system-level overlay surface. `In`/`Out` share
+nothing but a small store: `In` registers its children wherever it renders,
+any surface; `Out` reads that store and paints in whichever surface actually
+mounts it. Neither touches a Fabric node directly, so there's no ref-timing
+gotcha and no `isSymbioteNode` guard to satisfy.
+
+Vue and Angular have the same primitive — see their own API references.
+
+## App entry point (`AppRegistry`)
+
+`@symbiote/react` exports the same `AppRegistry`/`setHostRegistrar` entry point
+described in the [Core API](/docs/api/core/#app-entry-point-appregistry). A
+component passed to `setWrapperComponentProvider` receives the app root as an
+ordinary React `children` prop:
+
+```tsx
+import { AppRegistry } from '@symbiote/react';
+import type { ReactNode } from 'react';
+
+function ThemeWrapper({ children }: { children?: ReactNode }) {
+  return <ThemeProvider>{children}</ThemeProvider>;
+}
+
+AppRegistry.setWrapperComponentProvider(() => ThemeWrapper);
+AppRegistry.registerComponent('MyApp', () => App);
+```
+
+## Boundary
+
+Do not pass React component packages to non-React adapters. A third-party React
+Native package that ships a JavaScript React component still uses the React
+dispatcher internally. Non-React adapters need native-view wrappers instead.

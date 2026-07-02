@@ -1,0 +1,162 @@
+---
+title: 'How to: wrap a third-party native view'
+description: Why a library's React component is React-only, and what can be shared.
+---
+
+import { Aside } from '@astrojs/starlight/components';
+
+You want to use a third-party RN library's native view (e.g.
+`@react-native-community/slider`) from a non-React adapter.
+
+<Aside type="danger" title="The library's component is React-only">
+  A third-party RN package ships a React **component** whose body calls hooks
+  off the React dispatcher. Rendering it from Vue or Angular hits a null
+  dispatcher and throws `Cannot read property 'useState' of null`. Only the
+  library's underlying **native view** can be made framework-agnostic —
+  never its React component wrapper.
+</Aside>
+
+## The trick: register the native ViewConfig, skip the React component
+
+The engine already derives a view's events and prop processors from RN's
+`ReactNativeViewConfigRegistry` at runtime. A non-React adapter can drive any
+native view through the same `createNode`-by-ViewConfig path Symbiote uses
+for its own primitives — you register the ViewConfig from the library's
+**codegen spec module**, not its default export:
+
+```ts
+// register.ts — a side-effect import, no hooks in this module
+import '@react-native-community/slider/dist/RNCSliderNativeComponent';
+```
+
+Then each adapter gets its own thin entry that maps the friendly prop/event
+surface onto the native node — the same "one core, N adapters" shape used
+everywhere else in Symbiote.
+
+## Reference implementation: `@symbiote/slider`
+
+`packages/slider` is the real, shipping example — one wrapper package with a
+framework-agnostic core plus a thin entry per adapter:
+
+```tsx
+import { Slider } from '@symbiote/slider/react';
+```
+
+```vue
+<script setup>
+import { Slider } from '@symbiote/slider/vue';
+</script>
+```
+
+```ts
+import { Component } from '@angular/core';
+import { Slider } from '@symbiote/slider/angular';
+
+@Component({ standalone: true, imports: [Slider], template: `<Slider [value]="0.5" />` })
+export class VolumeControl {}
+```
+
+The consuming app installs only `@symbiote/slider` — the wrapper package
+itself owns the native dependency, `react-native.config.cjs` (Android
+autolinking proxy), and the iOS podspec, so autolinking discovers it without
+the app declaring the third-party native package directly.
+
+## Packaging for one-dependency autolinking
+
+If you're authoring your own wrapper (not just consuming Slider), the app
+must only ever list `@symbiote/<lib>` — never the third-party native package
+directly. That means the wrapper itself has to look autolinkable to React
+Native's CLI on both platforms, even though the real native code lives one
+level deeper, inside the wrapper's own dependency tree.
+
+**Android — `react-native.config.cjs`** at the wrapper's root, resolving the
+nested library and pointing `sourceDir`/`libraryName`/`componentDescriptors`
+at its real Android sources:
+
+```js
+// Must be .cjs — the wrapper package is "type": "module", and a plain
+// react-native.config.js would be parsed as ESM and silently skipped by the
+// sync RN CLI config reader.
+const nativeLibRoot = path.dirname(require.resolve('@react-native-community/slider/package.json'));
+
+module.exports = {
+  dependency: {
+    platforms: {
+      android: {
+        sourceDir: path.relative(cliDependencyRoot, path.join(nativeLibRoot, 'android')),
+        libraryName: 'RNCSlider',
+        componentDescriptors: ['RNCSliderComponentDescriptor'],
+        cmakeListsPath: 'src/main/jni/CMakeLists.txt',
+      },
+      ios: {},
+    },
+  },
+};
+```
+
+**iOS — `symbiote-<lib>.podspec`**, resolving the same nested library and
+re-exposing its source files and native dependencies. CocoaPods rejects
+absolute file patterns, so every path stays relative to the podspec's own
+directory:
+
+```ruby
+native_lib_root = # resolved via Node's require.resolve, same idea as above
+s.source_files = File.join(native_lib_relative_root, 'ios/**/*.{h,m,mm}')
+s.dependency 'React-RCTFabric'
+s.dependency 'React-Codegen'
+```
+
+**`package.json`** copies the native library's `codegenConfig`, but points
+`jsSrcsDir` at the *nested* copy (`node_modules/<native-lib>/src`) so RN's own
+codegen still runs against the real spec. The native library itself stays a
+regular `dependency` of the wrapper, never a `peerDependency` — that's what
+makes it install transitively without the app ever naming it.
+
+## Verify autolinking actually discovers it
+
+Don't take the packaging on faith — `react-native config` is the CLI's own
+autolinking resolution, so it's the ground truth for whether a wrapper is
+actually discoverable:
+
+```bash
+cd examples/react && pnpm exec react-native config
+```
+
+The relevant slice of a real run, trimmed to the wrapper's own entry:
+
+```json
+"@symbiote/slider": {
+  "root": ".../examples/react/node_modules/@symbiote/slider",
+  "platforms": {
+    "ios": {
+      "podspecPath": ".../node_modules/@symbiote/slider/symbiote-slider.podspec"
+    },
+    "android": {
+      "sourceDir": ".../node_modules/.pnpm/@react-native-community+slider@5.2.0/node_modules/@react-native-community/slider/android",
+      "libraryName": "RNCSlider",
+      "componentDescriptors": ["RNCSliderComponentDescriptor"]
+    }
+  }
+}
+```
+
+That's the proof the packaging works: `ios.podspecPath` resolves inside the
+wrapper's **own** package, while `android.sourceDir` resolves through to the
+real third-party library nested deep in the pnpm store — both discovered
+from the app's single `@symbiote/<lib>` dependency, with the third-party
+package never named in the app's own `package.json`. If a new wrapper's
+entry is missing entirely, or `android`/`ios` comes back `null`, the proxy
+config isn't wired correctly yet — fix that before touching a simulator.
+
+## What this does not solve
+
+If you need the library's actual React **behavior** (its stateful component
+logic) from a non-React adapter, there is no path — that logic runs on the
+React dispatcher by construction. Wrapping the native view only works because
+the view itself has no framework dependency; the library's JS wrapper around
+it does.
+
+Full package shape, prop-type split, and the autolinking packaging law are in
+the project's
+[`symbiote-third-party-native-view`](https://github.com/OneEyed1366/symbiote/blob/master/.claude/skills/symbiote-third-party-native-view/SKILL.md)
+skill.

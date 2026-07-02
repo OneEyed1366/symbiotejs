@@ -1,0 +1,77 @@
+---
+title: Roadmap
+description: Current status and the next milestones for symbiote.
+---
+
+The goal is not to duplicate React Native's JavaScript surface all at once;
+the goal is to harden the renderer seam, then expand adapter and component
+parity through shared layers.
+
+## Current milestones
+
+| Area              | Status                 | Purpose                                                                                                             |
+| ----------------- | ------------------------ | --------------------------------------------------------------------------------------------------------------------- |
+| React adapter     | On the live switcher      | Reference canary for the engine and Fabric pipe.                                                                    |
+| Vue adapter       | On the live switcher      | First non-React proof of the framework-agnostic seam.                                                               |
+| Angular adapter   | On the live switcher      | Second non-React proof: `Renderer2` seam, DOM-less bootstrap, full component parity.                              |
+| Engine            | In progress               | Retained tree, clone-on-write commits, event normalization.                                                         |
+| Components        | In progress               | Shared state/view layers so adapters inherit parity.                                                                |
+| Android host shim | Active                    | Keeps Android at canary parity with iOS.                                                                             |
+
+## Next adapter work
+
+Angular validated the second framework-agnostic renderer seam and a more
+complex AOT build pipeline (`ngtsc` partial compilation, then the
+compiler-cli linker — two phases), and is now on the live framework switcher
+alongside React and Vue. Its migration from callback `@Input()` props to
+idiomatic `@Output()` `EventEmitter`s for component events is complete, with
+one permanent exception: the scroll family (`onScroll`, `onScrollBeginDrag`,
+`onScrollEndDrag`, `onMomentumScrollBegin`, `onMomentumScrollEnd`) stays a
+callback input on `ScrollView` and the list components, because it must also
+accept an `Animated.event(...)` marker for native-driven scroll, which
+`@Output()` can't express. Wrapper packages have followed: the Slider package
+now ships an Angular build alongside React and Vue. Svelte and Solid fit the
+same long-term model: thin adapters over the shared engine.
+
+React, Vue, and Angular keep expanding parity in the meantime: all three
+adapters now have a portal primitive for same-surface content relocation
+(React's `createPortal`, Vue's `Teleport`, Angular's `*portal` directive) plus
+a `createTunnel` primitive for cross-surface delivery — mutation-mode Fabric
+supports this where stock RN's persistent-mode renderer can't. Vue also
+gained `v-model` on controlled components and a working `v-show` directive;
+Angular's `[(value)]` two-way binding covers the same controlled-component
+case idiomatically. All three adapters now share one `AppRegistry` entry
+point over the same `@symbiote/engine` core.
+
+## Styling / CSS compiler
+
+`@symbiote/css-parser` compiles plain CSS, CSS Modules, and SCSS/Sass, Less,
+and Stylus preprocessor sources at build time into native style objects,
+resolved at runtime through a class registry shared by React, Vue, and
+Angular, including `box-shadow`, `transform`, `filter`, `transform-origin`,
+and `background-image` (gradients). It also ships type safety for
+`.module.css` imports: a `css-dts` CLI that generates a narrowed, typo-safe
+`.d.ts` next to each CSS Modules file, and a `typescript-plugin` for live
+in-editor autocomplete — see the [styling guide](/docs/learn/styling/) for
+setup. Svelte support and Tailwind CSS remain the open seams in this family.
+
+## Component parity rule
+
+A component is done only when it reaches full feature parity across adapters.
+The project should not ship a minimal Vue `ScrollView` if React's `ScrollView`
+already supports sticky headers, native scroll attach, imperative handles, and
+platform-specific behavior. Shared logic moves into the shared layer; adapters
+supply lifecycle and framework bridges.
+
+## Non-goals
+
+- Forking React Native native sources.
+- Hiding `react-native` as a transitive dependency of apps.
+- Making third-party React Native JavaScript components framework-agnostic.
+- Replacing Yoga or the native Fabric host.
+
+## Architecture docs
+
+Public architecture notes should be written as standalone reader-facing pages.
+Internal repository notes can inform those pages, but should not be linked or
+referenced directly from the public docs.

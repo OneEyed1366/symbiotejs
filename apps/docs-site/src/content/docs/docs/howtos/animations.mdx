@@ -1,0 +1,53 @@
+---
+title: 'How to: animate a value'
+description: Driving a native prop with Animated.Value, the JS driver, and the native driver.
+---
+
+You want to animate a style prop (fade, slide, scale, a collapsing header)
+without reaching for a third-party animation library.
+
+## Every adapter — the same `Animated` namespace
+
+```tsx
+import { Animated } from '@symbiote/react'; // or '@symbiote/vue' / '@symbiote/angular'
+
+const opacity = new Animated.Value(0);
+
+Animated.timing(opacity, {
+  toValue: 1,
+  duration: 300,
+  useNativeDriver: true,
+}).start();
+```
+
+Wrap the view you want to animate in `Animated.View` (React), an aliased
+`AnimatedView` const (Vue — templates can't parse a dotted tag name), or the
+named `AnimatedView` import (Angular — required by its AOT compiler, not
+optional). See the [Animations guide](/docs/learn/animations/) for the full
+per-adapter reasoning and the rest of the surface (`ValueXY`, tracking,
+`diffClamp`, `Animated.event`).
+
+## Choose a driver
+
+- `useNativeDriver: true` — for `opacity`/`transform` only. Runs entirely on
+  the native side once started; the JS thread can stay busy without stalling
+  the animation.
+- `useNativeDriver: false` (default) — for any other style property. Runs in
+  JS, committing a new value through the engine every frame.
+
+## Choose a curve
+
+- `Animated.timing(value, { toValue, duration, easing })` — a fixed-duration
+  curve.
+- `Animated.spring(value, { toValue, ...physics })` — physics-based, and
+  `toValue` can itself be another `Animated.Value` to chase a moving target.
+- `Animated.decay(value, { velocity, deceleration })` — momentum-style
+  deceleration.
+
+Compose several with `Animated.parallel([...])`, `Animated.sequence([...])`,
+`Animated.stagger(ms, [...])`, or `Animated.loop(animation)`.
+
+For the full working reference — JS driver vs native driver side by side, a
+`PanResponder`-driven drag box, a tracking spring, and a `diffClamp`
+collapsing header — see `AnimatedDemo`/`AnimatedParityDemo` in
+[`examples/react/App.tsx`](https://github.com/OneEyed1366/symbiote/blob/master/examples/react/App.tsx).

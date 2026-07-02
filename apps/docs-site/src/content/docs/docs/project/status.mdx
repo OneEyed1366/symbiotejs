@@ -1,0 +1,64 @@
+---
+title: Status
+description: What is stable enough to document today.
+---
+
+The documented public surface focuses on React, Vue, Angular, and the shared
+core packages.
+
+## Adapter status
+
+- React — the reference adapter and canary for the engine and native Fabric
+  pipe. Has `createPortal` — mutation-mode Fabric makes portals possible where
+  stock RN's persistent-mode renderer cannot.
+- Vue — the first non-React adapter over the same engine. `Switch`,
+  `TextInput`, and the Slider wrapper support real `v-model`; `v-show` toggles
+  native `display: none` without unmounting; `Teleport` is the same portal
+  primitive as React's `createPortal`, targeted at a host-node ref instead of a
+  CSS selector. Also exposes `AppRegistry`, the same app-entry-point API as
+  React, over a shared `@symbiote/engine` core.
+- Angular — the second non-React adapter. Renderer seam
+  (`Renderer2`/`RendererFactory2`), DOM-less bootstrap, and full component
+  parity are implemented and tested (`examples/angular`). Every component
+  event, including the accessibility callbacks, is a real `@Output()`
+  `EventEmitter` now; the one permanent exception is the scroll family
+  (`onScroll`, `onScrollBeginDrag`, `onScrollEndDrag`,
+  `onMomentumScrollBegin`, `onMomentumScrollEnd`), which stays a callback
+  input on `ScrollView` and the list components because it must also accept
+  an `Animated.event(...)` marker, which `@Output()` can't express. On the
+  landing page's live framework switcher now; the Slider wrapper package also
+  ships an Angular build (`@symbiote/slider/angular`).
+- Svelte — not started. Architecture diagrams and roadmap text only.
+- Solid — not started. Architecture diagrams and roadmap text only.
+
+## Core status
+
+- `@symbiote/engine` — retained tree, Fabric commit path, style/runtime
+  utilities, native events, and the shared `AppRegistry` core every adapter
+  wraps.
+- `@symbiote/css-parser` — build-time compiler for plain CSS, CSS Modules, and
+  SCSS/Sass, Less, and Stylus preprocessor sources, resolved at runtime
+  through a class registry shared by React, Vue, and Angular. Also ships a
+  `css-dts` CLI (typo-safe `.module.css` `.d.ts` generation) and a
+  `typescript-plugin` for live in-editor autocomplete — see the
+  [roadmap](/docs/project/roadmap/).
+- `@symbiote/components` — shared component state, render helpers,
+  accessibility, and parity logic.
+- React/Vue/Angular adapters — framework lifecycle and public API bridges over
+  the shared core.
+
+## What the docs promise
+
+React, Vue, and Angular are presented as live choices on the landing page's
+framework switcher, each with its own demo GIF on the landing page and its
+learn guide. Svelte and Solid stay in architecture diagrams and roadmap text
+only, with no dedicated guide yet because no code exists for them.
+
+## What remains moving
+
+- Component API pages will split out as each page has real examples and useful
+  details.
+- Vue API docs need extra care because events, slots, and refs intentionally
+  differ from React.
+- Native module behavior must stay platform-verified on real iOS/Android hosts,
+  not only headless tests.

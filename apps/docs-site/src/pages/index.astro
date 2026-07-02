@@ -1,0 +1,683 @@
+---
+import '../styles/landing.css';
+
+const description =
+  'symbiote lets Vue, React, and future framework adapters drive real native iOS and Android views through stock React Native Fabric.';
+
+// The "native core" of the page: one structure, swappable symbiote skin.
+const symbiotes = [
+  { id: 'react', label: 'React', live: true },
+  { id: 'vue', label: 'Vue', live: true },
+  { id: 'angular', label: 'Angular', live: true },
+  { id: 'svelte', label: 'Svelte', live: false },
+  { id: 'solid', label: 'Solid', live: false },
+];
+---
+
+<html lang="en" data-symbiote="react">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link rel="icon" href="/symbiote.svg" type="image/svg+xml" />
+    <meta name="theme-color" content="#08090d" />
+    <meta name="description" content={description} />
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="symbiote — native apps for every framework" />
+    <meta property="og:description" content={description} />
+    <meta name="twitter:card" content="summary" />
+    <title>symbiote — native apps for every framework</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Space+Mono:wght@400;700&family=Inter:wght@400;500;600&display=swap"
+      rel="stylesheet"
+    />
+
+    <!-- Restore the bonded live symbiote before paint so the skin never flashes. -->
+    <script is:inline>
+      try {
+        var s = localStorage.getItem('symbiote');
+        document.documentElement.dataset.symbiote = s === 'vue' || s === 'angular' ? s : 'react';
+      } catch (e) {}
+    </script>
+  </head>
+  <body>
+    <header class="nav">
+      <a class="brand" href="/">
+        <span class="brand-mark" aria-hidden="true"></span>
+        symbiote
+      </a>
+      <nav class="nav-links" aria-label="Primary">
+        <a href="/docs/">Docs</a>
+        <a href="https://github.com/OneEyed1366/symbiote">GitHub</a>
+      </nav>
+    </header>
+
+    <main class="shell">
+      <section class="hero" aria-labelledby="hero-title">
+        <div class="hero-copy">
+          <div
+            class="switcher"
+            role="group"
+            aria-label="Choose your symbiote framework"
+          >
+            <span class="eyebrow">Bond a symbiote</span>
+            <div class="chips">
+              {
+                symbiotes.map((s) => (
+                  <button
+                    class={`chip${s.live ? '' : ' is-wip'}`}
+                    type="button"
+                    data-fw={s.id}
+                    aria-pressed={s.id === 'react' ? 'true' : 'false'}
+                    aria-disabled={!s.live}
+                    disabled={!s.live}
+                  >
+                    <span class="dot" aria-hidden="true" />
+                    {s.label}
+                    {!s.live && <span class="soon">soon</span>}
+                  </button>
+                ))
+              }
+            </div>
+          </div>
+
+          <h1 id="hero-title">
+            Native apps<br />
+            for <span class="symbiote-name" data-fw>React</span>.
+          </h1>
+
+          <p class="lede">
+            One native core. The framework you already know, bonded on top — no
+            WebView, no rewrite, no React Native fork.
+          </p>
+
+          <div class="actions">
+            <a class="button primary" href="/docs/quick-start/">Get started</a>
+            <a class="button secondary" href="/docs/how-it-works/">See how it works</a>
+          </div>
+        </div>
+
+        <div class="host" aria-hidden="true">
+          <svg class="symbiote" viewBox="0 0 300 330" role="img">
+            <defs>
+              <!-- one gradient across the whole mass (not per-circle) so the goo reads as smooth ooze;
+                   coords are in the creature's LOCAL space (the body group carries a transform) -->
+              <linearGradient
+                id="symGrad"
+                gradientUnits="userSpaceOnUse"
+                x1="44"
+                y1="44"
+                x2="156"
+                y2="200"
+              >
+                <stop offset="0" stop-color="var(--accent)" />
+                <stop offset="1" stop-color="var(--accent-2)" />
+              </linearGradient>
+              <!-- metaball goo: nearby blobs fuse into one liquid mass -->
+              <filter id="goo" x="-40%" y="-30%" width="180%" height="170%">
+                <feGaussianBlur in="SourceGraphic" stdDeviation="7" result="b" />
+                <feColorMatrix
+                  in="b"
+                  type="matrix"
+                  values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 20 -9"
+                  result="g"
+                />
+                <feBlend in="SourceGraphic" in2="g" />
+              </filter>
+              <clipPath id="screenClip">
+                <rect x="112" y="92" width="76" height="170" rx="11" />
+              </clipPath>
+            </defs>
+
+            <!-- SYMBIOTE BODY — the living mass coiled BEHIND the device.
+                 Drawn in the creature's own 100,120-centred space; the group transform
+                 parks that centre behind the phone, so the JS below stays unchanged. -->
+            <g
+              class="goo goo-back"
+              filter="url(#goo)"
+              fill="url(#symGrad)"
+              transform="translate(32,6) scale(1.18)"
+            >
+              <!-- core mass; JS appends + animates tendril circles each frame -->
+              <circle class="core" cx="100" cy="118" r="50" />
+              <circle class="core" cx="84" cy="104" r="30" />
+              <circle class="core" cx="120" cy="110" r="32" />
+              <circle class="core" cx="98" cy="146" r="34" />
+              <!-- head cap — bulges up over the device's top edge so the face has a body -->
+              <circle class="core" cx="92" cy="46" r="33" />
+              <circle class="core" cx="110" cy="42" r="23" />
+            </g>
+
+            <!-- NATIVE CORE — the one fixed device the symbiote rewrites.
+                 Structure never changes between skins; only the screen recolours. -->
+            <g class="phone">
+              <rect class="phone-frame" x="104" y="66" width="92" height="222" rx="22" />
+              <rect class="phone-screen-bg" x="112" y="92" width="76" height="170" rx="11" />
+              <g clip-path="url(#screenClip)">
+                <rect class="scr-bar" x="112" y="92" width="76" height="30" />
+                <text class="scr-title" x="121" y="111">symbiote</text>
+                <text class="scr-label" x="121" y="150">BONDS</text>
+                <text class="scr-num" x="119" y="190">42</text>
+                <rect class="scr-btn" x="121" y="206" width="58" height="22" rx="11" />
+                <text class="scr-btn-label" x="150" y="221" text-anchor="middle">bond +1</text>
+                <text class="scr-fw" x="121" y="250">React</text>
+              </g>
+              <rect class="phone-speaker" x="138" y="76" width="24" height="3.5" rx="1.75" />
+              <circle class="phone-cam" cx="170" cy="78" r="2.4" />
+              <rect class="phone-home" x="134" y="276" width="32" height="4" rx="2" />
+            </g>
+
+            <!-- SYMBIOTE GRIP — tendrils that wrap OVER the front edges of the device
+                 (filled + animated by JS). Sits in front of the phone, hugging the rim. -->
+            <g class="goo goo-front" filter="url(#goo)" fill="url(#symGrad)"></g>
+
+            <!-- wet sheen + the looming head, peeking over the top of the device -->
+            <ellipse class="sheen" cx="150" cy="42" rx="16" ry="9" transform="rotate(-24 150 42)" />
+
+            <g class="face-anchor" transform="translate(70,-36) scale(0.8)">
+            <g class="face">
+              <!-- eyes — one face per symbiote -->
+              <!-- iconic symbiote eyes: narrow at the bridge, sweeping wide up-and-out -->
+              <g class="eyes eyes-angry">
+                <path class="eye" d="M101,116 C84,92 60,82 44,90 C54,104 74,114 101,116 Z" />
+                <path class="eye" d="M99,116 C116,92 140,82 156,90 C146,104 126,114 99,116 Z" />
+              </g>
+              <g class="eyes eyes-calm">
+                <path class="eye" d="M101,112 C86,98 66,92 50,98 C58,108 76,114 101,112 Z" />
+                <path class="eye" d="M99,112 C114,98 134,92 150,98 C142,108 124,114 99,112 Z" />
+              </g>
+              <g class="eyes eyes-friendly">
+                <path class="eye" d="M101,110 C86,100 68,98 54,104 C62,112 78,116 101,110 Z" />
+                <path class="eye" d="M99,110 C114,100 132,98 146,104 C138,112 122,116 99,110 Z" />
+              </g>
+              <g class="eyes eyes-slit">
+                <path class="eye" d="M101,112 C84,104 64,100 48,104 C60,110 78,114 101,112 Z" />
+                <path class="eye" d="M99,112 C116,104 136,100 152,104 C140,110 122,114 99,112 Z" />
+              </g>
+
+              <!-- mouths — fangs for the predators, a line for the calm ones -->
+              <g class="maw maw-fanged">
+                <path d="M64,130 Q100,123 136,130 Q138,152 100,164 Q62,152 64,130 Z" fill="rgba(0,0,0,0.55)" />
+                <path class="fang" d="M70,129 L82,129 L76,149 Z" />
+                <path class="fang" d="M84,128 L96,128 L90,151 Z" />
+                <path class="fang" d="M98,128 L110,128 L104,151 Z" />
+                <path class="fang" d="M112,128 L124,128 L118,149 Z" />
+                <path class="fang" d="M126,130 L136,130 L131,146 Z" />
+                <path class="fang" d="M80,163 L92,163 L86,145 Z" />
+                <path class="fang" d="M96,164 L108,164 L102,144 Z" />
+                <path class="fang" d="M110,163 L121,163 L116,146 Z" />
+                <path class="saliva" d="M88,131 Q90,143 87,156" />
+                <path class="saliva" d="M104,130 Q106,144 103,158" />
+                <path class="saliva" d="M120,131 Q121,141 118,153" />
+              </g>
+              <g class="maw maw-spikes">
+                <path d="M80,126 Q100,122 120,126 Q120,137 100,142 Q80,137 80,126 Z" fill="rgba(0,0,0,0.5)" />
+                <path class="fang" d="M84,126 L92,126 L88,138 Z" />
+                <path class="fang" d="M95,125 L103,125 L99,139 Z" />
+                <path class="fang" d="M106,126 L114,126 L110,138 Z" />
+                <path class="fang" d="M90,142 L98,142 L94,133 Z" />
+                <path class="fang" d="M102,142 L110,142 L106,133 Z" />
+                <path class="saliva" d="M93,127 Q94,135 92,141" />
+                <path class="saliva" d="M107,127 Q108,135 105,141" />
+              </g>
+              <path class="lips mouth-smile" d="M82,128 Q100,144 118,128" />
+              <path class="lips mouth-flat" d="M84,131 Q100,136 116,131" />
+            </g>
+            </g>
+          </svg>
+          <p class="host-label">native core · React Native Fabric</p>
+        </div>
+      </section>
+
+      <section class="proof" aria-label="What stays true under every symbiote">
+        <article>
+          <span class="tag">Core</span>
+          <h2>Stock native stack</h2>
+          <p>
+            Fabric, JSI, Yoga, Hermes, and the iOS/Android host stay ordinary
+            React Native dependencies. symbiote swaps the JavaScript renderer,
+            never the native stack.
+          </p>
+        </article>
+        <article>
+          <span class="tag">Adapter</span>
+          <h2>Thin per-framework skin</h2>
+          <p>
+            Each framework maps its lifecycle and renderer operations onto one
+            small engine mutation API. Clone-on-write Fabric persistence lives in
+            a single shared place.
+          </p>
+        </article>
+        <article>
+          <span class="tag">Output</span>
+          <h2>Real native views</h2>
+          <p>
+            The result is the same Fabric shadow tree React Native already paints.
+            No DOM, no WebView escape hatch, no fake native component layer.
+          </p>
+        </article>
+      </section>
+
+      <section class="traits" aria-labelledby="traits-title">
+        <span class="eyebrow">Not just multi-platform</span>
+        <h2 id="traits-title">Every adapter keeps the accent of its framework.</h2>
+        <p class="traits-lede">
+          Cross-surface content sharing, real framework sugar instead of a
+          flattened callback surface, and CSS you can actually write — each
+          landing framework by framework, not diluted into a shared subset.
+        </p>
+
+        <div class="trait-grid">
+          <article class="trait">
+            <span class="tag">Composition</span>
+            <h3>Reach across the tree — or across surfaces</h3>
+            <p>
+              <code>createPortal</code> renders into another node in the same
+              tree — a real Fiber-level portal, possible because Fabric runs
+              in mutation mode here. <code>createTunnel</code> goes further:
+              content painted by one independently mounted surface,
+              registered from a totally different one, joined by nothing but
+              a shared store.
+            </p>
+            <ul class="trait-fws" aria-label="Available on">
+              <li data-fw="react">React</li>
+              <li data-fw="vue">Vue</li>
+              <li data-fw="angular">Angular</li>
+            </ul>
+          </article>
+
+          <article class="trait">
+            <span class="tag">Idiom</span>
+            <h3>Sugar where the framework expects it</h3>
+            <p>
+              <code>v-model</code> and <code>v-show</code> work on native
+              views in Vue. Angular gets real @<code>Output()</code>
+              <code>EventEmitter</code>s and <code>[(value)]</code> two-way
+              binding. Neither is a callback surface borrowed from React —
+              each adapter speaks its own framework's grammar.
+            </p>
+            <ul class="trait-fws" aria-label="Available on">
+              <li data-fw="vue">Vue</li>
+              <li data-fw="angular">Angular</li>
+            </ul>
+          </article>
+
+          <article class="trait">
+            <span class="tag">Styling</span>
+            <h3>Write CSS. Ship zero CSS engine.</h3>
+            <p>
+              A Vue SFC <code>&lt;style&gt;</code> block compiles to native
+              style objects at build time — add <code>scoped</code> and it's
+              scoped to the component, <code>:global(...)</code> still
+              escapes out, the same semantics real Vue gives you in the
+              browser. CSS Modules and plain <code>.css</code> imports go
+              further: <code>import styles from './Card.module.css'</code>
+              resolves through the same shared class registry from React,
+              Vue, or Angular.
+            </p>
+            <ul class="trait-fws" aria-label="Available on">
+              <li data-fw="react">React</li>
+              <li data-fw="vue">Vue</li>
+              <li data-fw="angular">Angular</li>
+            </ul>
+          </article>
+
+          <article class="trait">
+            <span class="tag">Testing</span>
+            <h3>One e2e spec, three adapters</h3>
+            <p>
+              Headless <code>vitest</code> covers component and integration
+              logic with no simulator involved. <code>Detox</code> drives the
+              real app end to end — and because it attaches below the
+              renderer symbiote replaces, the identical spec file runs
+              unmodified against the React, Vue SFC, and Vue TSX canaries.
+              Angular has its own real-device Detox suite too.
+            </p>
+            <ul class="trait-fws" aria-label="Available on">
+              <li data-fw="react">React</li>
+              <li data-fw="vue">Vue</li>
+              <li data-fw="angular">Angular</li>
+            </ul>
+          </article>
+        </div>
+      </section>
+
+      <section class="demo" aria-labelledby="demo-title">
+        <div class="demo-copy">
+          <span class="eyebrow">Same surface, different host</span>
+          <h2 id="demo-title">Three symbiotes, one native core.</h2>
+          <p>
+            React is the reference canary. Vue proves the native core is no longer
+            tied to React's reconciler. Angular proves it again, through a completely
+            different rendering model. All three flow through the same engine and
+            the same stock Fabric host.
+          </p>
+        </div>
+        <div class="demo-grid">
+          <figure data-fw="react" class="is-active">
+            <img src="/react-demo.gif" alt="React driving a native symbiote counter demo" />
+            <figcaption><span class="dot" data-fw="react"></span>React · live adapter</figcaption>
+          </figure>
+          <figure data-fw="vue">
+            <img src="/vue-demo.gif" alt="Vue 3 driving a native symbiote counter demo" />
+            <figcaption><span class="dot" data-fw="vue"></span>Vue · live adapter</figcaption>
+          </figure>
+          <figure data-fw="angular">
+            <img src="/angular-demo.gif" alt="Angular driving a native symbiote counter demo" />
+            <figcaption><span class="dot" data-fw="angular"></span>Angular · live adapter</figcaption>
+          </figure>
+        </div>
+      </section>
+
+      <section class="seam" aria-labelledby="seam-title">
+        <span class="eyebrow">The seam</span>
+        <h2 id="seam-title">Framework → adapter → engine → Fabric.</h2>
+        <ol class="pipeline" aria-label="symbiote render pipeline">
+          <li>Vue · React · future adapters</li>
+          <li>thin reconciler</li>
+          <li>@symbiote/engine</li>
+          <li>nativeFabricUIManager</li>
+          <li>stock React Native</li>
+        </ol>
+      </section>
+
+      <section class="status" aria-labelledby="status-title">
+        <span class="eyebrow">Where things stand</span>
+        <h2 id="status-title">Small surface, real pipe.</h2>
+        <ul>
+          <li data-fw="react" class="is-active">
+            <span class="dot" aria-hidden="true"></span>
+            <strong>React</strong>
+            <span class="state">reference adapter — iOS + Android canary</span>
+          </li>
+          <li data-fw="vue">
+            <span class="dot" aria-hidden="true"></span>
+            <strong>Vue 3</strong>
+            <span class="state">full canary parity on the shared engine</span>
+          </li>
+          <li data-fw="angular">
+            <span class="dot" aria-hidden="true"></span>
+            <strong>Angular</strong>
+            <span class="state">second non-React proof — full component parity</span>
+          </li>
+          <li data-fw="svelte">
+            <span class="dot" aria-hidden="true"></span>
+            <strong>Svelte</strong>
+            <span class="state">future adapter over the same seam</span>
+          </li>
+          <li data-fw="solid">
+            <span class="dot" aria-hidden="true"></span>
+            <strong>Solid</strong>
+            <span class="state">future adapter over the same seam</span>
+          </li>
+        </ul>
+        <a class="text-link" href="/docs/project/roadmap/">Read the roadmap →</a>
+      </section>
+    </main>
+
+    <footer class="foot">
+      <span>symbiote — framework-agnostic React Native renderer.</span>
+      <a href="/docs/">Documentation</a>
+    </footer>
+
+    <script is:inline>
+      const LIVE_SYMBIOTES = ['react', 'vue', 'angular'];
+      const LABEL = {
+        react: 'React',
+        vue: 'Vue',
+        svelte: 'Svelte',
+        solid: 'Solid',
+        angular: 'Angular',
+      };
+
+      // Same 2 (3 for Angular) accent stops as tokens.css's --gradient per skin — the favicon
+      // is a plain static file on disk, so it can't read CSS vars; it's rebuilt as a data URI
+      // instead. Shape mirrors the nav's own .brand-mark blob (public/symbiote.svg and
+      // src/assets/symbiote-logo.svg ship the same design as the static default).
+      const FAVICON_GRADIENT = {
+        react: ['#61dafb', '#2bb0d6'],
+        vue: ['#42d392', '#35a479'],
+        angular: ['#e40035', '#f6007b', '#9c0aab'],
+        svelte: ['#ff3e00', '#d63200'],
+        solid: ['#4a8bc2', '#2c4f7c'],
+      };
+
+      function faviconHref(id) {
+        const stops = FAVICON_GRADIENT[id] || FAVICON_GRADIENT.react;
+        const stopTags = stops
+          .map((color, i) => `<stop offset="${i / (stops.length - 1)}" stop-color="${color}"/>`)
+          .join('');
+        const svg =
+          '<svg width="128" height="128" viewBox="0 0 128 128" fill="none" xmlns="http://www.w3.org/2000/svg">' +
+          '<rect width="128" height="128" rx="30" fill="#030406"/>' +
+          '<circle cx="64" cy="64" r="46" fill="' + stops[0] + '" opacity="0.35" filter="url(#glow)"/>' +
+          '<path d="M45,20 L68,20 A40 40 0 0 1 108,60 L108,77 A31 31 0 0 1 77,108 L60,108 A40 40 0 0 1 20,68 L20,45 A25 25 0 0 1 45,20 Z" fill="url(#g)"/>' +
+          '<ellipse cx="48" cy="42" rx="14" ry="9" fill="#ffffff" opacity="0.28" filter="url(#sheen)"/>' +
+          '<defs><linearGradient id="g" x1="20" y1="20" x2="108" y2="108" gradientUnits="userSpaceOnUse">' +
+          stopTags +
+          '</linearGradient>' +
+          '<filter id="glow" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="10"/></filter>' +
+          '<filter id="sheen" x="-100%" y="-100%" width="300%" height="300%"><feGaussianBlur stdDeviation="6"/></filter>' +
+          '</defs></svg>';
+        return 'data:image/svg+xml,' + encodeURIComponent(svg);
+      }
+
+      const root = document.documentElement;
+      const nameEl = document.querySelector('.symbiote-name');
+      const screenFw = document.querySelector('.scr-fw');
+      const screenNum = document.querySelector('.scr-num');
+      const chips = Array.from(document.querySelectorAll('.chip'));
+      const statusRows = Array.from(document.querySelectorAll('.status li'));
+      const figures = Array.from(document.querySelectorAll('.demo-grid figure'));
+      const faviconLink = document.querySelector('link[rel="icon"]');
+      const reduce = matchMedia('(prefers-reduced-motion: reduce)');
+
+      function apply(id) {
+        if (!LIVE_SYMBIOTES.includes(id)) id = 'react';
+        root.dataset.symbiote = id;
+        if (nameEl) nameEl.textContent = LABEL[id];
+        if (screenFw) screenFw.textContent = LABEL[id];
+        if (faviconLink) faviconLink.href = faviconHref(id);
+        chips.forEach((c) =>
+          c.setAttribute('aria-pressed', String(c.dataset.fw === id)),
+        );
+        statusRows.forEach((r) => r.classList.toggle('is-active', r.dataset.fw === id));
+        figures.forEach((f) => f.classList.toggle('is-active', f.dataset.fw === id));
+      }
+
+      // the on-device app looks alive — bonds tick up like a running native counter
+      if (screenNum && !reduce.matches) {
+        let bonds = 42;
+        setInterval(() => {
+          screenNum.textContent = String((bonds += 1));
+        }, 1500);
+      }
+
+      function wave(x, y, color) {
+        if (reduce.matches) return;
+        const w = document.createElement('div');
+        w.className = 'bond-wave';
+        w.style.background = color;
+        w.style.left = x + 'px';
+        w.style.top = y + 'px';
+        document.body.appendChild(w);
+        const max = Math.hypot(
+          Math.max(x, innerWidth - x),
+          Math.max(y, innerHeight - y),
+        );
+        const anim = w.animate(
+          [
+            { width: '0px', height: '0px', opacity: 0.45 },
+            { width: max * 2 + 'px', height: max * 2 + 'px', opacity: 0 },
+          ],
+          { duration: 640, easing: 'cubic-bezier(.22,.61,.36,1)' },
+        );
+        anim.onfinish = () => w.remove();
+      }
+
+      function bond(id, target) {
+        if (!LIVE_SYMBIOTES.includes(id)) return;
+        const chip = chips.find((c) => c.dataset.fw === id);
+        const rect = (target || chip)?.getBoundingClientRect();
+        const cx = rect ? rect.left + rect.width / 2 : innerWidth / 2;
+        const cy = rect ? rect.top + rect.height / 2 : innerHeight / 2;
+        const color =
+          (chip && getComputedStyle(chip).getPropertyValue('--fw').trim()) ||
+          '#61dafb';
+        wave(cx, cy, color);
+        apply(id);
+        try {
+          localStorage.setItem('symbiote', id);
+        } catch (e) {}
+      }
+
+      chips.forEach((c) =>
+        c.addEventListener('click', (e) => bond(c.dataset.fw, e.currentTarget)),
+      );
+
+      // The head script set the attribute pre-paint; sync text + state to it.
+      apply(root.dataset.symbiote || 'react');
+    </script>
+
+    <!-- live symbiote: a churning goo mass driven every frame, fused by #goo -->
+    <script is:inline>
+      (function () {
+        const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)');
+        const svg = document.querySelector('.symbiote');
+        if (!svg) return;
+        const goo = svg.querySelector('.goo-back');
+        const grip = svg.querySelector('.goo-front');
+        const face = svg.querySelector('.face');
+        const NS = 'http://www.w3.org/2000/svg';
+        const CX = 100;
+        const CY = 120;
+        const rand = (a, b) => a + Math.random() * (b - a);
+
+        function tendrilPath() {
+          const p = document.createElementNS(NS, 'path');
+          goo.insertBefore(p, goo.firstChild); // behind the body lumps
+          return p;
+        }
+
+        // wandering body lumps (already in the markup)
+        const core = Array.from(goo.querySelectorAll('.core')).map((el) => ({
+          el,
+          ox: +el.getAttribute('cx') - CX,
+          oy: +el.getAttribute('cy') - CY,
+          ax: rand(3, 9),
+          ay: rand(3, 9),
+          s: rand(0.5, 0.95),
+          p: rand(0, 6.28),
+        }));
+
+        // tendrils — each is ONE tapering path rooted in the body, so it stays
+        // a connected limb (never a string of bubbles) while it reaches and curls
+        const TENDRILS = 13;
+        const tendrils = [];
+        for (let i = 0; i < TENDRILS; i++) {
+          // interleave long primary limbs with shorter secondary ones → a dense, writhing crown
+          const primary = i % 2 === 0;
+          tendrils.push({
+            el: tendrilPath(),
+            ang: (i / TENDRILS) * Math.PI * 2 + rand(-0.26, 0.26),
+            root: rand(26, 36),
+            len: primary ? rand(92, 132) : rand(46, 82),
+            amp: primary ? rand(18, 32) : rand(10, 20),
+            width: primary ? rand(18, 27) : rand(10, 17),
+            curl: rand(0.3, 0.7),
+            sweep: rand(0.18, 0.42),
+            wob: rand(0.5, 1.2),
+            speed: rand(0.5, 1.05),
+            phase: rand(0, 6.28),
+          });
+        }
+
+        // grip tendrils — rooted on the body's visible side FLANKS (so they read as one
+        // continuous limb, not a floating leaf) and curling over the front corners (global coords)
+        const grips = [
+          { el: document.createElementNS(NS, 'path'), bx: 102, by: 152, tx: 134, ty: 118, width: 42, speed: 0.7, phase: 0.4 },
+          { el: document.createElementNS(NS, 'path'), bx: 198, by: 152, tx: 166, ty: 118, width: 44, speed: 0.64, phase: 2.3 },
+        ];
+        grips.forEach((g) => grip.appendChild(g.el));
+
+        // how agitated each symbiote is — its personality in motion
+        const MOOD = { react: 0.72, vue: 0.6, svelte: 1.3, solid: 0.66, angular: 1.35 };
+
+        let t = 0;
+        let last = 0;
+        function frame(now) {
+          const mood = MOOD[document.documentElement.dataset.symbiote] || 0.8;
+          const dt = last ? Math.min((now - last) / 1000, 0.05) : 0.016;
+          last = now;
+          t += dt * mood;
+
+          let fx = 0;
+          let fy = 0;
+          core.forEach((n) => {
+            const x = CX + n.ox + Math.cos(t * n.s + n.p) * n.ax;
+            const y = CY + n.oy + Math.sin(t * n.s * 1.3 + n.p) * n.ay;
+            n.el.setAttribute('cx', x.toFixed(1));
+            n.el.setAttribute('cy', y.toFixed(1));
+            fx += x - (CX + n.ox);
+            fy += y - (CY + n.oy);
+          });
+          // the face rides the churning mass
+          face.setAttribute(
+            'transform',
+            'translate(' + (fx / core.length).toFixed(2) + ' ' + (fy / core.length).toFixed(2) + ')',
+          );
+
+          tendrils.forEach((td) => {
+            const L = td.len + td.amp * Math.sin(t * td.speed + td.phase);
+            const ang = td.ang + Math.sin(t * td.wob + td.phase) * td.sweep * (0.6 + mood);
+            // base sits inside the body so the limb fuses to the mass; tip tapers to a point
+            const bx = CX + Math.cos(td.ang) * td.root;
+            const by = CY + Math.sin(td.ang) * td.root;
+            const tx = CX + Math.cos(ang) * L;
+            const ty = CY + Math.sin(ang) * L;
+            // perpendicular to the root direction gives the limb its width
+            const px = -Math.sin(td.ang);
+            const py = Math.cos(td.ang);
+            const hw = td.width / 2;
+            // a curling control point bends the limb mid-way
+            const bend = L * td.curl * Math.sin(t * td.speed * 1.3 + td.phase);
+            const mAng = (td.ang + ang) / 2;
+            const mx = (bx + tx) / 2 + Math.cos(mAng + Math.PI / 2) * bend;
+            const my = (by + ty) / 2 + Math.sin(mAng + Math.PI / 2) * bend;
+            td.el.setAttribute(
+              'd',
+              'M' + (bx + px * hw).toFixed(1) + ',' + (by + py * hw).toFixed(1) +
+                ' Q' + mx.toFixed(1) + ',' + my.toFixed(1) + ' ' + tx.toFixed(1) + ',' + ty.toFixed(1) +
+                ' Q' + mx.toFixed(1) + ',' + my.toFixed(1) + ' ' + (bx - px * hw).toFixed(1) + ',' + (by - py * hw).toFixed(1) +
+                ' Z',
+            );
+          });
+
+          // grip tendrils clamp over the device's front corners. Base is a WIDE vertical
+          // root sitting on the visible flank (fuses to the body); it tapers to a curling claw.
+          grips.forEach((g) => {
+            const sway = Math.sin(t * g.speed + g.phase);
+            const tx = g.tx + sway * 9; // claw tip wanders
+            const ty = g.ty + Math.cos(t * g.speed * 0.9 + g.phase) * 6;
+            const hw = g.width / 2;
+            // bow the limb upward so it reads as a finger curling over the shoulder
+            const mx = (g.bx + tx) / 2 + sway * 10;
+            const my = (g.by + ty) / 2 - 16;
+            g.el.setAttribute(
+              'd',
+              'M' + g.bx.toFixed(1) + ',' + (g.by - hw).toFixed(1) +
+                ' Q' + mx.toFixed(1) + ',' + my.toFixed(1) + ' ' + tx.toFixed(1) + ',' + ty.toFixed(1) +
+                ' Q' + mx.toFixed(1) + ',' + my.toFixed(1) + ' ' + g.bx.toFixed(1) + ',' + (g.by + hw).toFixed(1) +
+                ' Z',
+            );
+          });
+
+          if (!reduceMotion.matches) requestAnimationFrame(frame);
+        }
+        requestAnimationFrame(frame);
+      })();
+    </script>
+  </body>
+</html>

@@ -1,0 +1,242 @@
+---
+title: Angular API
+description: The Angular adapter public contract.
+---
+
+Import app-facing APIs from `@symbiote/angular`:
+
+```ts
+import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from '@symbiote/angular';
+```
+
+Every symbiote component is a `standalone: true` Angular component — add it to
+the consuming component's `imports` array, there is no `NgModule` to register.
+
+## Component shape
+
+| Concern         | Angular API                                                          |
+| --------------- | --------------------------------------------------------------------- |
+| Event callbacks | Real `@Output()` `EventEmitter`s everywhere (`(press)`, `(longPress)`, `(hoverIn)`, `(valueChange)`, `(accessibilityAction)`, …), except the scroll family (`onScroll`, `onScrollBeginDrag`, `onScrollEndDrag`, `onMomentumScrollBegin`, `onMomentumScrollEnd`), which stays a plain callback **input** (`[onScroll]`) permanently — it must accept an `Animated.event(...)` marker, not just a template listener. `TextInput` alone keeps a second output, `(change)`, for the raw native event alongside text-only `(valueChange)` |
+| Children        | `<ng-content></ng-content>` (projected content)                       |
+| Selectors       | Dual: PascalCase alias + `symbiote-*`, e.g. `Pressable, symbiote-pressable` |
+| Refs            | `@ViewChild('host', { read: ElementRef })`, `.nativeElement` is the symbiote host node |
+| Styles          | `[style]="styles.root"` with React Native-style objects                |
+
+## Common events
+
+```ts
+@Component({
+  standalone: true,
+  imports: [Pressable, Switch, TextInput, View],
+  template: `
+    <Pressable (press)="onPress($event)" (longPress)="onLongPress($event)" />
+    <Switch [value]="enabled" (valueChange)="setEnabled($event)" />
+    <TextInput [value]="text" (valueChange)="setText($event)" (change)="onChange($event)" />
+    <View (layout)="onLayout($event)" />
+  `,
+})
+```
+
+`Pressable`, `Button`, and `TouchableOpacity`/`TouchableHighlight`/
+`TouchableWithoutFeedback`/`TouchableNativeFeedback` expose `press`, `pressIn`,
+`pressOut`, `pressMove`, `longPress`, `hoverIn`, and `hoverOut` (`Button` only
+exposes `press`) as `EventEmitter<ISymbioteEvent>` — bind them with Angular's
+own event syntax, not a property binding. Every other component's events
+(`Switch`'s `(valueChange)`, `TextInput`'s `(valueChange)`/`(change)`, the
+accessibility callbacks on the components above, …) are `EventEmitter`s the
+same way, driven by the exact same handler shape the engine and the shared
+`@symbiote/components` state machines already define (`IPressHandler`,
+`(value: boolean) => void`, …). `TextInput` is the one component with two
+outputs where React/Vue fold their payload into one callback argument list:
+`(valueChange)` stays text-only, since an `EventEmitter` carries exactly one
+value and text-only keeps `[(value)]` two-way binding working, while
+`(change)` is a second, separate output for the raw native event. The one
+permanent exception across every component is the scroll-family events
+(`onScroll`, `onScrollBeginDrag`, `onScrollEndDrag`, `onMomentumScrollBegin`,
+`onMomentumScrollEnd`) on `ScrollView` and the list components — they stay
+callback `@Input()`s (`[onScroll]="handler"`) because they can carry an
+`Animated.event(...)` marker for native-driven scroll, and `@Output()` only
+binds a template listener expression, never an arbitrary value.
+
+## Refs and handles
+
+```ts
+import { Component, ViewChild, type ElementRef } from '@angular/core';
+import { TextInput, type ITextInputHandle } from '@symbiote/angular';
+
+@Component({
+  standalone: true,
+  imports: [TextInput],
+  template: `<TextInput #input [value]="''" (valueChange)="onChangeText($event)" />`,
+})
+export class Example {
+  @ViewChild('input', { read: ElementRef }) input?: ElementRef<ITextInputHandle>;
+
+  focus(): void {
+    this.input?.nativeElement.focus();
+  }
+}
+```
+
+## Portals
+
+```ts
+import { Component, signal } from '@angular/core';
+import { PortalDirective, PortalOutletDirective, Text, View } from '@symbiote/angular';
+
+@Component({
+  standalone: true,
+  imports: [View, Text, PortalDirective, PortalOutletDirective],
+  template: `
+    <View portalOutlet #overlayHost="portalOutlet" />
+    @if (toastVisible()) {
+      <View *portal="overlayHost">
+        <Text>Rendered under overlayHost, not here</Text>
+      </View>
+    }
+  `,
+})
+export class Example {
+  readonly toastVisible = signal(false);
+}
+```
+
+`*portal="overlayHost"` renders its host element into whichever
+`PortalOutletDirective` `overlayHost` refers to — the same primitive as
+React's `createPortal` and Vue's `Teleport`. `overlayHost` comes from marking
+the destination with `portalOutlet` and exporting it to a template variable
+(`#overlayHost="portalOutlet"`), the same `#form="ngForm"` idiom Angular's own
+forms directives use — which also replaces the runtime `isSymbioteNode` guard
+React/Vue need: `strictTemplates` rejects anything but a real
+`PortalOutletDirective` here at compile time, so there's nothing left to
+validate at runtime. There is no `@angular/cdk` dependency behind this: it
+creates the embedded view directly inside the destination's own
+`ViewContainerRef` rather than moving already-created nodes, which would
+desync Angular's own view bookkeeping. **Same scope as React/Vue:** the
+target must live in the same surface as the `*portal` call site.
+
+## Cross-surface content (`createTunnel`)
+
+```ts
+import { Component, signal } from '@angular/core';
+import { createTunnel, Text, TunnelInDirective, TunnelOut, View } from '@symbiote/angular';
+
+const overlayTunnel = createTunnel(); // module-level singleton, importable from both surfaces
+
+@Component({
+  standalone: true,
+  imports: [View, Text, TunnelInDirective, TunnelOut],
+  template: `
+    <!-- inside the surface that should paint the content -->
+    <tunnel-out [tunnel]="tunnel" />
+
+    <!-- inside any other component, in any surface -->
+    @if (toastVisible()) {
+      <View *tunnelIn="tunnel">
+        <Text>Toast</Text>
+      </View>
+    }
+  `,
+})
+export class Example {
+  readonly tunnel = overlayTunnel;
+  readonly toastVisible = signal(false);
+}
+```
+
+`*portal` only reaches a target in the *same* surface. `createTunnel` is for
+two independently `mount()`-ed surfaces that share no Fabric tree at all.
+Angular can't synthesize a fresh component per `createTunnel()` call the way
+React/Vue do — there's no runtime JIT under Metro/Hermes — so `createTunnel()`
+here returns a plain signal-backed store, and `TunnelInDirective`
+(`*tunnelIn="tunnel"`) / `TunnelOut` (`<tunnel-out [tunnel]="tunnel" />`) are
+one static, pre-authored, AOT-compilable pair parameterized by that store —
+the same relationship the list directives have to their per-cell templates.
+
+React and Vue have the same primitive — see their own API references.
+
+## App entry point (`AppRegistry`)
+
+`@symbiote/angular` exports the same `AppRegistry`/`setHostRegistrar` entry
+point described in the
+[Core API](/docs/api/core/#app-entry-point-appregistry). One Angular-specific
+detail: Angular has no runtime template synthesis (no JIT under AOT/Metro), so
+a component passed to `setWrapperComponentProvider` must be a pre-authored
+standalone `@Component` whose template renders `<ng-content>` — the Angular
+idiom for "render my children" — rather than a closure built at call time:
+
+```ts
+import { Component } from '@angular/core';
+
+@Component({
+  selector: 'theme-wrapper',
+  standalone: true,
+  template: `<ng-content></ng-content>`,
+})
+export class ThemeWrapper {}
+```
+
+```ts
+import { AppRegistry } from '@symbiote/angular';
+import { ThemeWrapper } from './theme-wrapper';
+
+AppRegistry.setWrapperComponentProvider(() => ThemeWrapper);
+AppRegistry.registerComponent('MyApp', () => App);
+```
+
+## Runtime modules and services
+
+The adapter re-exports the same stable runtime utilities the React and Vue
+adapters expose, so app code keeps one import root:
+
+```ts
+import { Alert, Dimensions, Platform, StyleSheet } from '@symbiote/angular';
+```
+
+Two runtime reads are DI-injectable services instead of hooks/composables —
+the Angular-idiomatic shape for reactive lifecycle state:
+
+```ts
+import { inject } from '@angular/core';
+import { ColorSchemeService, WindowDimensionsService } from '@symbiote/angular';
+
+const colorScheme = inject(ColorSchemeService);
+const dimensions = inject(WindowDimensionsService);
+```
+
+The rest of the runtime-module surface re-exports the same way as React/Vue:
+`PixelRatio`, `PlatformColor`, `DynamicColorIOS`, `Share`, `Linking`,
+`Keyboard`, `Vibration`, `ActionSheetIOS`, `BackHandler`, `ToastAndroid`,
+`PermissionsAndroid`, `AccessibilityInfo`, `I18nManager`, `Settings`,
+`LayoutAnimation`, `InteractionManager`, `StatusBar`, and `findNodeHandle`.
+
+## Animations and gestures
+
+`Animated` (both the JS and native driver, plus the `AnimatedView`/
+`AnimatedText`/`AnimatedImage`/`AnimatedScrollView`/`AnimatedFlatList`/
+`AnimatedSectionList` named exports AOT requires) and `PanResponder` are
+re-exported from `@symbiote/angular` — see the
+[Animations guide](/docs/learn/animations/) for the full surface and why the
+named exports exist.
+
+## Change detection
+
+Bootstrap runs Angular's own zoneless change detection — `ApplicationRef.tick()`,
+scheduled by Angular's `ChangeDetectionSchedulerImpl` — wired in through the
+internal `ɵprovideZonelessChangeDetectionInternal()` helper rather than the
+public `provideZonelessChangeDetection()`, which assumes a `platform-browser`
+bootstrap this DOM-less renderer does not use.
+
+A native event or `markForCheck()` still walks dirty flags up to every ancestor
+to the root, same as any zoneless Angular app — an unrelated press re-running
+the whole tree isn't a symbiote quirk, it's why demo screens are split into
+real child components instead of `@if`/`@for` blocks, which always re-execute
+with their containing view.
+
+## Boundary
+
+Do not pass React component packages to the Angular adapter. A third-party
+React Native package that ships a JavaScript React component still uses the
+React dispatcher internally. Non-React adapters need native-view wrappers
+instead — see the [Slider package](/docs/packages/slider/) for the reference
+implementation, shipping on React, Vue, and Angular alike.

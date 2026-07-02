@@ -1,0 +1,116 @@
+---
+title: Components API
+description: Component status and framework-specific API differences.
+---
+
+Symbiote's component goal is structural parity: reusable state, render, and
+native plumbing live in shared layers; adapters provide lifecycle and framework
+syntax.
+
+## Status matrix
+
+Every component below ships on React, Vue, and Angular. What differs is the
+framework-shaped surface:
+
+- `View` — React uses `children`; Vue uses the default slot. Refs are
+  framework-shaped.
+- `Text` — Text children differ by framework; press events follow callback vs
+  emit shape.
+- `Image` — Source resolution and statics are shared.
+- `ScrollView` — Imperative handle, refresh, and sticky behavior need
+  framework-specific examples.
+- `Pressable` — React uses a render child; Vue uses a scoped slot. Events are
+  callbacks vs emits.
+- `TextInput` — `onValueChange` maps to `@value-change`; the controlled write
+  handshake is shared.
+- `Switch` — `onValueChange` maps to `@value-change`; controlled snap-back is
+  shared.
+- `ActivityIndicator` — Mostly shared render-only props.
+- Lists — Render item/slot shape differs; windowing math is shared.
+- `Animated` — The value graph is shared; component wrapping differs by
+  adapter (see the [Animations guide](/docs/learn/animations/)).
+- `Modal`, `KeyboardAvoidingView`, `SafeAreaView`, `RefreshControl`,
+  `ImageBackground`, `InputAccessoryView`, `StatusBar`, `Button` — shared
+  render/behavior logic, framework-shaped props and events same as above.
+- The `Touchable*` family (`TouchableOpacity`, `TouchableHighlight`,
+  `TouchableWithoutFeedback`, `TouchableNativeFeedback`) — built on the same
+  shared press state machine as `Pressable`.
+- `PanResponder` — an engine-level gesture-recognition module, not a
+  component; shared across every adapter unchanged.
+
+## Shared vs framework-specific
+
+Shared when the prop is plain native data:
+
+- booleans, strings, numbers;
+- native style objects;
+- accessibility and ARIA aliases;
+- platform constants and native payload shapes.
+
+Framework-specific when the prop contains framework values:
+
+- children or slots;
+- render callbacks returning framework elements;
+- refs and imperative handles;
+- framework-level event conventions.
+
+## Event naming examples
+
+| Component   | React           | Vue             | Angular            | Payload          |
+| ----------- | --------------- | --------------- | -------------------- | ---------------- |
+| `Pressable` | `onPress`       | `@press`        | `(press)`            | `ISymbioteEvent` |
+| `Pressable` | `onLongPress`   | `@long-press`   | `(longPress)`        | `ISymbioteEvent` |
+| `Switch`    | `onValueChange` | `@value-change`<br />or `v-model` | `(valueChange)` | `boolean`        |
+| `TextInput` | `onValueChange` | `@value-change`<br />or `v-model` | `(valueChange)` | `string`         |
+| `View`      | `onLayout`      | `@layout`       | `(layout)`         | `ISymbioteEvent` |
+
+`TextInput`'s React/Vue callback fires as `(text, event)` — one value merged
+from what used to be two separate callbacks. Angular can't do that in one
+`EventEmitter`, so it keeps a second, separate `(change)` output for the raw
+event alongside text-only `(valueChange)`.
+
+Angular's names (`(press)`, `(longPress)`, `(valueChange)`, `(change)`,
+`(layout)`) are all real `@Output()` `EventEmitter`s, bound like
+`(press)="handler($event)"`. The one permanent exception is the scroll-family
+events (`onScroll`, `onScrollBeginDrag`, `onScrollEndDrag`,
+`onMomentumScrollBegin`, `onMomentumScrollEnd`) on `ScrollView` and the list
+components, which stay plain callbacks bound as an `@Input()` —
+`[onScroll]="handler"` — because they can carry an `Animated.event(...)`
+marker for native-driven scroll, and `@Output()` only binds a template
+listener expression, never an arbitrary value.
+
+## Framework event idioms side by side
+
+```tsx
+// React — callback props
+<Pressable onPress={event => console.log(event)} />
+<Switch value={enabled} onValueChange={setEnabled} />
+```
+
+```vue
+<!-- Vue — emits, or v-model on controlled components -->
+<Pressable @press="event => console.log(event)" />
+<Switch v-model="enabled" />
+```
+
+```ts
+// Angular — @Output() everywhere, except the scroll-family callback @Input()s
+@Component({
+  template: `
+    <Pressable (press)="onPress($event)" />
+    <Switch [value]="enabled" (valueChange)="setEnabled($event)" />
+  `,
+})
+```
+
+## Reference page template
+
+As component pages split out, each should include:
+
+1. a short React example;
+2. a short Vue example;
+3. shared props;
+4. React-only callback/children/ref notes;
+5. Vue-only emits/slots/ref notes;
+6. platform notes;
+7. parity notes explaining what lives in `@symbiote/components`.

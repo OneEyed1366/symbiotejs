@@ -1,0 +1,85 @@
+---
+title: 'How to: share content across surfaces'
+description: createPortal/Teleport for same-surface content, createTunnel for cross-surface.
+---
+
+import { Aside } from '@astrojs/starlight/components';
+
+You want to render content somewhere other than its own JSX/template
+position — a toast, an overlay — and need to know which mechanism applies.
+
+## Same surface: `createPortal` (React) / `Teleport` (Vue)
+
+Both move content to an already-mounted node within the **same** mounted
+surface as the call site:
+
+```tsx
+// React
+const [overlay, setOverlay] = useState<IHostInstance | null>(null);
+// ...
+<View ref={setOverlay} />
+{overlay ? createPortal(<Text>ported in</Text>, overlay) : null}
+```
+
+```vue
+<!-- Vue -->
+<Teleport v-if="toastVisible && overlayHost" :to="overlayHost">
+  <Text>Ported via Teleport</Text>
+</Teleport>
+<View ref="overlayHost" />
+```
+
+Use a state/ref callback (`useState`, not `useRef`, on React) so the target
+resolves once it actually commits — a plain ref is `null` on the entire first
+render.
+
+<Aside type="caution" title="Same-surface only, permanently">
+  Stock React Native has no portal at all (Fabric's persistent host config
+  never implements the mutation-mode container ops it needs). Symbiote's React
+  adapter runs in mutation mode, so `createPortal` structurally works — but
+  only within the surface that owns the commit. A target in a second,
+  independently-mounted surface silently never repaints; this is not a gap to
+  eventually close, see `createTunnel` below instead.
+</Aside>
+
+## Cross surface: `createTunnel`
+
+For content that must reach a genuinely different, separately-mounted
+surface, use `createTunnel()` instead — a shared store, not a node reference:
+
+```tsx
+// React — module-level singleton, importable from any surface
+export const overlayTunnel = createTunnel();
+
+// wherever it should paint:
+<overlayTunnel.Out />
+// wherever the content originates, any surface:
+<overlayTunnel.In><ToastCard /></overlayTunnel.In>
+```
+
+```vue
+<!-- Vue -->
+<tunnel.Out />
+<tunnel.In><Text>Ported via createTunnel</Text></tunnel.In>
+```
+
+`In`/`Out` are components, not hooks/composables — an earlier hook-based
+React version caused a genuine infinite render loop (the shared store's
+`notify()` re-rendering the same component that also called the write side).
+As separate components, `Out`'s forced re-render never bounces back into
+`In`, even when they're siblings.
+
+## Picking one
+
+- Overlay host lives in the same tree you're already rendering → `createPortal`
+  / `Teleport`.
+- Content needs to reach a different `mount()` root entirely (split-screen, an
+  always-on-top system surface) → `createTunnel`.
+
+Import both from your adapter's package (`@symbiote/react`, `@symbiote/vue`,
+`@symbiote/angular`). Full design rationale and the Angular directive-based
+twins (`*portal`, `*tunnelIn`, `<tunnel-out>`):
+[`react-adapter-portal`](https://github.com/OneEyed1366/symbiote/blob/master/.claude/skills/react-adapter-portal/SKILL.md),
+[`vue-adapter-directives`](https://github.com/OneEyed1366/symbiote/blob/master/.claude/skills/vue-adapter-directives/SKILL.md),
+and
+[`angular-adapter-portal`](https://github.com/OneEyed1366/symbiote/blob/master/.claude/skills/angular-adapter-portal/SKILL.md).

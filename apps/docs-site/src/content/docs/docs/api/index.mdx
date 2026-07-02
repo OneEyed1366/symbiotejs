@@ -1,0 +1,36 @@
+---
+title: API reference
+description: Framework-specific API contracts and shared Symbiote core surfaces.
+---
+
+Symbiote has one native engine, but each adapter exposes that engine through its
+framework's API conventions. The reference is organized around that split.
+
+## Framework APIs
+
+- [React API](/docs/api/react/) — callback props, React children, React refs,
+  and React Native-like imports from `@symbiote/react`.
+- [Vue API](/docs/api/vue/) — typed emits, slots, Vue refs, kebab-case template
+  attributes, and imports from `@symbiote/vue`.
+- [Angular API](/docs/api/angular/) — real `@Output()` `EventEmitter`s,
+  `<ng-content>` projection, standalone components, and imports from
+  `@symbiote/angular`.
+
+## Shared APIs
+
+- [Components matrix](/docs/api/components/) — what components exist and how
+  React, Vue, and Angular differ for props, events, slots, and handles.
+- [Core API](/docs/api/core/) — `@symbiote/engine` and `@symbiote/components`,
+  the shared layers that keep adapters thin.
+
+## How to read component docs
+
+Each component API should answer four questions:
+
+1. What props are shared across frameworks?
+2. Which events are React callbacks vs Vue emits?
+3. Does the component take children, slots, or render callbacks?
+4. Does it expose an imperative handle, and how does each framework access it?
+
+This is why the docs avoid pretending every framework has identical props. The
+native behavior is shared; the public contract is idiomatic per framework.

@@ -1,0 +1,217 @@
+---
+title: Vue API
+description: The Vue adapter public contract.
+---
+
+Import app-facing APIs from `@symbiote/vue`:
+
+```ts
+import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from '@symbiote/vue';
+```
+
+Vue drives the same engine as React, but its public API follows Vue conventions.
+That matters most for events, children, and refs.
+
+## Component shape
+
+- Events: typed emits like `@press` and `@value-change`.
+- Children: default slots.
+- Render children: scoped slots, for example `v-slot="{ pressed }"`.
+- Refs: template refs to host nodes or exposed component handles.
+- Styles: `:style="styles.root"` with React Native-style objects. Most
+  visual components — not just `View`/`Text` anymore — also accept
+  `class`/`:class` for a registered class name, resolved through the same
+  style registry as a Vue SFC `<style>` block or a `.module.css` import; see
+  the [Styling guide](/docs/learn/styling/).
+- Attribute names: templates may use kebab-case; the adapter normalizes to
+  camelCase.
+
+## Common events
+
+```vue
+<Pressable @press="onPress" @long-press="onLongPress" />
+<Switch v-model="enabled" />
+<TextInput v-model="text" @value-change="(text, event) => onChange(event)" />
+<View @layout="onLayout" />
+```
+
+Vue event names are kebab-cased in templates. Their TypeScript source names use
+camelCase emits such as `valueChange`, shared by `Switch` (`boolean` payload)
+and `TextInput` (`(text, event)` payload — the merge of what used to be
+separate `changeText`/`change` emits). `Switch` and `TextInput` also accept
+the explicit `:value`/`@value-change` form — `v-model` is sugar over the same
+pair, see [model bindings](#model-bindings-v-model) below.
+
+## Slots
+
+React render props become scoped slots when they represent framework elements:
+
+```vue
+<Pressable v-slot="{ pressed }">
+  <Text>{{ pressed ? 'Release' : 'Press me' }}</Text>
+</Pressable>
+```
+
+List renderers follow the same principle: the data and native list math are
+shared, while the rendered cell is a Vue slot or render function rather than a
+React node.
+
+## Refs and handles
+
+Host node refs should be treated as native handles, not DOM elements. Composed
+components expose their own imperative handles through Vue's `expose()`.
+
+```vue
+<script setup lang="ts">
+import { ref } from 'vue';
+import { TextInput, type ITextInputHandle } from '@symbiote/vue';
+
+const input = ref<ITextInputHandle | null>(null);
+</script>
+
+<template>
+  <TextInput ref="input" value="" @value-change="() => {}" />
+</template>
+```
+
+## Model bindings (`v-model`)
+
+`Switch`, `TextInput`, and the [Slider](/docs/packages/slider/) wrapper accept
+`v-model` on top of their existing `value`/`@change-*` contract:
+
+```vue
+<Switch v-model="enabled" />
+<TextInput v-model="text" />
+<Slider v-model="volume" :minimum-value="0" :maximum-value="1" />
+```
+
+Bare `v-model="x"` compiles to prop `modelValue` + emit `update:modelValue`;
+named `v-model:value="x"` compiles to prop `value` + emit `update:value`. Each
+model-capable component resolves whichever prop arrived (`modelValue` first,
+falling back to `value`) and fires both update events, so either compiler
+target — and the original explicit `value`/`@value-change` pair — works
+interchangeably. `resolveModelValue`/`emitModelUpdate` (exported from
+`@symbiote/vue`) are the shared helpers behind this, for wrapper authors adding
+`v-model` to their own controlled component.
+
+## `v-show`
+
+`v-show` works on any symbiote host node without extra setup — it toggles the
+node's native `style.display` between its resolved value and `'none'` instead
+of unmounting, matching Vue's DOM `v-show`:
+
+```vue
+<View v-show="visible">
+  <Text>Stays mounted, just hidden</Text>
+</View>
+```
+
+Unlike `v-if`, state under a `v-show="false"` node survives a hide/show
+round-trip because the subtree is never torn down.
+
+## Runtime modules
+
+`@symbiote/vue` re-exports the same runtime utilities as the other adapters,
+so app code keeps one import root: `Platform`, `StyleSheet`, `Dimensions`,
+`PixelRatio`, `PlatformColor`, `DynamicColorIOS`, `Alert`, `Share`, `Linking`,
+`Keyboard`, `Vibration`, `ActionSheetIOS`, `BackHandler`, `ToastAndroid`,
+`PermissionsAndroid`, `AccessibilityInfo`, `I18nManager`, `Settings`,
+`LayoutAnimation`, `InteractionManager`, `StatusBar`, plus the
+`useWindowDimensions`/`useColorScheme` composables, `findNodeHandle`, and
+`dlog`/`isDebug` for diagnostic logging.
+
+## Animations and gestures
+
+`Animated` (both the JS and native driver) and `PanResponder` are re-exported
+from `@symbiote/vue` — see the [Animations guide](/docs/learn/animations/)
+for the full surface and per-driver tradeoffs.
+
+## Portals (`Teleport`)
+
+```vue
+<script setup lang="ts">
+import { shallowRef } from 'vue';
+import { View, type ISymbioteNode } from '@symbiote/vue';
+
+const overlayHost = shallowRef<ISymbioteNode | null>(null);
+</script>
+
+<template>
+  <View ref="overlayHost" />
+  <Teleport :to="overlayHost" v-if="overlayHost">
+    <Text>Rendered under overlayHost, not here</Text>
+  </Teleport>
+</template>
+```
+
+`Teleport` renders its slot content under a different node than its own
+template position — the same primitive as React's `createPortal`. Vue's
+`Teleport` normally resolves a string `to` (`to="body"`, `to="#modal-root"`)
+through `querySelector`, which doesn't exist in a non-DOM renderer, so `to`
+here must be an already-mounted host node **ref**, not a selector string — a
+CSS-selector string or anything that isn't a real rendered node throws
+immediately, rather than silently corrupting the tree. Same **v1 scope** as
+React's portal: the target must live in the same surface as the `<Teleport>`
+call site.
+
+## Cross-surface content (`createTunnel`)
+
+```vue
+<script setup lang="ts">
+import { createTunnel } from '@symbiote/vue';
+
+const overlayTunnel = createTunnel(); // module-level singleton, importable from both surfaces
+</script>
+
+<template>
+  <!-- inside the surface that should paint the content -->
+  <View :style="styles.overlayHost">
+    <overlayTunnel.Out />
+  </View>
+
+  <!-- inside any other component, in any surface -->
+  <overlayTunnel.In v-if="toastVisible">
+    <ToastCard />
+  </overlayTunnel.In>
+</template>
+```
+
+`Teleport` only reaches a target in the *same* surface. `createTunnel` is for
+two independently `mount()`-ed surfaces that share no Fabric tree at all.
+`In` and `Out` are separate components — not composables, since a composable
+can't accept template markup — linked only by a small reactive store: `In`
+registers its slot content wherever it renders, `Out` reads the store and
+paints in whichever surface actually mounts it.
+
+React and Angular have the same primitive — see their own API references.
+
+## App entry point (`AppRegistry`)
+
+`@symbiote/vue` exports the same `AppRegistry`/`setHostRegistrar` entry point
+described in the [Core API](/docs/api/core/#app-entry-point-appregistry). One
+Vue-specific detail: a component passed to `setWrapperComponentProvider`
+receives the app root through its **default slot**, not as a `children`-like
+argument — write it as an ordinary Vue component that renders `<slot />`:
+
+```vue
+<!-- ThemeWrapper.vue -->
+<template>
+  <ThemeProvider>
+    <slot />
+  </ThemeProvider>
+</template>
+```
+
+```ts
+import { AppRegistry } from '@symbiote/vue';
+import ThemeWrapper from './ThemeWrapper.vue';
+
+AppRegistry.setWrapperComponentProvider(() => ThemeWrapper);
+AppRegistry.registerComponent('MyApp', () => App);
+```
+
+## Gotcha: emits vs passthrough listeners
+
+Only adapter-level events should be declared as emits. Native passthrough
+listeners must remain attrs so the engine can route them to Fabric. This is why
+Vue API docs call out exactly which events are emits per component.

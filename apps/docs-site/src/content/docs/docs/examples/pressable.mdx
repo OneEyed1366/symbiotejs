@@ -1,0 +1,98 @@
+---
+title: Pressable example
+description: Press feedback in React, Vue, and Angular.
+---
+
+`Pressable` shares the same press state machine across every adapter. They
+only differ in how they expose the transient `pressed` state to children, and
+in Angular's case, that its press events are a real `@Output()`.
+
+## React
+
+```tsx
+import './Pressable.css';
+import { Pressable, Text } from '@symbiote/react';
+
+export function PressableLabel() {
+  return (
+    <Pressable onPress={() => console.log('pressed')}>
+      {({ pressed }) => (
+        <Text className={pressed ? 'down' : 'up'}>{pressed ? 'Release' : 'Press me'}</Text>
+      )}
+    </Pressable>
+  );
+}
+```
+
+```css
+/* Pressable.css */
+.up { opacity: 1; }
+.down { opacity: 0.55; }
+```
+
+## Vue
+
+```vue
+<script setup lang="ts">
+import { Pressable, Text } from '@symbiote/vue';
+</script>
+
+<template>
+  <Pressable @press="console.log('pressed')" v-slot="{ pressed }">
+    <Text :class="pressed ? 'down' : 'up'">
+      {{ pressed ? 'Release' : 'Press me' }}
+    </Text>
+  </Pressable>
+</template>
+
+<style scoped>
+.up { opacity: 1; }
+.down { opacity: 0.55; }
+</style>
+```
+
+## Angular
+
+```ts
+import { Component } from '@angular/core';
+import { Pressable, Text } from '@symbiote/angular';
+import './pressable.css';
+
+@Component({
+  standalone: true,
+  imports: [Pressable, Text],
+  template: `
+    <Pressable
+      (press)="onPress()"
+      (pressIn)="pressed = true"
+      (pressOut)="pressed = false"
+      [class]="pressed ? 'down' : 'up'"
+    >
+      <Text>{{ pressed ? 'Release' : 'Press me' }}</Text>
+    </Pressable>
+  `,
+})
+export class PressableLabel {
+  pressed = false;
+
+  onPress(): void {
+    console.log('pressed');
+  }
+}
+```
+
+```css
+/* pressable.css */
+.up { opacity: 1; }
+.down { opacity: 0.55; }
+```
+
+## API takeaway
+
+React uses `children: (state) => ReactNode`. Vue uses a scoped default slot:
+`v-slot="{ pressed }"`. Angular has no scoped-slot equivalent for `<ng-content>`,
+so a consumer tracks `pressed` itself off the real `(pressIn)`/`(pressOut)`
+`@Output()`s instead of receiving it from `Pressable` directly. All three read
+from the same shared press state machine underneath. `StyleSheet.create`
+works identically to a CSS class if you'd rather keep style objects inline —
+see the [Styling guide](/docs/learn/styling/).

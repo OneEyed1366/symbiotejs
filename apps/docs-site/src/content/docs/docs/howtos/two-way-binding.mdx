@@ -1,0 +1,69 @@
+---
+title: 'How to: two-way bind a value'
+description: Vue v-model and Angular [(value)] on controlled components.
+---
+
+You want a native control's value to stay in sync with a variable without
+wiring your own change handler by hand.
+
+## Vue — `v-model`
+
+`Switch`, `TextInput`, and `Slider` all support it. `Switch`/`TextInput` come
+from `@symbiote/vue`; `Slider` ships from the separate
+[`@symbiote/slider`](/docs/packages/slider/) wrapper package
+(`@symbiote/slider/vue`), not the adapter's own barrel:
+
+```vue
+<script setup lang="ts">
+import { Switch, TextInput } from '@symbiote/vue';
+import { Slider } from '@symbiote/slider/vue';
+</script>
+
+<template>
+  <Switch v-model="enabled" />
+  <TextInput v-model="name" />
+  <Slider v-model="volume" :minimum-value="0" :maximum-value="1" />
+</template>
+```
+
+Bare `v-model="x"` compiles to prop `modelValue` + emit `update:modelValue`;
+named `v-model:value="x"` compiles to prop `value` + emit `update:value`. Each
+component resolves whichever arrived and emits both, so `:value`/`@value-
+change` and `v-model` are interchangeable, never a choice you have to commit
+to upfront.
+
+## Angular — banana-in-a-box `[(value)]`
+
+The same three components expose a matching `value` input +
+`valueChange` output, so Angular's `[(value)]` sugar works unmodified —
+`Slider` again from the separate `@symbiote/slider/angular` package:
+
+```ts
+import { Switch, TextInput } from '@symbiote/angular';
+import { Slider } from '@symbiote/slider/angular';
+
+// template: `
+//   <Switch [(value)]="enabled" />
+//   <TextInput [(value)]="name" />
+//   <Slider [(value)]="volume" [minimumValue]="0" [maximumValue]="1" />
+// `
+```
+
+This is not a special case wired per-component — it falls out of the RN prop
+name (`value`) already matching Angular's `@Output()` naming convention
+(`value` + `valueChange`), which is exactly what `[(x)]` expects.
+
+## React has no equivalent sugar
+
+React's controlled-component idiom (`value` + `onValueChange`, both explicit)
+is already the two-way binding — there is no `[(value)]`/`v-model` shorthand
+to reach for, and none is planned.
+
+## Why this isn't fragile
+
+The controlled-write correction (native reports a change, you don't update
+`value`, Symbiote commands native back to the JS value) is shared logic in
+`@symbiote/components`, not reimplemented per adapter or per binding style —
+`v-model`/`[(value)]` are sugar on top of the same contract described in the
+[Events guide](/docs/learn/events/#controlled-components) and the
+[Vue API reference](/docs/api/vue/#model-bindings-v-model).

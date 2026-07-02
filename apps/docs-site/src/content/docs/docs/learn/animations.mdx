@@ -1,0 +1,153 @@
+---
+title: Animations
+description: React Native's Animated API, ported framework-agnostic and shared by every adapter.
+---
+
+import { Aside } from '@astrojs/starlight/components';
+
+Symbiote ships a from-scratch, framework-agnostic port of React Native's
+`Animated` API. The value graph, easing curves, interpolation, and composition
+helpers (`timing`, `spring`, `decay`, `parallel`, `sequence`, `stagger`,
+`loop`, `delay`) live once in `@symbiote/engine` — every adapter re-exports the
+same `Animated` namespace and the same `createAnimatedComponent` mechanism, so
+`Animated.Value`, `Animated.spring`, and the rest behave identically no matter
+which framework renders them.
+
+## The same API, every adapter
+
+React:
+
+```tsx
+import { Animated } from '@symbiote/react';
+
+const pulse = useRef(new Animated.Value(0)).current;
+
+useEffect(() => {
+  Animated.loop(
+    Animated.timing(pulse, { toValue: 1, duration: 1400, useNativeDriver: true }),
+  ).start();
+}, []);
+
+const scale = pulse.interpolate({ inputRange: [0, 0.5, 1], outputRange: [1, 1.3, 1] });
+
+<Animated.View style={{ transform: [{ scale }] }} />;
+```
+
+Vue:
+
+```vue
+<script setup lang="ts">
+import { onMounted, onUnmounted } from 'vue';
+import { Animated } from '@symbiote/vue';
+
+// Animated.View has a dot in its name, so it can't be a template tag directly —
+// alias it to a plain identifier first.
+const AnimatedView = Animated.View;
+
+const pulse = new Animated.Value(0);
+const heartbeat = Animated.loop(
+  Animated.timing(pulse, { toValue: 1, duration: 1400, useNativeDriver: true }),
+);
+onMounted(() => heartbeat.start());
+onUnmounted(() => heartbeat.stop());
+
+const scale = pulse.interpolate({ inputRange: [0, 0.5, 1], outputRange: [1, 1.3, 1] });
+</script>
+
+<template>
+  <AnimatedView :style="{ transform: [{ scale }] }" />
+</template>
+```
+
+Angular:
+
+```ts
+import { Component, OnInit, OnDestroy } from '@angular/core';
+import { Animated, AnimatedView } from '@symbiote/angular';
+
+@Component({
+  selector: 'pulse-dot',
+  standalone: true,
+  imports: [AnimatedView],
+  template: `<AnimatedView [style]="{ transform: [{ scale }] }"></AnimatedView>`,
+})
+export class PulseDot implements OnInit, OnDestroy {
+  private readonly pulse = new Animated.Value(0);
+  private readonly heartbeat = Animated.loop(
+    Animated.timing(this.pulse, { toValue: 1, duration: 1400, useNativeDriver: true }),
+  );
+  readonly scale = this.pulse.interpolate({ inputRange: [0, 0.5, 1], outputRange: [1, 1.3, 1] });
+
+  ngOnInit(): void {
+    this.heartbeat.start();
+  }
+  ngOnDestroy(): void {
+    this.heartbeat.stop();
+  }
+}
+```
+
+<Aside type="caution" title="Two different reasons for one workaround">
+  Vue and Angular both need a plain identifier instead of `Animated.View`, but
+  for different reasons. Vue templates simply can't parse a dotted tag name.
+  Angular's reason is deeper: `ngc`'s AOT partial-mode compiler statically
+  evaluates template type-checking and can't trace a component class through
+  property access on an external, pre-compiled namespace object — only through
+  a direct named import binding. `@symbiote/angular` exports `AnimatedView`,
+  `AnimatedText`, `AnimatedImage`, `AnimatedScrollView`, `AnimatedFlatList`,
+  and `AnimatedSectionList` as top-level named symbols for exactly this
+  reason; plain `tsc`/Vitest won't catch a dotted alias slipping through, only
+  a real `ngc` build does.
+</Aside>
+
+## JS driver vs native driver
+
+`useNativeDriver: true` hands the entire animation curve to a native-side
+driver (`NativeAnimated`) — once started, zero JS runs per frame, and the
+animation keeps running even if the JS thread is busy. `useNativeDriver: false`
+(the default) runs the same math in JS and commits a new value through the
+engine on every frame — necessary for properties the native driver can't
+touch (most non-`transform`/`opacity` style properties), at the cost of a
+commit per frame.
+
+Both drivers use the exact same `Animated.Value`/`Animated.timing` call —
+`useNativeDriver` is the only thing that changes. See
+[`examples/react/App.tsx`](https://github.com/OneEyed1366/symbiote/blob/master/examples/react/App.tsx)'s
+`AnimatedDemo` for a JS-driven dot and a native-driven dot running side by
+side, with `DEBUG=1` logging showing the difference directly (a native run
+logs one `native: startAnimatingNode`; a JS run logs a `commit … incremental`
+roughly once per frame).
+
+## Beyond timing: the rest of the surface
+
+The full RN `Animated` surface ported, not just `timing`:
+
+- **`Animated.ValueXY`** — a 2D value pair, typically paired with
+  `PanResponder` for drag gestures.
+- **`Animated.spring`/`Animated.decay`** — physics-based animations, same
+  config shape as RN's.
+- **Tracking** — passing another `Animated.Value` (or `ValueXY`) as
+  `toValue` makes the animation chase a moving target instead of a fixed
+  number, the same "tracking" mechanism RN uses for gesture-follow effects.
+- **`add`/`subtract`/`multiply`/`divide`/`modulo`/`diffClamp`** — operators
+  that combine animated values, e.g. a collapsing header driven by
+  `diffClamp(scrollY, 0, HEADER_HEIGHT)`.
+- **`Animated.event(...)`** — maps a native event's payload directly onto an
+  `Animated.Value` with no JS in the loop (`onScroll={Animated.event(...)}`).
+- **`Animated.parallel`/`sequence`/`stagger`/`loop`/`delay`** — the same
+  composition helpers RN ships, unchanged.
+
+[`examples/react/App.tsx`](https://github.com/OneEyed1366/symbiote/blob/master/examples/react/App.tsx)'s
+`AnimatedParityDemo` exercises all of this in one place: a `ValueXY`-driven
+drag box clamped with `PanResponder`, a spring that chases a moving lead
+value (tracking), and a `diffClamp`-driven collapsing header.
+
+## What is not built
+
+Symbiote's `Animated` is the RN `Animated` API, not Reanimated — there is no
+worklet system, no `useSharedValue`/`useAnimatedStyle`, and no gesture-handler
+integration beyond what `PanResponder` already provides. `react-native-reanimated`
+itself is not tested against symbiote's engine; it hooks much deeper into RN's
+runtime than a plain native-view library does, so treat it as unverified
+rather than assuming it works the same way a
+[wrapped third-party native view](/docs/howtos/third-party-views/) would.

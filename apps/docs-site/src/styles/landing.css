@@ -1,0 +1,903 @@
+/*
+  symbiote landing — the page eats its own dogfood.
+  Shared tokens (fonts, neutrals, per-skin accent/radius/glow) live in
+  tokens.css, so the Starlight docs read the exact same palette.
+*/
+@import './tokens.css';
+
+/* ── base ───────────────────────────────────────────────────── */
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: var(--font-body);
+  color: var(--core-text);
+  background: radial-gradient(120% 80% at 78% -12%, var(--glow), transparent 58%), var(--core-bg);
+  transition:
+    background-color var(--bond-ms) ease,
+    color var(--bond-ms) ease;
+}
+
+h1,
+h2 {
+  margin: 0;
+  font-family: var(--font-display);
+  font-weight: 600;
+  letter-spacing: -0.03em;
+}
+
+p {
+  color: var(--core-muted);
+  line-height: 1.65;
+}
+
+a {
+  color: inherit;
+}
+
+.shell {
+  width: min(1180px, calc(100% - 40px));
+  margin: 0 auto;
+}
+
+.eyebrow {
+  display: inline-block;
+  margin-bottom: 18px;
+  color: var(--accent);
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  transition: color var(--bond-ms) ease;
+}
+
+/* ── nav ────────────────────────────────────────────────────── */
+.nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: min(1180px, calc(100% - 40px));
+  margin: 0 auto;
+  padding: 26px 0 8px;
+}
+
+.brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 1.05rem;
+  letter-spacing: -0.03em;
+  text-decoration: none;
+}
+
+.brand-mark {
+  width: 14px;
+  height: 14px;
+  border-radius: 4px 8px 5px 9px;
+  background: var(--gradient);
+  box-shadow: 0 0 0 4px var(--glow);
+  transition:
+    background var(--bond-ms) ease,
+    box-shadow var(--bond-ms) ease;
+}
+
+.nav-links {
+  display: flex;
+  gap: 24px;
+  font-size: 0.92rem;
+  font-weight: 500;
+}
+
+.nav-links a {
+  color: var(--core-muted);
+  text-decoration: none;
+  transition: color 0.2s ease;
+}
+
+.nav-links a:hover {
+  color: var(--accent);
+}
+
+/* ── hero ───────────────────────────────────────────────────── */
+.hero {
+  display: grid;
+  grid-template-columns: 1fr 0.92fr;
+  gap: 40px;
+  align-items: center;
+  padding: 72px 0 96px;
+}
+
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 38px;
+}
+
+.chip {
+  --fw: var(--accent);
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 15px;
+  border: 1px solid var(--core-line);
+  border-radius: 999px;
+  background: var(--surface);
+  color: var(--core-text);
+  font-family: var(--font-mono);
+  font-size: 0.82rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition:
+    border-color 0.2s ease,
+    background 0.2s ease,
+    transform 0.12s ease;
+}
+
+.chip:hover:not(:disabled) {
+  transform: translateY(-1px);
+  border-color: var(--fw);
+}
+
+.chip:disabled {
+  cursor: not-allowed;
+  opacity: 0.52;
+}
+
+.chip.is-wip .dot {
+  opacity: 0.65;
+}
+
+.chip[aria-pressed='true'] {
+  border-color: var(--fw);
+  background: color-mix(in srgb, var(--fw) 16%, transparent);
+}
+
+.chip .dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--fw);
+}
+
+.chip .soon {
+  font-size: 0.62rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--core-faint);
+}
+
+.chip[data-fw='react'] {
+  --fw: #61dafb;
+}
+.chip[data-fw='vue'] {
+  --fw: #42d392;
+}
+.chip[data-fw='svelte'] {
+  --fw: #ff3e00;
+}
+.chip[data-fw='solid'] {
+  --fw: #4a8bc2;
+}
+.chip[data-fw='angular'] {
+  --fw: #e40035;
+}
+
+h1 {
+  font-size: clamp(3rem, 7vw, 6.4rem);
+  line-height: 0.96;
+}
+
+.symbiote-name {
+  color: var(--accent);
+  white-space: nowrap;
+  transition: color var(--bond-ms) ease;
+}
+
+.symbiote-name::before {
+  content: '⟨\00a0';
+  opacity: 0.45;
+}
+
+.symbiote-name::after {
+  content: '\00a0⟩';
+  opacity: 0.45;
+}
+
+.lede {
+  max-width: 30ch;
+  margin: 28px 0 0;
+  font-size: clamp(1.05rem, 1.5vw, 1.32rem);
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 38px;
+}
+
+.button {
+  display: inline-flex;
+  align-items: center;
+  min-height: 48px;
+  padding: 0 22px;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  font-family: var(--font-display);
+  font-weight: 600;
+  text-decoration: none;
+  transition:
+    background var(--bond-ms) ease,
+    border-color 0.2s ease,
+    color 0.2s ease,
+    transform 0.12s ease;
+}
+
+.button:hover {
+  transform: translateY(-1px);
+}
+
+.button.primary {
+  color: var(--accent-ink);
+  background: var(--gradient);
+}
+
+.button.secondary {
+  border-color: var(--core-line);
+  background: var(--surface);
+  color: var(--core-text);
+}
+
+.button.secondary:hover,
+.text-link:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+/* ── host symbiote (the signature) ──────────────────────────── */
+.host {
+  position: relative;
+  display: grid;
+  place-items: center;
+  gap: 16px;
+}
+
+.host::before {
+  content: '';
+  position: absolute;
+  top: 40%;
+  width: min(96%, 460px);
+  aspect-ratio: 1;
+  background: radial-gradient(circle, var(--glow), transparent 66%);
+  transform: translateY(-50%);
+  transition: background var(--bond-ms) ease;
+}
+
+.symbiote {
+  position: relative;
+  width: min(104%, 460px);
+  overflow: visible;
+  filter: drop-shadow(0 22px 46px rgba(0, 0, 0, 0.4));
+}
+
+/* the mass, tendrils and drips are positioned every frame by JS (live goo);
+   only the face parts animate via CSS */
+.eye,
+.maw {
+  transform-box: fill-box;
+  transform-origin: center;
+}
+
+/* predators gnash — the maw opens and closes */
+[data-symbiote='angular'] .maw,
+[data-symbiote='svelte'] .maw {
+  animation: chomp 2.4s ease-in-out infinite;
+}
+
+/* the native device the symbiote rewrites — structure fixed, screen follows the skin */
+.phone-frame {
+  fill: #0b0c12;
+  stroke: color-mix(in srgb, var(--accent) 38%, rgba(255, 255, 255, 0.14));
+  stroke-width: 2;
+  transition: stroke var(--bond-ms) ease;
+}
+
+.phone-screen-bg {
+  fill: var(--core-bg-2);
+  transition: fill var(--bond-ms) ease;
+}
+
+.phone-speaker,
+.phone-home {
+  fill: rgba(255, 255, 255, 0.16);
+}
+
+.phone-cam {
+  fill: rgba(255, 255, 255, 0.24);
+}
+
+.scr-bar,
+.scr-btn {
+  fill: var(--accent);
+  transition: fill var(--bond-ms) ease;
+}
+
+.scr-title,
+.scr-btn-label {
+  fill: var(--accent-ink);
+  font-family: var(--font-display);
+  font-weight: 600;
+  transition: fill var(--bond-ms) ease;
+}
+
+.scr-title {
+  font-size: 11px;
+}
+
+.scr-btn-label {
+  font-family: var(--font-mono);
+  font-size: 8px;
+  font-weight: 700;
+}
+
+.scr-label {
+  fill: var(--core-faint);
+  font-family: var(--font-mono);
+  font-size: 7px;
+  letter-spacing: 0.18em;
+}
+
+.scr-num {
+  fill: var(--core-text);
+  font-family: var(--font-display);
+  font-size: 32px;
+  font-weight: 700;
+  transition: fill var(--bond-ms) ease;
+}
+
+.scr-fw {
+  fill: var(--accent);
+  font-family: var(--font-mono);
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  transition: fill var(--bond-ms) ease;
+}
+
+/* grip limbs render past the body gradient's range, so they'd clamp to a darker tone
+   and seam against the brighter flank. Pin them to the body's mid-gradient colour
+   (~the tone the flank shows where they root) so the join is invisible. */
+.goo-front {
+  fill: color-mix(in srgb, var(--accent) 64%, var(--accent-2));
+  transition: fill var(--bond-ms) ease;
+}
+
+.sheen {
+  fill: rgba(255, 255, 255, 0.22);
+}
+
+.eye {
+  fill: #f6fbff;
+  animation: blink 6s ease-in-out infinite;
+}
+
+.fang {
+  fill: #f6fbff;
+}
+
+.lips {
+  fill: none;
+  stroke: #f6fbff;
+  stroke-width: 4;
+  stroke-linecap: round;
+}
+
+.saliva {
+  fill: none;
+  stroke: rgba(255, 255, 255, 0.5);
+  stroke-width: 1.4;
+  stroke-linecap: round;
+}
+
+/* one face per symbiote — hide all variants, then reveal the right one */
+.eyes,
+.maw,
+.lips {
+  display: none;
+}
+
+[data-symbiote='react'] .eyes-calm,
+[data-symbiote='react'] .mouth-flat,
+[data-symbiote='vue'] .eyes-friendly,
+[data-symbiote='vue'] .mouth-smile,
+[data-symbiote='svelte'] .eyes-angry,
+[data-symbiote='svelte'] .maw-spikes,
+[data-symbiote='solid'] .eyes-slit,
+[data-symbiote='solid'] .mouth-flat,
+[data-symbiote='angular'] .eyes-angry,
+[data-symbiote='angular'] .maw-fanged {
+  display: block;
+}
+
+.host-label {
+  margin: 0;
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--core-faint);
+}
+
+@keyframes blink {
+  0%,
+  90%,
+  100% {
+    transform: scaleY(1);
+  }
+  95% {
+    transform: scaleY(0.12);
+  }
+}
+
+@keyframes chomp {
+  0%,
+  100% {
+    transform: scaleY(1);
+  }
+  50% {
+    transform: scaleY(0.76);
+  }
+}
+
+/* ── panels (proof / traits / demo / seam / status) ──────────── */
+.proof,
+.traits,
+.demo,
+.seam,
+.status {
+  border: 1px solid var(--core-line);
+  border-radius: 30px;
+  background: linear-gradient(180deg, var(--surface-2), var(--surface));
+  box-shadow: var(--shadow);
+  transition:
+    border-color var(--bond-ms) ease,
+    background var(--bond-ms) ease;
+}
+
+section {
+  margin: 26px 0;
+}
+
+.proof {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  overflow: hidden;
+}
+
+.proof article {
+  padding: 36px;
+}
+
+.proof article + article {
+  border-left: 1px solid var(--core-line);
+}
+
+.tag {
+  display: inline-block;
+  margin-bottom: 22px;
+  padding: 4px 11px;
+  border: 1px solid color-mix(in srgb, var(--accent) 45%, var(--core-line));
+  border-radius: 7px;
+  color: var(--accent);
+  font-family: var(--font-mono);
+  font-size: 0.66rem;
+  font-weight: 700;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  transition:
+    color var(--bond-ms) ease,
+    border-color var(--bond-ms) ease;
+}
+
+.proof h2 {
+  font-size: 1.5rem;
+  margin-bottom: 12px;
+}
+
+/* ── traits (framework-native capabilities, not the shared floor) ──── */
+.traits {
+  padding: clamp(28px, 5vw, 60px);
+}
+
+.traits h2 {
+  max-width: 22ch;
+  font-size: clamp(1.8rem, 3.4vw, 3rem);
+}
+
+.traits-lede {
+  max-width: 56ch;
+  margin: 18px 0 0;
+}
+
+.trait-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 18px;
+  margin-top: 36px;
+}
+
+.trait {
+  display: flex;
+  flex-direction: column;
+  padding: 26px 24px;
+  border: 1px solid var(--core-line);
+  border-radius: calc(var(--radius) * 0.62);
+  background: var(--surface);
+  transition: border-color var(--bond-ms) ease;
+}
+
+.trait h3 {
+  margin: 0 0 10px;
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 1.1rem;
+  letter-spacing: -0.01em;
+}
+
+.trait p {
+  margin: 0;
+  font-size: 0.94rem;
+}
+
+.trait code {
+  padding: 0.1em 0.4em;
+  border-radius: 5px;
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--core-text);
+  font-family: var(--font-mono);
+  font-size: 0.86em;
+}
+
+.trait-fws {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  /* pinned to the card's bottom edge — paragraph length varies per card,
+     the badge row should still line up across the grid */
+  margin: auto 0 0;
+  padding-top: 20px;
+  list-style: none;
+  width: 100%;
+}
+
+.trait-fws li {
+  --fw: var(--accent);
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 10px 5px 8px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--fw) 12%, transparent);
+  color: var(--core-muted);
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+}
+
+.trait-fws li::before {
+  content: '';
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--fw);
+}
+
+.trait-fws li[data-fw='react'] {
+  --fw: #61dafb;
+}
+.trait-fws li[data-fw='vue'] {
+  --fw: #42d392;
+}
+.trait-fws li[data-fw='angular'] {
+  --fw: #e40035;
+}
+
+.demo {
+  display: grid;
+  grid-template-columns: 0.85fr 1.15fr;
+  gap: 40px;
+  align-items: center;
+  padding: clamp(28px, 5vw, 60px);
+}
+
+.demo h2 {
+  font-size: clamp(1.8rem, 3.4vw, 3rem);
+  margin-bottom: 16px;
+}
+
+.demo-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 18px;
+}
+
+figure {
+  margin: 0;
+  overflow: hidden;
+  border: 1px solid var(--core-line);
+  border-radius: 22px;
+  background: rgba(0, 0, 0, 0.24);
+  transition:
+    border-color var(--bond-ms) ease,
+    box-shadow var(--bond-ms) ease;
+}
+
+figure.is-active {
+  border-color: var(--accent);
+  box-shadow:
+    0 0 0 1px var(--accent),
+    0 18px 50px var(--glow);
+}
+
+figure img {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+figcaption {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 13px 16px;
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--core-muted);
+}
+
+figcaption .dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+}
+
+figcaption .dot[data-fw='react'] {
+  background: #61dafb;
+}
+figcaption .dot[data-fw='vue'] {
+  background: #42d392;
+}
+figcaption .dot[data-fw='angular'] {
+  background: #e40035;
+}
+
+/* seam / pipeline — the one real sequence, so it keeps arrows */
+.seam {
+  padding: clamp(28px, 5vw, 60px);
+}
+
+.seam h2 {
+  font-size: clamp(1.8rem, 3.4vw, 3rem);
+  margin-bottom: 32px;
+}
+
+.pipeline {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 12px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  counter-reset: step;
+}
+
+.pipeline li {
+  position: relative;
+  min-height: 96px;
+  padding: 18px;
+  border: 1px solid var(--core-line);
+  border-radius: 16px;
+  background: var(--surface);
+  color: var(--core-text);
+  font-family: var(--font-mono);
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+.pipeline li::before {
+  counter-increment: step;
+  content: '0' counter(step);
+  display: block;
+  margin-bottom: 10px;
+  color: var(--accent);
+  font-size: 0.7rem;
+  transition: color var(--bond-ms) ease;
+}
+
+.pipeline li:not(:last-child)::after {
+  position: absolute;
+  top: 50%;
+  right: -13px;
+  z-index: 2;
+  color: var(--accent);
+  content: '→';
+  transform: translateY(-50%);
+  transition: color var(--bond-ms) ease;
+}
+
+/* status */
+.status {
+  padding: clamp(28px, 5vw, 60px);
+}
+
+.status h2 {
+  font-size: clamp(1.8rem, 3.4vw, 3rem);
+  margin-bottom: 28px;
+}
+
+.status ul {
+  display: grid;
+  gap: 10px;
+  margin: 0 0 26px;
+  padding: 0;
+  list-style: none;
+}
+
+.status li {
+  --fw: var(--accent);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px 20px;
+  border: 1px solid var(--core-line);
+  border-radius: 14px;
+  background: var(--surface);
+  color: var(--core-muted);
+  transition: border-color var(--bond-ms) ease;
+}
+
+.status li[data-fw='react'] {
+  --fw: #61dafb;
+}
+.status li[data-fw='vue'] {
+  --fw: #42d392;
+}
+.status li[data-fw='svelte'] {
+  --fw: #ff3e00;
+}
+.status li[data-fw='solid'] {
+  --fw: #4a8bc2;
+}
+.status li[data-fw='angular'] {
+  --fw: #e40035;
+}
+
+.status li .dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--fw);
+}
+
+.status li strong {
+  color: var(--core-text);
+  font-weight: 600;
+}
+
+.status li .state {
+  color: var(--core-faint);
+  font-size: 0.92rem;
+}
+
+.status li.is-active {
+  border-color: var(--fw);
+  background: color-mix(in srgb, var(--fw) 9%, var(--surface));
+}
+
+.text-link {
+  font-family: var(--font-display);
+  font-weight: 600;
+  text-decoration: none;
+  color: var(--accent);
+  transition: color var(--bond-ms) ease;
+}
+
+/* ── footer ─────────────────────────────────────────────────── */
+.foot {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  justify-content: space-between;
+  width: min(1180px, calc(100% - 40px));
+  margin: 40px auto 56px;
+  padding-top: 24px;
+  border-top: 1px solid var(--core-line);
+  color: var(--core-faint);
+  font-size: 0.88rem;
+}
+
+.foot a {
+  color: var(--core-muted);
+  text-decoration: none;
+}
+
+.foot a:hover {
+  color: var(--accent);
+}
+
+/* ── bonding wave (created per click in JS) ─────────────────── */
+.bond-wave {
+  position: fixed;
+  z-index: 60;
+  width: 0;
+  height: 0;
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+}
+
+/* ── focus ──────────────────────────────────────────────────── */
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+  border-radius: 4px;
+}
+
+/* ── responsive ─────────────────────────────────────────────── */
+@media (max-width: 920px) {
+  .hero {
+    grid-template-columns: 1fr;
+    padding: 48px 0 64px;
+  }
+
+  .host {
+    order: -1;
+  }
+
+  .host-cell {
+    width: 240px;
+  }
+
+  .demo,
+  .proof,
+  .demo-grid,
+  .trait-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .proof article + article {
+    border-top: 1px solid var(--core-line);
+    border-left: 0;
+  }
+
+  .pipeline {
+    grid-template-columns: 1fr;
+  }
+
+  .pipeline li:not(:last-child)::after {
+    top: auto;
+    right: 50%;
+    bottom: -20px;
+    transform: translateX(50%) rotate(90deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .eye,
+  .maw {
+    animation: none;
+  }
+
+  * {
+    transition-duration: 0.01ms !important;
+  }
+}

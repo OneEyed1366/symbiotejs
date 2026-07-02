@@ -1,0 +1,94 @@
+---
+title: Events
+description: Understand how native events surface as React callbacks, Vue emits/v-model, and Angular bindings.
+---
+
+import { Aside } from '@astrojs/starlight/components';
+
+Native Fabric events come back to the engine. Each adapter then exposes them in
+that framework's idiom: React callback props, Vue typed emits (plus `v-model`
+on controlled components), and Angular real `@Output()` `EventEmitter`s — with
+one permanent exception, the scroll-family events, which stay callback inputs
+(see the caveat below).
+
+## Same event, different framework shape
+
+React:
+
+```tsx
+<Switch value={enabled} onValueChange={setEnabled} />
+<TextInput value={name} onValueChange={setName} />
+<Pressable onPress={() => setCount(count + 1)} />
+```
+
+Vue — typed emits, or `v-model` on the controlled components that support it:
+
+```vue
+<Switch v-model="enabled" />
+<TextInput v-model="name" />
+<Pressable @press="count++" />
+```
+
+Angular — real `@Output()` `EventEmitter`s everywhere, including `Switch` and
+`TextInput`:
+
+```ts
+template: `
+  <Switch [value]="enabled" (valueChange)="setEnabled($event)" />
+  <TextInput [value]="name" (valueChange)="setName($event)" />
+  <Pressable (press)="count = count + 1" />
+`
+```
+
+The payload is the same concept. The public API is framework-shaped.
+
+<Aside type="caution" title="Scroll events stay callback inputs">
+  The scroll-family events (`onScroll`, `onScrollBeginDrag`,
+  `onScrollEndDrag`, `onMomentumScrollBegin`, `onMomentumScrollEnd`) are the
+  one **permanent** exception to Angular's `@Output()` migration, on
+  `ScrollView` and the list components. They stay plain callback
+  `@Input()`s — `[onScroll]="handler"` — because RN's scroll callbacks can
+  carry either a plain function or the return value of `Animated.event(...)`,
+  a native-driver marker for native-driven scroll animations, and
+  `@Output()` can only bind a template listener expression, not an arbitrary
+  value. See the [Angular API reference](/docs/api/angular/) for the exact
+  split.
+</Aside>
+
+## Passthrough events vs adapter events
+
+Some events are native passthrough events. They travel through the engine as
+`onX` listeners and should not be declared as Vue emits unless the Vue component
+actually consumes and re-emits them.
+
+Other events are adapter-level conveniences. Examples:
+
+| Concept             | React                          | Vue                                | Angular                      |
+| ------------------- | ------------------------------- | ------------------------------------ | ------------------------------ |
+| Press               | `onPress`                       | `@press`                           | `(press)`                     |
+| Switch value        | `onValueChange(value, event)`   | `@value-change`<br />or `v-model`  | `(valueChange)` (value only)  |
+| Text input text     | `onValueChange(text, event)`    | `@value-change`<br />or `v-model`  | `(valueChange)` (text only)   |
+| Text input raw event | *(same callback, 2nd arg)*     | *(same emit, 2nd arg)*             | `(change)` (separate output)  |
+
+React and Vue merged `TextInput`'s old `onChangeText`/`onChange` pair into one
+`onValueChange(text, event)` callback — there's only ever one underlying
+native event. Angular keeps two separate `@Output()`s instead, because an
+`EventEmitter` carries exactly one value: `valueChange` stays text-only (so
+`[(value)]` two-way binding keeps working) and `change` is a second output
+for the raw event. `Switch` follows the same shape one level simpler: React's
+`onValueChange` and Vue's `@value-change` both receive the native event as a
+second argument, but Angular's `valueChange` stays single-value (just the
+boolean) since there's no second output to split it into.
+
+This split matters because Vue removes declared emit listeners from attrs. If a
+native passthrough listener is declared as an emit by mistake, the engine may
+never see it.
+
+## Controlled components
+
+`Switch` and `TextInput` follow React Native's controlled-component rules. If the
+native view reports a new value but the parent does not update the `value` prop,
+Symbiote commands native back to the JavaScript value.
+
+That correction logic is shared in `@symbiote/components`; React, Vue, and
+Angular each only wire it to their own lifecycle systems.

@@ -1,0 +1,48 @@
+---
+title: 'How to: turn on diagnostic logging'
+description: dlog/isDebug from @symbiote/engine, gated by the DEBUG env var.
+---
+
+You want visibility into what the engine or an adapter is doing at a
+commit/event/native-bridge seam, without adding your own `console.log` calls
+that you'll later have to remember to remove.
+
+## Turn it on
+
+```sh
+DEBUG=1 pnpm ios   # or: DEBUG=1 pnpx react-native start --reset-cache
+```
+
+Node reads `DEBUG=1` natively (headless smokes); on-device, each example's
+`index.js` mirrors it onto the global once at start —
+`globalThis.__SYMBIOTE_DEBUG__ = process.env.DEBUG === '1'` — so changing it
+needs a fresh Metro start (`--reset-cache`), not a rebuild. No env access at
+runtime? Set the escape hatch instead:
+
+```ts
+globalThis.__SYMBIOTE_DEBUG__ = true;
+```
+
+## Reading/writing logs
+
+Every diagnostic log goes through `dlog`, never a bare `console.log`:
+
+```ts
+import { dlog } from '@symbiote/engine';
+
+dlog(`dispatchViewCommand "${commandName}" skipped: node not committed`);
+```
+
+`dlog` is a no-op (one property read, nothing emitted) unless `isDebug()` is
+true, so it costs nothing left in place — which is why existing `dlog` calls
+are never deleted, only added to. When you're debugging a commit path, an
+event, or a native bring-up step and find a useful seam, leave a `dlog` there
+permanently rather than a temporary `console.log`.
+
+## Why this exists
+
+`dlog`/`isDebug` live in `core/engine/src/debug.ts` and are exported from
+`@symbiote/engine` so every adapter shares one gating mechanism instead of
+each inventing its own flag. Grep for `dlog(` across `core/` and `adapters/`
+to see the seams already instrumented — commit timing, native command
+dispatch, ViewConfig resolution — before adding your own.

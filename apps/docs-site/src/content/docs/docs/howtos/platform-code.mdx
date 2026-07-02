@@ -1,0 +1,48 @@
+---
+title: 'How to: write platform-specific code'
+description: The folder-as-module convention for iOS/Android-only implementations.
+---
+
+You have a module that needs different code on iOS vs Android (or a
+platform-invariant core shared by both), and want it picked up automatically
+by Metro.
+
+## A module with platform variants gets its own folder
+
+```
+vibration/
+  index.ts          # base — re-exports the iOS build, used headless/tsx
+  index.ios.ts       # iOS implementation
+  index.android.ts   # Android implementation
+  shared.ts          # platform-invariant core both builds call into
+  vibration.test.ts  # co-located test
+```
+
+Metro selects `index.ios.ts`/`index.android.ts` **by filename** on a real
+device/simulator build, never by a `Platform.OS` runtime check. Everything
+that doesn't differ by platform (the public contract, a lazy native-module
+resolver, shared validation) goes in `shared.ts`, imported by both platform
+files — so a platform file only contains what genuinely diverges.
+
+## The import contract never changes
+
+```ts
+import { vibrate } from '../vibration'; // resolves to the folder either way
+```
+
+Under Metro on a real host this resolves to `index.ios.ts`/`index.android.ts`;
+under Node/vitest/tsx it resolves to `index.ts`. Only an **explicit** platform
+import changes form: `'../vibration.ios'` becomes `'../vibration/index.ios'`,
+`'../vibration-shared'` becomes `'../vibration/shared'`.
+
+## When to skip the folder
+
+A module with **no** platform/shared variant stays a flat file
+(`core/engine/src/node.ts`, `commit.ts`) — wrapping a single-file module in a
+folder just to look consistent is the most common mistake here. Only reach
+for the folder once a real second implementation exists.
+
+Full rule set (ADR 0026), the adapter `src/` bucket conventions, and the
+prop-type split live in the project's
+[`symbiote-file-layout`](https://github.com/OneEyed1366/symbiote/blob/master/.claude/skills/symbiote-file-layout/SKILL.md)
+skill.

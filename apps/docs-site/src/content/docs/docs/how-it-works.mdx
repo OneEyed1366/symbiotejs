@@ -1,0 +1,67 @@
+---
+title: How it works
+description: The symbiote render pipeline from framework adapters to the stock React Native Fabric host.
+---
+
+symbiote is built around one architectural fact: Fabric already exposes a
+framework-agnostic JavaScript seam.
+
+React Native's React renderer talks to this seam from its Fabric host config.
+symbiote talks to the same seam from its own engine.
+
+## Render pipeline
+
+```txt
+Framework adapter
+  React · Vue · future Svelte/Solid/Angular adapters
+        ↓
+Mutation API
+  insert · remove · setProp · commit
+        ↓
+@symbiote/engine
+  retained tree · clone-on-write · event normalization
+        ↓
+nativeFabricUIManager
+  createNode · cloneNodeWithNewProps · appendChildToSet · completeRoot
+        ↓
+stock React Native
+  Fabric C++ · JSI · Yoga · native views
+```
+
+## Why the engine exists
+
+Most UI frameworks express host updates as mutations: set a prop, insert a
+child, remove a child. Fabric is persistent: you do not mutate an existing node;
+you clone nodes with new props or children and atomically commit a new child set.
+
+The engine is the translation layer between those worlds. It owns the retained
+shadow tree and turns adapter mutations into Fabric child set commits.
+
+That means each framework adapter stays thin. A persistence bug is fixed once in
+`@symbiote/engine`, not once per framework.
+
+## What stays stock
+
+symbiote does not fork React Native native code. These stay ordinary React Native
+runtime pieces:
+
+- Fabric C++ shadow tree
+- Yoga layout
+- JSI and Hermes
+- iOS/Android host surfaces
+- native modules
+
+The only replaced layer is the JavaScript renderer that drives Fabric.
+
+## Events
+
+Fabric returns events to the same handle passed at node creation time. In React,
+that handle is a Fiber. In symbiote, it is a retained-tree node owned by the
+engine. The adapter maps framework event syntax onto engine listeners, and the
+engine normalizes native events back into those listeners.
+
+## Deeper architecture
+
+The public site should explain the architecture directly instead of pointing
+readers at local repository notes. Deeper design rationale can be promoted into
+standalone public pages as the docs grow.

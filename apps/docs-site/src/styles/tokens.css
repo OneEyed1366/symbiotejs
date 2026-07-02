@@ -1,0 +1,93 @@
+/*
+  symbiote design tokens — the single source both the landing page and the
+  Starlight docs read from. CORE tokens (fonts, neutrals, layout) never
+  change between skins. ADAPTER tokens (--accent / --radius / --bond-ms /
+  --glow) swap per [data-symbiote], so a bonded framework re-skins the whole
+  site, not just the hero.
+*/
+
+:root {
+  --font-display: 'Space Grotesk', ui-sans-serif, system-ui, sans-serif;
+  --font-mono: 'Space Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+  --font-body: Inter, ui-sans-serif, system-ui, -apple-system, sans-serif;
+
+  /* native core — fixed */
+  --core-bg: #08090d;
+  --core-bg-2: #0d0f15;
+  --core-text: #f4f6fb;
+  --core-muted: #9aa3b2;
+  --core-faint: #6b7585;
+  --core-line: rgba(255, 255, 255, 0.12);
+  --surface: rgba(255, 255, 255, 0.04);
+  --surface-2: rgba(255, 255, 255, 0.07);
+  --shadow: 0 24px 80px rgba(0, 0, 0, 0.5);
+
+  /* adapter defaults (React owns first paint) */
+  --radius: 26px;
+  --bond-ms: 460ms;
+  --gradient: linear-gradient(135deg, var(--accent), var(--accent-2));
+}
+
+/* ── symbiote skins ─────────────────────────────────────────── */
+[data-symbiote='react'] {
+  --accent: #61dafb;
+  --accent-2: #2bb0d6;
+  --accent-ink: #04121a;
+  --glow: rgba(97, 218, 251, 0.2);
+  --radius: 26px;
+  --bond-ms: 520ms;
+  --membrane: 46% 54% 60% 40% / 50% 44% 56% 50%;
+}
+
+[data-symbiote='vue'] {
+  --accent: #42d392;
+  --accent-2: #35a479;
+  --accent-ink: #04140d;
+  --glow: rgba(66, 211, 146, 0.2);
+  --radius: 34px;
+  --bond-ms: 420ms;
+  --membrane: 60% 40% 50% 50% / 55% 50% 50% 45%;
+}
+
+/* Svelte is the one light skin — it stops the system reading as
+   "dark site with a swappable hue". */
+[data-symbiote='svelte'] {
+  --accent: #ff3e00;
+  --accent-2: #d63200;
+  --accent-ink: #ffffff;
+  --glow: rgba(255, 62, 0, 0.16);
+  --core-bg: #fbf6f2;
+  --core-bg-2: #ffffff;
+  --core-text: #241008;
+  --core-muted: #7a5c4d;
+  --core-faint: #a78977;
+  --core-line: rgba(40, 18, 6, 0.14);
+  --surface: rgba(40, 18, 6, 0.035);
+  --surface-2: rgba(40, 18, 6, 0.06);
+  --shadow: 0 24px 70px rgba(120, 40, 0, 0.16);
+  --radius: 16px;
+  --bond-ms: 240ms;
+  --membrane: 40% 60% 56% 44% / 46% 40% 60% 54%;
+  color-scheme: light;
+}
+
+[data-symbiote='solid'] {
+  --accent: #4a8bc2;
+  --accent-2: #2c4f7c;
+  --accent-ink: #ffffff;
+  --glow: rgba(74, 139, 194, 0.2);
+  --radius: 14px;
+  --bond-ms: 300ms;
+  --membrane: 52% 48% 48% 52% / 50% 52% 48% 50%;
+}
+
+[data-symbiote='angular'] {
+  --accent: #e40035;
+  --accent-2: #9c0aab;
+  --accent-ink: #ffffff;
+  --glow: rgba(228, 0, 53, 0.18);
+  --gradient: linear-gradient(120deg, #e40035, #f6007b, #9c0aab);
+  --radius: 24px;
+  --bond-ms: 400ms;
+  --membrane: 58% 42% 44% 56% / 46% 56% 44% 54%;
+}

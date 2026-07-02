@@ -1,0 +1,402 @@
+---
+title: Styling
+description: Style Symbiote native views with CSS classes, CSS Modules, or StyleSheet.create.
+---
+
+Symbiote's preferred way to style a native view is ordinary CSS — a class
+string resolved through a shared runtime registry, compiled to native style
+objects at build time. Every current example app (React, Vue SFC, Vue TSX,
+Angular) styles this way. `StyleSheet.create` — React Native's own JS-object
+style model — is still fully supported and works identically everywhere; use
+it for genuinely dynamic values a CSS class can't express, or if you'd simply
+rather not reach for CSS.
+
+## What a style value supports
+
+Whichever path produces it — a compiled CSS class or a `StyleSheet.create`
+object — a style value supports the same things once it reaches the engine:
+
+- React Native-style layout and text properties.
+- Arrays and conditional style entries through the engine style flattener.
+- Platform utilities such as `Platform.select()`.
+- Color processing through the engine's platform color seam.
+
+## Style with CSS classes
+
+A side-effect-only import (no default export) registers every class in the
+file globally, from any adapter's own source file:
+
+```tsx
+import './App.css';
+import { Text, View } from '@symbiote/react';
+
+function Card() {
+  return (
+    <View className="card">
+      <Text className="title">Native surface</Text>
+    </View>
+  );
+}
+```
+
+The same `import './App.css'` + `class="card"` shape works from a Vue
+`<script>` and an Angular component. Every canary app (`examples/react`,
+`examples/vue-sfc`, `examples/vue-tsx`, `examples/angular`) ships its static
+look this way — see `App.css` (or the SFC `<style>` block below) in any of
+them for a full stylesheet running on device.
+
+A build-time-only compiler (`@symbiote/css-parser`) turns each rule into a
+plain style object; `class="card"` resolves it back at render time through a
+runtime registry (`registerStyles`/`resolveClassName`, exported from
+`@symbiote/engine`). This registry is shared by every adapter, not just Vue —
+React's `className`, Vue's `class`/`:class`, and Angular's `class`/`[class]`
+all resolve through the same lookup.
+
+## Vue SFC `<style>` blocks
+
+A Vue SFC `<style>` block (including `scoped`) compiles into native style
+objects the same way — no CSS ships in the app bundle, no runtime CSS engine
+exists:
+
+```vue
+<template>
+  <View class="card">
+    <Text class="title">Native surface</Text>
+  </View>
+</template>
+
+<style scoped>
+.card {
+  padding: 16px;
+  border-radius: 12px;
+  background-color: #111827;
+}
+.title {
+  color: #ffffff;
+  font-size: 18px;
+  font-weight: 600;
+}
+</style>
+```
+
+`:style`/`:class` composition and cascade precedence (explicit `:style`
+always wins over class-derived style) work the same as any other Vue app.
+`scoped` works the same as it does for real Vue: opt in with the attribute
+and every class in that block is suffixed to a per-component scope, so the
+same class name in two components never collides. `:global(...)` is the
+escape hatch back out — for a utility class meant to apply anywhere, exactly
+like real Vue's scoped-CSS semantics, minus the DOM underneath. See the
+`.row`/`.flex1` utility classes in
+[`examples/vue-sfc/App.vue`](https://github.com/OneEyed1366/symbiote/blob/master/examples/vue-sfc/App.vue)
+for a real `scoped` stylesheet with a `:global()` escape running on device.
+
+`box-shadow`, `transform`, `filter`, `transform-origin`, and `background-image`
+(gradients) all map onto Fabric's own native style props and compile like any
+other property:
+
+```css
+.gradient-card {
+  height: 64px;
+  border-radius: 12px;
+  background-image: linear-gradient(to right, #2b6cb0, #f6ad55);
+}
+```
+
+A property with genuinely no RN equivalent (`animation`, pseudo-classes,
+media queries) is dropped with a build warning instead — see "What is not
+CSS" below.
+
+## CSS Modules
+
+CSS Modules — scoped classes resolved through a name→scopedName map instead
+of a bare class string — work two ways, both suffixing classes with the same
+scheme (a per-file scope id).
+
+### Vue `<style module>`
+
+Inline, in the same SFC, exactly like real Vue:
+
+```vue
+<script setup lang="ts">
+import { Text, View } from '@symbiote/vue';
+</script>
+
+<template>
+  <View :class="$style.card">
+    <Text :class="$style.title">Native surface</Text>
+  </View>
+</template>
+
+<style module>
+.card {
+  padding: 16px;
+  border-radius: 12px;
+  background-color: #111827;
+}
+.title {
+  color: #ffffff;
+  font-size: 18px;
+  font-weight: 600;
+}
+</style>
+```
+
+`$style` is the default binding name (or whatever `module="name"` sets); it's
+a closed-over `const` holding the compiled name→scopedName map, usable from
+both the template and `<script setup>` code.
+
+### Standalone `.module.css` files — any adapter
+
+`import styles from './Card.module.css'` works the same from a React `.tsx`,
+a Vue `<script>`, or an Angular `.ts` — the class+style merge lives once in
+the engine, not per adapter.
+
+```css
+/* Card.module.css */
+.card {
+  padding: 16px;
+  border-radius: 12px;
+  background-color: #111827;
+}
+.title {
+  color: #ffffff;
+  font-size: 18px;
+  font-weight: 600;
+}
+```
+
+```tsx
+import { Text, View } from '@symbiote/react';
+import styles from './Card.module.css';
+
+function Card() {
+  return (
+    <View className={styles.card}>
+      <Text className={styles.title}>Native surface</Text>
+    </View>
+  );
+}
+```
+
+```vue
+<script setup lang="ts">
+import { Text, View } from '@symbiote/vue';
+import styles from './Card.module.css';
+</script>
+
+<template>
+  <View :class="styles.card">
+    <Text :class="styles.title">Native surface</Text>
+  </View>
+</template>
+```
+
+```ts
+import { Component } from '@angular/core';
+import { Text, View } from '@symbiote/angular';
+import styles from './card.module.css';
+
+@Component({
+  selector: 'app-card',
+  standalone: true,
+  imports: [Text, View],
+  template: `
+    <View [class]="styles.card">
+      <Text [class]="styles.title">Native surface</Text>
+    </View>
+  `,
+})
+export class CardComponent {
+  readonly styles = styles;
+}
+```
+
+A plain `.css` import has no ambient type declaration needed (it's
+side-effect only), but `.module.css` needs one so TypeScript resolves the
+import at all — a loose fallback works with no extra setup:
+
+```ts
+// css.d.ts
+declare module '*.module.css' {
+  const classes: Record<string, string>;
+  export default classes;
+}
+```
+
+That types `styles.card` as `string`, not a literal key — a typo
+(`styles.crad`) still type-checks and silently resolves to `undefined` at
+runtime instead of failing the build.
+
+### Real key narrowing — `css-dts` and the TypeScript plugin
+
+`@symbiote/css-parser` ships two more pieces that close that gap for a
+standalone `.module.css`/`.module.scss`/`.module.less`/`.module.styl` file —
+add it as a direct `devDependency` of your app, alongside the ambient
+fallback above (it still covers any file the generator hasn't reached yet):
+
+```sh
+pnpm add -D @symbiote/css-parser
+```
+
+```json
+// package.json
+{
+  "scripts": {
+    "pretypecheck": "css-dts ."
+  }
+}
+```
+
+- **`css-dts` (the `generate-dts-cli` bin)** walks the given paths and writes
+  a real `Card.module.css.d.ts` next to each CSS Modules file it finds, with
+  the actual exported keys as literal properties — no index signature, so
+  `styles.crad` is a genuine `error TS2339` under `tsc`/`vue-tsc`. Wire it as
+  a `pretypecheck` script so it runs before every typecheck, local or CI,
+  with no dependency on Metro or a dev server; `css-dts --watch <dir>`
+  regenerates on save for a long-running local loop instead.
+- **`@symbiote/css-parser/typescript-plugin`** is a TypeScript language
+  service plugin for live in-editor autocomplete on `.module.css` (plain CSS
+  Modules only — SCSS/Less/Stylus fall back to the loose ambient type in the
+  editor, since a language-service plugin must resolve synchronously and
+  those preprocessors don't offer a sync compile). Register it in
+  `tsconfig.json`:
+
+  ```json
+  {
+    "compilerOptions": {
+      "plugins": [{ "name": "@symbiote/css-parser/typescript-plugin" }]
+    }
+  }
+  ```
+
+  It recomputes on every keystroke inside the editor's own `tsserver`, so
+  there's no watch process to keep running just for autocomplete. It only
+  extracts simple `.foo { }` selectors — a compound (`.btn.primary`) or
+  descendant (`.card .title`) selector still resolves correctly at build
+  time through `css-dts`/the runtime registry, just without a matching
+  in-editor suggestion.
+
+`css-dts` is the CI/`tsc`-time correctness guarantee, the plugin is the
+in-editor convenience — use both together. Vue's inline `<style module>`
+block gets its own, looser autocomplete for free from Vue's own language
+tools (an index signature, so it still won't catch a typo); a standalone
+`.module.css` import is the only form `css-dts` can narrow today.
+
+**Why both — they aren't two implementations of the same fix.**
+`compilerOptions.plugins` is a language-service-only extension point: only a
+running `tsserver` (the process behind your editor's live diagnostics) loads
+it. The standalone `tsc`/`vue-tsc` binary — what `pretypecheck` and any CI
+typecheck job actually run — reads the rest of `tsconfig.json` but silently
+ignores `plugins` entirely; it never starts a language service. So given
+
+```css
+/* Card.module.css */
+.card { padding: 16px; }
+```
+
+```tsx
+import styles from './Card.module.css';
+styles.crad; // typo: should be `.card`
+```
+
+- **In your editor**, with the plugin registered, `styles.crad` is flagged
+  the moment you type it — no build step involved.
+- **In `pnpm run typecheck` / CI**, the editor and its plugin aren't running
+  at all. The only thing standing between this typo and a green build is
+  whether `css-dts` already generated `Card.module.css.d.ts` on disk (via
+  `pretypecheck`) — if that step is missing, `styles.crad` silently
+  type-checks as `string` and passes.
+
+Skipping either one leaves a real gap: no plugin means no live feedback while
+typing; no `css-dts`/`pretypecheck` means CI can't catch the same typo at
+all.
+
+## SCSS, Sass, Less, and Stylus
+
+Optional preprocessing, resolved by file extension (`.scss`/`.sass`, `.less`,
+`.styl`/`.stylus`) for a standalone file, or by `<style lang="...">` for an
+inline Vue block. Each source reduces to plain CSS before `scoped`/`module`/
+`:global()` handling runs, so every mechanism above works identically
+regardless of source language:
+
+```vue
+<style lang="scss" scoped>
+$accent: #42b883;
+.card {
+  padding: 16px;
+  &:hover {
+    // dropped: RN has no hover — see "What is not CSS" below
+  }
+  .title {
+    color: $accent;
+  }
+}
+</style>
+```
+
+```tsx
+import styles from './Card.module.scss';
+```
+
+`sass`, `less`, and `stylus` are lazy, optional dependencies — install
+whichever one you actually use (`npm i -D sass`, `npm i -D less`, or
+`npm i -D stylus`); a project that never authors `.scss`/`.less`/`.styl` never
+needs any of the three.
+
+## What is not CSS
+
+There is no DOM, so there is nothing for a browser selector to match —
+pseudo-classes (`:hover`, `:focus`, `:nth-child`), media queries, and
+`animation` have no RN target and are dropped at build time, not silently
+misapplied. Tailwind CSS and a Svelte adapter are not supported — Symbiote
+ships React, Vue, and Angular adapters today. Everything else — plain CSS
+(including `box-shadow`, `transform`, `filter`, `transform-origin`, and
+`background-image`), CSS Modules, and the SCSS/Less/Stylus preprocessors
+above — is a stable, build-time-only compile step: no CSS engine, no selector
+matching, and no extra runtime cost ships in the app bundle.
+
+## StyleSheet.create — the alternative
+
+`StyleSheet` is React Native's own JS-object style model, re-exported from
+`@symbiote/engine` by every adapter. It's still fully supported — reach for
+it for a value that's genuinely computed at runtime, or if you'd rather not
+introduce a CSS file at all:
+
+```tsx
+import { StyleSheet, Text, View } from '@symbiote/react';
+
+function Card() {
+  return (
+    <View style={styles.card}>
+      <Text style={styles.title}>Native surface</Text>
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  card: { padding: 16, borderRadius: 12, backgroundColor: '#111827' },
+  title: { color: '#ffffff', fontSize: 18, fontWeight: '600' },
+});
+```
+
+```vue
+<script setup lang="ts">
+import { StyleSheet, Text, View } from '@symbiote/vue';
+
+const styles = StyleSheet.create({
+  card: { padding: 16, borderRadius: 12, backgroundColor: '#111827' },
+  title: { color: '#ffffff', fontSize: 18, fontWeight: '600' },
+});
+</script>
+
+<template>
+  <View :style="styles.card">
+    <Text :style="styles.title">Native surface</Text>
+  </View>
+</template>
+```
+
+`StyleSheet.create()` is intentionally lightweight — it's identity at
+runtime, the engine flattens a raw object literal exactly the same way. Its
+value is preserving literal types and giving a file one predictable style
+block, not a different rendering path from CSS.

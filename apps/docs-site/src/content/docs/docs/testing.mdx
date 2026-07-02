@@ -1,0 +1,65 @@
+---
+title: Testing
+description: Headless component tests with Vitest, real-device journeys with Detox — the same spec across every adapter.
+---
+
+import { Aside } from '@astrojs/starlight/components';
+
+An app built with symbiote is tested the same way as any other React Native
+app — symbiote doesn't ask for a different tool. Two layers: headless
+component/integration tests, and real-device end-to-end journeys.
+
+## Component and integration tests — Vitest
+
+Unit and integration tests run headless, against a fake Fabric slot — no
+simulator, no device, no build step:
+
+```bash
+pnpm test   # vitest run
+```
+
+Tests live next to what they exercise (`Component.test.ts(x)` beside
+`Component.ts(x)`), the same co-location convention across `core/`,
+`adapters/`, and the example apps. This is the layer for reducer logic,
+render-function output, and adapter-lifecycle behavior — anything that
+doesn't need a real native host to observe.
+
+## End-to-end journeys — Detox
+
+Real-device (or simulator) tests drive an actual build of the app:
+
+```bash
+pnpm -C examples/react e2e:build:ios && pnpm -C examples/react e2e:test:ios
+pnpm -C examples/react e2e:build:android && pnpm -C examples/react e2e:test:android
+```
+
+The `e2e:*` scripts live in each example's own `package.json`
+(`examples/react`, `examples/vue-sfc`, `examples/vue-tsx`, `examples/angular`),
+not the repo root.
+
+<Aside type="tip" title="One spec file, shared across React and Vue">
+  Detox attaches to the stock React Native host **below** the layer symbiote
+  replaces — it drives the real native views through Fabric's own
+  accessibility tree, the same way it would for a plain React Native app.
+  The same `canary-journeys` e2e spec runs unmodified across `examples/react`,
+  `examples/vue-sfc`, and `examples/vue-tsx`, as long as each exposes the
+  same `testID`s. A component that mounts but behaves wrong under one
+  adapter — say, a native-driven `Animated` view that renders but never
+  actually animates — fails the same assertion the same way regardless of
+  which framework rendered it. `examples/angular` has its own Detox e2e
+  harness today but doesn't yet share that exact spec file.
+</Aside>
+
+## A gotcha specific to perpetual animations
+
+Detox's default synchronization waits for the app to go idle before running
+the next step — but an app with a perpetual native `Animated.loop` (a
+heartbeat pulse, a spinner) never reports idle, so `device.launchApp()`
+hangs. Disable synchronization for that launch:
+
+```ts
+await device.launchApp({ newInstance: true, launchArgs: { detoxEnableSynchronization: 0 } });
+```
+
+You then drive individual assertions with explicit `waitFor(...)` calls
+instead of relying on Detox's automatic idle detection.

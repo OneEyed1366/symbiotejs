@@ -1,0 +1,190 @@
+---
+title: Slider
+description: A native slider wrapper over @react-native-community/slider, shared by every adapter.
+---
+
+import { Aside } from '@astrojs/starlight/components';
+
+`@symbiote/slider` wraps the `RNCSlider` native view from
+[`@react-native-community/slider`](https://github.com/callstack/react-native-slider) so every
+symbiote adapter can render it — without importing that library's React component body. It is
+the reference implementation of the [third-party native-view wrapper](#how-the-wrapper-works)
+pattern: the recipe to follow for any future community RN view.
+
+| OS platform | Support |
+| ----------- | ------- |
+| iOS         | ✅ live |
+| Android     | ✅ live |
+
+| Framework adapter | Support    |
+| ------------------ | ---------- |
+| React               | ✅ live    |
+| Vue                 | ✅ live    |
+| Angular             | ✅ live    |
+
+## Installation
+
+```sh
+pnpm add @react-native-community/slider
+```
+
+`@symbiote/slider` itself is a workspace package (`packages/slider`), not yet published — add it
+as a workspace dependency the same way the examples do.
+
+<Aside type="caution">
+  `@react-native-community/slider` ships a React component (`Slider.tsx`) built on hooks. Never
+  import that component directly in a non-React adapter — it throws with `Cannot read property
+  'useState' of null` because the React dispatcher is absent. Always import from
+  `@symbiote/slider/react` or `@symbiote/slider/vue`, never from the community package itself.
+</Aside>
+
+## Usage
+
+<Aside type="note">
+  The slider is **uncontrolled** during a drag, matching the underlying native view: it does not
+  snap back to `value` while the user is dragging, only after `onSlidingComplete`.
+</Aside>
+
+### React
+
+```tsx
+import { useState } from 'react';
+import { Slider } from '@symbiote/slider/react';
+
+export default function VolumeControl() {
+  const [volume, setVolume] = useState(0.5);
+
+  return (
+    <Slider
+      value={volume}
+      minimumValue={0}
+      maximumValue={1}
+      step={0.05}
+      onValueChange={setVolume}
+      minimumTrackTintColor="#61dafb"
+      thumbTintColor="#61dafb"
+    />
+  );
+}
+```
+
+### Vue
+
+```vue
+<script setup lang="ts">
+import { ref } from 'vue';
+import { Slider } from '@symbiote/slider/vue';
+
+const volume = ref(0.5);
+</script>
+
+<template>
+  <Slider
+    v-model="volume"
+    :minimum-value="0"
+    :maximum-value="1"
+    :step="0.05"
+    minimum-track-tint-color="#42d392"
+    thumb-tint-color="#42d392"
+  />
+</template>
+```
+
+`v-model` is sugar over the same `value`/`@value-change` pair — write
+`:value="volume" @value-change="volume = $event"` instead if you need the
+explicit form. See the [Vue API reference](/docs/api/vue/#model-bindings-v-model).
+
+### Angular
+
+```ts
+import { Component, signal } from '@angular/core';
+import { Slider } from '@symbiote/slider/angular';
+
+@Component({
+  standalone: true,
+  imports: [Slider],
+  template: `
+    <Slider
+      [(value)]="volume"
+      [minimumValue]="0"
+      [maximumValue]="1"
+      [step]="0.05"
+      minimumTrackTintColor="#dd0031"
+      thumbTintColor="#dd0031"
+    />
+  `,
+})
+export class VolumeControl {
+  readonly volume = signal(0.5);
+}
+```
+
+`[(value)]` is Angular's banana-in-a-box two-way binding over the same
+`value` input + `valueChange` output pair — write `[value]="volume()"
+(valueChange)="volume.set($event)"` instead if you need the explicit form.
+
+### Custom step markers
+
+`renderStepNumber` draws the library's built-in step dots. To draw your own marker per step,
+pass a `StepMarker` (React) or fill the `#stepMarker` scoped slot (Vue) — both receive
+`{ stepMarked, currentValue, index, min, max }`:
+
+```tsx
+<Slider
+  value={2}
+  minimumValue={0}
+  maximumValue={4}
+  step={1}
+  StepMarker={({ stepMarked }) => (
+    <View style={{ width: 8, height: 8, borderRadius: 4, opacity: stepMarked ? 1 : 0.4 }} />
+  )}
+/>
+```
+
+## Props
+
+Every prop below is framework-agnostic and shared verbatim by every adapter, **except**
+`StepMarker`, which is per-adapter because it returns a framework element (a React component vs
+a Vue scoped slot) — see [shared vs framework-specific](/docs/api/components/#shared-vs-framework-specific).
+
+| Prop | Type | Default | Notes |
+| --- | --- | --- | --- |
+| `value` | `number` | `0` | Uncontrolled during a drag |
+| `minimumValue` / `maximumValue` | `number` | `0` / `1` | |
+| `step` | `number` | `0` | `0` draws implicit steps at native resolution (iOS 1000, Android 128) |
+| `lowerLimit` / `upperLimit` | `number` | unbounded | Clamp the draggable range without changing `minimumValue`/`maximumValue` |
+| `minimumTrackTintColor` / `maximumTrackTintColor` / `thumbTintColor` | `IColorValue` | native default | |
+| `thumbImage` / `minimumTrackImage` / `maximumTrackImage` / `trackImage` | `IImageSourceProp` | — | |
+| `thumbSize` | `number` | native default | |
+| `disabled` | `boolean` | `false` | |
+| `inverted` | `boolean` | `false` | |
+| `tapToSeek` | `boolean` | `false` | |
+| `vertical` | `boolean` | `false` | |
+| `renderStepNumber` | `boolean` | `false` | Draws the built-in step-number indicator |
+| `StepMarker` (React) / `#stepMarker` (Vue) | render prop / scoped slot | — | Custom per-step marker |
+| `onValueChange` | `(value: number) => void` | — | Fires continuously while dragging |
+| `onSlidingStart` / `onSlidingComplete` | `(value: number) => void` | — | |
+| accessibility / `aria-*` / `testID` / `style` | — | — | Pass through to the native node unchanged |
+
+## How the wrapper works
+
+`@symbiote/slider` ships **zero runtime metadata** for `RNCSlider` — the engine derives its
+events and color/image processors from the library's own codegen `ViewConfig` at first commit
+(`setNativeViewConfigSource`). The package only supplies the pure JS folding the library's React
+wrapper normally does (value/limit sanitizing, the step-indicator layout) plus the native
+`Descriptor` render, once, in `packages/slider/src/core`:
+
+```
+packages/slider/src/
+├── core/            # framework-agnostic: state folds, render-slider, render-steps-indicator
+├── register.ts       # side-effect: registers RNCSlider's ViewConfig fallback + event/color processors
+├── react/            # React lifecycle (hooks) + descriptorToReact bridge
+└── vue/               # Vue lifecycle (refs/emits) + descriptorToVue bridge
+```
+
+Both adapters import `../register` first (never the library's `Slider.tsx`), then call into the
+same `core` render — the same logic/view/lifecycle split as every other symbiote component (see
+[how it works](/docs/how-it-works/)). Wrapping a different third-party native view follows this
+exact recipe; see
+[decision 0027](https://github.com/OneEyed1366/symbiote/blob/main/.docs/decisions/0027-third-party-native-view-wrapper-package.md)
+for the full rationale.

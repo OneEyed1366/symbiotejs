@@ -1,0 +1,109 @@
+---
+title: Angular guide
+description: How to write Symbiote apps with the Angular adapter.
+---
+
+import { Aside } from '@astrojs/starlight/components';
+
+<Aside type="caution" title="One deliberate exception">
+  Full component parity, the renderer seam, and the native bootstrap are
+  implemented and tested against `examples/angular`, and Angular is on the
+  live framework switcher on the landing page. Every component event is a
+  real `@Output()` `EventEmitter` now, with one **permanent** exception: the
+  scroll-family events (`onScroll`, `onScrollBeginDrag`, `onScrollEndDrag`,
+  `onMomentumScrollBegin`, `onMomentumScrollEnd`) stay callback `@Input()`s on
+  `ScrollView` and the list components forever, because they can carry an
+  `Animated.event(...)` marker for native-driven scroll, and `@Output()` can
+  only bind a template listener expression, not an arbitrary value. Wrapper
+  packages have followed: [Slider](/docs/packages/slider/) ships an Angular
+  build too — see the [status page](/docs/project/status/) for the exact
+  line.
+</Aside>
+
+The Angular adapter drives the same native Fabric engine as React and Vue
+through a custom `Renderer2`/`RendererFactory2` — Angular's own
+framework-agnostic rendering seam. Bootstrap is DOM-less: no
+`platform-browser`, no zone.js. Angular renderer operations become engine
+mutations, then Fabric commits real native views.
+
+<img src="/angular-demo.gif" alt="Angular driving a native symbiote demo" width="260" />
+
+*The `examples/angular` canary — the same component surface and engine as
+the React and Vue canaries, driven through `Renderer2` instead.*
+
+## Minimal component
+
+```ts
+import { Component } from '@angular/core';
+import { Pressable, Text, View } from '@symbiote/angular';
+import './app.css';
+
+@Component({
+  selector: 'app-root',
+  standalone: true,
+  imports: [Pressable, Text, View],
+  template: `
+    <View class="root">
+      <Pressable (press)="increment()">
+        <Text class="label">Count is {{ count }}</Text>
+      </Pressable>
+    </View>
+  `,
+})
+export class App {
+  count = 0;
+
+  increment(): void {
+    this.count += 1;
+  }
+}
+```
+
+```css
+/* app.css */
+.root { flex: 1; align-items: center; justify-content: center; }
+.label { font-size: 24px; }
+```
+
+`StyleSheet.create` works identically if you'd rather keep style objects
+inline instead of a CSS file — see the [Styling guide](/docs/learn/styling/)
+for both paths.
+
+## Angular contract
+
+Angular is a standalone-components-only adapter:
+
+- every symbiote component is `standalone: true` — import it directly in the
+  consuming component's `imports` array, there is no `NgModule`;
+- every component event is a real Angular `@Output()` `EventEmitter` —
+  `(press)="onTap($event)"`, `(longPress)="..."`, `(hoverIn)="..."`,
+  `(valueChange)="..."`, `(accessibilityAction)="..."`, and so on across
+  `Pressable`, `Button`, `Touchable*`, `Switch`, `TextInput`, `Modal`, and
+  every other component. An event nobody templates costs nothing: an unbound
+  `(longPress)` still skips arming the long-press timer, the same as an
+  absent callback prop used to. `TextInput` is the one component with two
+  outputs for what React/Vue fold into one callback: `(valueChange)` stays
+  text-only (an `EventEmitter` carries one value, and text-only keeps
+  `[(value)]` two-way binding working) while `(change)` is a second, separate
+  output for the raw native event;
+- the one **permanent** exception is the scroll family — `onScroll`,
+  `onScrollBeginDrag`, `onScrollEndDrag`, `onMomentumScrollBegin`,
+  `onMomentumScrollEnd` stay callback **inputs** (`[onScroll]="handler"`) on
+  `ScrollView` and the list components, because they can carry an
+  `Animated.event(...)` marker for native-driven scroll and `@Output()` can't
+  bind an arbitrary value, only a template listener expression;
+- component selectors accept **both** a PascalCase alias and the
+  `symbiote-*` prefix (`selector: 'Pressable, symbiote-pressable'`), so
+  templates read like `<Pressable>`/`<View>`/`<Text>` while the underlying
+  primitive hosts stay `symbiote-view` / `symbiote-text` / etc.;
+- imperative handles use `@ViewChild(..., { read: ElementRef })` — the
+  `nativeElement` is the symbiote host node, not a DOM element;
+- change detection is zoneless: the adapter runs on Angular's own
+  `ApplicationRef.tick()`, wired in via the internal
+  `ɵprovideZonelessChangeDetectionInternal()` helper rather than the public
+  `provideZonelessChangeDetection()` (which assumes a `platform-browser`
+  bootstrap this DOM-less renderer doesn't use), so template updates batch the
+  same way Vue's `requestCommit()` does, without zone.js patching Hermes
+  globals.
+
+Read the exact API surface in the [Angular API reference](/docs/api/angular/).

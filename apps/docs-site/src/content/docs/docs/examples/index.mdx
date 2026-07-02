@@ -1,0 +1,30 @@
+---
+title: Examples
+description: Small copyable Symbiote examples for React, Vue, and Angular.
+---
+
+Examples stay intentionally small. Each one shows the same native behavior in
+React, Vue, and Angular so you can see which parts are shared and which parts
+are framework-specific.
+
+## Available examples
+
+- [Counter](/docs/examples/counter/) — state, `View`, `Text`, and `Pressable`.
+- [Pressable](/docs/examples/pressable/) — pressed state as a React render prop
+  or Vue scoped slot.
+- [TextInput](/docs/examples/text-input/) — controlled text input and event
+  naming differences.
+
+## Reading examples
+
+The native route is the same in every example:
+
+```txt
+framework state → adapter component → @symbiote/engine → Fabric → native view
+```
+
+The code shape differs by adapter. React uses callback props and children render
+functions. Vue uses emits, `v-model`, and slots. Angular uses `@Output()`
+`(event)` bindings everywhere, except the permanent scroll-family exception
+(`onScroll` and friends), which stays a callback `@Input()` since it can carry
+an `Animated.event(...)` marker.

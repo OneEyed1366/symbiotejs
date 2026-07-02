@@ -1,0 +1,53 @@
+---
+title: What is symbiote?
+description: A framework-agnostic renderer that lets non-React frameworks drive real React Native Fabric views.
+---
+
+symbiote is a framework-agnostic renderer for real native iOS and Android apps.
+It keeps React Native's native stack — Fabric, JSI, Yoga, Hermes, and the host
+platforms — and replaces only the JavaScript renderer that talks to Fabric.
+
+React is not privileged inside React Native's renderer. Fabric exposes a
+JSI-bound mutation surface through `global.nativeFabricUIManager`. React Native's
+React renderer is one client of that surface. symbiote lets other framework
+adapters become clients too.
+
+## The shortest version
+
+```txt
+Vue · React · future adapters
+        ↓
+thin framework reconciler
+        ↓
+@symbiote/engine
+        ↓
+nativeFabricUIManager
+        ↓
+stock React Native Fabric
+```
+
+The output is still native Fabric views. symbiote is not a WebView, not a React
+Native fork, and not a compatibility shim that pretends React components are
+framework-agnostic.
+
+## Why this exists
+
+React Native has an excellent native runtime, but most of the ecosystem can only
+use it through React. If you write Vue, Svelte, Solid, or Angular, your choices
+usually collapse to a WebView, a rewrite, or a separate native abstraction.
+
+symbiote opens the renderer seam that already exists in Fabric and gives each UI
+framework a thin adapter over one shared native engine.
+
+## What works today
+
+- React is the reference adapter and canary, live on the framework switcher.
+- Vue 3 proves the same engine can be driven by a non-React framework, also
+  live on the switcher.
+- Angular is a real, tested adapter too, also live on the switcher — see the
+  [status page](/docs/project/status/) for what's still catching up.
+- The engine owns mutation-to-Fabric persistence, event normalization, and commit
+  batching.
+- The native core remains stock React Native.
+
+Start with the [quick start](/docs/quick-start/) or read [how it works](/docs/how-it-works/).
