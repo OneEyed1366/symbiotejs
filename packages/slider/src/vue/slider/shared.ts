@@ -17,7 +17,7 @@ import {
   Image,
   type IImageSourceProp,
 } from '@symbiote/vue';
-import { dlog, type ISymbioteEvent } from '@symbiote/engine';
+import { dlog, type IClassNameValue, type ISymbioteEvent } from '@symbiote/engine';
 import {
   sanitizeSliderValue,
   resolveSliderDisabled,
@@ -55,11 +55,16 @@ import {
   type ISliderAccessibilityState,
 } from '../../core';
 
+// ISliderProps lives framework-agnostic in packages/slider/src/core; `class` can't join it
+// there, so it's added locally, exactly like Image's IImageProps. It targets the WRAPPER
+// `symbiote-view` like `style`, not the inner native slider leaf `passthrough` reaches — see
+// the class-routing note on HANDLED_ATTRS below.
 export type ISliderProps = Omit<
   ISliderBaseProps,
   'onValueChange' | 'onSlidingStart' | 'onSlidingComplete' | 'onAccessibilityAction'
 > & {
   modelValue?: number;
+  class?: IClassNameValue;
 };
 
 type ISliderEmits = {
@@ -101,7 +106,9 @@ function asAccessibilityState(value: unknown): ISliderAccessibilityState | undef
 // The props/handlers the lifecycle consumes itself; everything else (the track tints + images,
 // thumbSize, tapToSeek, vertical, accessibility*/testID/aria-*) forwards onto the native node.
 // The four callbacks are JS-only and must NEVER reach Fabric, so they are stripped here and
-// re-supplied as the native event handlers in `passthrough`.
+// re-supplied as the native event handlers in `passthrough`. `class` is handled too: like
+// `style`, it targets the WRAPPER `symbiote-view` (renderSlider's outer element), never the
+// inner native slider leaf `passthrough` reaches — applied explicitly by each render path below.
 const HANDLED_ATTRS = [
   'value',
   'modelValue',
@@ -117,6 +124,7 @@ const HANDLED_ATTRS = [
   'accessibilityState',
   'renderStepNumber',
   'style',
+  'class',
   'onValueChange',
   'onSlidingStart',
   'onSlidingComplete',
@@ -129,6 +137,19 @@ function forwardAttrs(attrs: Record<string, unknown>): Record<string, unknown> {
     if (!HANDLED_ATTRS.includes(key)) result[key] = attrs[key];
   }
   return result;
+}
+
+// renderSlider builds the wrapper `symbiote-view` descriptor itself, with no `class` field of
+// its own (packages/slider/src/core stays framework-agnostic). `class` is stamped onto that
+// returned descriptor's props here, right before the Vue bridge, so it lands on the SAME
+// element `style` targets rather than the inner native leaf `passthrough` would otherwise
+// carry it to (the ImageBackground-style wrapper/inner split).
+function applyWrapperClass<T extends { props: Record<string, unknown> }>(
+  descriptor: T,
+  classValue: unknown,
+): T {
+  descriptor.props = { ...descriptor.props, class: classValue };
+  return descriptor;
 }
 
 export function createSlider(platform: ISliderPlatform) {
@@ -217,7 +238,12 @@ export function createSlider(platform: ISliderPlatform) {
 
         // Common case: no step overlay. The full slider (wrapper + native leaf) renders agnostic.
         if (!showSteps) {
-          return descriptorToVue(renderSlider(view, platform, { onLayout: handleLayout }));
+          return descriptorToVue(
+            applyWrapperClass(
+              renderSlider(view, platform, { onLayout: handleLayout }),
+              attrs.class,
+            ),
+          );
         }
 
         const options = computeStepOptions(
@@ -246,7 +272,11 @@ export function createSlider(platform: ISliderPlatform) {
           });
           return h(
             'symbiote-view',
-            { style: resolveStepsWrapperStyle(view.style, platform), onLayout: handleLayout },
+            {
+              style: resolveStepsWrapperStyle(view.style, platform),
+              class: attrs.class,
+              onLayout: handleLayout,
+            },
             [overlay, descriptorToVue(renderSliderNative(view, platform))],
           );
         }
@@ -260,7 +290,12 @@ export function createSlider(platform: ISliderPlatform) {
           inverted,
           platform,
         });
-        return descriptorToVue(renderSlider(view, platform, { steps, onLayout: handleLayout }));
+        return descriptorToVue(
+          applyWrapperClass(
+            renderSlider(view, platform, { steps, onLayout: handleLayout }),
+            attrs.class,
+          ),
+        );
       };
     },
     {

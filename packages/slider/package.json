@@ -1,7 +1,6 @@
 {
   "name": "@symbiote/slider",
   "version": "0.0.0",
-  "private": true,
   "type": "module",
   "main": "src/core/index.ts",
   "module": "src/core/index.ts",
@@ -9,7 +8,42 @@
   "exports": {
     ".": "./src/core/index.ts",
     "./vue": "./src/vue/index.ts",
-    "./react": "./src/react/index.ts"
+    "./react": "./src/react/index.ts",
+    "./angular": {
+      "types": "./build-ngc/angular/index.d.ts",
+      "react-native": "./build-ngc/angular/index.js",
+      "default": "./src/angular/index.ts"
+    }
+  },
+  "files": [
+    "src",
+    "build",
+    "build-ngc"
+  ],
+  "publishConfig": {
+    "access": "public",
+    "main": "./build/core/index.js",
+    "module": "./build/core/index.js",
+    "types": "./build/core/index.d.ts",
+    "exports": {
+      ".": {
+        "types": "./build/core/index.d.ts",
+        "default": "./build/core/index.js"
+      },
+      "./vue": {
+        "types": "./build/vue/index.d.ts",
+        "default": "./build/vue/index.js"
+      },
+      "./react": {
+        "types": "./build/react/index.d.ts",
+        "default": "./build/react/index.js"
+      },
+      "./angular": {
+        "types": "./build-ngc/angular/index.d.ts",
+        "react-native": "./build-ngc/angular/index.js",
+        "default": "./src/angular/index.ts"
+      }
+    }
   },
   "codegenConfig": {
     "name": "RNCSlider",
@@ -25,7 +59,9 @@
     }
   },
   "scripts": {
+    "prepare": "pnpm run ng:build",
     "typecheck": "tsc --build",
+    "ng:build": "ngc -p tsconfig.angular.json",
     "format": "prettier --write \"src/**/*.{ts,tsx}\""
   },
   "dependencies": {
@@ -34,18 +70,26 @@
     "@symbiote/engine": "workspace:*"
   },
   "peerDependencies": {
+    "@symbiote/angular": "workspace:*",
     "@symbiote/react": "workspace:*",
     "@symbiote/vue": "workspace:*",
+    "@angular/core": ">=20",
     "@vue/runtime-core": "^3.5.13",
     "react": ">=19.0.0",
     "react-native": ">=0.86",
     "vue": ">=3.5.0"
   },
   "peerDependenciesMeta": {
+    "@symbiote/angular": {
+      "optional": true
+    },
     "@symbiote/react": {
       "optional": true
     },
     "@symbiote/vue": {
+      "optional": true
+    },
+    "@angular/core": {
       "optional": true
     },
     "@vue/runtime-core": {
@@ -59,11 +103,17 @@
     }
   },
   "devDependencies": {
+    "@angular/compiler": "catalog:",
+    "@angular/compiler-cli": "catalog:",
+    "@angular/core": "catalog:",
+    "@symbiote/angular": "workspace:*",
     "@symbiote/react": "workspace:*",
     "@symbiote/test-utils": "workspace:*",
     "@symbiote/vue": "workspace:*",
+    "@types/node": "catalog:",
     "@types/react": "catalog:",
     "@vue/runtime-core": "catalog:",
-    "react": "catalog:"
+    "react": "catalog:",
+    "typescript": "catalog:"
   }
 }

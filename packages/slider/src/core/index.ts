@@ -2,8 +2,8 @@
 // wrapper. symbiote ships zero runtime metadata for RNCSlider — the engine derives its events
 // and color processors from the library's own ViewConfig — so this layer is the pure JS folding
 // the library's React wrapper does (value/limit/disabled resolution, the step-indicator layout)
-// plus the Descriptor render of the native leaf. Every adapter (`@symbiote/slider/vue`, and the
-// future `/angular`) reuses this verbatim and supplies only its lifecycle + descriptor bridge.
+// plus the Descriptor render of the native leaf. Every adapter (`@symbiote/slider/vue`, and
+// `/angular`) reuses this verbatim and supplies only its lifecycle + descriptor bridge.
 // This is the third-party-native-view track foreseen by ADR 0014; see ADR 0027.
 
 export * from './constants';

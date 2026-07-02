@@ -10,6 +10,7 @@
     { "path": "../../core/engine" },
     { "path": "../../core/components" },
     { "path": "../../adapters/vue" },
-    { "path": "../../adapters/react" }
+    { "path": "../../adapters/react" },
+    { "path": "../../adapters/angular" }
   ]
 }

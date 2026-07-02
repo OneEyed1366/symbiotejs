@@ -18,7 +18,7 @@ import type {
 } from 'react';
 import { descriptorToReact, Image } from '@symbiote/react';
 import { resolveAccessibilityProps } from '@symbiote/components';
-import type { IImageSourceProp } from '@symbiote/components';
+import type { IDescriptor, IDescriptorChild, IImageSourceProp } from '@symbiote/components';
 import { dlog, type ISymbioteEvent, type ISymbioteNode } from '@symbiote/engine';
 import {
   sanitizeSliderValue,
@@ -63,6 +63,11 @@ import {
 // IPressableProps declared per-adapter); Vue takes the same marker as a `#stepMarker` scoped slot.
 export interface ISliderProps extends ISliderBaseProps {
   StepMarker?: FC<IStepMarkerProps>;
+  // Forwarded onto the OUTER wrapper View, like `style` (resolveSliderWrapperStyle) — resolves
+  // through the shared style registry. Explicitly destructured below, not left in `...passthrough`,
+  // which lands on the INNER native RNCSlider leaf (renderSliderNative) — the same wrapper/inner
+  // routing bug ImageBackground was fixed for.
+  className?: string;
 }
 
 type ISliderComponent = ForwardRefExoticComponent<
@@ -71,6 +76,21 @@ type ISliderComponent = ForwardRefExoticComponent<
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+
+function toChild(child: IDescriptorChild): ReactElement | string {
+  return typeof child === 'string' ? child : descriptorToReact(child);
+}
+
+// renderSlider's Descriptor IS the outer wrapper (symbiote-view hosting the native leaf +
+// optional steps overlay); className is reapplied on it here, exactly like ImageBackground's
+// wrapper.
+function withClassName(descriptor: IDescriptor, className: string | undefined): ReactElement {
+  return createElement(
+    descriptor.type,
+    { key: descriptor.key, ...descriptor.props, className },
+    ...descriptor.children.map(toChild),
+  );
 }
 
 export function createSlider(platform: ISliderPlatform): ISliderComponent {
@@ -93,6 +113,7 @@ export function createSlider(platform: ISliderPlatform): ISliderComponent {
       accessibilityState,
       renderStepNumber,
       style,
+      className,
       StepMarker,
       onValueChange,
       onSlidingStart,
@@ -184,7 +205,7 @@ export function createSlider(platform: ISliderPlatform): ISliderComponent {
     };
 
     if (!showSteps) {
-      return descriptorToReact(renderSlider(view, platform, { onLayout: handleLayout }));
+      return withClassName(renderSlider(view, platform, { onLayout: handleLayout }), className);
     }
 
     const options = computeStepOptions(minimum, maximum, stepValue, platform.stepResolution);
@@ -203,7 +224,7 @@ export function createSlider(platform: ISliderPlatform): ISliderComponent {
       });
       return createElement(
         'symbiote-view',
-        { style: resolveStepsWrapperStyle(style, platform), onLayout: handleLayout },
+        { style: resolveStepsWrapperStyle(style, platform), onLayout: handleLayout, className },
         overlay,
         descriptorToReact(renderSliderNative(view, platform)),
       );
@@ -218,7 +239,10 @@ export function createSlider(platform: ISliderPlatform): ISliderComponent {
       inverted: view.inverted,
       platform,
     });
-    return descriptorToReact(renderSlider(view, platform, { steps, onLayout: handleLayout }));
+    return withClassName(
+      renderSlider(view, platform, { steps, onLayout: handleLayout }),
+      className,
+    );
   });
 }
 
