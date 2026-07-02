@@ -13,7 +13,7 @@ import {
   type ReactNode,
   type Ref,
 } from 'react';
-import { dlog, type ISymbioteEvent } from '@symbiote/engine';
+import { dlog, resolveClassName, type ISymbioteEvent } from '@symbiote/engine';
 import {
   SINGLE_COLUMN,
   chunkIntoRows,
@@ -54,8 +54,9 @@ export interface IFlatListProps<ItemT> extends IAccessibilityProps, IAriaProps {
     index: number,
   ) => { length: number; offset: number; index: number };
   numColumns?: number;
-  // Style for the auto-generated row View when numColumns > 1 (RN's columnWrapperStyle).
-  columnWrapperStyle?: IStyleProp<IViewStyle>;
+  // Style for the auto-generated row View when numColumns > 1 (RN's columnWrapperStyle). A bare
+  // string resolves through the shared style registry, like `className` below.
+  columnWrapperStyle?: IStyleProp<IViewStyle> | string;
   ItemSeparatorComponent?: ComponentType<ISeparatorProps<ItemT>>;
   ListHeaderComponent?: ComponentType<Record<string, never>> | ReactElement;
   ListFooterComponent?: ComponentType<Record<string, never>> | ReactElement;
@@ -97,6 +98,9 @@ export interface IFlatListProps<ItemT> extends IAccessibilityProps, IAriaProps {
   keyboardDismissMode?: 'none' | 'on-drag' | 'interactive';
   style?: IStyleProp<IViewStyle>;
   contentContainerStyle?: IStyleProp<IViewStyle>;
+  // Forwarded onto the inner VirtualizedList like `style` — resolves through the shared style
+  // registry.
+  className?: string;
 }
 
 export function FlatList<ItemT>(
@@ -139,7 +143,11 @@ export function FlatList<ItemT>(
   // Multi-column: the virtualized stream is rows. Each cell renders its items side by side in a
   // flex-row View so windowing accounts for whole rows.
   const rows = chunkIntoRows(data, numColumns);
-  const rowStyle: IStyleProp<IViewStyle> = [{ flexDirection: 'row' }, columnWrapperStyle];
+  const resolvedColumnWrapperStyle =
+    typeof columnWrapperStyle === 'string'
+      ? resolveClassName(columnWrapperStyle)
+      : columnWrapperStyle;
+  const rowStyle: IStyleProp<IViewStyle> = [{ flexDirection: 'row' }, resolvedColumnWrapperStyle];
 
   const renderRow = (info: {
     item: IRow<ItemT>;

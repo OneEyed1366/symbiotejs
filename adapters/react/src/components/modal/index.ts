@@ -56,6 +56,9 @@ export interface IModalProps extends IAccessibilityProps, IAriaProps {
   onRequestClose?: () => void;
   onOrientationChange?: (event: IModalOrientationChangeEvent) => void;
   style?: IStyleProp<IViewStyle>;
+  // Forwarded onto the container View like `style` — resolves through the shared style
+  // registry.
+  className?: string;
   children?: ReactNode;
 }
 
@@ -63,6 +66,9 @@ export const Modal: FC<IModalProps> = rawProps => {
   // Modal owns its host element (symbiote-modal), so it folds aria/role here; the resolved fields
   // ride the host node via `...passthrough`. The events (onShow/onDismiss/onRequestClose/
   // onOrientationChange) are real ViewConfig DirectEvents, so they too ride passthrough raw.
+  // className is pulled out here, like style, and applied to the CONTAINER element below — left in
+  // ...passthrough it would land on the outer symbiote-modal host instead (renderModal composes
+  // `style` into the container's style, not the host's).
   const {
     visible,
     transparent,
@@ -75,6 +81,7 @@ export const Modal: FC<IModalProps> = rawProps => {
     navigationBarTranslucent,
     allowSwipeDismissal,
     style,
+    className,
     children,
     ...passthrough
   } = resolveAccessibilityProps(rawProps);
@@ -114,6 +121,6 @@ export const Modal: FC<IModalProps> = rawProps => {
   return createElement(
     root.type,
     { key: root.key, ...root.props },
-    createElement(container.type, { key: container.key, ...container.props }, children),
+    createElement(container.type, { key: container.key, ...container.props, className }, children),
   );
 };

@@ -130,7 +130,10 @@ export function createSymbioteRenderer(surface: SymbioteSurface) {
       if (isSurface(el)) return;
       // routeProp makes the prop-vs-event decision from the node's ViewConfig (onPress on
       // a View becomes a listener; onTintColor on a Switch stays a prop): identical to
-      // the React host config, so the whole event layer is shared.
+      // the React host config, so the whole event layer is shared. `class`/`style` merge
+      // (explicit :style always winning over class-derived style, regardless of which of
+      // Vue's two independent patchProp calls lands last) is centralized in routeProp too
+      // (core/engine/src/node.ts) — every adapter gets it, not just this one.
       routeProp(el, key, next);
       surface.requestCommit();
     },

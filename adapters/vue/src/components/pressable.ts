@@ -35,6 +35,7 @@ import {
 import {
   measure,
   isSymbioteNode,
+  type IClassNameValue,
   type ISymbioteEvent,
   type ISymbioteNode,
   type IStyleProp,
@@ -101,6 +102,11 @@ export interface IPressableProps extends IAccessibilityProps, IAriaProps {
   delayHoverOut?: number;
   testID?: string;
   style?: IStyleProp<IViewStyle> | ((state: IPressState) => IStyleProp<IViewStyle>);
+  // Unlike `style`, never a function of press state — a CSS class is compiled statically, so
+  // only the truly static half of a Pressable's look can move here; a press-state-dependent
+  // look still needs `style`'s function form. Passes through untouched (not in HANDLED_ATTRS
+  // below) straight onto the inner View, which already resolves `class` via routeProp.
+  class?: IClassNameValue;
 }
 
 // The scoped default slot mirrors React's children-as-function: it receives the press state, so a

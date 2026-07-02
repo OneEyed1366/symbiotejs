@@ -39,6 +39,10 @@ export const TouchableOpacity: FC<ITouchableOpacityProps> = props => {
   const {
     activeOpacity = DEFAULT_ACTIVE_OPACITY,
     style,
+    // className is pulled out here, like style, and applied to the inner Animated.View below —
+    // left in ...rest it would land on the outer Pressable instead, which is not where `style`
+    // (the opacity-fade node) goes.
+    className,
     children,
     onPressIn,
     onPressOut,
@@ -118,7 +122,7 @@ export const TouchableOpacity: FC<ITouchableOpacityProps> = props => {
   return createElement(
     Pressable,
     { ...rest, onPressIn: handlePressIn, onPressOut: handlePressOut },
-    createElement(Animated.View, { style: [style, { opacity }] }, children),
+    createElement(Animated.View, { style: [style, { opacity }], className }, children),
   );
 };
 

@@ -17,6 +17,9 @@ export interface IInputAccessoryViewProps extends IAccessibilityProps, IAriaProp
   nativeID?: string;
   backgroundColor?: string;
   style?: IStyleProp<IViewStyle>;
+  // Not destructured below, so it lands in ...passthrough and forwards onto the host, which
+  // already resolves className.
+  className?: string;
   children?: ReactNode;
 }
 

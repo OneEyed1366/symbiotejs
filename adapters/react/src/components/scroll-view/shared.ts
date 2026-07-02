@@ -24,7 +24,9 @@ import {
   AnimatedValue,
   dlog,
   event as animatedEvent,
+  isClassNameValue,
   isNativeAnimatedAvailable,
+  resolveClassName,
   type ISymbioteEvent,
   type ISymbioteNode,
 } from '@symbiote/engine';
@@ -53,7 +55,10 @@ type ILayoutHandler = (event: ISymbioteEvent) => void;
 export interface IScrollViewProps extends IAccessibilityProps, IAriaProps {
   // testID / nativeID inherited from IAccessibilityProps (shared host-anchor base).
   style?: IStyleProp<IViewStyle>;
-  contentContainerStyle?: IStyleProp<IViewStyle>;
+  // A bare string resolves through the shared style registry, like `className` (see
+  // `resolvedContentContainerStyle` below) — not the full IClassNameValue union, since
+  // IStyleProp is itself an object/array and that would be ambiguous with a real style.
+  contentContainerStyle?: IStyleProp<IViewStyle> | string;
   horizontal?: boolean;
   scrollEnabled?: boolean;
   showsVerticalScrollIndicator?: boolean;
@@ -128,6 +133,12 @@ export interface IScrollViewProps extends IAccessibilityProps, IAriaProps {
   // iOS-only: user tapped the status bar to scroll to top. Inert on Android.
   onScrollToTop?: IScrollHandler;
   children?: ReactNode;
+  // Forwarded onto the outer scroll host, like `style` — resolves through the shared style
+  // registry. Not destructured below, so it falls into `...outer` alongside `style`'s target;
+  // it does NOT target `contentContainerStyle`'s content container. The Android RefreshControl
+  // wrap (index.android.ts) additionally needs it resolved eagerly — see `layoutSplitStyle`
+  // below and isClassNameProp's twin comment in the Vue adapter's scroll-view/shared.ts.
+  className?: string;
 }
 
 // The shape the Android build clones onto a RefreshControl when wrapping the scroll view:
@@ -152,6 +163,11 @@ export interface IPreparedScrollView {
   scrollViewBaseStyle: IStyleProp<IViewStyle> | undefined;
   outerProps: Record<string, unknown>;
   style: IStyleProp<IViewStyle> | undefined;
+  // `style` merged with the resolved `className` style — the Android RefreshControl wrap needs
+  // this to splitLayoutProps() BEFORE routeProp's own class resolution ever runs (that happens
+  // later, per-node, at commit time), otherwise a class-only layout prop (flex, height, gap, …)
+  // never reaches the outer wrapper and it collapses to nothing.
+  layoutSplitStyle: IStyleProp<IViewStyle>;
   content: ReactElement;
   refreshControl: ReactElement<IClonableRefreshControl> | undefined;
   // The scroll-offset AnimatedValue driving the sticky headers (RN's _scrollAnimatedValue), and
@@ -167,6 +183,7 @@ export function usePreparedScrollView(rawProps: IScrollViewProps): IPreparedScro
   const props = resolveAccessibilityProps(rawProps);
   const {
     style,
+    className,
     contentContainerStyle,
     horizontal,
     decelerationRate,
@@ -213,13 +230,24 @@ export function usePreparedScrollView(rawProps: IScrollViewProps): IPreparedScro
     bumpHeaderLayout(tick => tick + 1);
   };
 
+  // A class-name string resolves through the shared registry before it reaches the
+  // framework-agnostic selector below, which only understands style objects/arrays.
+  const resolvedContentContainerStyle =
+    typeof contentContainerStyle === 'string'
+      ? resolveClassName(contentContainerStyle)
+      : contentContainerStyle;
+
   // The per-axis intrinsics, base style, and content style come from the shared selector
   // (@symbiote/components): on Android horizontal resolves to its own ViewManager, on iOS both
   // map back to RCTScrollView; here we only pass the axis.
   const { scrollViewIntrinsic, contentIntrinsic, scrollViewBaseStyle, contentStyle } =
-    selectScrollIntrinsics(isHorizontal, contentContainerStyle);
+    selectScrollIntrinsics(isHorizontal, resolvedContentContainerStyle);
 
   const outerProps: Record<string, unknown> = { ...outer };
+  // className is pulled out above (unlike the rest of `...outer`) so `layoutSplitStyle` below can
+  // resolve it eagerly; re-added here so the simple single-node paths (iOS, Android with no
+  // refreshControl) keep forwarding it raw, exactly as it did when it flowed through `...outer`.
+  if (className !== undefined) outerProps.className = className;
   // RN defaults nested scrolling ON (ScrollView.js:1862 `nestedScrollEnabled ?? true`).
   // Android needs the flag to scroll a scrollable nested inside another scroll view
   // independently; without it the inner one stays put. iOS handles nesting natively, so
@@ -327,11 +355,16 @@ export function usePreparedScrollView(rawProps: IScrollViewProps): IPreparedScro
   // View-flattened away"). iOS doesn't flatten, so this is a no-op there.
   const content = createElement(contentIntrinsic, contentProps, contentChildren);
 
+  // resolveClassName(undefined) is a cheap {} no-op, so this is safe with no className too.
+  const resolvedClassName = isClassNameValue(className) ? className : undefined;
+  const layoutSplitStyle: IStyleProp<IViewStyle> = [resolveClassName(resolvedClassName), style];
+
   return {
     scrollViewIntrinsic,
     scrollViewBaseStyle,
     outerProps,
     style,
+    layoutSplitStyle,
     content,
     refreshControl,
     scrollAnimatedValue,

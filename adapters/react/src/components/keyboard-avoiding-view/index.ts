@@ -46,6 +46,10 @@ export interface IKeyboardAvoidingViewProps extends IAccessibilityProps, IAriaPr
   // Style of the inner content container, used only when behavior is 'position'.
   contentContainerStyle?: IStyleProp<IViewStyle>;
   style?: IStyleProp<IViewStyle>;
+  // Not destructured below, so it lands in ...accessibilityRest and forwards onto the wrapper
+  // View, which already resolves className. contentContainerStyle stays JS-only (a plain
+  // style-object prop, not style/className itself).
+  className?: string;
   children?: ReactNode;
   onLayout?: (event: ISymbioteEvent) => void;
 }

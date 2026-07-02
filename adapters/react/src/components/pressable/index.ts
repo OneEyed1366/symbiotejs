@@ -71,6 +71,10 @@ export interface IPressableProps extends IAccessibilityProps, IAriaProps {
   delayHoverIn?: number;
   delayHoverOut?: number;
   style?: IPressableStyle;
+  // Unlike `style`, never a function of press state — a CSS class is compiled statically, so
+  // only the truly static half of a Pressable's look can move here; a press-state-dependent
+  // look still needs `style`'s function form.
+  className?: string;
   children?: IChildrenProp;
 }
 

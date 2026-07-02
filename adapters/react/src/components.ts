@@ -16,6 +16,13 @@ import type { IStyleProp, ITextStyle, IViewStyle } from './utils/styles';
 
 export interface IViewProps extends IAccessibilityProps, IAriaProps, IResponderProps {
   style?: IStyleProp<IViewStyle>;
+  // React's own web idiom for a registered class name (RN has no DOM/CSS classes to match
+  // against). Resolved through the shared style registry by routeProp's centralized
+  // class+style merge (core/engine/src/node.ts) — the same registry a `<style>`/`<style
+  // module>` compiled Vue SFC block or a `*.module.css` import registers into, so a class
+  // authored anywhere is usable from any adapter. Explicit `style` always wins over a
+  // className-derived one, regardless of prop declaration order.
+  className?: string;
   onPress?: (event: ISymbioteEvent) => void;
   // Touch lifecycle around a press, synthesized from the touch stream (events.ts),
   // mirroring RN's Pressability: onPressIn fires on touch-down, onPressOut on release.
@@ -51,6 +58,8 @@ export interface IViewProps extends IAccessibilityProps, IAriaProps, IResponderP
 
 export interface ITextProps extends IAccessibilityProps, IAriaProps {
   style?: IStyleProp<ITextStyle>;
+  // See IViewProps.className — same registry, same merge precedence.
+  className?: string;
   onPress?: (event: ISymbioteEvent) => void;
   // Synthesized from a long touch hold by shared/events.ts (a hold timer armed on
   // touch start, fired after 500ms, suppressing the tap on release), like RN's Text.

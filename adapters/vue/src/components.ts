@@ -10,12 +10,25 @@
 // createAnimatedComponent (which captures the host node via that ref) needs the fall-through.
 
 import { h, type FunctionalComponent, type VNodeRef } from '@vue/runtime-core';
-import type { ISymbioteEvent, IStyleProp, ITextStyle, IViewStyle } from '@symbiote/engine';
+import type {
+  ISymbioteEvent,
+  IClassNameValue,
+  IStyleProp,
+  ITextStyle,
+  IViewStyle,
+} from '@symbiote/engine';
 import type { IAccessibilityProps, IAriaProps, IResponderProps } from '@symbiote/components';
 import { normalizeVueAttrs } from './utils/normalize-attrs';
 
 export interface IViewProps extends IAccessibilityProps, IAriaProps, IResponderProps {
   style?: IStyleProp<IViewStyle>;
+  // Vue's own template idiom for a registered class name (twin of React's `className`, added
+  // the same session — see IViewProps.className there). Resolved through the shared style
+  // registry by routeProp's centralized class+style merge (core/engine/src/node.ts). Scoped to
+  // View/Text only for now, matching React's exact scope — extending it to every other
+  // component (Image, ScrollView, Pressable, …) is real, deliberately deferred follow-up work,
+  // not silently thinner: see the symbiote-sfc-style-compiler skill.
+  class?: IClassNameValue;
   onPress?: (event: ISymbioteEvent) => void;
   onPressIn?: (event: ISymbioteEvent) => void;
   onPressOut?: (event: ISymbioteEvent) => void;
@@ -37,6 +50,8 @@ export interface IViewProps extends IAccessibilityProps, IAriaProps, IResponderP
 
 export interface ITextProps extends IAccessibilityProps, IAriaProps {
   style?: IStyleProp<ITextStyle>;
+  // See IViewProps.class — same registry, same merge precedence, same View/Text-only scope.
+  class?: IClassNameValue;
   onPress?: (event: ISymbioteEvent) => void;
   onLongPress?: (event: ISymbioteEvent) => void;
   onPressIn?: (event: ISymbioteEvent) => void;

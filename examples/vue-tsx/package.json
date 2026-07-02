@@ -34,6 +34,7 @@
     "@react-native/eslint-config": "catalog:",
     "@react-native/metro-config": "catalog:",
     "@react-native/typescript-config": "catalog:",
+    "@symbiote/css-parser": "workspace:*",
     "@symbiote/test-utils": "workspace:*",
     "@types/jest": "catalog:",
     "@vue/babel-plugin-jsx": "catalog:",

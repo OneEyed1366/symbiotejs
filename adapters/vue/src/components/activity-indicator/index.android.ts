@@ -4,6 +4,7 @@
 // Android host; no Platform.OS read. Mirrors the React adapter's Android binding. See ADR 0020.
 
 import { createActivityIndicator } from './shared';
+export type { IActivityIndicatorProps } from './shared';
 
 export const ActivityIndicator = createActivityIndicator({
   // RN: `color = Platform.OS === 'ios' ? GRAY : null`. Android lets the theme color it.

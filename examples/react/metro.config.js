@@ -15,12 +15,24 @@ const reactPkg = path.resolve(repoRoot, 'adapters/react');
  *
  * @type {import('@react-native/metro-config').MetroConfig}
  */
+const defaultConfig = getDefaultConfig(projectRoot);
+
 const config = {
+  // Compile standalone .css/.module.css imports on the way into the bundle (see
+  // metro-css-transformer.js) — the framework-agnostic path, mirrored in the Vue and Angular
+  // examples' own metro configs.
+  transformer: {
+    babelTransformerPath: require.resolve('./metro-css-transformer.js'),
+  },
   // Watch the whole monorepo: examples/* are now pnpm-workspace packages whose deps
   // (react, @babel/runtime, …) are symlinked into the repo-root `.pnpm` store, so Metro
   // must treat repoRoot as a watched root to follow those symlinks (ADR 0025 / 0026).
   watchFolders: [repoRoot],
   resolver: {
+    // Teach Metro that a style file is a source file (the transformer turns it into a module).
+    // scss/sass/less/styl are optional SCSS/Sass/Less/Stylus preprocessor sources — see
+    // core/css-parser/src/preprocessors.ts and the symbiote-sfc-style-compiler skill.
+    sourceExts: [...defaultConfig.resolver.sourceExts, 'css', 'scss', 'sass', 'less', 'styl'],
     extraNodeModules: {
       '@symbiote/engine': enginePkg,
       '@symbiote/components': componentsPkg,
@@ -37,4 +49,4 @@ const config = {
   },
 };
 
-module.exports = mergeConfig(getDefaultConfig(projectRoot), config);
+module.exports = mergeConfig(defaultConfig, config);

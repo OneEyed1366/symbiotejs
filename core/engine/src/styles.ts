@@ -67,6 +67,53 @@ export type IFilterFunction =
   | { sepia: number | string }
   | { dropShadow: IDropShadowValue | string };
 
+// One gradient color stop (StyleSheetTypes BackgroundImageValue:728/768): a color plus zero or
+// more positions — two positions on one stop is CSS's "double position" shorthand for two
+// adjacent stops sharing a color (expanded by the processor, not here).
+export type IColorStopValue = {
+  color: IColorValue;
+  positions?: ReadonlyArray<string>;
+};
+
+// Linear gradient (StyleSheetTypes LinearGradientValue:728). `direction` is a raw CSS angle
+// (`'45deg'`) or keyword (`'to right'`); RN defaults to `'to bottom'` (180deg) when omitted.
+export type ILinearGradientValue = {
+  type: 'linear-gradient';
+  direction?: string;
+  colorStops: ReadonlyArray<IColorStopValue>;
+};
+
+// Radial gradient position (StyleSheetTypes RadialGradientPosition:743) — always exactly one
+// vertical + one horizontal edge, never all four (mirrors CSS `at <position>` syntax).
+export type IRadialGradientPosition =
+  | { top: number | string; left: number | string }
+  | { top: number | string; right: number | string }
+  | { bottom: number | string; left: number | string }
+  | { bottom: number | string; right: number | string };
+
+export type IRadialGradientShape = 'circle' | 'ellipse';
+export type IRadialGradientSize =
+  | 'closest-corner'
+  | 'closest-side'
+  | 'farthest-corner'
+  | 'farthest-side'
+  | { x: string | number; y: string | number };
+
+// Radial gradient (StyleSheetTypes RadialGradientValue:764).
+export type IRadialGradientValue = {
+  type: 'radial-gradient';
+  shape?: IRadialGradientShape;
+  size?: IRadialGradientSize;
+  position?: IRadialGradientPosition;
+  colorStops: ReadonlyArray<IColorStopValue>;
+};
+
+// `background-image` / gradients (StyleSheetTypes BackgroundImageValue:775). Same New-
+// Architecture shape as `boxShadow`/`filter` above: a CSS string or a structured array, JS-
+// parsed before native because `enableNativeCSSParsing()` defaults to `false` — see
+// `core/engine/src/process-background-image`.
+export type IBackgroundImageValue = ILinearGradientValue | IRadialGradientValue;
+
 // CSS mix-blend-mode keywords (StyleSheetTypes ____BlendMode_Internal:825).
 export type IBlendMode =
   | 'normal'
@@ -206,6 +253,7 @@ export interface IViewStyle {
   // ViewConfig validAttributes entry and no JS-side color processing are needed.
   boxShadow?: IBoxShadowValue[] | string;
   filter?: IFilterFunction[] | string;
+  experimental_backgroundImage?: IBackgroundImageValue[] | string;
   mixBlendMode?: IBlendMode;
 }
 

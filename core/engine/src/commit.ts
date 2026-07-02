@@ -41,6 +41,7 @@ import { processTransformOrigin } from './process-transform-origin';
 import { processTransform } from './process-transform';
 import { processAspectRatio } from './process-aspect-ratio';
 import { processFontVariant } from './process-font-variant';
+import { processBackgroundImage } from './process-background-image';
 
 // Per-commit work counters, surfaced via dlog so a device run can prove the
 // engine is incremental (created=0 with clones after the first mount).
@@ -183,6 +184,7 @@ const STYLE_PROCESSORS = new Map<string, (value: unknown) => unknown>([
   ['transform', processTransformValue],
   ['aspectRatio', value => processAspectRatio(asAspectRatioInput(value))],
   ['fontVariant', value => processFontVariant(asFontVariantInput(value))],
+  ['experimental_backgroundImage', value => processBackgroundImage(asBackgroundImageInput(value))],
 ]);
 
 // boxShadow accepts a CSS string or an array of shadow objects; anything else is
@@ -195,6 +197,14 @@ function asBoxShadowInput(value: unknown): Parameters<typeof processBoxShadow>[0
 
 // filter accepts a CSS string or an array of single-key filter objects; same narrowing.
 function asFilterInput(value: unknown): Parameters<typeof processFilter>[0] {
+  if (typeof value === 'string') return value;
+  if (Array.isArray(value)) return value.filter(isRecord);
+  return undefined;
+}
+
+// experimental_backgroundImage accepts a CSS string (gradient functions) or an array of
+// structured gradient objects; same narrowing as boxShadow/filter.
+function asBackgroundImageInput(value: unknown): Parameters<typeof processBackgroundImage>[0] {
   if (typeof value === 'string') return value;
   if (Array.isArray(value)) return value.filter(isRecord);
   return undefined;

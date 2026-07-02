@@ -17,6 +17,7 @@ import {
   dlog,
   type ISymbioteEvent,
   type IEventSubscription,
+  type IClassNameValue,
   type IStyleProp,
   type IViewStyle,
 } from '@symbiote/engine';
@@ -42,6 +43,10 @@ export interface IKeyboardAvoidingViewProps extends IAccessibilityProps, IAriaPr
   keyboardVerticalOffset?: number;
   contentContainerStyle?: IStyleProp<IViewStyle>;
   style?: IStyleProp<IViewStyle>;
+  // Not in HANDLED_ATTRS below — passes through untouched onto the wrapper host, which already
+  // resolves `class`. contentContainerStyle stays JS-only (a plain style-object prop, not
+  // `style`/`class` itself — see the symbiote-sfc-style-compiler skill).
+  class?: IClassNameValue;
   testID?: string;
 }
 

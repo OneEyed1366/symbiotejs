@@ -1,0 +1,530 @@
+/* Static styles for examples/vue-tsx/App.tsx, compiled at build time by @symbiote/css-parser
+   into the same RN style objects StyleSheet.create used to produce (see the
+   symbiote-sfc-style-compiler skill). This app has no .vue SFC files (JSX/TSX only via
+   @vue/babel-plugin-jsx), so it has no inline <style> block option — this standalone .css file,
+   imported with `import './App.css'`, is the framework-agnostic mechanism for it.
+
+   What stays as JS in App.tsx (NOT converted here) is ONLY what a CSS class truly cannot
+   express:
+   - a value computed at runtime (an Animated interpolation, item.color, a pressed/active
+     ternary, StyleSheet.hairlineWidth, PlatformColor/DynamicColorIOS) — composed at the use
+     site via the `style` prop, alongside the element's own `class` for its static half. This is
+     also how Pressable's pressed-state feedback works now: the static shape (padding, radius,
+     border width) moved to `.pressable-card`/`.retention-card`, and `style`'s callback carries
+     ONLY the colors that truly change with press state — `contentContainerStyle` likewise takes
+     a class-name string directly (resolved via the same registry `class` uses).
+   - a value derived from a module-level JS constant a CSS selector has no way to read
+     (XY_SPAN, HEADER_COLLAPSE, CHIP_WIDTH, CHIP_GAP, PARITY_ROW_H).
+   - `boxShadow` / `filter` / `transformOrigin` + `transform` — RN's array-of-operations shape
+     has no 1:1 CSS source syntax @symbiote/css-parser compiles yet (documented gap). */
+
+/* ===== shared / common ===== */
+.screen {
+  flex: 1;
+  background-color: #1b2a36;
+}
+.section {
+  gap: 12px;
+}
+.section-tight {
+  gap: 8px;
+}
+.slider {
+  height: 40px;
+  align-self: stretch;
+}
+.row {
+  flex-direction: row;
+  gap: 12px;
+}
+/* transform stays dynamic (rowDx.value drives the strip pan) */
+.row-tight {
+  flex-direction: row;
+  gap: 8px;
+}
+.flex1 {
+  flex: 1;
+}
+.section-label {
+  color: #3b5266;
+  font-size: 13px;
+}
+.info-text {
+  color: #cbd5e1;
+  font-size: 14px;
+}
+.note-text {
+  color: #cbd5e1;
+  font-size: 13px;
+}
+.switch-label {
+  color: #cbd5e1;
+  font-size: 16px;
+}
+.list-row-text {
+  color: #cbd5e1;
+  font-size: 15px;
+}
+
+/* the one allowed difference vs the React canary */
+.badge {
+  color: #5fcf9b;
+  font-size: 14px;
+  letter-spacing: 2px;
+  text-align: center;
+}
+
+/* ===== AnimatedDemo ===== */
+.pulse-frame {
+  height: 64px;
+  align-items: center;
+  justify-content: center;
+}
+/* opacity / transform stay dynamic (Animated interpolations) */
+.pulse-dot {
+  width: 48px;
+  height: 48px;
+  border-radius: 24px;
+  background-color: #42b883;
+}
+.slide-track {
+  height: 36px;
+  justify-content: center;
+}
+/* transform stays dynamic (Animated interpolation) */
+.js-slide-dot {
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  background-color: #f6ad55;
+}
+/* transform stays dynamic (Animated interpolation) */
+.native-slide-dot {
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  background-color: #68d391;
+}
+
+/* ===== AnimatedParityDemo ===== */
+.drag-hint {
+  color: #718096;
+  font-size: 11px;
+}
+/* width / height stay dynamic — they reference the XY_SPAN script const, which a CSS
+   selector has no way to read */
+.xy-frame {
+  border-radius: 12px;
+  background-color: #eef7f2;
+  padding: 6px;
+}
+/* transform stays dynamic (PanResponder-driven translate) */
+.xy-box {
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  background-color: #9f7aea;
+}
+.track-row {
+  height: 30px;
+  justify-content: center;
+}
+/* transform stays dynamic (Animated interpolation) */
+.lead-dot {
+  width: 22px;
+  height: 22px;
+  border-radius: 11px;
+  background-color: #42b883;
+}
+/* transform stays dynamic (Animated interpolation) */
+.follow-dot {
+  width: 22px;
+  height: 22px;
+  border-radius: 11px;
+  background-color: #f6ad55;
+}
+/* height stays dynamic — references the HEADER_COLLAPSE script const */
+.collapse-frame {
+  overflow: hidden;
+  justify-content: flex-start;
+}
+/* height stays dynamic (HEADER_COLLAPSE const); transform stays dynamic (Animated
+   interpolation) */
+.collapse-header {
+  border-radius: 8px;
+  background-color: #38b2ac;
+  align-items: center;
+  justify-content: center;
+}
+.collapse-header-text {
+  color: white;
+  font-size: 12px;
+}
+
+/* ===== NativeModulesDemo ===== */
+.row-align-center {
+  flex-direction: row;
+  align-items: center;
+  gap: 12px;
+}
+.logo-thumb {
+  width: 48px;
+  height: 48px;
+  border-radius: 8px;
+  background-color: #22323f;
+}
+.info-text-flex {
+  color: #cbd5e1;
+  font-size: 14px;
+  flex: 1;
+}
+
+/* ===== RefApiDemo ===== */
+.ref-box {
+  height: 56px;
+  border-radius: 12px;
+  background-color: #42b883;
+  align-items: center;
+  justify-content: center;
+}
+.ref-box-text {
+  color: #1b2a36;
+  font-size: 14px;
+  font-weight: bold;
+}
+
+/* ===== PlatformColorDemo ===== */
+/* backgroundColor stays dynamic (PlatformColor is a runtime-resolved opaque color object) */
+.color-tile {
+  flex: 1;
+  height: 56px;
+  border-radius: 12px;
+  align-items: center;
+  justify-content: center;
+}
+/* backgroundColor / borderColor stay dynamic (DynamicColorIOS / PlatformColor) */
+.color-tile-bordered {
+  flex: 1;
+  height: 56px;
+  border-radius: 12px;
+  border-width: 1px;
+  align-items: center;
+  justify-content: center;
+}
+.tile-label {
+  color: #ffffff;
+  font-size: 13px;
+  font-weight: bold;
+}
+/* color stays dynamic (PlatformColor('label')) */
+.bold-label {
+  font-size: 13px;
+  font-weight: bold;
+}
+
+/* ===== ResponderDemo ===== */
+/* color stays dynamic (transfer.value ? active : idle) */
+.transfer-text {
+  font-size: 13px;
+}
+.strip-box {
+  padding: 12px;
+  border-radius: 12px;
+  background-color: #2c3e50;
+}
+/* borderColor / transform stay dynamic (active-chip ternary + drag offset) */
+.chip {
+  width: 56px;
+  height: 48px;
+  border-radius: 8px;
+  background-color: #369870;
+  border-width: 2px;
+  align-items: center;
+  justify-content: center;
+}
+.chip-text {
+  color: #ffffff;
+  font-size: 16px;
+  font-weight: bold;
+}
+
+/* ===== AccessibilityDemo ===== */
+.a11y-card {
+  padding: 12px;
+  border-radius: 10px;
+  background-color: #2c3e50;
+}
+
+/* ===== ParityDemo ===== */
+.long-press-row {
+  color: #cbd5e1;
+  font-size: 15px;
+  padding: 12px;
+  border-radius: 10px;
+  background-color: #2c3e50;
+}
+.focus-input {
+  color: #e2e8f0;
+  padding: 12px;
+  border-radius: 10px;
+  background-color: #22323f;
+  border-width: 1px;
+  border-color: #369870;
+}
+.parity-list {
+  height: 120px;
+  border-radius: 10px;
+  background-color: #22323f;
+}
+/* height stays dynamic — references the PARITY_ROW_H script const */
+.parity-row {
+  justify-content: center;
+  padding-left: 12px;
+  padding-right: 12px;
+}
+.section-list {
+  height: 200px;
+  border-radius: 10px;
+  background-color: #22323f;
+}
+.section-header {
+  color: #1b2a36;
+  font-size: 13px;
+  font-weight: bold;
+  padding-top: 6px;
+  padding-bottom: 6px;
+  padding-left: 12px;
+  padding-right: 12px;
+  background-color: #42b883;
+}
+
+/* ===== App ===== */
+.scroll-content {
+  padding-top: 64px;
+  padding-bottom: 64px;
+  padding-left: 24px;
+  padding-right: 24px;
+  align-items: stretch;
+  gap: 28px;
+}
+.title {
+  color: #42b883;
+  font-size: 16px;
+  text-align: center;
+}
+.header-note {
+  color: #42b883;
+  font-size: 13px;
+  text-align: center;
+}
+/* borderTopWidth stays dynamic (StyleSheet.hairlineWidth is a runtime constant) */
+.hairline-note {
+  color: #42b883;
+  font-size: 13px;
+  text-align: center;
+  padding-top: 8px;
+  border-top-color: #369870;
+}
+.refresh-row {
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+.accent-note {
+  color: #42b883;
+  font-size: 13px;
+}
+.muted-center {
+  color: #3b5266;
+  font-size: 13px;
+  text-align: center;
+}
+.counter-card {
+  padding-top: 18px;
+  padding-bottom: 18px;
+  border-radius: 16px;
+  background-color: #369870;
+  align-items: center;
+}
+.counter-text {
+  color: #ffffff;
+  font-size: 24px;
+  font-weight: bold;
+}
+.text-input {
+  height: 44px;
+  border-radius: 10px;
+  border-width: 1px;
+  border-color: #369870;
+  padding-left: 14px;
+  padding-right: 14px;
+  color: #ffffff;
+  font-size: 18px;
+  background-color: #22323f;
+}
+.greeting {
+  color: #ffffff;
+  font-size: 20px;
+  text-align: center;
+}
+.switch-row {
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  padding-left: 4px;
+  padding-right: 4px;
+}
+.pressable-card {
+  padding-top: 16px;
+  padding-bottom: 16px;
+  border-radius: 14px;
+  align-items: center;
+  border-width: 1px;
+}
+/* color stays dynamic (pressed ? active : idle) */
+.pressable-label {
+  font-size: 15px;
+}
+.chip-list {
+  height: 84px;
+}
+/* width / marginRight stay dynamic — they reference the CHIP_WIDTH/CHIP_GAP script consts,
+   which a CSS selector has no way to read; backgroundColor stays dynamic (item.color) */
+.chip-card {
+  height: 72px;
+  border-radius: 12px;
+  align-items: center;
+  justify-content: center;
+}
+.chip-number {
+  color: #1b2a36;
+  font-size: 18px;
+  font-weight: bold;
+}
+.retention-card {
+  height: 64px;
+  border-radius: 14px;
+  align-items: center;
+  justify-content: center;
+}
+/* no hyphen before the digit run: kebabToCamel only rewrites "-[a-z]", so ".box-list-160"
+   would parse to "boxList-160", not "boxList160" — the same trap the symbiote-sfc-style-
+   compiler skill documents catching in the vue-sfc canary */
+.box-list160 {
+  height: 160px;
+  border-radius: 12px;
+  background-color: #22323f;
+}
+.mvcp-row {
+  padding-top: 10px;
+  padding-bottom: 10px;
+  padding-left: 14px;
+  padding-right: 14px;
+}
+/* opacity / transform stay dynamic (the native-driver scroll interpolation) */
+.parity-header {
+  background-color: #369870;
+  border-radius: 12px;
+  padding-top: 12px;
+  padding-bottom: 12px;
+  align-items: center;
+}
+.parity-header-text {
+  color: #ffffff;
+  font-size: 15px;
+  font-weight: bold;
+}
+.scroll-demo-row {
+  height: 80px;
+  justify-content: center;
+  padding-left: 14px;
+  padding-right: 14px;
+}
+.tiny-center {
+  color: #3b5266;
+  font-size: 12px;
+  text-align: center;
+}
+/* boxShadow, demoed via a dynamic style object (see shadowCardExtra in App.tsx) — the CSS
+   form is equally supported now (raw passthrough, 2026-07), see .gradient-card below */
+.shadow-card {
+  height: 64px;
+  border-radius: 12px;
+  background-color: #2c3e50;
+  align-items: center;
+  justify-content: center;
+}
+.filter-tile {
+  flex: 1;
+  height: 64px;
+  border-radius: 12px;
+  background-color: #369870;
+  align-items: center;
+  justify-content: center;
+}
+.tile-text {
+  color: #ffffff;
+  font-size: 13px;
+}
+/* transformOrigin / transform, demoed via a dynamic style object (see rotationStyle in
+   App.tsx) — same CSS-form note as boxShadow above */
+.rotated-card {
+  height: 64px;
+  border-radius: 12px;
+  background-color: #369870;
+  align-items: center;
+  justify-content: center;
+}
+.gradient-card {
+  height: 64px;
+  border-radius: 12px;
+  background-image: linear-gradient(to right, #2b6cb0, #f6ad55);
+  align-items: center;
+  justify-content: center;
+}
+.web-image {
+  border-radius: 8px;
+  align-self: center;
+}
+.logo-image {
+  width: 64px;
+  height: 64px;
+  border-radius: 12px;
+  align-self: center;
+}
+.bottom-card {
+  height: 200px;
+  border-radius: 16px;
+  background-color: #2c3e50;
+  align-items: center;
+  justify-content: center;
+}
+.bottom-text {
+  color: #42b883;
+  font-size: 16px;
+}
+.modal-overlay {
+  flex: 1;
+  align-items: center;
+  justify-content: center;
+  background-color: rgba(0, 0, 0, 0.6);
+}
+.modal-card {
+  width: 280px;
+  padding: 24px;
+  border-radius: 20px;
+  background-color: #22323f;
+  align-items: center;
+  gap: 16px;
+}
+.modal-title {
+  color: #ffffff;
+  font-size: 20px;
+  font-weight: bold;
+}
+.modal-body {
+  color: #cbd5e1;
+  font-size: 14px;
+  text-align: center;
+}

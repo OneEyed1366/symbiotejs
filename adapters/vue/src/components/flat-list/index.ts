@@ -37,7 +37,13 @@ import {
   type IVirtualizedListHandle,
   type IScrollViewHandle,
 } from '@symbiote/components';
-import { dlog, type ISymbioteNode, type IStyleProp, type IViewStyle } from '@symbiote/engine';
+import {
+  dlog,
+  resolveClassName,
+  type ISymbioteNode,
+  type IStyleProp,
+  type IViewStyle,
+} from '@symbiote/engine';
 import { VirtualizedList } from '../virtualized-list';
 import { normalizeVueAttrs } from '../../utils/normalize-attrs';
 import type { ICtx } from '../../utils/component-helpers';
@@ -59,7 +65,9 @@ export interface IFlatListProps<ItemT> {
   // with the React surface). See utils/slots-to-render-props.
   keyExtractor?: (item: ItemT, index: number) => string;
   numColumns?: number;
-  columnWrapperStyle?: IStyleProp<IViewStyle>;
+  // A bare string is a class name, resolved through the shared style registry; a style
+  // object/array flows through unchanged.
+  columnWrapperStyle?: IStyleProp<IViewStyle> | string;
   viewabilityConfigCallbackPairs?: IViewabilityConfigCallbackPair<ItemT>[];
   // Plus every VirtualizedList passthrough prop (horizontal, inverted, getItemLayout, style, raw
   // scroll events, …), forwarded through $attrs onto the inner list. See IVirtualizedListProps.
@@ -212,11 +220,15 @@ export const FlatList = defineComponent(
       // Multi-column: the virtualized stream is rows. Each cell renders its items side by side
       // in a flex-row View so windowing accounts for whole rows.
       const rows = chunkIntoRows(data, numColumns);
+      // A class-name string resolves through the shared style registry; an object/array is
+      // already style-shaped and passes through as-is.
       const rowStyle: IStyleProp<IViewStyle> = [
         { flexDirection: 'row' },
-        isRecord(props.columnWrapperStyle) || Array.isArray(props.columnWrapperStyle)
-          ? props.columnWrapperStyle
-          : undefined,
+        typeof props.columnWrapperStyle === 'string'
+          ? resolveClassName(props.columnWrapperStyle)
+          : isRecord(props.columnWrapperStyle) || Array.isArray(props.columnWrapperStyle)
+            ? props.columnWrapperStyle
+            : undefined,
       ];
 
       const rowItemSlot = (info: {

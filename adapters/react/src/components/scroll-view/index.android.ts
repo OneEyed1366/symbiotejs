@@ -26,6 +26,7 @@ export const ScrollView = forwardRef<IScrollViewHandle, IScrollViewProps>((props
     scrollViewBaseStyle,
     outerProps,
     style,
+    layoutSplitStyle,
     content,
     refreshControl,
     scrollAnimatedValue,
@@ -57,11 +58,20 @@ export const ScrollView = forwardRef<IScrollViewHandle, IScrollViewProps>((props
   // the inner scroll view. So the wrapper carries `outer`, and the inner scroll view its base
   // (flexDirection/overflow) plus the visual `inner` composed over it, NOT a hardcoded flex:1
   // that would override an explicit user height/width.
-  const { outer: outerStyle, inner: innerStyle } = splitLayoutProps(style);
+  //
+  // layoutSplitStyle (not style): a class-only layout prop (flex/height/gap/…) is invisible to
+  // `style` (it never carries the resolved `className` value), so splitting on `style` alone
+  // starves the wrapper of its layout style and it collapses to nothing. layoutSplitStyle is
+  // `style` merged with the resolved className style (see usePreparedScrollView).
+  const { outer: outerStyle, inner: innerStyle } = splitLayoutProps(layoutSplitStyle);
   const scrollStyle = scrollViewBaseStyle ? [scrollViewBaseStyle, innerStyle] : innerStyle;
+  // className is stripped from the spread here: layoutSplitStyle already folded its resolved
+  // value into `outer`/`inner` above, so forwarding the raw prop too would re-apply its LAYOUT
+  // half onto the inner scroll view a second time (on top of the outer wrapper).
+  const { className: _classNameAppliedViaSplit, ...innerOuterProps } = outerProps;
   const scrollView = createElement(
     scrollViewIntrinsic,
-    { ...outerProps, style: scrollStyle, nestedScrollEnabled: true, ref },
+    { ...innerOuterProps, style: scrollStyle, nestedScrollEnabled: true, ref },
     content,
   );
   return cloneElement(refreshControl, { style: outerStyle }, scrollView);

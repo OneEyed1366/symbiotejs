@@ -164,6 +164,10 @@ export interface IVirtualizedListProps<ItemT> extends IAccessibilityProps, IAria
   keyboardDismissMode?: 'none' | 'on-drag' | 'interactive';
   style?: IStyleProp<IViewStyle>;
   contentContainerStyle?: IStyleProp<IViewStyle>;
+  // Forwarded onto the inner ScrollView like `style` — resolves through the shared style
+  // registry. contentContainerStyle stays JS-only (a plain style-object prop, not style/
+  // className itself).
+  className?: string;
 }
 
 function resolveElement(

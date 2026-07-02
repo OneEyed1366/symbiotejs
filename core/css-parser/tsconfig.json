@@ -1,0 +1,15 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "rootDir": "src",
+    "outDir": "build",
+    // Explicit `.ts` specifiers (rewritten to `.js` on emit) make `src/index.ts` directly
+    // requirable by plain Node — needed because the Metro transformer calls parseCSS() at
+    // transform time, outside Metro's own bundler resolution, where extensionless relative
+    // imports fail Node's ESM resolver.
+    "allowImportingTsExtensions": true,
+    "rewriteRelativeImportExtensions": true
+  },
+  "include": ["src"],
+  "exclude": ["src/**/*.test.ts", "src/**/*.test.tsx"]
+}

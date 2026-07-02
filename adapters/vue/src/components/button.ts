@@ -9,7 +9,7 @@ import {
   resolveButtonTextStyle,
   type IButtonProps as ICoreButtonProps,
 } from '@symbiote/components';
-import type { ISymbioteEvent } from '@symbiote/engine';
+import type { IClassNameValue, ISymbioteEvent } from '@symbiote/engine';
 import { Text } from '../components';
 import { TouchableOpacity } from './touchable';
 import { normalizeVueAttrs } from '../utils/normalize-attrs';
@@ -34,7 +34,11 @@ function forwardAttrs(attrs: Record<string, unknown>): Record<string, unknown> {
   return result;
 }
 
-export type IButtonProps = Omit<ICoreButtonProps, 'onPress'>;
+// ICoreButtonProps is the framework-agnostic shared type (@symbiote/components); `class` can't
+// live there, so it's added locally, exactly like Image's IImageProps. Not in HANDLED above, so
+// it forwards via forwardAttrs onto the TouchableOpacity, which (after its own fix) routes it to
+// the same Animated.View `style` targets.
+export type IButtonProps = Omit<ICoreButtonProps, 'onPress'> & { class?: IClassNameValue };
 
 type IButtonEmits = {
   press: (event: ISymbioteEvent) => boolean;

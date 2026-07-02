@@ -27,8 +27,12 @@ const config = {
   // must treat repoRoot as a watched root to follow those symlinks (ADR 0025 / 0026).
   watchFolders: [repoRoot],
   resolver: {
-    // Teach Metro that .vue is a source file (the transformer turns it into a module).
-    sourceExts: [...defaultConfig.resolver.sourceExts, 'vue'],
+    // Teach Metro that .vue and every style extension are source files (the transformer turns
+    // each into a module) — css/scss/sass/less/styl is the framework-agnostic standalone
+    // stylesheet/CSS-Modules path, shared with the React and Angular examples (see
+    // metro-css-transformer.js there); scss/sass/less/styl are optional preprocessor sources
+    // (see core/css-parser/src/preprocessors.ts and the symbiote-sfc-style-compiler skill).
+    sourceExts: [...defaultConfig.resolver.sourceExts, 'vue', 'css', 'scss', 'sass', 'less', 'styl'],
     extraNodeModules: {
       '@symbiote/engine': enginePkg,
       '@symbiote/components': componentsPkg,

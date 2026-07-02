@@ -14,6 +14,7 @@ export {
   setProp,
   setEventListener,
   routeProp,
+  getExplicitStyle,
   setText,
   isSymbioteNode,
   RAW_TEXT_COMPONENT,
@@ -82,6 +83,8 @@ export { processTransformOrigin } from './process-transform-origin';
 export { processTransform } from './process-transform';
 export { processAspectRatio } from './process-aspect-ratio';
 export { processFontVariant } from './process-font-variant';
+export { processBackgroundImage } from './process-background-image';
+export type { IParsedBackgroundImage } from './process-background-image';
 export { flattenStyle } from './style';
 // The typed style surface: agnostic types, re-exported by every adapter (it used to
 // live in @symbiote/react; moved here so @symbiote/components can type render fns).
@@ -96,9 +99,24 @@ export type {
   IBoxShadowValue,
   IDropShadowValue,
   IFilterFunction,
+  IColorStopValue,
+  ILinearGradientValue,
+  IRadialGradientValue,
+  IRadialGradientPosition,
+  IRadialGradientShape,
+  IRadialGradientSize,
+  IBackgroundImageValue,
   IBlendMode,
 } from './styles';
 export { StyleSheet, computeHairlineWidth } from './style-sheet';
+export {
+  registerStyles,
+  resolveClassName,
+  clearGlobalStyles,
+  scopeClassName,
+  isClassNameValue,
+} from './style-registry';
+export type { IClassNameValue, IClassToggleMap, IScopableClassValue } from './style-registry';
 export { Platform } from './platform';
 export type { IPlatformStatic, IPlatformOSType, IPlatformSelectSpec } from './platform';
 // The per-platform constants types come from their own files, not the host-selected

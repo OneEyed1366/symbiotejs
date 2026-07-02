@@ -26,7 +26,7 @@ import {
   type IModalPresentationStyle,
   type IModalState,
 } from '@symbiote/components';
-import { dlog, type IStyleProp, type IViewStyle } from '@symbiote/engine';
+import { dlog, type IClassNameValue, type IStyleProp, type IViewStyle } from '@symbiote/engine';
 
 import { normalizeVueAttrs } from '../utils/normalize-attrs';
 
@@ -50,6 +50,10 @@ export interface IModalProps extends IAccessibilityProps, IAriaProps {
   navigationBarTranslucent?: boolean;
   allowSwipeDismissal?: boolean;
   style?: IStyleProp<IViewStyle>;
+  // Like `style`, targets the CONTAINER View renderModal wraps the children in, not the outer
+  // symbiote-modal host — IS in HANDLED_ATTRS below (unlike a plain passthrough prop) so it is
+  // applied explicitly on the container in the final h() call, matching where style lands.
+  class?: IClassNameValue;
 }
 
 export type IModalEmits = {
@@ -117,6 +121,7 @@ const HANDLED_ATTRS = [
   'navigationBarTranslucent',
   'allowSwipeDismissal',
   'style',
+  'class',
 ];
 
 type IForwardBag = IAccessibilityProps & IAriaProps & Record<string, unknown>;
@@ -184,7 +189,13 @@ export const Modal = defineComponent<IModalProps, IModalEmits>(
           onOrientationChange: (event: IModalOrientationChangeEvent): void =>
             emit('orientationChange', event),
         },
-        [h(container.type, { ...container.props, key: container.key }, slotChildren)],
+        [
+          h(
+            container.type,
+            { ...container.props, key: container.key, class: attrs.class },
+            slotChildren,
+          ),
+        ],
       );
     };
   },

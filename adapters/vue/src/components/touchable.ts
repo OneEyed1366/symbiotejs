@@ -40,6 +40,12 @@ type ITouchableBaseProps = Omit<IPressableProps, 'style'> &
     style?: IStyleProp<IViewStyle>;
   };
 
+// `class` is already typed here via ITouchableBaseProps' Omit<IPressableProps, 'style'> (Omit
+// only strips `style`), but ROUTING it needs the same explicit treatment as `style`:
+// TouchableOpacity renders its OWN Animated.View feedback node (the opacity fade) inside
+// Pressable's host View, the same wrapper/inner split ImageBackground has. `style` already
+// targets that inner Animated.View (see TOUCHABLE_OPACITY_HANDLED); `class` must land on it
+// too, not the outer Pressable wrapper it would otherwise reach via forwardExcept.
 export interface ITouchableOpacityProps extends ITouchableBaseProps {
   activeOpacity?: number;
 }
@@ -69,6 +75,7 @@ function forwardExcept(
 const TOUCHABLE_OPACITY_HANDLED = [
   'activeOpacity',
   'style',
+  'class',
   'onPressIn',
   'onPressOut',
   'delayPressIn',
@@ -157,7 +164,11 @@ export const TouchableOpacity = defineComponent<ITouchableOpacityProps, IPressab
         onPressOut: handlePressOut,
       };
       const children: VNode[] = slots.default !== undefined ? slots.default() : [];
-      const feedback = h(Animated.View, { style: [style, { opacity }] }, () => children);
+      const feedback = h(
+        Animated.View,
+        { style: [style, { opacity }], class: attrs.class },
+        () => children,
+      );
       return h(Pressable, pressableProps, { default: () => [feedback] });
     };
   },

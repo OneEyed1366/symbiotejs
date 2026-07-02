@@ -39,6 +39,9 @@ export interface IRefreshControlProps extends IAccessibilityProps, IAriaProps {
   // scroll view as its child via cloneElement. On iOS it is a childless sibling, so this
   // is undefined there; passing it through is harmless.
   children?: ReactNode;
+  // Forwards straight through via ...nativeProps like every other prop here — resolves
+  // through the shared style registry.
+  className?: string;
 }
 
 export const RefreshControl: FC<IRefreshControlProps> = rawProps => {

@@ -7,11 +7,14 @@ import { createElement, type FC } from 'react';
 import { Text } from '../components';
 import { TouchableOpacity } from './touchable';
 import { BUTTON_ACCESSIBILITY_ROLE, resolveButtonTextStyle } from '@symbiote/components';
-import type { IButtonProps } from '@symbiote/components';
+import type { IButtonProps as IButtonBaseProps } from '@symbiote/components';
 
-// IButtonProps is framework-agnostic (it takes a `title` string, no children / ref), so it lives
-// in @symbiote/components and every adapter re-exports it; React only composes TouchableOpacity + Text.
-export type { IButtonProps } from '@symbiote/components';
+// IButtonProps is otherwise framework-agnostic (it takes a `title` string, no children / ref), so
+// its base lives in @symbiote/components; className is React's own field per
+// <prop_types_split_agnostic_vs_per_adapter>, not destructured below so it falls into
+// `...accessibilityRest` and forwards onto the outer TouchableOpacity, like every other RN adapter's
+// className field.
+export type IButtonProps = IButtonBaseProps & { className?: string };
 
 export const Button: FC<IButtonProps> = props => {
   const {

@@ -5,6 +5,7 @@
 // the Descriptor to elements, and appends the user children ON TOP of the inner image.
 
 import { createElement, type ReactElement, type ReactNode } from 'react';
+import { resolveClassName } from '@symbiote/engine';
 import {
   renderImageBackground,
   resolveAccessibilityProps,
@@ -21,8 +22,12 @@ import type { IStyleProp, IViewStyle } from '../../utils/styles';
 export interface IImageBackgroundProps extends Omit<IImageProps, 'style'> {
   // Wrapper View style; its width/height are reapplied to the inner Image.
   style?: IStyleProp<IViewStyle>;
-  // Style merged onto the inner absolute-fill Image, after the proxied dimensions.
-  imageStyle?: IStyleProp<IViewStyle>;
+  // Style merged onto the inner absolute-fill Image, after the proxied dimensions. A bare
+  // string resolves through the shared style registry, like `className` on the wrapper below.
+  imageStyle?: IStyleProp<IViewStyle> | string;
+  // Applies to the wrapper View, mirroring `style` above — resolves through the shared style
+  // registry.
+  className?: string;
   children?: ReactNode;
 }
 
@@ -31,7 +36,14 @@ function toChild(child: IDescriptorChild): ReactElement | string {
 }
 
 export function ImageBackground(props: IImageBackgroundProps): ReactElement {
-  const { children, style, imageStyle, ...imageProps } = props;
+  // className is pulled out here, like style, and applied to the WRAPPER element below — left
+  // in ...imageProps it would fall into `passthrough` and land on the INNER Image instead
+  // (renderImageBackground's `image.passthrough`, not the wrapper's own props).
+  const { children, style, imageStyle, className, ...imageProps } = props;
+  // imageStyle targets the INNER image (renderImageBackground's own field), unlike className
+  // above which lands on the wrapper — resolve the string here, before it flows in below.
+  const resolvedImageStyle =
+    typeof imageStyle === 'string' ? resolveClassName(imageStyle) : imageStyle;
   // The W3C source aliases (src/srcSet/crossOrigin/referrerPolicy) and width/height become typed
   // Image view fields (consumed by the source/style fold), so they never leak to Fabric via
   // passthrough; everything else (events, blurRadius, the folded accessibility*, testID) forwards.
@@ -53,7 +65,7 @@ export function ImageBackground(props: IImageBackgroundProps): ReactElement {
 
   const wrapper = renderImageBackground({
     style,
-    imageStyle,
+    imageStyle: resolvedImageStyle,
     image: {
       source,
       defaultSource,
@@ -74,7 +86,7 @@ export function ImageBackground(props: IImageBackgroundProps): ReactElement {
   // wrapper = symbiote-view > [imageDescriptor]; the user children paint AFTER the image (on top).
   return createElement(
     wrapper.type,
-    { key: wrapper.key, ...wrapper.props },
+    { key: wrapper.key, ...wrapper.props, className },
     ...wrapper.children.map(toChild),
     children,
   );

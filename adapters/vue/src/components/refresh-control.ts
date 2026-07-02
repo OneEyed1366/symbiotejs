@@ -13,7 +13,7 @@
 // a cast) before the aria fold.
 
 import { defineComponent, h } from '@vue/runtime-core';
-import { dlog } from '@symbiote/engine';
+import { dlog, type IClassNameValue } from '@symbiote/engine';
 import {
   resolveAccessibilityProps,
   type IAccessibilityProps,
@@ -41,6 +41,9 @@ export interface IRefreshControlProps extends IAccessibilityProps, IAriaProps {
   size?: 'default' | 'large';
   // Android-only native prop forwarded to AndroidSwipeRefreshLayout; iOS native never reads it.
   enabled?: boolean;
+  // Forwards straight to the native node like every other prop here (no HANDLED_ATTRS split in
+  // this file) — already resolves through the shared style registry.
+  class?: IClassNameValue;
 }
 
 export type IRefreshControlEmits = {

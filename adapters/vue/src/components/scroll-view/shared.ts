@@ -49,8 +49,11 @@ import {
   AnimatedValue,
   dlog,
   event as animatedEvent,
+  isClassNameValue,
   isNativeAnimatedAvailable,
   isSymbioteNode,
+  resolveClassName,
+  type IClassNameValue,
   type IStyleProp,
   type ISymbioteEvent,
   type ISymbioteNode,
@@ -69,7 +72,9 @@ type IScrollHandler = (event: ISymbioteEvent) => void;
 // it (refreshControl/stickyHeaderIndices/…), so app code type-checks against the full surface now.
 export interface IScrollViewProps extends IAccessibilityProps, IAriaProps {
   style?: IStyleProp<IViewStyle>;
-  contentContainerStyle?: IStyleProp<IViewStyle>;
+  // A bare string is a class name, resolved through the shared style registry (see
+  // isStyleProp/resolveClassName below); a style object/array flows through unchanged.
+  contentContainerStyle?: IStyleProp<IViewStyle> | string;
   horizontal?: boolean;
   scrollEnabled?: boolean;
   showsVerticalScrollIndicator?: boolean;
@@ -84,6 +89,11 @@ export interface IScrollViewProps extends IAccessibilityProps, IAriaProps {
   // re-invokes its type to wrap the scroll view (ADR 0024 Phase 2).
   refreshControl?: VNode;
   removeClippedSubviews?: boolean;
+  // Forwarded onto the scroll-view node like `style` (see isClassNameProp below) — resolves
+  // through the shared style registry. The Android RefreshControl wrap splits its layout half
+  // onto the outer wrapper via layoutSplitStyle; see index.android.ts for why the raw prop must
+  // NOT also ride onto the inner scroll view there.
+  class?: IClassNameValue;
   // contentSizeChange is an adapter-synthesized Vue emit, not a native prop.
   // Snap / paging family: forwarded straight to the native scroll view.
   snapToInterval?: number;
@@ -159,6 +169,11 @@ export interface IScrollViewAssembleInput {
   // Pieces the Android wrap needs to rebuild the inner scroll view with a splitLayoutProps style:
   scrollViewBaseStyle: IViewStyle;
   userStyle: IStyleProp<IViewStyle> | undefined;
+  // userStyle PLUS the resolved `class` prop (a class-only layout prop like flex/height/gap is
+  // otherwise invisible to the Android wrap's splitLayoutProps — see isClassNameProp above).
+  // Only the Android wrap's outer/inner split reads this; every other use of style stays on
+  // userStyle/scrollProps unchanged.
+  layoutSplitStyle: IStyleProp<IViewStyle>;
   // The scroll props WITHOUT style/ref: the wrap re-composes the inner (visual) style + the SAME
   // node ref onto the inner scroll view, so dispatchViewCommand keeps targeting it.
   scrollOuterProps: Record<string, unknown>;
@@ -180,6 +195,17 @@ function isHandler(value: unknown): value is IUnknownHandler {
 function isStyleProp(value: unknown): value is IStyleProp<IViewStyle> {
   return typeof value === 'object' && value !== null;
 }
+
+// `class` is never in HANDLED_ATTRS (inheritAttrs:false means it also isn't auto-merged onto a
+// root), so it forwards raw to the inner scroll-view node via forwardAttrs, resolved later by
+// the renderer's own patchProp — fine for the single-node Phase 1 path. But the Android
+// RefreshControl wrap (index.android.ts) reads userStyle alone to splitLayoutProps() the outer
+// wrapper's layout style, BEFORE that later resolution ever runs, so a class-only layout prop
+// (flex, height, gap, …) never reaches the wrapper and it collapses to nothing. See the
+// symbiote-sfc-style-compiler skill for the failure this caused on a real Android device.
+// isClassNameProp is @symbiote/engine's own isClassNameValue guard (shared, not redeclared —
+// routeProp's centralized class+style merge needs the identical narrowing).
+const isClassNameProp = isClassNameValue;
 
 // decelerationRate is resolved per-platform (resolveDecelerationRate), so it must be narrowed to
 // its declared shape before that call, unlike the raw pass-through props.
@@ -314,9 +340,17 @@ export function createScrollView(platform: IScrollViewPlatform) {
         const attrs = normalizeVueAttrs(rawAttrs);
         const isHorizontal = attrs.horizontal === true;
         const userStyle = isStyleProp(attrs.style) ? attrs.style : undefined;
-        const contentContainerStyle = isStyleProp(attrs.contentContainerStyle)
-          ? attrs.contentContainerStyle
-          : undefined;
+        // resolveClassName(undefined) is a cheap {} no-op, so this is safe with no class prop too.
+        const classProp = isClassNameProp(attrs.class) ? attrs.class : undefined;
+        const layoutSplitStyle: IStyleProp<IViewStyle> = [resolveClassName(classProp), userStyle];
+        // A class-name string resolves through the same style registry as `class`/`style` above;
+        // an object/array is already style-shaped and passes through as-is.
+        const contentContainerStyle =
+          typeof attrs.contentContainerStyle === 'string'
+            ? resolveClassName(attrs.contentContainerStyle)
+            : isStyleProp(attrs.contentContainerStyle)
+              ? attrs.contentContainerStyle
+              : undefined;
 
         // Sticky headers (Phase 3, ADR 0024): a pure-JS layer; the native scroll view ignores
         // stickyHeaderIndices, so we wrap the flagged children below and drive their translateY off
@@ -453,6 +487,7 @@ export function createScrollView(platform: IScrollViewPlatform) {
           refreshControl,
           scrollViewBaseStyle,
           userStyle,
+          layoutSplitStyle,
           scrollOuterProps: outerProps,
           setNodeRef,
         });

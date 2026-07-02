@@ -89,6 +89,8 @@ export interface IVirtualizedSectionListProps<ItemT> extends IAccessibilityProps
   keyboardDismissMode?: 'none' | 'on-drag' | 'interactive';
   style?: IStyleProp<IViewStyle>;
   contentContainerStyle?: IStyleProp<IViewStyle>;
+  // Forwarded onto the inner list like `style` — resolves through the shared style registry.
+  className?: string;
 }
 
 function resolveSeparator(

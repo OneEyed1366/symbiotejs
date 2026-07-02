@@ -8,13 +8,20 @@
 
 import type { FC } from 'react';
 import { renderActivityIndicator, resolveAccessibilityProps } from '@symbiote/components';
-import type { IActivityIndicatorPlatform, IActivityIndicatorProps } from '@symbiote/components';
+import type {
+  IActivityIndicatorPlatform,
+  IActivityIndicatorProps as IActivityIndicatorBaseProps,
+} from '@symbiote/components';
 import { descriptorToReact } from '../../descriptor-to-react';
 
-// IActivityIndicatorProps is framework-agnostic (no ref / children), so it lives in
-// @symbiote/components and every adapter re-exports it; the React adapter supplies only the
-// lifecycle (render-only here) + the descriptor bridge.
-export type { IActivityIndicatorPlatform, IActivityIndicatorProps } from '@symbiote/components';
+// IActivityIndicatorPlatform is framework-agnostic (no ref / children), so it lives in
+// @symbiote/components and every adapter re-exports it verbatim; the React adapter supplies only
+// the lifecycle (render-only here) + the descriptor bridge.
+export type { IActivityIndicatorPlatform } from '@symbiote/components';
+
+// className is React's own field per <prop_types_split_agnostic_vs_per_adapter>; not destructured
+// below, so it falls into `...passthrough` and lands on the centering wrapper View, like `style`.
+export type IActivityIndicatorProps = IActivityIndicatorBaseProps & { className?: string };
 
 export function createActivityIndicator(
   platform: IActivityIndicatorPlatform,

@@ -9,7 +9,7 @@
 // (a genuine narrowing, not a cast) before resolveAccessibilityProps folds aria-* into accessibility*.
 
 import { defineComponent, h, type SetupContext } from '@vue/runtime-core';
-import { dlog } from '@symbiote/engine';
+import { dlog, type IClassNameValue } from '@symbiote/engine';
 import {
   resolveAccessibilityProps,
   type IAccessibilityProps,
@@ -20,7 +20,12 @@ import { normalizeVueAttrs } from '../utils/normalize-attrs';
 // The Vue-facing prop surface. React's SafeAreaViewProps is React-coupled (ReactNode children,
 // StyleProp style typed locally); Vue takes children via slots and forwards style/onLayout/testID
 // straight through, so this mirrors the same a11y + ViewProps surface minus React children.
-export type ISafeAreaViewProps = IAccessibilityProps & IAriaProps;
+export type ISafeAreaViewProps = IAccessibilityProps &
+  IAriaProps & {
+    // No HANDLED_ATTRS split in this file — forwards straight to the single host node like
+    // every other prop here, already resolved through the shared style registry.
+    class?: IClassNameValue;
+  };
 
 type IForwardBag = IAccessibilityProps & IAriaProps & Record<string, unknown>;
 

@@ -48,11 +48,21 @@ export const ScrollView = createScrollView({
     // (background/padding/border/…) paint the inner scroll view. So the wrapper carries `outer`, and
     // the inner scroll view its base (flexDirection/overflow) plus the visual `inner` composed over
     // it, NOT a hardcoded flex:1 that would override an explicit user height/width.
-    const { outer, inner } = splitLayoutProps(input.userStyle);
+    //
+    // layoutSplitStyle (not userStyle): a class-only layout prop (flex/height/gap/…) is invisible
+    // to userStyle (it never carries the resolved `class` value — see isClassNameProp in
+    // shared.ts), so splitting on userStyle alone starves the wrapper of its layout style and it
+    // collapses to nothing. layoutSplitStyle is userStyle merged with the resolved class style.
+    const { outer, inner } = splitLayoutProps(input.layoutSplitStyle);
+    // `class` is stripped from the spread here: layoutSplitStyle already folded its resolved
+    // value into `outer`/`inner` above, so forwarding the raw prop too would re-apply its LAYOUT
+    // half onto the inner scroll view a second time (on top of the outer wrapper), the same
+    // wrapper/inner leak `style` already avoids by living in HANDLED_ATTRS.
+    const { class: _classAppliedViaSplit, ...innerScrollOuterProps } = input.scrollOuterProps;
     const innerScrollView = h(
       input.scrollViewIntrinsic,
       {
-        ...input.scrollOuterProps,
+        ...innerScrollOuterProps,
         style: [input.scrollViewBaseStyle, inner],
         nestedScrollEnabled: true,
         ref: input.setNodeRef,

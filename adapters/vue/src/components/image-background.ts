@@ -19,7 +19,12 @@ import {
   type IImageSourceProp,
   type IResizeMode,
 } from '@symbiote/components';
-import type { IStyleProp, IViewStyle } from '@symbiote/engine';
+import {
+  resolveClassName,
+  type IClassNameValue,
+  type IStyleProp,
+  type IViewStyle,
+} from '@symbiote/engine';
 import { descriptorToVue } from '../descriptor-to-vue';
 import { normalizeVueAttrs } from '../utils/normalize-attrs';
 
@@ -28,7 +33,13 @@ import { normalizeVueAttrs } from '../utils/normalize-attrs';
 // prop flows onto the inner image; `style` is the WRAPPER View style, `imageStyle` the inner one.
 export interface IImageBackgroundProps extends Omit<IImageProps, 'style'> {
   style?: IStyleProp<IViewStyle>;
-  imageStyle?: IStyleProp<IViewStyle>;
+  // A bare string is a class name, resolved through the shared style registry (see isStyleProp
+  // below); a style object/array flows through unchanged. Lands on the INNER image, not the
+  // wrapper — see renderImageBackground's `imageStyle` field.
+  imageStyle?: IStyleProp<IViewStyle> | string;
+  // Forwarded onto the WRAPPER View like `style`, not the inner image — resolves through the
+  // shared style registry.
+  class?: IClassNameValue;
 }
 
 function asString(value: unknown): string | undefined {
@@ -80,6 +91,7 @@ function toChildVNode(child: IDescriptorChild): VNode | string {
 const HANDLED_ATTRS = [
   'style',
   'imageStyle',
+  'class',
   'source',
   'defaultSource',
   'loadingIndicatorSource',
@@ -111,7 +123,14 @@ const ImageBackgroundComponent: FunctionalComponent = (_props, { attrs: rawAttrs
   const attrs = normalizeVueAttrs(rawAttrs);
   const wrapper = renderImageBackground({
     style: isStyleProp(attrs.style) ? attrs.style : undefined,
-    imageStyle: isStyleProp(attrs.imageStyle) ? attrs.imageStyle : undefined,
+    // A class-name string resolves through the shared style registry, same as `class` above;
+    // an object/array is already style-shaped and passes through as-is.
+    imageStyle:
+      typeof attrs.imageStyle === 'string'
+        ? resolveClassName(attrs.imageStyle)
+        : isStyleProp(attrs.imageStyle)
+          ? attrs.imageStyle
+          : undefined,
     image: {
       source: asSource(attrs.source),
       defaultSource: asSource(attrs.defaultSource),
@@ -131,7 +150,7 @@ const ImageBackgroundComponent: FunctionalComponent = (_props, { attrs: rawAttrs
 
   // wrapper = symbiote-view > [imageDescriptor]; the slot children paint AFTER the image (on top).
   const slotChildren = slots.default !== undefined ? slots.default() : [];
-  return h(wrapper.type, { ...wrapper.props, key: wrapper.key }, [
+  return h(wrapper.type, { ...wrapper.props, key: wrapper.key, class: attrs.class }, [
     ...wrapper.children.map(toChildVNode),
     ...slotChildren,
   ]);

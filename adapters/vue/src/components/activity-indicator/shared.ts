@@ -10,10 +10,20 @@
 
 import { defineComponent, type SetupContext } from '@vue/runtime-core';
 import { renderActivityIndicator } from '@symbiote/components';
-import type { IActivityIndicatorPlatform, IActivityIndicatorSize } from '@symbiote/components';
-import type { IViewStyle } from '@symbiote/engine';
+import type {
+  IActivityIndicatorPlatform,
+  IActivityIndicatorProps as IActivityIndicatorBaseProps,
+  IActivityIndicatorSize,
+} from '@symbiote/components';
+import type { IClassNameValue, IViewStyle } from '@symbiote/engine';
 import { descriptorToVue } from '../../descriptor-to-vue';
 import { normalizeVueAttrs } from '../../utils/normalize-attrs';
+
+// IActivityIndicatorProps lives framework-agnostic in @symbiote/components; `class` can't join
+// it there, so it's added locally, exactly like Image's IImageProps. Not destructured below, so
+// it rides into `...passthrough` and lands on the SAME wrapper View `style` targets (see
+// renderActivityIndicator's wrapperProps).
+export type IActivityIndicatorProps = IActivityIndicatorBaseProps & { class?: IClassNameValue };
 
 function normalizeSize(size: unknown): IActivityIndicatorSize {
   if (size === 'large') return 'large';

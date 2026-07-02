@@ -14,6 +14,9 @@ import type { IStyleProp, IViewStyle } from '../../utils/styles';
 
 export interface ISafeAreaViewProps extends IAccessibilityProps, IAriaProps {
   style?: IStyleProp<IViewStyle>;
+  // Not destructured below, so it lands in ...accessibilityRest and forwards onto the intrinsic
+  // like any other passthrough prop — resolves through the shared style registry.
+  className?: string;
   children?: ReactNode;
   onLayout?: (event: ISymbioteEvent) => void;
 }

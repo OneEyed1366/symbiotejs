@@ -4,9 +4,15 @@ import {
   renderImage,
   resolveAccessibilityProps,
   type IImageStatics,
-  type IImageProps,
+  type IImageProps as IImageBaseProps,
 } from '@symbiote/components';
 import { descriptorToReact } from '../../descriptor-to-react';
+
+// React's own idiom for a registered class name (mirrors IViewProps.className) — a per-adapter
+// field per <prop_types_split_agnostic_vs_per_adapter>, not part of the shared agnostic base.
+// Not destructured below, so it falls into `...passthrough` like any other forward-only prop and
+// resolves through the shared style registry the same way View's className does.
+export type IImageProps = IImageBaseProps & { className?: string };
 
 // renderImage takes a pre-resolved view + passthrough (the ISwitchViewProps shape), so the
 // adapter folds aria/role and splits the typed transform fields from the forward-only rest.
@@ -55,7 +61,6 @@ export const Image: IImageWithStatics = Object.assign(ImageComponent, imageStati
 
 export { setImageSourceResolver } from '@symbiote/components';
 export type {
-  IImageProps,
   IImageSource,
   IImageSourceProp,
   IResizeMode,

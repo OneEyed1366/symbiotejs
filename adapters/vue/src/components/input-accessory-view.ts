@@ -15,7 +15,7 @@ import {
   type IAccessibilityProps,
   type IAriaProps,
 } from '@symbiote/components';
-import type { IStyleProp, IViewStyle } from '@symbiote/engine';
+import type { IClassNameValue, IStyleProp, IViewStyle } from '@symbiote/engine';
 import { normalizeVueAttrs } from '../utils/normalize-attrs';
 
 // The Vue-facing prop surface (React's carries `children?: ReactNode`; Vue takes children via slots).
@@ -24,6 +24,9 @@ export interface IInputAccessoryViewProps extends IAccessibilityProps, IAriaProp
   nativeID?: string;
   backgroundColor?: string;
   style?: IStyleProp<IViewStyle>;
+  // Not in HANDLED_ATTRS below — passes through untouched onto the host, which already
+  // resolves `class`.
+  class?: IClassNameValue;
 }
 
 function asString(value: unknown): string | undefined {

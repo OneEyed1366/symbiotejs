@@ -3,6 +3,7 @@
 // headless / web. Mirrors the React adapter's iOS binding. See ADR 0020.
 
 import { createActivityIndicator } from './shared';
+export type { IActivityIndicatorProps } from './shared';
 
 // RN's iOS default spinner color (Libraries/.../ActivityIndicator.js GRAY).
 const IOS_DEFAULT_COLOR = '#999999';

@@ -5,6 +5,7 @@
 // and it lives here in shared so no adapter re-implements it.
 
 import { isEventFor } from './view-config';
+import { isClassNameValue, resolveClassName } from './style-registry';
 
 const BRAND: unique symbol = Symbol('symbiote.node');
 
@@ -162,12 +163,56 @@ const RESPONDER_EVENTS: ReadonlySet<string> = new Set([
 // adapter leaks React JSX dev metadata to the host, mirroring React's host config.
 const REACT_JSX_DEV_PROPS: ReadonlySet<string> = new Set(['__self', '__source']);
 
+// `class`/`className` and `style` can each be set independently and out of order — Vue's
+// patchProp fires one call per changed key, Angular's addClass/removeClass and setStyle are
+// separate Renderer2 calls, and even React re-invokes routeProp once per changed prop on an
+// update — but setProp does a flat overwrite with no merge, so whichever call lands last would
+// silently clobber the other. Track both halves per node so either update recomputes the same
+// [classStyle, explicitStyle] pair; flattenStyle's later-wins array collapse
+// (core/engine/src/style/index.ts) then always resolves with the explicit `style` prop winning
+// over the class-derived one, regardless of call order. This lives here, not per-adapter, so
+// class="..."/className="..." resolve through the shared style registry identically everywhere:
+// React JSX `className`, Vue template `class`, and Angular's addClass/removeClass token
+// accumulation (adapters/angular/src/renderer.ts, which joins its tokens into one string and
+// hands it to routeProp same as the others) all funnel through the same two branches below.
+interface IClassStyleParts {
+  classStyle?: unknown;
+  explicitStyle?: unknown;
+}
+const classStyleParts = new WeakMap<ISymbioteNode, IClassStyleParts>();
+
+function commitClassStyle(node: ISymbioteNode, patch: Partial<IClassStyleParts>): void {
+  const entry = { ...classStyleParts.get(node), ...patch };
+  classStyleParts.set(node, entry);
+  setProp(node, 'style', [entry.classStyle, entry.explicitStyle]);
+}
+
+// The explicit (non-class-derived) style half, for an adapter that builds its style prop up
+// key-by-key (Angular's Ivy ɵɵstyleProp/setStyle) instead of handing over one whole object —
+// it must merge onto this, not onto node.props.style directly, which may be the
+// [classStyle, explicitStyle] array commitClassStyle writes above.
+export function getExplicitStyle(node: ISymbioteNode): unknown {
+  return classStyleParts.get(node)?.explicitStyle;
+}
+
+const CLASS_PROP_KEYS: ReadonlySet<string> = new Set(['class', 'className']);
+
 // The flat-bag split (React / Vue / Solid): an `onX` prop becomes an event listener
 // ONLY when the node's component actually declares `x` as an event (per the shared
 // ViewConfig). Otherwise it is a plain prop, so `onTintColor` on a Switch, whose
 // only event is `change`, routes to setProp and reaches Fabric.
 export function routeProp(node: ISymbioteNode, key: string, value: unknown): void {
   if (REACT_JSX_DEV_PROPS.has(key)) return;
+  if (CLASS_PROP_KEYS.has(key)) {
+    commitClassStyle(node, {
+      classStyle: resolveClassName(isClassNameValue(value) ? value : undefined),
+    });
+    return;
+  }
+  if (key === 'style') {
+    commitClassStyle(node, { explicitStyle: value });
+    return;
+  }
   if (ON_PREFIX.test(key)) {
     const name = listenerName(key);
     if (RESPONDER_EVENTS.has(name) || isEventFor(node.component, name)) {

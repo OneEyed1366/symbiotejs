@@ -20,24 +20,29 @@ import {
   resolveAccessibilityProps,
   type IAccessibilityProps,
   type IAriaProps,
-  type IImageProps,
+  type IImageProps as IImageBaseProps,
   type IImageSourceProp,
   type IImageStatics,
   type IResizeMode,
 } from '@symbiote/components';
-import type { IStyleProp, IViewStyle } from '@symbiote/engine';
+import type { IClassNameValue, IStyleProp, IViewStyle } from '@symbiote/engine';
 import { descriptorToVue } from '../descriptor-to-vue';
 import { normalizeVueAttrs } from '../utils/normalize-attrs';
 
 export { setImageSourceResolver } from '@symbiote/components';
 export type {
-  IImageProps,
   IImageSource,
   IImageSourceProp,
   IResizeMode,
   IImageSize,
   IImageCacheStatus,
 } from '@symbiote/components';
+
+// Vue's own idiom for a registered class name (mirrors IViewProps.class) — a per-adapter field
+// per <prop_types_split_agnostic_vs_per_adapter>, not part of the shared agnostic base. Not in
+// HANDLED_ATTRS below, so it forwards via forwardAttrs like any other untyped attr and resolves
+// through the shared style registry the same way View's `class` does.
+export type IImageProps = IImageBaseProps & { class?: IClassNameValue };
 
 function asString(value: unknown): string | undefined {
   return typeof value === 'string' ? value : undefined;

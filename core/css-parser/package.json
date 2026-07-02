@@ -1,0 +1,65 @@
+{
+  "name": "@symbiote/css-parser",
+  "version": "0.0.0",
+  "type": "module",
+  "main": "src/index.ts",
+  "module": "src/index.ts",
+  "types": "src/index.ts",
+  "exports": {
+    ".": "./src/index.ts",
+    "./typescript-plugin": {
+      "types": "./typescript-plugin.d.ts",
+      "default": "./typescript-plugin.cjs"
+    },
+    "./generate-dts-cli": "./build/generate-dts-cli.js"
+  },
+  "files": [
+    "build",
+    "typescript-plugin.cjs",
+    "typescript-plugin.d.ts"
+  ],
+  "bin": {
+    "css-dts": "./build/generate-dts-cli.js"
+  },
+  "publishConfig": {
+    "access": "public",
+    "main": "./build/index.js",
+    "module": "./build/index.js",
+    "types": "./build/index.d.ts",
+    "exports": {
+      ".": {
+        "types": "./build/index.d.ts",
+        "default": "./build/index.js"
+      },
+      "./typescript-plugin": {
+        "types": "./typescript-plugin.d.ts",
+        "default": "./typescript-plugin.cjs"
+      },
+      "./generate-dts-cli": "./build/generate-dts-cli.js"
+    }
+  },
+  "scripts": {
+    "typecheck": "tsc --build",
+    "format": "prettier --write \"src/**/*.{ts,tsx}\""
+  },
+  "dependencies": {
+    "postcss": "catalog:",
+    "postcss-value-parser": "catalog:"
+  },
+  "devDependencies": {
+    "sass": "catalog:",
+    "less": "catalog:",
+    "stylus": "catalog:",
+    "@types/less": "catalog:",
+    "@types/stylus": "catalog:",
+    "typescript": "catalog:"
+  },
+  "peerDependencies": {
+    "typescript": ">=5.0"
+  },
+  "peerDependenciesMeta": {
+    "typescript": {
+      "optional": true
+    }
+  }
+}

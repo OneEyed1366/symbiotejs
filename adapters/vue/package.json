@@ -1,14 +1,35 @@
 {
   "name": "@symbiote/vue",
   "version": "0.0.0",
-  "private": true,
   "type": "module",
   "main": "src/index.ts",
   "module": "src/index.ts",
   "types": "src/index.ts",
   "exports": {
     ".": "./src/index.ts",
-    "./runtime-helpers": "./src/runtime-helpers.ts"
+    "./runtime-helpers": "./src/runtime-helpers.ts",
+    "./metro-css-parser": "./metro-css-parser.cjs"
+  },
+  "files": [
+    "build",
+    "metro-css-parser.cjs"
+  ],
+  "publishConfig": {
+    "access": "public",
+    "main": "./build/index.js",
+    "module": "./build/index.js",
+    "types": "./build/index.d.ts",
+    "exports": {
+      ".": {
+        "types": "./build/index.d.ts",
+        "default": "./build/index.js"
+      },
+      "./runtime-helpers": {
+        "types": "./build/runtime-helpers.d.ts",
+        "default": "./build/runtime-helpers.js"
+      },
+      "./metro-css-parser": "./metro-css-parser.cjs"
+    }
   },
   "scripts": {
     "typecheck": "tsc --build",
@@ -16,6 +37,7 @@
   },
   "dependencies": {
     "@symbiote/components": "workspace:*",
+    "@symbiote/css-parser": "workspace:*",
     "@symbiote/engine": "workspace:*",
     "@vue/runtime-core": "catalog:"
   },
