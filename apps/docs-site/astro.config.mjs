@@ -1,10 +1,10 @@
 import { defineConfig } from 'astro/config';
 import starlight from '@astrojs/starlight';
 
-const base = '/symbiote-native';
+const base = '/';
 
 export default defineConfig({
-  site: 'https://oneeyed1366.github.io',
+  site: 'https://docs.symbiote-native.dev',
   base,
   integrations: [
     starlight({
