@@ -3,10 +3,13 @@ packages:
   - 'adapters/*'
   - 'packages/*'
   - 'examples/*'
+  - 'apps/*'
 allowBuilds:
+  '@parcel/watcher': true
   detox: true
   dtrace-provider: true
   esbuild: true
+  sharp: true
 minimumReleaseAgeExclude:
   - prettier@3.9.1
 
@@ -25,6 +28,7 @@ catalog:
   react-reconciler: ^0.33.0
   '@vue/runtime-core': ^3.5.13
   '@vue/compiler-sfc': ^3.5.13
+  '@vue/compiler-core': ^3.5.13
   '@vue/babel-plugin-jsx': ^1.5.0
   vue: ^3.5.38
   vue-tsc: ^2.2.12
@@ -39,7 +43,8 @@ catalog:
   '@types/node': ^26.0.0
 
   # workspace tooling (builds/lints/tests the library packages)
-  typescript: ^5.8.3
+  '@changesets/cli': ^2.31.0
+  typescript: ~6.0.0
   vitest: ^4.1.9
   eslint: ^10.6.0
   prettier: ^3.9.1
@@ -51,12 +56,27 @@ catalog:
   husky: ^9.1.7
   lint-staged: ^17.0.8
   syncpack: ^15.3.2
+  postcss: ^8.4.49
+  postcss-value-parser: ^4.2.0
+  # optional CSS preprocessors — devDependencies of core/css-parser ONLY, never a dependency of
+  # that package or any consuming app (see the symbiote-sfc-style-compiler skill)
+  sass: ^1.101.0
+  less: ^4.6.7
+  stylus: ^0.64.0
+  '@types/less': ^3.0.8
+  '@types/stylus': ^0.48.43
+
+  # Documentation site toolchain — used only by apps/docs-site
+  astro: ^7.0.3
+  '@astrojs/starlight': ^0.41.1
+  '@astrojs/check': ^0.9.9
 
   # React Native app toolchain — single-versioned, used only by examples/*
   '@react-native/babel-preset': 0.86.0
   '@react-native/metro-config': 0.86.0
   '@react-native/eslint-config': 0.86.0
   '@react-native/typescript-config': 0.86.0
+  '@react-native/gradle-plugin': 0.86.0
   '@react-native/new-app-screen': 0.86.0
   '@react-native-community/cli': 20.1.0
   '@react-native-community/cli-platform-android': 20.1.0
@@ -68,21 +88,18 @@ catalog:
   '@babel/runtime': ^7.25.0
   jest: ^29.7.0
   jest-circus: ^29.7.0
-  ts-jest: ^29.2.5
+  ts-jest: ^29.4.11
   detox: ^20.51.4
 
 catalogs:
-  # Angular 22's compiler requires TypeScript >=6.0 <6.1, while the rest of the
-  # workspace remains on TS 5.x until all packages are ready to move together.
-  angular-app:
-    typescript: ^6.0.0
-
   # eslint is the ONE dependency that cannot share the workspace version:
   # @react-native/eslint-config@0.86 peers `eslint ^8 || ^9` (never 10) and the
   # examples lint through legacy `.eslintrc.js`; eslint 10 no longer reads it
   # (flat-config only). Collapsing to eslint 10 needs both a flat-config rewrite
   # of every example AND an eslint-10-capable RN config upstream.
-  # prettier and typescript ARE unified in the default catalog.
+  # prettier and typescript ARE unified in the default catalog (typescript pinned
+  # to `~6.0.0` — Angular 22's compiler peers `>=6.0 <6.1`, and typescript-eslint
+  # peers `<6.1.0`, so the tilde range keeps every consumer inside both ceilings).
   # RN's config peers `prettier >=2`, so prettier 3 is fine.
   rn-app:
     eslint: ^8.19.0

@@ -8,6 +8,10 @@ import { defineConfig } from 'vitest/config';
 // pnpm-workspace.yaml (the adapter's reconciler and the app's hooks must share one instance,
 // else "Invalid hook call"); no Vitest-side dedupe/alias is needed on top of that.
 export default defineConfig({
+  // Vitest imports Angular adapter source directly. The production AOT path is still ngc partial
+  // compilation, but source tests need Vite/Oxc to lower Angular's legacy TS decorators before
+  // Node evaluates @Component/@Directive files.
+  oxc: { decorator: { legacy: true } },
   test: {
     environment: 'node',
     include: [

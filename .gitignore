@@ -1,5 +1,6 @@
 node_modules/
 build/
+build-ngc/
 dist/
 *.tsbuildinfo
 
@@ -16,6 +17,10 @@ DerivedData/
 
 # misc
 .DS_Store
+
+# debug session artifacts (simulator/device logs, watched process pids)
+*.log
+*.pid
 
 # raw simulator screen recordings — convert to an optimized gif under assets/ instead
 *.mov

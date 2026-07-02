@@ -13,7 +13,7 @@ import prettier from 'eslint-config-prettier';
 // (angular / solid / svelte) adds its own block. That is the per-framework seam.
 export default defineConfig(
   {
-    ignores: ['**/dist/**', '**/build/**', '**/*.tsbuildinfo', 'examples/**'],
+    ignores: ['**/dist/**', '**/build/**', '**/build-ngc/**', '**/*.tsbuildinfo', 'examples/**'],
   },
 
   // ── shared base: every adapter and the engine inherit this ──

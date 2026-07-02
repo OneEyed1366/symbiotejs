@@ -16,7 +16,7 @@ export function resolveModelValue<T>(
 
 // Typed as the exact pair of overloads it calls (not a widened `(event: string, ...)`), so a
 // component's fully-overloaded SetupContext `emit` — which also carries its own named events
-// (changeText, valueChange, …) — is still assignable here: passing a function with MORE call
+// (valueChange, focus, …) — is still assignable here: passing a function with MORE call
 // signatures than a callback parameter requires is always safe.
 type IModelUpdateEmit<T> = ((event: 'update:modelValue', value: T) => void) &
   ((event: 'update:value', value: T) => void);

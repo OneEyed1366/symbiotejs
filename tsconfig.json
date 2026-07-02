@@ -3,8 +3,10 @@
   "references": [
     { "path": "core/engine" },
     { "path": "core/components" },
+    { "path": "core/css-parser" },
     { "path": "adapters/react" },
     { "path": "adapters/vue" },
+    { "path": "adapters/angular" },
     { "path": "packages/slider" }
   ]
 }

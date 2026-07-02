@@ -10,17 +10,25 @@
   "scripts": {
     "typecheck": "tsc --build",
     "typecheck:watch": "tsc --build --watch",
+    "build": "pnpm run typecheck && pnpm --filter @symbiote/angular --filter @symbiote/slider run ng:build && pnpm run docs:build",
     "test": "vitest run",
     "test:watch": "vitest",
-    "format": "prettier --write \"{core,adapters,packages}/**/*.{ts,tsx,js,json}\" \"*.{ts,json}\"",
-    "format:check": "prettier --check \"{core,adapters,packages}/**/*.{ts,tsx,js,json}\" \"*.{ts,json}\"",
+    "docs:dev": "pnpm --filter @symbiote/docs-site dev",
+    "docs:build": "pnpm --filter @symbiote/docs-site build",
+    "docs:preview": "pnpm --filter @symbiote/docs-site preview",
+    "format": "prettier --write \"{core,adapters,packages,apps}/**/*.{ts,tsx,js,json,astro,md,mdx,css}\" \"*.{ts,json}\"",
+    "format:check": "prettier --check \"{core,adapters,packages,apps}/**/*.{ts,tsx,js,json,astro,md,mdx,css}\" \"*.{ts,json}\"",
     "lint": "eslint \"{core,adapters,packages}/**/*.{ts,tsx}\"",
     "lint:fix": "eslint --fix \"{core,adapters,packages}/**/*.{ts,tsx}\"",
     "deps:check": "syncpack lint",
     "deps:fix": "syncpack fix",
-    "prepare": "husky"
+    "prepare": "husky",
+    "changeset": "changeset",
+    "version-packages": "changeset version",
+    "release": "pnpm run build && changeset publish"
   },
   "devDependencies": {
+    "@changesets/cli": "catalog:",
     "@eslint/js": "catalog:",
     "eslint": "catalog:",
     "eslint-config-prettier": "catalog:",

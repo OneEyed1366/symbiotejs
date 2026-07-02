@@ -4,9 +4,9 @@
 
 ### Want to ship a real native iOS/Android app, but you don't write React? Today you can't.
 
-**Beta** · iOS + Android · React + Vue · one native core, N framework adapters
+**Beta** · iOS + Android · React + Vue + Angular · one native core, N framework adapters
 
-[Architecture](#how-it-works) · [Testing](#testing) · [Milestones](#milestones) · [React adapter](./adapters/react) · [Vue adapter](./adapters/vue) · [Prior art](https://github.com/OneEyed1366/wolf-tui)
+[Architecture](#how-it-works) · [Testing](#testing) · [Milestones](#milestones) · [React adapter](./adapters/react) · [Vue adapter](./adapters/vue) · [Angular adapter](./adapters/angular) · [Prior art](https://github.com/OneEyed1366/wolf-tui)
 
 </div>
 
@@ -140,9 +140,9 @@ live in the per-adapter READMEs:
 ## Status
 
 > [!WARNING]
-> **Beta. Not published to npm, no stable API yet.** The thesis is proven *twice over*: React
-> Native's renderer is extracted, and **two** frameworks — React and Vue 3 — drive the same
-> untouched framework-agnostic core on iOS + Android, with RN's own renderer never in the path.
+> **Beta. Not published to npm, no stable API yet.** The thesis is proven *three times over*: React
+> Native's renderer is extracted, and **three** frameworks — React, Vue 3, and Angular — drive the
+> same untouched framework-agnostic core on iOS + Android, with RN's own renderer never in the path.
 > It is not yet a product you can ship a real app on — APIs will still move, the long-tail prop
 > surface is hardening, automated device coverage is just coming online, and the `create-symbiote`
 > scaffolder doesn't exist yet. iOS stays the reference surface; Android is at canary parity.
@@ -211,7 +211,7 @@ React already drives both platforms, and each new adapter inherits the platform 
 | ↳ M3.1 | Vue canary parity | `examples/vue-tsx` (TSX) + `examples/vue-sfc` (SFC) render the React canary's surface, minus React-only third-party components | ✅ done |
 | ↳ M3.2 | Shared component layer | `VirtualizedList` family + component logic extracted to `@symbiote/components`, inherited by React **and** Vue | ✅ done |
 | ↳ M3.3 | Test harness per adapter | colocated `vitest` (headless, fake Fabric slot) + `Detox` e2e mirrored across all three example apps | ✅ done |
-| **M4** | Angular adapter | a second mutation-oriented framework, template/renderer seam | ⏳ next |
+| **M4** | Angular adapter | `Renderer2`/`RendererFactory2` + DOM-less bootstrap on the validated core — second non-React framework, full canary component parity, on the live framework switcher | ✅ done |
 | **M5** | Svelte adapter | compiled-output framework driving the engine's mutation API | ⏳ planned |
 | **M6** | Solid adapter | fine-grained reactivity driving the engine's mutation API | ⏳ planned |
 | **M7** | Web *(stretch)* | the same trees rendered to the web as a default platform target | 💭 maybe |
@@ -235,12 +235,15 @@ core/
 adapters/
   react/       @symbiote/react      — react-reconciler host config (mutation mode) + primitives
   vue/         @symbiote/vue         — @vue/runtime-core createRenderer + nodeOps over the engine
+  angular/     @symbiote/angular    — Renderer2/RendererFactory2 + DOM-less bootstrap over the engine
 packages/
   android/     @symbiote/android    — autolinked native host shims (keyboard, settings) for Android
+  slider/      @symbiote/slider     — third-party native-view wrapper (React + Vue + Angular builds)
 examples/
   react/       stock RN 0.86 app driven by @symbiote/react (the reference canary)
   vue-tsx/     the same canary in Vue 3, authored in TSX
   vue-sfc/     the same canary in Vue 3, authored in single-file components
+  angular/     the same canary in Angular, standalone components
 ```
 
 Tests are **colocated** next to the code they cover (`*.test.ts(x)` for `vitest`, `e2e/` per
@@ -265,10 +268,12 @@ steps are identical bar the directory:
 
 - **[adapters/react →](./adapters/react)** — `examples/react` (the reference)
 - **[adapters/vue →](./adapters/vue)** — `examples/vue-tsx`, `examples/vue-sfc`
+- **[adapters/angular →](./adapters/angular)** — `examples/angular`
 
 > **A note on logs.** All diagnostics go through `dlog` / `isDebug` from `@symbiote/engine`,
-> off by default, gated by `DEBUG` (Babel-inlines it into the bundle, so changing it needs Metro
-> `--reset-cache`). They are an asset — never deleted, only added.
+> off by default, gated by `DEBUG` (each example's `index.js` mirrors it onto
+> `globalThis.__SYMBIOTE_DEBUG__` once at start, so changing it needs a fresh Metro
+> `--reset-cache`, not a rebuild). They are an asset — never deleted, only added.
 
 ---
 
@@ -299,9 +304,10 @@ it to validate the native pipe and the commit engine first means that when Vue/S
 Angular break, the failure isolates to *that adapter* — not the native stack underneath it.
 
 **Can I use it today?** Not for a real app yet — it's beta: no stable API, no `create-symbiote`
-scaffolder. The thesis is proven, though — **two** frameworks (React and Vue 3) drive the agnostic
-core on iOS + Android with RN's renderer never in the path. You can read the architecture, run the
-`vitest` suite and the `Detox` journeys, drive any of the three canaries, and follow the milestones.
+scaffolder. The thesis is proven, though — **three** frameworks (React, Vue 3, and Angular) drive
+the agnostic core on iOS + Android with RN's renderer never in the path. You can read the
+architecture, run the `vitest` suite and the `Detox` journeys, drive any of the four canaries, and
+follow the milestones.
 
 **Do I have to write tests from scratch?** No — and that's a feature of the design. Because a
 symbiote app is a stock RN app underneath, RN's testing tools apply unchanged: a headless `vitest`
