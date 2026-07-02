@@ -19,7 +19,6 @@ import {
   SectionList,
   Keyboard,
   AccessibilityInfo,
-  StyleSheet,
   type IHostInstance,
   type IFlatListHandle,
   type ISection,
@@ -55,92 +54,153 @@ const focusTitle = (): void => {
   }
 }
 
-const styles = StyleSheet.create({
-  section: { gap: 12 },
-  sectionLabel: { color: '#3b5266', fontSize: 13 },
-  infoText: { color: '#cbd5e1', fontSize: 14 },
-  noteText: { color: '#cbd5e1', fontSize: 13 },
-  row: { flexDirection: 'row', gap: 12 },
-  flex1: { flex: 1 },
-  longPressRow: { color: '#cbd5e1', fontSize: 15, padding: 12, borderRadius: 10, backgroundColor: '#2c3e50' },
-  focusInput: { color: '#e2e8f0', padding: 12, borderRadius: 10, backgroundColor: '#22323f', borderWidth: 1, borderColor: '#369870' },
-  parityList: { height: 120, borderRadius: 10, backgroundColor: '#22323f' },
-  parityRow: { height: PARITY_ROW_H, justifyContent: 'center', paddingHorizontal: 12 },
-  sectionList: { height: 200, borderRadius: 10, backgroundColor: '#22323f' },
-  sectionHeader: { color: '#1b2a36', fontSize: 13, fontWeight: 'bold', paddingVertical: 6, paddingHorizontal: 12, backgroundColor: '#42b883' },
-})
+// Every static look lives in the <style scoped> block below (symbiote-sfc-style-compiler
+// skill). `parityRow`'s height references the script const PARITY_ROW_H, which a CSS
+// selector has no way to read — that one property stays dynamic via :style alongside the
+// static `class="parity-row"` for justifyContent/padding.
+const parityRowHeightStyle = { height: PARITY_ROW_H }
 </script>
 
 <template>
-  <View :style="styles.section">
-    <Text ref="titleRef" :style="styles.sectionLabel">Parity checks · longPress · dismiss · animated scroll · sticky · a11y focus</Text>
+  <View class="section">
+    <Text testID="panel-title" ref="titleRef" class="section-label">Parity checks · longPress · dismiss · animated scroll · sticky · a11y focus</Text>
 
     <!-- #10 Text.onLongPress synthesis: hold ~0.5s (suppresses tap) vs quick tap -->
     <Text
+      testID="long-press-msg"
       @long-press="() => { longPressMsg = 'long press! (tap was suppressed)' }"
       @press="() => { longPressMsg = 'tap' }"
-      :style="styles.longPressRow">{{ longPressMsg }}</Text>
+      class="long-press-row">{{ longPressMsg }}</Text>
 
     <!-- #15 Keyboard.dismiss: blurs whatever input holds focus without needing a ref -->
     <TextInput
+      testID="dismiss-focus-input"
       placeholder="focus me…"
       placeholder-text-color="#3b5266"
       @focus="() => { dismissMsg = 'keyboard up — tap Hide keyboard' }"
       @blur="() => { dismissMsg = 'blurred (keyboard down)' }"
-      :style="styles.focusInput"
+      class="focus-input"
     />
-    <Text :style="styles.noteText">{{ dismissMsg }}</Text>
-    <Button title="Hide keyboard" @press="() => Keyboard.dismiss()" color="#42b883" />
+    <Text testID="dismiss-msg" class="note-text">{{ dismissMsg }}</Text>
+    <Button testID="hide-keyboard-btn" title="Hide keyboard" @press="() => Keyboard.dismiss()" color="#42b883" />
 
     <!-- #12 animated VirtualizedList scroll: smooth (native command) vs instant.
          A fixed height with no wrapper: the vertical ScrollView clips to its own
          frame (overflow:'scroll' base, like RN), so rows stay inside the box on iOS too. -->
-    <Text :style="styles.sectionLabel">FlatList · animated scrollToOffset</Text>
+    <Text class="section-label">FlatList · animated scrollToOffset</Text>
     <FlatList
+      testID="parity-flat-list"
       ref="listRef"
       :data="parityRows"
       :key-extractor="keyExtractor"
       :get-item-layout="getItemLayout"
-      :style="styles.parityList"
+      class="parity-list"
     >
       <template #item="{ item }">
-        <View :style="styles.parityRow">
-          <Text :style="styles.infoText">row {{ item.n }}</Text>
+        <View class="parity-row" :style="parityRowHeightStyle">
+          <Text class="info-text">row {{ item.n }}</Text>
         </View>
       </template>
     </FlatList>
-    <View :style="styles.row">
-      <View :style="styles.flex1">
-        <Button title="Scroll ▼ animated" @press="scrollDown" color="#42b883" />
+    <View class="row">
+      <View class="flex1">
+        <Button testID="parity-scroll-down-btn" title="Scroll ▼ animated" @press="scrollDown" color="#42b883" />
       </View>
-      <View :style="styles.flex1">
-        <Button title="Top · instant" @press="scrollTop" color="#42b883" />
+      <View class="flex1">
+        <Button testID="parity-scroll-top-btn" title="Top · instant" @press="scrollTop" color="#42b883" />
       </View>
     </View>
 
     <!-- #13 sticky section headers. Drag the inner list: each header pins at the top.
          Cross-talk check: as the NEXT header reaches the top it should PUSH the pinned
          one off (nextHeaderLayoutY not yet wired, watch push vs overlap). -->
-    <Text :style="styles.sectionLabel">SectionList · sticky (scroll: next header should push prev off)</Text>
+    <Text class="section-label">SectionList · sticky (scroll: next header should push prev off)</Text>
     <SectionList
       testID="sticky-section-list"
       :sections="paritySections"
       :key-extractor="sectionKeyExtractor"
       :sticky-section-headers-enabled="true"
-      :style="styles.sectionList"
+      class="section-list"
     >
       <template #sectionHeader="{ section }">
-        <Text :style="styles.sectionHeader">{{ section.title }}</Text>
+        <Text class="section-header">{{ section.title }}</Text>
       </template>
       <template #item="{ item }">
-        <View :style="styles.parityRow">
-          <Text :style="styles.infoText">{{ item.label }}</Text>
+        <View class="parity-row" :style="parityRowHeightStyle">
+          <Text class="info-text">{{ item.label }}</Text>
         </View>
       </template>
     </SectionList>
 
     <!-- #14 a11y focus: node-based sendAccessibilityEvent routes through the Fabric
          slot on both platforms (enable TalkBack/VoiceOver to feel the focus jump) -->
-    <Button title="Focus the panel title (a11y)" @press="focusTitle" color="#42b883" />
+    <Button testID="focus-title-btn" title="Focus the panel title (a11y)" @press="focusTitle" color="#42b883" />
   </View>
 </template>
+
+<style scoped>
+.section {
+  gap: 12px;
+}
+.section-label {
+  color: #3b5266;
+  font-size: 13px;
+}
+.info-text {
+  color: #cbd5e1;
+  font-size: 14px;
+}
+.note-text {
+  color: #cbd5e1;
+  font-size: 13px;
+}
+.row {
+  flex-direction: row;
+  gap: 12px;
+}
+.flex1 {
+  flex: 1;
+}
+.long-press-row {
+  color: #cbd5e1;
+  font-size: 15px;
+  padding: 12px;
+  border-radius: 10px;
+  background-color: #2c3e50;
+}
+.focus-input {
+  color: #e2e8f0;
+  padding: 12px;
+  border-radius: 10px;
+  background-color: #22323f;
+  border-width: 1px;
+  border-color: #369870;
+}
+.parity-list {
+  height: 120px;
+  border-radius: 10px;
+  background-color: #22323f;
+}
+/* height stays dynamic (:style="parityRowHeightStyle") — it references the script
+     const PARITY_ROW_H, which a CSS selector has no way to read */
+.parity-row {
+  justify-content: center;
+  padding-left: 12px;
+  padding-right: 12px;
+}
+.section-list {
+  height: 200px;
+  border-radius: 10px;
+  background-color: #22323f;
+}
+.section-header {
+  color: #1b2a36;
+  font-size: 13px;
+  font-weight: bold;
+  padding-top: 6px;
+  padding-bottom: 6px;
+  padding-left: 12px;
+  padding-right: 12px;
+  background-color: #42b883;
+}
+</style>

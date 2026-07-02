@@ -7,7 +7,7 @@
 -->
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted } from 'vue'
-import { View, Text, Animated, Button, PanResponder, StyleSheet } from '@symbiote/vue'
+import { View, Text, Animated, Button, PanResponder } from '@symbiote/vue'
 
 const AnimatedView = Animated.View
 
@@ -68,56 +68,109 @@ const scrollBy = (delta: number): void => {
   scrollPos = Math.max(0, scrollPos + delta)
   Animated.timing(scroll, { toValue: scrollPos, duration: 180, useNativeDriver: false }).start()
 }
-
-const styles = StyleSheet.create({
-  section: { gap: 12 },
-  sectionLabel: { color: '#3b5266', fontSize: 13 },
-  rowTight: { flexDirection: 'row', gap: 8 },
-  flex1: { flex: 1 },
-  dragHint: { color: '#718096', fontSize: 11 },
-  xyFrame: { width: XY_SPAN + 36, height: XY_SPAN + 36, borderRadius: 12, backgroundColor: '#eef7f2', padding: 6 },
-  xyBox: { width: 36, height: 36, borderRadius: 8, backgroundColor: '#9f7aea' },
-  trackRow: { height: 30, justifyContent: 'center' },
-  leadDot: { width: 22, height: 22, borderRadius: 11, backgroundColor: '#42b883' },
-  followDot: { width: 22, height: 22, borderRadius: 11, backgroundColor: '#f6ad55' },
-  collapseFrame: { height: HEADER_COLLAPSE + 24, overflow: 'hidden', justifyContent: 'flex-start' },
-  collapseHeader: { height: HEADER_COLLAPSE, borderRadius: 8, backgroundColor: '#38b2ac', alignItems: 'center', justifyContent: 'center' },
-  collapseHeaderText: { color: 'white', fontSize: 12 },
-})
 </script>
 
 <template>
-  <View :style="styles.section">
-    <Text :style="styles.sectionLabel">Animated · ValueXY / tracking / diffClamp</Text>
+  <View class="section">
+    <Text class="section-label">Animated · ValueXY / tracking / diffClamp</Text>
 
     <!-- ValueXY box you drag with a finger (PanResponder) -->
-    <Text :style="styles.dragHint">drag the purple box →</Text>
-    <View :style="styles.xyFrame">
-      <AnimatedView v-bind="panResponder.panHandlers" :style="[styles.xyBox, { transform: xy.getTranslateTransform() }]" />
+    <Text class="drag-hint">drag the purple box →</Text>
+    <View class="xy-frame">
+      <AnimatedView testID="xy-drag-box" v-bind="panResponder.panHandlers" class="xy-box" :style="{ transform: xy.getTranslateTransform() }" />
     </View>
 
     <!-- Tracking: lead dot (blue) and follower (orange) that lags behind it -->
-    <View :style="styles.trackRow">
-      <AnimatedView :style="[styles.leadDot, { transform: [{ translateX: lead }] }]" />
+    <View class="track-row">
+      <AnimatedView testID="lead-dot" class="lead-dot" :style="{ transform: [{ translateX: lead }] }" />
     </View>
-    <View :style="styles.trackRow">
-      <AnimatedView testID="follow-dot" :style="[styles.followDot, { transform: [{ translateX: follow }] }]" />
+    <View class="track-row">
+      <AnimatedView testID="follow-dot" class="follow-dot" :style="{ transform: [{ translateX: follow }] }" />
     </View>
     <Button testID="track-btn" title="Move target (follower chases)" @press="moveLead" color="#42b883" />
 
     <!-- diffClamp collapsing header -->
-    <View :style="styles.collapseFrame">
-      <AnimatedView :style="[styles.collapseHeader, { transform: [{ translateY: headerOffset }] }]">
-        <Text :style="styles.collapseHeaderText">collapsing header</Text>
+    <View class="collapse-frame">
+      <AnimatedView testID="collapse-header" class="collapse-header" :style="{ transform: [{ translateY: headerOffset }] }">
+        <Text class="collapse-header-text">collapsing header</Text>
       </AnimatedView>
     </View>
-    <View :style="styles.rowTight">
-      <View :style="styles.flex1">
-        <Button title="Scroll ↓" @press="() => scrollBy(40)" color="#38b2ac" />
+    <View class="row-tight">
+      <View class="flex1">
+        <Button testID="collapse-scroll-down-btn" title="Scroll ↓" @press="() => scrollBy(40)" color="#38b2ac" />
       </View>
-      <View :style="styles.flex1">
-        <Button title="Scroll ↑" @press="() => scrollBy(-40)" color="#38b2ac" />
+      <View class="flex1">
+        <Button testID="collapse-scroll-up-btn" title="Scroll ↑" @press="() => scrollBy(-40)" color="#38b2ac" />
       </View>
     </View>
   </View>
 </template>
+
+<style scoped>
+.section {
+  gap: 12px;
+}
+.section-label {
+  color: #3b5266;
+  font-size: 13px;
+}
+.row-tight {
+  flex-direction: row;
+  gap: 8px;
+}
+.flex1 {
+  flex: 1;
+}
+.drag-hint {
+  color: #718096;
+  font-size: 11px;
+}
+/* width/height hardcoded: XY_SPAN(96) + 36 = 132 — a true compile-time constant */
+.xy-frame {
+  width: 132px;
+  height: 132px;
+  border-radius: 12px;
+  background-color: #eef7f2;
+  padding: 6px;
+}
+.xy-box {
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  background-color: #9f7aea;
+}
+.track-row {
+  height: 30px;
+  justify-content: center;
+}
+.lead-dot {
+  width: 22px;
+  height: 22px;
+  border-radius: 11px;
+  background-color: #42b883;
+}
+.follow-dot {
+  width: 22px;
+  height: 22px;
+  border-radius: 11px;
+  background-color: #f6ad55;
+}
+/* height hardcoded: HEADER_COLLAPSE(60) + 24 = 84 — a true compile-time constant */
+.collapse-frame {
+  height: 84px;
+  overflow: hidden;
+  justify-content: flex-start;
+}
+/* height hardcoded: HEADER_COLLAPSE = 60 — a true compile-time constant */
+.collapse-header {
+  height: 60px;
+  border-radius: 8px;
+  background-color: #38b2ac;
+  align-items: center;
+  justify-content: center;
+}
+.collapse-header-text {
+  color: white;
+  font-size: 12px;
+}
+</style>

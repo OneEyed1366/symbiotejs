@@ -6,31 +6,62 @@
   device-only: a wrong name silently falls back, so this is verified on simulator.
 -->
 <script setup lang="ts">
-import { View, Text, PlatformColor, DynamicColorIOS, useColorScheme, StyleSheet } from '@symbiote/vue'
+import { View, Text, PlatformColor, DynamicColorIOS, useColorScheme } from '@symbiote/vue'
 
 const scheme = useColorScheme()
-
-const styles = StyleSheet.create({
-  section: { gap: 12 },
-  sectionLabel: { color: '#3b5266', fontSize: 13 },
-  row: { flexDirection: 'row', gap: 12 },
-  colorTile: { flex: 1, height: 56, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
-  colorTileBordered: { flex: 1, height: 56, borderRadius: 12, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
-  tileLabel: { color: '#ffffff', fontSize: 13, fontWeight: 'bold' },
-  boldLabel: { fontSize: 13, fontWeight: 'bold' },
-})
 </script>
 
 <template>
-  <View :style="styles.section">
-    <Text :style="styles.sectionLabel">{{ `PlatformColor · semantic + DynamicColorIOS (${scheme ?? 'unknown'})` }}</Text>
-    <View :style="styles.row">
-      <View :style="[styles.colorTile, { backgroundColor: PlatformColor('systemBlue') }]">
-        <Text :style="styles.tileLabel">systemBlue</Text>
+  <View class="section">
+    <Text class="section-label">{{ `PlatformColor · semantic + DynamicColorIOS (${scheme ?? 'unknown'})` }}</Text>
+    <View class="row">
+      <View testID="platform-color-tile" class="color-tile" :style="{ backgroundColor: PlatformColor('systemBlue') }">
+        <Text class="tile-label">systemBlue</Text>
       </View>
-      <View :style="[styles.colorTileBordered, { backgroundColor: DynamicColorIOS({ light: '#dcf3e8', dark: '#2c3e50' }), borderColor: PlatformColor('separator') }]">
-        <Text :style="[styles.boldLabel, { color: PlatformColor('label') }]">dynamic</Text>
+      <View testID="dynamic-color-tile" class="color-tile-bordered" :style="{ backgroundColor: DynamicColorIOS({ light: '#dcf3e8', dark: '#2c3e50' }), borderColor: PlatformColor('separator') }">
+        <Text class="bold-label" :style="{ color: PlatformColor('label') }">dynamic</Text>
       </View>
     </View>
   </View>
 </template>
+
+<style scoped>
+.section {
+  gap: 12px;
+}
+.section-label {
+  color: #3b5266;
+  font-size: 13px;
+}
+.row {
+  flex-direction: row;
+  gap: 12px;
+}
+/* backgroundColor stays dynamic (PlatformColor is a runtime-resolved opaque color object) */
+.color-tile {
+  flex: 1;
+  height: 56px;
+  border-radius: 12px;
+  align-items: center;
+  justify-content: center;
+}
+/* backgroundColor / borderColor stay dynamic — DynamicColorIOS / PlatformColor */
+.color-tile-bordered {
+  flex: 1;
+  height: 56px;
+  border-radius: 12px;
+  border-width: 1px;
+  align-items: center;
+  justify-content: center;
+}
+.tile-label {
+  color: #ffffff;
+  font-size: 13px;
+  font-weight: bold;
+}
+/* color stays dynamic (PlatformColor('label')) */
+.bold-label {
+  font-size: 13px;
+  font-weight: bold;
+}
+</style>

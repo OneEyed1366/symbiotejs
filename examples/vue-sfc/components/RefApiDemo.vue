@@ -7,7 +7,7 @@
 -->
 <script setup lang="ts">
 import { ref, shallowRef, onMounted } from 'vue'
-import { View, Text, Button, findNodeHandle, StyleSheet, type IHostInstance } from '@symbiote/vue'
+import { View, Text, Button, findNodeHandle, type IHostInstance } from '@symbiote/vue'
 
 // shallowRef, NOT ref: the engine node is held by IDENTITY so measure()/setNativeProps()
 // hit the engine's WeakMap mirror (a plain ref wraps it in a reactive Proxy → mirror miss).
@@ -37,32 +37,55 @@ const onFlash = (): void => {
   flashed = !flashed
   box.setNativeProps({ style: { backgroundColor: flashed ? '#f6ad55' : '#42b883' } })
 }
-
-const styles = StyleSheet.create({
-  section: { gap: 12 },
-  sectionLabel: { color: '#3b5266', fontSize: 13 },
-  infoText: { color: '#cbd5e1', fontSize: 14 },
-  row: { flexDirection: 'row', gap: 12 },
-  flex1: { flex: 1 },
-  refBox: { height: 56, borderRadius: 12, backgroundColor: '#42b883', alignItems: 'center', justifyContent: 'center' },
-  refBoxText: { color: '#1b2a36', fontSize: 14, fontWeight: 'bold' },
-})
 </script>
 
 <template>
-  <View :style="styles.section">
-    <Text :style="styles.sectionLabel">Imperative ref · measure / setNativeProps / findNodeHandle</Text>
-    <View testID="ref-box" ref="boxRef" :style="styles.refBox">
-      <Text :style="styles.refBoxText">{{ `native tag ${tag ?? '—'}` }}</Text>
+  <View class="section">
+    <Text class="section-label">Imperative ref · measure / setNativeProps / findNodeHandle</Text>
+    <View testID="ref-box" ref="boxRef" class="ref-box">
+      <Text class="ref-box-text">{{ `native tag ${tag ?? '—'}` }}</Text>
     </View>
-    <Text testID="measure-frame" :style="styles.infoText">{{ `frame: ${frame}` }}</Text>
-    <View :style="styles.row">
-      <View :style="styles.flex1">
+    <Text testID="measure-frame" class="info-text">{{ `frame: ${frame}` }}</Text>
+    <View class="row">
+      <View class="flex1">
         <Button testID="measure-btn" title="Measure" @press="onMeasure" color="#42b883" />
       </View>
-      <View :style="styles.flex1">
-        <Button title="Flash (setNativeProps)" @press="onFlash" color="#f6ad55" />
+      <View class="flex1">
+        <Button testID="flash-btn" title="Flash (setNativeProps)" @press="onFlash" color="#f6ad55" />
       </View>
     </View>
   </View>
 </template>
+
+<style scoped>
+.section {
+  gap: 12px;
+}
+.section-label {
+  color: #3b5266;
+  font-size: 13px;
+}
+.info-text {
+  color: #cbd5e1;
+  font-size: 14px;
+}
+.row {
+  flex-direction: row;
+  gap: 12px;
+}
+.flex1 {
+  flex: 1;
+}
+.ref-box {
+  height: 56px;
+  border-radius: 12px;
+  background-color: #42b883;
+  align-items: center;
+  justify-content: center;
+}
+.ref-box-text {
+  color: #1b2a36;
+  font-size: 14px;
+  font-weight: bold;
+}
+</style>

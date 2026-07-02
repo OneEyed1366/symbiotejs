@@ -11,7 +11,7 @@
 -->
 <script setup lang="ts">
 import { ref } from 'vue'
-import { View, Text, StyleSheet, type ISymbioteEvent } from '@symbiote/vue'
+import { View, Text, type ISymbioteEvent } from '@symbiote/vue'
 
 const RESPONDER_CHIPS = [0, 1, 2, 3, 4]
 // Horizontal travel (in the touch's page units: px on Android, pt on iOS, so the feel
@@ -76,33 +76,25 @@ const onChipRelease = (index: number): void => {
   activeChip.value = null
   status.value = `chip ${index} released`
 }
-
-const styles = StyleSheet.create({
-  sectionTight: { gap: 8 },
-  sectionLabel: { color: '#3b5266', fontSize: 13 },
-  infoText: { color: '#cbd5e1', fontSize: 14 },
-  rowTight: { flexDirection: 'row', gap: 8 },
-  transferText: { fontSize: 13 },
-  stripBox: { padding: 12, borderRadius: 12, backgroundColor: '#2c3e50' },
-  chip: { width: 56, height: 48, borderRadius: 8, backgroundColor: '#369870', borderWidth: 2, alignItems: 'center', justifyContent: 'center' },
-  chipText: { color: '#ffffff', fontSize: 16, fontWeight: 'bold' },
-})
 </script>
 
 <template>
-  <View :style="styles.sectionTight">
-    <Text :style="styles.sectionLabel">Responder · drag a chip vs hand-off to the strip</Text>
-    <Text :style="styles.infoText">{{ status }}</Text>
-    <!-- the separate transfer indicator, lit only when the strip steals the gesture -->
-    <Text :style="[styles.transferText, { color: transfer ? '#f6ad55' : '#3b5266' }]">{{ transfer || 'transfer: —' }}</Text>
+  <View class="section-tight">
+    <Text class="section-label">Responder · drag a chip vs hand-off to the strip</Text>
+    <Text testID="responder-status" class="info-text">{{ status }}</Text>
+    <!-- the separate transfer indicator, lit only when the strip steals the gesture. Only the
+         color is a runtime ternary with no stable on/off class semantics, so it stays :style
+         on top of the static fontSize class. -->
+    <Text testID="responder-transfer" class="transfer-text" :style="{ color: transfer ? '#f6ad55' : '#3b5266' }">{{ transfer || 'transfer: —' }}</Text>
     <View
+      testID="responder-strip"
       @move-should-set-responder="onStripMoveShouldSet"
       @responder-grant="onStripGrant"
       @responder-move="onStripMove"
       @responder-release="onStripRelease"
       @responder-terminate="onStripTerminate"
-      :style="styles.stripBox">
-      <View :style="[styles.rowTight, { transform: [{ translateX: rowDx }] }]">
+      class="strip-box">
+      <View class="row-tight" :style="{ transform: [{ translateX: rowDx }] }">
         <View
           v-for="index in RESPONDER_CHIPS"
           :key="index"
@@ -113,10 +105,56 @@ const styles = StyleSheet.create({
           @responder-termination-request="onChipTerminationRequest"
           @responder-terminate="onChipTerminate"
           @responder-release="() => onChipRelease(index)"
-          :style="[styles.chip, { borderColor: activeChip === index ? '#42b883' : 'transparent', transform: [{ translateX: activeChip === index ? chipDx : 0 }] }]">
-          <Text :style="styles.chipText">{{ index }}</Text>
+          class="chip"
+          :class="{ 'chip-active': activeChip === index }"
+          :style="{ transform: [{ translateX: activeChip === index ? chipDx : 0 }] }">
+          <Text class="chip-text">{{ index }}</Text>
         </View>
       </View>
     </View>
   </View>
 </template>
+
+<style scoped>
+.section-tight {
+  gap: 8px;
+}
+.section-label {
+  color: #3b5266;
+  font-size: 13px;
+}
+.info-text {
+  color: #cbd5e1;
+  font-size: 14px;
+}
+.row-tight {
+  flex-direction: row;
+  gap: 8px;
+}
+.transfer-text {
+  font-size: 13px;
+}
+.strip-box {
+  padding: 12px;
+  border-radius: 12px;
+  background-color: #2c3e50;
+}
+.chip {
+  width: 56px;
+  height: 48px;
+  border-radius: 8px;
+  background-color: #369870;
+  border-width: 2px;
+  align-items: center;
+  justify-content: center;
+}
+/* the dynamic-class demonstration: swapped in via :class alongside the static class="chip" */
+.chip-active {
+  border-color: #42b883;
+}
+.chip-text {
+  color: #ffffff;
+  font-size: 16px;
+  font-weight: bold;
+}
+</style>

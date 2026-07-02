@@ -20,11 +20,15 @@ const sleep = (ms: number): Promise<void> => new Promise(resolve => setTimeout(r
 // Scroll the canary until the target is on screen. Demos sit at different depths below the launch
 // fold, so every journey self-scrolls instead of assuming a fixed offset. startY 0.8 (not Detox's
 // ~0.95 default) keeps the swipe start hittable above the safe area.
-function bringIntoView(id: string) {
-  return waitFor(element(by.id(id)))
+// scroll(...) is a real swipe gesture, not a discrete scrollTo — ScrollView's own momentum
+// keeps drifting briefly after the gesture resolves, so a tap right after can land on a spot
+// the target view has already scrolled away from. Settle before handing control back.
+async function bringIntoView(id: string): Promise<void> {
+  await waitFor(element(by.id(id)))
     .toBeVisible()
     .whileElement(by.id('canary-scroll'))
     .scroll(300, 'down', NaN, 0.8)
+  await sleep(300)
 }
 
 // Detox surfaces an element's text via getAttributes(). The return is a union — one element
@@ -46,6 +50,24 @@ async function waitForText(id: string, matches: (text: string) => boolean, timeo
     await sleep(250)
   }
   throw new Error(`${id} never matched within ${timeoutMs}ms; last text was "${last}"`)
+}
+
+// Sync is off (file header), so Detox's own native hittability check (dtx_assertHittableAtPoint)
+// occasionally throws "not hittable" for a split second right after a text-changing recommit
+// retriggers layout, even though the view is genuinely on-screen and untouched — confirmed via a
+// screenshot taken at the exact failure point showing the card fully visible and correctly
+// updated. Retry past this known false-negative instead of chasing a native race that isn't an
+// app bug.
+async function tapWithRetry(id: string, attempts = 3): Promise<void> {
+  for (let attempt = 1; attempt <= attempts; attempt++) {
+    try {
+      await element(by.id(id)).tap()
+      return
+    } catch (error) {
+      if (attempt === attempts) throw error
+      await sleep(300)
+    }
+  }
 }
 
 // Animation liveness WITHOUT reading opacity/transform from JS (impossible for a native-driven
@@ -97,10 +119,12 @@ describe('symbiote canary · user journeys', () => {
   it('counter card increments on each tap (event -> recommit)', async () => {
     await bringIntoView('counter-card')
     await expect(element(by.id('counter-value'))).toHaveText('tapped 0×')
-    await element(by.id('counter-card')).tap()
-    await expect(element(by.id('counter-value'))).toHaveText('tapped 1×')
-    await element(by.id('counter-card')).tap()
-    await expect(element(by.id('counter-value'))).toHaveText('tapped 2×')
+    // Sync is off (see file header), so a bare expect right after tap() races the
+    // JS event -> setState -> recommit round-trip; poll like the other async readouts below.
+    await tapWithRetry('counter-card')
+    await waitForText('counter-value', text => text === 'tapped 1×', 3_000)
+    await tapWithRetry('counter-card')
+    await waitForText('counter-value', text => text === 'tapped 2×', 3_000)
   })
 
   it('typing a name updates the greeting (controlled TextInput)', async () => {
