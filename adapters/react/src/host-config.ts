@@ -13,8 +13,8 @@ import {
   removeChild,
   routeProp,
   setText,
+  SymbioteSurface,
   type ISymbioteNode,
-  type SymbioteSurface,
 } from '@symbiote/engine';
 import {
   DefaultEventPriority,
@@ -63,6 +63,15 @@ function applyUpdate(node: ISymbioteNode, oldProps: IProps, newProps: IProps): v
   }
 }
 
+// The reconciler's Container slot: the primary root (SymbioteSurface, from createContainer)
+// OR a portal target (an already-mounted ISymbioteNode elsewhere in the SAME surface's tree —
+// createPortal(children, node)). Mirrors the Vue renderer's identical IHostElement union.
+type IContainer = SymbioteSurface | ISymbioteNode;
+
+function isSurfaceContainer(container: IContainer): container is SymbioteSurface {
+  return container instanceof SymbioteSurface;
+}
+
 let currentUpdatePriority = NoEventPriority;
 
 // Run an externally-triggered update (a native event) at discrete priority so it
@@ -80,7 +89,7 @@ export function withDiscretePriority(run: () => void): void {
 const reconciler = createReconciler<
   string, // Type
   IProps, // IProps
-  SymbioteSurface, // Container
+  IContainer, // Container
   ISymbioteNode, // Instance
   ISymbioteNode, // TextInstance
   never, // SuspenseInstance
@@ -109,12 +118,15 @@ const reconciler = createReconciler<
   getPublicInstance: instance => toPublicInstance(instance),
 
   prepareForCommit: () => null,
+  // Called once per commit with the PRIMARY root's own container only — never with a portal's
+  // target (portal mutations recommit as part of the same surface's tree walk, since the target
+  // must be a node already inside that surface; see create-portal.ts).
   resetAfterCommit: container => {
-    container.commit();
+    if (isSurfaceContainer(container)) container.commit();
   },
   preparePortalMount: () => {},
   clearContainer: container => {
-    container.clear();
+    if (isSurfaceContainer(container)) container.clear();
   },
 
   shouldSetTextContent: () => false,
@@ -137,11 +149,20 @@ const reconciler = createReconciler<
 
   appendInitialChild: (parent, child) => appendChild(parent, child),
   appendChild: (parent, child) => appendChild(parent, child),
-  appendChildToContainer: (container, child) => container.appendChild(child),
+  appendChildToContainer: (container, child) => {
+    if (isSurfaceContainer(container)) container.appendChild(child);
+    else appendChild(container, child);
+  },
   insertBefore: (parent, child, before) => insertBefore(parent, child, before),
-  insertInContainerBefore: (container, child, before) => container.insertBefore(child, before),
+  insertInContainerBefore: (container, child, before) => {
+    if (isSurfaceContainer(container)) container.insertBefore(child, before);
+    else insertBefore(container, child, before);
+  },
   removeChild: (parent, child) => removeChild(parent, child),
-  removeChildFromContainer: (container, child) => container.removeChild(child),
+  removeChildFromContainer: (container, child) => {
+    if (isSurfaceContainer(container)) container.removeChild(child);
+    else removeChild(container, child);
+  },
 
   finalizeInitialChildren: () => false,
   commitUpdate(node, _type, oldProps, newProps) {

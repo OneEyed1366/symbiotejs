@@ -93,6 +93,13 @@ export type {
 
 export type { IViewStyle, ITextStyle, IFlexAlign, IFlexJustify } from './utils/styles';
 export { mount, unmount } from './render';
+// createPortal: react-reconciler's Fiber-level portal, working here because @symbiote/react is
+// mutation-mode (unlike stock RN's persistent-mode Fabric renderer, which doesn't support it —
+// see create-portal.ts). v1 scope: target must be an already-mounted node in the SAME surface.
+export { createPortal, type IPortalContainer } from './create-portal';
+// createTunnel: cross-surface content sharing (createPortal/Teleport stay same-surface-only
+// by design — see create-tunnel.tsx and the react-adapter-portal skill for why).
+export { createTunnel, type ITunnel } from './create-tunnel';
 // descriptorToReact: the @symbiote/components Descriptor → React.createElement bridge. Exported so
 // an external wrapper package (e.g. @symbiote/slider/react over a third-party native view) can map
 // a shared render fn's Descriptor onto React elements through the SAME bridge the adapter uses.

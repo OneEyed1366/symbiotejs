@@ -14,8 +14,18 @@
 
 export * from '@vue/runtime-core';
 
-import type { ObjectDirective } from '@vue/runtime-core';
-import { setNativeProps, whenCommitted, type ISymbioteNode } from '@symbiote/engine';
+import {
+  defineComponent,
+  h,
+  Teleport as VueTeleport,
+  type ObjectDirective,
+} from '@vue/runtime-core';
+import {
+  isSymbioteNode,
+  setNativeProps,
+  whenCommitted,
+  type ISymbioteNode,
+} from '@symbiote/engine';
 
 // setNativeProps merges a partial `style` object onto the node's current one (never clobbering
 // other declarative style fields) and re-commits via the node's OWN tracked rootTag — no
@@ -42,3 +52,39 @@ export const vShow: ObjectDirective<ISymbioteNode, boolean> = {
   // Drop a still-pending first-commit wait if the element unmounts before it ever lands.
   unmounted: el => pendingShowCommits.get(el)?.(),
 };
+
+// Teleport's `to` in the DOM world is usually a CSS-selector string ('body', '#modal-root'); we
+// have no querySelector (renderer.ts stubs it to null, same as insertStaticContent), so `to` here
+// must be an already-mounted host node — e.g. a ref to a persistent "overlay host" View rendered
+// once near the app root — not a selector string. This wrapper shadows runtime-core's own
+// `Teleport` (which the SFC compiler imports from 'vue' like vShow) purely to validate `to` BEFORE
+// handing it to the real Teleport: a wrong value (string, plain object, an unrendered/reactive-
+// wrapped node) throws immediately here instead of silently corrupting the retained tree deep
+// inside insert/remove — the "don't let a dev accidentally break everything" case this exists for.
+// Scope: same-surface targets only (see the React createPortal twin, create-portal.ts) — Vue's own
+// Teleport internals (disabled toggling, move-on-update) work unmodified once `to` resolves to a
+// real ISymbioteNode, since insert/remove/parentNode/nextSibling are already fully generic.
+export const Teleport = defineComponent({
+  name: 'Teleport',
+  inheritAttrs: false,
+  props: {
+    to: { type: null, default: null },
+    disabled: { type: Boolean, default: false },
+  },
+  setup(props, { slots }) {
+    return () => {
+      const { to } = props;
+      if (typeof to === 'string') {
+        throw new Error(
+          `Teleport target must be a host node ref, not a CSS-selector string ("${to}") — symbiote has no querySelector. Pass a ref to an already-rendered element instead (e.g. <View ref="overlayHost" />, then :to="overlayHost").`,
+        );
+      }
+      if (to != null && !isSymbioteNode(to)) {
+        throw new Error(
+          'Teleport target is not a real host node — did you forget `.value` on a ref, or pass something symbiote never rendered?',
+        );
+      }
+      return h(VueTeleport, { to, disabled: props.disabled }, slots);
+    };
+  },
+});

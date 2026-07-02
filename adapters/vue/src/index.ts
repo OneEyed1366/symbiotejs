@@ -3,6 +3,9 @@
 // lives in the engine, shared with every other adapter. App code names only @symbiote/vue.
 
 export { mount, unmount } from './render';
+// createTunnel: cross-surface content sharing (Teleport stays same-surface-only by design —
+// see create-tunnel.ts and the vue-adapter-directives skill for why).
+export { createTunnel, type ITunnel } from './create-tunnel';
 export { View, Text } from './components';
 // Accessibility / ARIA prop types: framework-agnostic, shared verbatim from
 // @symbiote/components (the same source the React adapter re-exports).
@@ -38,7 +41,7 @@ export type {
 // agnostic renderActivityIndicator through descriptorToVue. Proof the layer is reusable:
 // the render fn is shared verbatim with React; Vue supplies only the bridge.
 export { ActivityIndicator } from './components/activity-indicator';
-export type { IActivityIndicatorProps } from '@symbiote/components';
+export type { IActivityIndicatorProps } from './components/activity-indicator';
 // First component to bring the state half into Vue (the lastNativeReport reducer + the
 // snap-back watch); render shared verbatim with React, Vue supplies the reactive lifecycle.
 export { Switch } from './components/switch';
