@@ -79,11 +79,14 @@ component logic (state machines + render functions) is written **once** in `@sym
 and each adapter supplies only its lifecycle (Vue's `ref`/`watch` + the descriptor→`h()` bridge).
 
 The one deliberate gap is third-party **React component** packages such as
-`@react-native-community/slider`. Their body calls React hooks off the React dispatcher, so they run
-only under the React adapter — under Vue the dispatcher is null and they throw. symbiote makes the
-*native view* framework-agnostic, not the library's React *component*; such a view becomes reachable
-from Vue only through a thin wrapper over the same `createNode`-by-ViewConfig path symbiote uses for
-its own primitives. Until that wrapper ships, the component is React-adapter-only.
+`@react-native-community/slider` used directly. Their body calls React hooks off the React
+dispatcher, so they run only under the React adapter — under Vue the dispatcher is null and they
+throw. symbiote makes the *native view* framework-agnostic, not the library's React *component*; such
+a view becomes reachable from Vue only through a thin wrapper over the same `createNode`-by-ViewConfig
+path symbiote uses for its own primitives. `@symbiote/slider` (this repo's own wrapper around
+`@react-native-community/slider`) *does* ship a real Vue build (`@symbiote/slider/vue`) through
+exactly that path — it's what makes this one third-party native view usable from Vue at all; any
+*other* React-only component package stays React-adapter-only until it gets the same treatment.
 
 ---
 
