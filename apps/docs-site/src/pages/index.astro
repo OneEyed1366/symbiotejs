@@ -4,7 +4,7 @@ import '../styles/landing.css';
 const description =
   'SymbioteNative lets Vue, React, and future framework adapters drive real native iOS and Android views through stock React Native Fabric.';
 
-const base = import.meta.env.BASE_URL;
+const base = import.meta.env.BASE_URL.replace(/\/$/, '');
 
 // The "native core" of the page: one structure, swappable symbiote skin.
 const symbiotes = [
@@ -46,7 +46,7 @@ const symbiotes = [
   </head>
   <body>
     <header class="nav">
-      <a class="brand" href={base}>
+      <a class="brand" href={base || '/'}>
         <span class="brand-mark" aria-hidden="true"></span>
         SymbioteNative
       </a>
