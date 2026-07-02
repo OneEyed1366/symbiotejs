@@ -27,3 +27,5 @@ DerivedData/
 
 # hidden folders are local-only (.docs, .claude, .notes, .vendors, …); dotfiles stay tracked
 .*/
+# ...except CI config, which must ship to the remote
+!.github/
