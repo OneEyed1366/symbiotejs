@@ -22,7 +22,7 @@ That matters most for events, children, and refs.
   visual components — not just `View`/`Text` anymore — also accept
   `class`/`:class` for a registered class name, resolved through the same
   style registry as a Vue SFC `<style>` block or a `.module.css` import; see
-  the [Styling guide](/docs/learn/styling/).
+  the [Styling guide](/symbiote/docs/learn/styling/).
 - Attribute names: templates may use kebab-case; the adapter normalizes to
   camelCase.
 
@@ -76,7 +76,7 @@ const input = ref<ITextInputHandle | null>(null);
 
 ## Model bindings (`v-model`)
 
-`Switch`, `TextInput`, and the [Slider](/docs/packages/slider/) wrapper accept
+`Switch`, `TextInput`, and the [Slider](/symbiote/docs/packages/slider/) wrapper accept
 `v-model` on top of their existing `value`/`@change-*` contract:
 
 ```vue
@@ -123,7 +123,7 @@ so app code keeps one import root: `Platform`, `StyleSheet`, `Dimensions`,
 ## Animations and gestures
 
 `Animated` (both the JS and native driver) and `PanResponder` are re-exported
-from `@symbiote/vue` — see the [Animations guide](/docs/learn/animations/)
+from `@symbiote/vue` — see the [Animations guide](/symbiote/docs/learn/animations/)
 for the full surface and per-driver tradeoffs.
 
 ## Portals (`Teleport`)
@@ -188,7 +188,7 @@ React and Angular have the same primitive — see their own API references.
 ## App entry point (`AppRegistry`)
 
 `@symbiote/vue` exports the same `AppRegistry`/`setHostRegistrar` entry point
-described in the [Core API](/docs/api/core/#app-entry-point-appregistry). One
+described in the [Core API](/symbiote/docs/api/core/#app-entry-point-appregistry). One
 Vue-specific detail: a component passed to `setWrapperComponentProvider`
 receives the app root through its **default slot**, not as a `children`-like
 argument — write it as an ordinary Vue component that renders `<slot />`:

@@ -159,7 +159,7 @@ React and Vue have the same primitive — see their own API references.
 
 `@symbiote/angular` exports the same `AppRegistry`/`setHostRegistrar` entry
 point described in the
-[Core API](/docs/api/core/#app-entry-point-appregistry). One Angular-specific
+[Core API](/symbiote/docs/api/core/#app-entry-point-appregistry). One Angular-specific
 detail: Angular has no runtime template synthesis (no JIT under AOT/Metro), so
 a component passed to `setWrapperComponentProvider` must be a pre-authored
 standalone `@Component` whose template renders `<ng-content>` — the Angular
@@ -216,7 +216,7 @@ The rest of the runtime-module surface re-exports the same way as React/Vue:
 `AnimatedText`/`AnimatedImage`/`AnimatedScrollView`/`AnimatedFlatList`/
 `AnimatedSectionList` named exports AOT requires) and `PanResponder` are
 re-exported from `@symbiote/angular` — see the
-[Animations guide](/docs/learn/animations/) for the full surface and why the
+[Animations guide](/symbiote/docs/learn/animations/) for the full surface and why the
 named exports exist.
 
 ## Change detection
@@ -238,5 +238,5 @@ with their containing view.
 Do not pass React component packages to the Angular adapter. A third-party
 React Native package that ships a JavaScript React component still uses the
 React dispatcher internally. Non-React adapters need native-view wrappers
-instead — see the [Slider package](/docs/packages/slider/) for the reference
+instead — see the [Slider package](/symbiote/docs/packages/slider/) for the reference
 implementation, shipping on React, Vue, and Angular alike.

@@ -1,7 +1,11 @@
 import { defineConfig } from 'astro/config';
 import starlight from '@astrojs/starlight';
 
+const base = '/symbiote';
+
 export default defineConfig({
+  site: 'https://oneeyed1366.github.io',
+  base,
   integrations: [
     starlight({
       title: 'symbiote',
