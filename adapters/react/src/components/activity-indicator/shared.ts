@@ -1,5 +1,5 @@
 // ActivityIndicator is the React lifecycle half. The render (size translation, wrapper +
-// spinner, color omission) lives framework-agnostic in @symbiote/components; here the
+// spinner, color omission) lives framework-agnostic in @symbiotejs/components; here the
 // adapter only resolves props (accessibility, defaults), calls the render fn, and bridges
 // the Descriptor to a React element. No state, no effects: this component is render-only.
 //
@@ -7,17 +7,17 @@
 // indeterminate) are supplied by the .ios/.android files via `IActivityIndicatorPlatform`.
 
 import type { FC } from 'react';
-import { renderActivityIndicator, resolveAccessibilityProps } from '@symbiote/components';
+import { renderActivityIndicator, resolveAccessibilityProps } from '@symbiotejs/components';
 import type {
   IActivityIndicatorPlatform,
   IActivityIndicatorProps as IActivityIndicatorBaseProps,
-} from '@symbiote/components';
+} from '@symbiotejs/components';
 import { descriptorToReact } from '../../descriptor-to-react';
 
 // IActivityIndicatorPlatform is framework-agnostic (no ref / children), so it lives in
-// @symbiote/components and every adapter re-exports it verbatim; the React adapter supplies only
+// @symbiotejs/components and every adapter re-exports it verbatim; the React adapter supplies only
 // the lifecycle (render-only here) + the descriptor bridge.
-export type { IActivityIndicatorPlatform } from '@symbiote/components';
+export type { IActivityIndicatorPlatform } from '@symbiotejs/components';
 
 // className is React's own field per <prop_types_split_agnostic_vs_per_adapter>; not destructured
 // below, so it falls into `...passthrough` and lands on the centering wrapper View, like `style`.

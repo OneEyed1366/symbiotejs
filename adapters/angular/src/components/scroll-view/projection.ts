@@ -13,15 +13,15 @@ import {
   type AnimatedInterpolation,
   type ISymbioteEvent,
   type ISymbioteNode,
-} from '@symbiote/engine';
+} from '@symbiotejs/engine';
 import {
   computeStickyInterpolation,
   readLayoutNumber,
   stickyDebounceMs,
   STICKY_HEADER_Z_INDEX,
-} from '@symbiote/components';
-import { descriptorFor } from '@symbiote/components';
-import { Platform } from '@symbiote/engine';
+} from '@symbiotejs/components';
+import { descriptorFor } from '@symbiotejs/components';
+import { Platform } from '@symbiotejs/engine';
 
 type IInsert = (parent: ISymbioteNode, child: ISymbioteNode, beforeChild?: ISymbioteNode) => void;
 type IRemove = (parent: ISymbioteNode, child: ISymbioteNode) => void;

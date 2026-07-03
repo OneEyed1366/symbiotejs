@@ -228,13 +228,13 @@ importers:
 
   adapters/angular:
     dependencies:
-      '@symbiote/components':
+      '@symbiotejs/components':
         specifier: workspace:*
         version: link:../../core/components
-      '@symbiote/css-parser':
+      '@symbiotejs/css-parser':
         specifier: workspace:*
         version: link:../../core/css-parser
-      '@symbiote/engine':
+      '@symbiotejs/engine':
         specifier: workspace:*
         version: link:../../core/engine
       react-native:
@@ -250,7 +250,7 @@ importers:
       '@angular/core':
         specifier: 'catalog:'
         version: 22.0.4(@angular/compiler@22.0.4)(rxjs@7.8.2)
-      '@symbiote/test-utils':
+      '@symbiotejs/test-utils':
         specifier: workspace:*
         version: link:../../core/test-utils
       '@types/node':
@@ -262,13 +262,13 @@ importers:
 
   adapters/react:
     dependencies:
-      '@symbiote/components':
+      '@symbiotejs/components':
         specifier: workspace:*
         version: link:../../core/components
-      '@symbiote/css-parser':
+      '@symbiotejs/css-parser':
         specifier: workspace:*
         version: link:../../core/css-parser
-      '@symbiote/engine':
+      '@symbiotejs/engine':
         specifier: workspace:*
         version: link:../../core/engine
       react-native:
@@ -278,7 +278,7 @@ importers:
         specifier: 'catalog:'
         version: 0.33.0(react@19.2.3)
     devDependencies:
-      '@symbiote/test-utils':
+      '@symbiotejs/test-utils':
         specifier: workspace:*
         version: link:../../core/test-utils
       '@types/react':
@@ -293,13 +293,13 @@ importers:
 
   adapters/vue:
     dependencies:
-      '@symbiote/components':
+      '@symbiotejs/components':
         specifier: workspace:*
         version: link:../../core/components
-      '@symbiote/css-parser':
+      '@symbiotejs/css-parser':
         specifier: workspace:*
         version: link:../../core/css-parser
-      '@symbiote/engine':
+      '@symbiotejs/engine':
         specifier: workspace:*
         version: link:../../core/engine
       '@vue/runtime-core':
@@ -312,7 +312,7 @@ importers:
         specifier: '>=3.5.0'
         version: 3.5.38(typescript@6.0.3)
     devDependencies:
-      '@symbiote/test-utils':
+      '@symbiotejs/test-utils':
         specifier: workspace:*
         version: link:../../core/test-utils
 
@@ -334,7 +334,7 @@ importers:
 
   core/components:
     dependencies:
-      '@symbiote/engine':
+      '@symbiotejs/engine':
         specifier: workspace:*
         version: link:../engine
 
@@ -372,7 +372,7 @@ importers:
         specifier: '>=0.86'
         version: 0.86.0(@babel/core@7.29.7)(@react-native-community/cli@20.1.0(typescript@6.0.3))(@react-native/metro-config@0.86.0(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3)
     devDependencies:
-      '@symbiote/test-utils':
+      '@symbiotejs/test-utils':
         specifier: workspace:*
         version: link:../test-utils
 
@@ -383,16 +383,16 @@ importers:
       '@angular/core':
         specifier: 'catalog:'
         version: 22.0.4(@angular/compiler@22.0.4)(rxjs@7.8.2)
-      '@symbiote/angular':
+      '@symbiotejs/angular':
         specifier: workspace:*
         version: link:../../adapters/angular
-      '@symbiote/components':
+      '@symbiotejs/components':
         specifier: workspace:*
         version: link:../../core/components
-      '@symbiote/engine':
+      '@symbiotejs/engine':
         specifier: workspace:*
         version: link:../../core/engine
-      '@symbiote/slider':
+      '@symbiotejs/slider':
         specifier: workspace:*
         version: link:../../packages/slider
       react:
@@ -438,7 +438,7 @@ importers:
       '@react-native/typescript-config':
         specifier: 'catalog:'
         version: 0.86.0
-      '@symbiote/css-parser':
+      '@symbiotejs/css-parser':
         specifier: workspace:*
         version: link:../../core/css-parser
       '@types/jest':
@@ -474,16 +474,16 @@ importers:
       '@react-native/new-app-screen':
         specifier: 'catalog:'
         version: 0.86.0(@types/react@19.2.17)(react-native@0.86.0(@babel/core@7.29.7)(@react-native-community/cli@20.1.0(typescript@6.0.3))(@react-native/metro-config@0.86.0(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3))(react@19.2.3)
-      '@symbiote/components':
+      '@symbiotejs/components':
         specifier: workspace:*
         version: link:../../core/components
-      '@symbiote/engine':
+      '@symbiotejs/engine':
         specifier: workspace:*
         version: link:../../core/engine
-      '@symbiote/react':
+      '@symbiotejs/react':
         specifier: workspace:*
         version: link:../../adapters/react
-      '@symbiote/slider':
+      '@symbiotejs/slider':
         specifier: workspace:*
         version: link:../../packages/slider
       react:
@@ -529,10 +529,10 @@ importers:
       '@react-native/typescript-config':
         specifier: 'catalog:'
         version: 0.86.0
-      '@symbiote/css-parser':
+      '@symbiotejs/css-parser':
         specifier: workspace:*
         version: link:../../core/css-parser
-      '@symbiote/test-utils':
+      '@symbiotejs/test-utils':
         specifier: workspace:*
         version: link:../../core/test-utils
       '@types/jest':
@@ -568,16 +568,16 @@ importers:
 
   examples/vue-sfc:
     dependencies:
-      '@symbiote/components':
+      '@symbiotejs/components':
         specifier: workspace:*
         version: link:../../core/components
-      '@symbiote/engine':
+      '@symbiotejs/engine':
         specifier: workspace:*
         version: link:../../core/engine
-      '@symbiote/slider':
+      '@symbiotejs/slider':
         specifier: workspace:*
         version: link:../../packages/slider
-      '@symbiote/vue':
+      '@symbiotejs/vue':
         specifier: workspace:*
         version: link:../../adapters/vue
       '@vue/runtime-core':
@@ -620,7 +620,7 @@ importers:
       '@react-native/typescript-config':
         specifier: 'catalog:'
         version: 0.86.0
-      '@symbiote/css-parser':
+      '@symbiotejs/css-parser':
         specifier: workspace:*
         version: link:../../core/css-parser
       '@types/jest':
@@ -665,16 +665,16 @@ importers:
 
   examples/vue-tsx:
     dependencies:
-      '@symbiote/components':
+      '@symbiotejs/components':
         specifier: workspace:*
         version: link:../../core/components
-      '@symbiote/engine':
+      '@symbiotejs/engine':
         specifier: workspace:*
         version: link:../../core/engine
-      '@symbiote/slider':
+      '@symbiotejs/slider':
         specifier: workspace:*
         version: link:../../packages/slider
-      '@symbiote/vue':
+      '@symbiotejs/vue':
         specifier: workspace:*
         version: link:../../adapters/vue
       '@vue/runtime-core':
@@ -717,10 +717,10 @@ importers:
       '@react-native/typescript-config':
         specifier: 'catalog:'
         version: 0.86.0
-      '@symbiote/css-parser':
+      '@symbiotejs/css-parser':
         specifier: workspace:*
         version: link:../../core/css-parser
-      '@symbiote/test-utils':
+      '@symbiotejs/test-utils':
         specifier: workspace:*
         version: link:../../core/test-utils
       '@types/jest':
@@ -765,10 +765,10 @@ importers:
       '@react-native-community/slider':
         specifier: 'catalog:'
         version: 5.2.0
-      '@symbiote/components':
+      '@symbiotejs/components':
         specifier: workspace:*
         version: link:../../core/components
-      '@symbiote/engine':
+      '@symbiotejs/engine':
         specifier: workspace:*
         version: link:../../core/engine
       react-native:
@@ -787,16 +787,16 @@ importers:
       '@angular/core':
         specifier: 'catalog:'
         version: 22.0.4(@angular/compiler@22.0.4)(rxjs@7.8.2)
-      '@symbiote/angular':
+      '@symbiotejs/angular':
         specifier: workspace:*
         version: link:../../adapters/angular
-      '@symbiote/react':
+      '@symbiotejs/react':
         specifier: workspace:*
         version: link:../../adapters/react
-      '@symbiote/test-utils':
+      '@symbiotejs/test-utils':
         specifier: workspace:*
         version: link:../../core/test-utils
-      '@symbiote/vue':
+      '@symbiotejs/vue':
         specifier: workspace:*
         version: link:../../adapters/vue
       '@types/node':
@@ -9872,9 +9872,7 @@ snapshots:
       metro-runtime: 0.84.4
     transitivePeerDependencies:
       - '@babel/core'
-      - bufferutil
       - supports-color
-      - utf-8-validate
 
   '@react-native/new-app-screen@0.86.0(@types/react@19.2.17)(react-native@0.86.0(@babel/core@7.29.7)(@react-native-community/cli@20.1.0(typescript@6.0.3))(@react-native/metro-config@0.86.0(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3))(react@19.2.3)':
     dependencies:

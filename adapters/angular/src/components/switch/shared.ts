@@ -1,17 +1,17 @@
 import { Directive, EventEmitter, Output } from '@angular/core';
-import { renderSwitch, resolveAccessibilityProps } from '@symbiote/components';
+import { renderSwitch, resolveAccessibilityProps } from '@symbiotejs/components';
 import type {
   ISwitchPlatform,
   ISwitchProps,
   ISwitchState,
   ISwitchTrackColor,
-} from '@symbiote/components';
+} from '@symbiotejs/components';
 import {
   createInitialSwitchState,
   shouldSnapBack,
   switchReducer,
   valueFromChange,
-} from '@symbiote/components';
+} from '@symbiotejs/components';
 import {
   dispatchViewCommand,
   dlog,
@@ -21,9 +21,9 @@ import {
   type ISymbioteNode,
   type IStyleProp,
   type IViewStyle,
-} from '@symbiote/engine';
+} from '@symbiotejs/engine';
 
-export type { ISwitchProps, ISwitchTrackColor } from '@symbiote/components';
+export type { ISwitchProps, ISwitchTrackColor } from '@symbiotejs/components';
 
 export type ISwitchInputs = Pick<
   ISwitchProps,

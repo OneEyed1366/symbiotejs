@@ -165,7 +165,7 @@ export function mapCSSProperty(
     warnOnce(
       warnedProperties,
       prop,
-      `[@symbiote/css-parser] unsupported CSS property "${prop}" dropped`,
+      `[@symbiotejs/css-parser] unsupported CSS property "${prop}" dropped`,
     );
     return null;
   }

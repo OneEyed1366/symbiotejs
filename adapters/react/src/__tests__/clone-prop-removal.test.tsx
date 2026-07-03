@@ -10,7 +10,7 @@
 
 import { createElement, useState, type ReactElement } from 'react';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { Pressable, Text, View, mount, unmount } from '@symbiote/react';
+import { Pressable, Text, View, mount, unmount } from '@symbiotejs/react';
 
 interface IFakeNode {
   viewName: string;

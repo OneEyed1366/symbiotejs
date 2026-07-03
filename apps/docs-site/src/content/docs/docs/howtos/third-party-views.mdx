@@ -33,30 +33,30 @@ Then each adapter gets its own thin entry that maps the friendly prop/event
 surface onto the native node — the same "one core, N adapters" shape used
 everywhere else in Symbiote.
 
-## Reference implementation: `@symbiote/slider`
+## Reference implementation: `@symbiotejs/slider`
 
 `packages/slider` is the real, shipping example — one wrapper package with a
 framework-agnostic core plus a thin entry per adapter:
 
 ```tsx
-import { Slider } from '@symbiote/slider/react';
+import { Slider } from '@symbiotejs/slider/react';
 ```
 
 ```vue
 <script setup>
-import { Slider } from '@symbiote/slider/vue';
+import { Slider } from '@symbiotejs/slider/vue';
 </script>
 ```
 
 ```ts
 import { Component } from '@angular/core';
-import { Slider } from '@symbiote/slider/angular';
+import { Slider } from '@symbiotejs/slider/angular';
 
 @Component({ standalone: true, imports: [Slider], template: `<Slider [value]="0.5" />` })
 export class VolumeControl {}
 ```
 
-The consuming app installs only `@symbiote/slider` — the wrapper package
+The consuming app installs only `@symbiotejs/slider` — the wrapper package
 itself owns the native dependency, `react-native.config.cjs` (Android
 autolinking proxy), and the iOS podspec, so autolinking discovers it without
 the app declaring the third-party native package directly.
@@ -64,7 +64,7 @@ the app declaring the third-party native package directly.
 ## Packaging for one-dependency autolinking
 
 If you're authoring your own wrapper (not just consuming Slider), the app
-must only ever list `@symbiote/<lib>` — never the third-party native package
+must only ever list `@symbiotejs/<lib>` — never the third-party native package
 directly. That means the wrapper itself has to look autolinkable to React
 Native's CLI on both platforms, even though the real native code lives one
 level deeper, inside the wrapper's own dependency tree.
@@ -125,11 +125,11 @@ cd examples/react && pnpm exec react-native config
 The relevant slice of a real run, trimmed to the wrapper's own entry:
 
 ```json
-"@symbiote/slider": {
-  "root": ".../examples/react/node_modules/@symbiote/slider",
+"@symbiotejs/slider": {
+  "root": ".../examples/react/node_modules/@symbiotejs/slider",
   "platforms": {
     "ios": {
-      "podspecPath": ".../node_modules/@symbiote/slider/symbiote-slider.podspec"
+      "podspecPath": ".../node_modules/@symbiotejs/slider/symbiote-slider.podspec"
     },
     "android": {
       "sourceDir": ".../node_modules/.pnpm/@react-native-community+slider@5.2.0/node_modules/@react-native-community/slider/android",
@@ -143,7 +143,7 @@ The relevant slice of a real run, trimmed to the wrapper's own entry:
 That's the proof the packaging works: `ios.podspecPath` resolves inside the
 wrapper's **own** package, while `android.sourceDir` resolves through to the
 real third-party library nested deep in the pnpm store — both discovered
-from the app's single `@symbiote/<lib>` dependency, with the third-party
+from the app's single `@symbiotejs/<lib>` dependency, with the third-party
 package never named in the app's own `package.json`. If a new wrapper's
 entry is missing entirely, or `android`/`ios` comes back `null`, the proxy
 config isn't wired correctly yet — fix that before touching a simulator.

@@ -7,8 +7,8 @@
 
 import { useState } from 'react';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { createTunnel, mount, unmount, Text, View } from '@symbiote/react';
-import { installFabric, type IFakeNode } from '@symbiote/test-utils';
+import { createTunnel, mount, unmount, Text, View } from '@symbiotejs/react';
+import { installFabric, type IFakeNode } from '@symbiotejs/test-utils';
 
 const SOURCE_TAG = 610;
 const TARGET_TAG = 611;

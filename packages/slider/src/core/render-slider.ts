@@ -6,10 +6,10 @@
 // view's derived ViewConfig. Pure and prop-driven — the adapter owns state, events, and the
 // width measurement that feeds `view.width`.
 
-import { dlog } from '@symbiote/engine';
-import type { IStyleProp, IViewStyle, ISymbioteEvent } from '@symbiote/engine';
-import { el } from '@symbiote/components';
-import type { IDescriptor, IDescriptorChild } from '@symbiote/components';
+import { dlog } from '@symbiotejs/engine';
+import type { IStyleProp, IViewStyle, ISymbioteEvent } from '@symbiotejs/engine';
+import { el } from '@symbiotejs/components';
+import type { IDescriptor, IDescriptorChild } from '@symbiotejs/components';
 import { RNC_SLIDER_VIEW_NAME } from './constants';
 import type { ISliderPlatform, ISliderViewProps } from './slider-props';
 

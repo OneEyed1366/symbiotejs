@@ -11,7 +11,7 @@
 -->
 <script setup lang="ts">
 import { ref } from 'vue'
-import { View, Text, type ISymbioteEvent } from '@symbiote/vue'
+import { View, Text, type ISymbioteEvent } from '@symbiotejs/vue'
 
 const RESPONDER_CHIPS = [0, 1, 2, 3, 4]
 // Horizontal travel (in the touch's page units: px on Android, pt on iOS, so the feel

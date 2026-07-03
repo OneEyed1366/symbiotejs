@@ -6,7 +6,7 @@
 // pattern (a custom, non-DOM renderer needs the compiler helpers from @vue/runtime-core,
 // not from vue/runtime-dom).
 //
-// Retargeted at @symbiote/vue/runtime-helpers rather than bare @vue/runtime-core: that shim
+// Retargeted at @symbiotejs/vue/runtime-helpers rather than bare @vue/runtime-core: that shim
 // re-exports runtime-core verbatim PLUS supplies our own `vShow` (compiled v-show imports it by
 // name, and only @vue/runtime-dom's DOM-based version exists otherwise — see the
 // vue-adapter-directives skill).
@@ -14,7 +14,7 @@
 const upstreamTransformer = require('@react-native/metro-babel-transformer');
 const { parse, compileScript } = require('@vue/compiler-sfc');
 const { createCompoundExpression } = require('@vue/compiler-core');
-// This app does NOT need its own @symbiote/css-parser devDependency: @symbiote/vue/metro-css-
+// This app does NOT need its own @symbiotejs/css-parser devDependency: @symbiotejs/vue/metro-css-
 // parser re-exports it from INSIDE the adapter package, where css-parser resolves as a real
 // dependency — Node resolves each require() relative to the requiring file's own location, so
 // requiring through the adapter is what removes the extra install step. See the
@@ -27,10 +27,10 @@ const {
   isStyleFile,
   kebabToCamel,
   parseCSS,
-} = require('@symbiote/vue/metro-css-parser');
+} = require('@symbiotejs/vue/metro-css-parser');
 
 // Rewrites a Vue template AST so every `class`/`:class` binding on an element resolves
-// against this file's scoped class names at the compiled call site, via @symbiote/engine's
+// against this file's scoped class names at the compiled call site, via @symbiotejs/engine's
 // scopeClassName(value, localNames, scopeId) — see the symbiote-sfc-style-compiler skill for
 // the full design (why AST-level, not a raw-text regex: Vue itself merges a static `class=`
 // and a dynamic `:class=` on the same element into ONE codegen entry, and text substitution
@@ -93,7 +93,7 @@ function createScopeClassNodeTransform(localNames, scopeId) {
 
 // A short, stable id per file, used as the SFC scope id (compileScript wants one regardless of
 // whether the file has scoped styles) — Vue's own `data-v-hash` naming convention, built on
-// @symbiote/css-parser's shared hashFilePath so the algorithm isn't duplicated against the
+// @symbiotejs/css-parser's shared hashFilePath so the algorithm isn't duplicated against the
 // standalone .module.css compiler's identical need (metro-css-module.ts).
 function scopeIdFor(filename) {
   return 'data-v-' + hashFilePath(filename);
@@ -151,7 +151,7 @@ async function compileSfc(src, filename) {
   // `data-v-hash` attribute does for DOM targets, just as a name suffix instead of an attribute
   // selector (we have neither DOM nor attribute-selector matching). An unscoped block's classes
   // register exactly as before: no suffix, globally shared. `:global(...)` selectors inside a
-  // scoped block are the one exception — @symbiote/css-parser already unwraps them to their
+  // scoped block are the one exception — @symbiotejs/css-parser already unwraps them to their
   // plain class name (`:global(.reset)` parses like `.reset`), so `globalClassNamesIn` re-scans
   // the block's own raw text to find which specific keys should be exempted from suffixing.
   //
@@ -236,9 +236,9 @@ async function compileSfc(src, filename) {
   });
   // Point every Vue import (the compiler's injected helpers AND the user's own
   // `import { ref } from 'vue'`) at the runtime-helpers shim, which re-exports the same
-  // @vue/runtime-core singleton the @symbiote/vue adapter builds its custom renderer on, plus
+  // @vue/runtime-core singleton the @symbiotejs/vue adapter builds its custom renderer on, plus
   // our own directive implementations. No vue/runtime-dom in a native bundle.
-  const code = compiled.content.replace(/from\s*(['"])vue\1/g, 'from "@symbiote/vue/runtime-helpers"');
+  const code = compiled.content.replace(/from\s*(['"])vue\1/g, 'from "@symbiotejs/vue/runtime-helpers"');
 
   if (Object.keys(styles).length === 0) return code;
 
@@ -265,7 +265,7 @@ async function compileSfc(src, filename) {
     preamble.push(`const ${bindingName} = ${JSON.stringify(classMap)};`);
   }
 
-  return [`import { ${engineImports} } from '@symbiote/engine';`, ...preamble, code].join('\n') + '\n';
+  return [`import { ${engineImports} } from '@symbiotejs/engine';`, ...preamble, code].join('\n') + '\n';
 }
 
 // Exported separately from `transform` so tests can assert on the compiled SFC output

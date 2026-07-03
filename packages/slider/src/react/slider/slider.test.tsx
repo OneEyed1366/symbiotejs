@@ -1,4 +1,4 @@
-// Co-located React-driven test (ADR 0025) for the @symbiote/slider React wrapper. Mirrors the Vue
+// Co-located React-driven test (ADR 0025) for the @symbiotejs/slider React wrapper. Mirrors the Vue
 // wrapper test against the SAME injected codegen-shaped ViewConfig, proving the shared core drives
 // React identically: the native RNCSlider leaf paints inside the centering View, value/disabled/
 // limits fold faithfully to the library, tints process, and the native value/sliding events map
@@ -7,8 +7,8 @@
 
 import { createElement } from 'react';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { mount, unmount, setNativeViewConfigSource } from '@symbiote/react';
-import { installFabric, type IFakeNode } from '@symbiote/test-utils';
+import { mount, unmount, setNativeViewConfigSource } from '@symbiotejs/react';
+import { installFabric, type IFakeNode } from '@symbiotejs/test-utils';
 import { Slider } from '.';
 
 const ROOT_TAG = 312;

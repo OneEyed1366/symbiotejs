@@ -1,5 +1,5 @@
 {
-  "name": "@symbiote/angular",
+  "name": "@symbiotejs/angular",
   "version": "0.0.0",
   "type": "module",
   "main": "src/index.ts",
@@ -28,9 +28,9 @@
     "format": "prettier --write \"src/**/*.{ts,tsx}\""
   },
   "dependencies": {
-    "@symbiote/components": "workspace:*",
-    "@symbiote/css-parser": "workspace:*",
-    "@symbiote/engine": "workspace:*"
+    "@symbiotejs/components": "workspace:*",
+    "@symbiotejs/css-parser": "workspace:*",
+    "@symbiotejs/engine": "workspace:*"
   },
   "peerDependencies": {
     "@angular/core": ">=20",
@@ -40,7 +40,7 @@
     "@angular/compiler": "catalog:",
     "@angular/compiler-cli": "catalog:",
     "@angular/core": "catalog:",
-    "@symbiote/test-utils": "workspace:*",
+    "@symbiotejs/test-utils": "workspace:*",
     "@types/node": "catalog:",
     "typescript": "catalog:"
   }

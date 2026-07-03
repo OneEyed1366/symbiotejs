@@ -1,4 +1,4 @@
-// @symbiote/engine/animated: the framework-agnostic, JS-driven Animated engine
+// @symbiotejs/engine/animated: the framework-agnostic, JS-driven Animated engine
 // (ADR 0016). The value graph, easing, interpolation and (Phase 2) drivers are
 // pure JS with no React and no native dependency; every adapter re-exports them.
 

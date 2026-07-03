@@ -4,8 +4,8 @@
 
 import { useState } from 'react';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { createPortal, mount, unmount, View, Text, type IHostInstance } from '@symbiote/react';
-import { installFabric, type IFakeNode } from '@symbiote/test-utils';
+import { createPortal, mount, unmount, View, Text, type IHostInstance } from '@symbiotejs/react';
+import { installFabric, type IFakeNode } from '@symbiotejs/test-utils';
 
 const ROOT_TAG = 150;
 

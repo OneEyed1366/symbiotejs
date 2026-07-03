@@ -4,8 +4,8 @@ import {
   Text,
   View,
   type ISymbioteEvent,
-} from '@symbiote/angular';
-// static look lives here, compiled at build time by @symbiote/css-parser (symbiote-sfc-style-compiler skill)
+} from '@symbiotejs/angular';
+// static look lives here, compiled at build time by @symbiotejs/css-parser (symbiote-sfc-style-compiler skill)
 import './ResponderDemo.css';
 
 const RESPONDER_CHIPS = [0, 1, 2, 3, 4];

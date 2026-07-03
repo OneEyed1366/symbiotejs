@@ -11,7 +11,7 @@
 
 import { useState, type ReactElement } from 'react';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { Keyboard, TextInput, mount, unmount } from '@symbiote/react';
+import { Keyboard, TextInput, mount, unmount } from '@symbiotejs/react';
 
 interface IFakeNode {
   tag: number;

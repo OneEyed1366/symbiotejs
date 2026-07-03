@@ -2,7 +2,7 @@ import { defineConfig } from 'vitest/config';
 
 // Root unit/integration runner (ADR 0025). Tests are co-located with what they exercise:
 // pure engine/components logic next to `core/*/src`, framework-driven pipeline tests next to
-// the adapter source and inside the example apps. `@symbiote/*` packages resolve to raw
+// the adapter source and inside the example apps. `@symbiotejs/*` packages resolve to raw
 // `src/*.ts` (their package `main`), so they must be inlined for Vitest to transform them.
 // A single `react` copy across the monorepo is enforced by the `overrides` in
 // pnpm-workspace.yaml (the adapter's reconciler and the app's hooks must share one instance,

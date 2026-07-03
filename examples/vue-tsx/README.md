@@ -1,13 +1,13 @@
-# Vue canary — JSX/TSX (`@symbiote/vue` on device)
+# Vue canary — JSX/TSX (`@symbiotejs/vue` on device)
 
 The **M3 / R4 proof on a real host**, authored in **Vue JSX** instead of an SFC: a Vue 3 app
-driving the framework-agnostic `@symbiote/engine` core on the iOS simulator / Android emulator,
+driving the framework-agnostic `@symbiotejs/engine` core on the iOS simulator / Android emulator,
 with React Native's own renderer never in the path. It is the [`examples/vue-sfc`](../vue-sfc)
 app rewritten JSX-for-template — **same native shell, same engine, same components, only the
 authoring differs**. Together the two examples show the Vue slice is template-agnostic.
 
 ```
-index.js          registers a RUNNABLE with RN's AppRegistry → mounts the Vue app via @symbiote/vue
+index.js          registers a RUNNABLE with RN's AppRegistry → mounts the Vue app via @symbiotejs/vue
 App.tsx           a Vue counter, authored as a defineComponent whose setup() returns a JSX render fn
 babel.config.js   @vue/babel-plugin-jsx compiles the JSX → @vue/runtime-core createVNode (before RN's React-JSX transform)
 metro.config.js   aliases 'vue' → @vue/runtime-core; pins one react + one runtime-core (no custom transformer)
@@ -34,7 +34,7 @@ This exercises the same structural reconciler paths as the SFC: a `? :` ternary 
 the spinner (Vue comment placeholder → our anchor node), `.map()` diffs a keyed list (Vue
 Fragment → empty-text anchors + engine `insertBefore` / `removeChild`), and a `computed` derives
 reactive text. The tap is the raw responder protocol (`onStartShouldSetResponder` +
-`onResponderRelease`), not `Pressable`. `ActivityIndicator` is the first `@symbiote/components`
+`onResponderRelease`), not `Pressable`. `ActivityIndicator` is the first `@symbiotejs/components`
 component — its render fn is shared verbatim with React; Vue supplies only the `descriptorToVue`
 bridge.
 
@@ -55,7 +55,7 @@ npm run android
 ```
 
 Tap the box → the counter increments and a keyed row is prepended; the second box toggles the
-spinner. Every tap re-enters Vue's reactivity, which recommits through `@symbiote/engine` into
+spinner. Every tap re-enters Vue's reactivity, which recommits through `@symbiotejs/engine` into
 Fabric — RN's renderer never involved.
 
 ## Note — shares the canary's native shell

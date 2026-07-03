@@ -11,7 +11,7 @@ controlled write handshake is shared; the public event name is framework-shaped.
 ```tsx
 import './NameInput.css';
 import { useState } from 'react';
-import { Text, TextInput, View } from '@symbiote/react';
+import { Text, TextInput, View } from '@symbiotejs/react';
 
 export function NameInput() {
   const [name, setName] = useState('Symbiote');
@@ -36,7 +36,7 @@ export function NameInput() {
 ```vue
 <script setup lang="ts">
 import { ref } from 'vue';
-import { Text, TextInput, View } from '@symbiote/vue';
+import { Text, TextInput, View } from '@symbiotejs/vue';
 
 const name = ref('Symbiote');
 </script>
@@ -62,7 +62,7 @@ arrives as `@value-change`'s second argument: `@value-change="(text, event) => â
 
 ```ts
 import { Component } from '@angular/core';
-import { Text, TextInput, View } from '@symbiote/angular';
+import { Text, TextInput, View } from '@symbiotejs/angular';
 import './name-input.css';
 
 @Component({

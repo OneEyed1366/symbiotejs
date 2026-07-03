@@ -3,7 +3,7 @@
 // the color fold (caller color tints the label; disabled greys it) live here so every adapter
 // paints the identical button. The adapter only composes its TouchableOpacity + Text around them.
 
-import type { ITextStyle, ISymbioteEvent } from '@symbiote/engine';
+import type { ITextStyle, ISymbioteEvent } from '@symbiotejs/engine';
 import type { IAccessibilityProps, IAriaProps } from '../accessibility-props';
 
 // Author-facing props: the framework-agnostic public surface every adapter exposes. Button has

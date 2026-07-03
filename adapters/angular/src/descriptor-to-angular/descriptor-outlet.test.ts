@@ -1,8 +1,8 @@
 import '@angular/compiler';
 import { Component, signal } from '@angular/core';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { el, txt, type IDescriptor } from '@symbiote/components';
-import { installFabric } from '@symbiote/test-utils';
+import { el, txt, type IDescriptor } from '@symbiotejs/components';
+import { installFabric } from '@symbiotejs/test-utils';
 
 import { mount, unmount } from '../render';
 import { DescriptorOutlet } from './index.ts';

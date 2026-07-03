@@ -40,7 +40,7 @@ export type IParsedFilter =
   | { sepia: number }
   | { dropShadow: IParsedDropShadow };
 
-// The structured input shapes, declared locally so shared does not import @symbiote/react.
+// The structured input shapes, declared locally so shared does not import @symbiotejs/react.
 // Read loosely (callers pass plain records); each field is narrowed at the point of use.
 type IRawDropShadow = Record<string, unknown>;
 type IRawFilterFunction = Record<string, unknown>;

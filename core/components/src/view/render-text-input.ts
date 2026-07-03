@@ -5,7 +5,7 @@
 // remaining native events) arrive folded into `passthrough` and land on the host untouched.
 // Pure and prop-driven; no hooks, no events. The adapter owns those.
 
-import { dlog } from '@symbiote/engine';
+import { dlog } from '@symbiotejs/engine';
 import { el } from '../descriptor';
 import type { IDescriptor } from '../descriptor';
 import type { IFoldedTextInputProps, ITextInputSelection } from '../state/text-input';

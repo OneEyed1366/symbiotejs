@@ -5,7 +5,7 @@
 //
 // PixelRatio now lives in the engine alongside Dimensions; useWindowDimensions still lives in
 // the React adapter (it depends on React) and is imported across the boundary to preserve the
-// smoke's coverage. Both resolve the SAME Dimensions singleton via `@symbiote/engine`, so the
+// smoke's coverage. Both resolve the SAME Dimensions singleton via `@symbiotejs/engine`, so the
 // fake seeds them all.
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -22,8 +22,8 @@ interface IWindowMetrics {
 
 const INITIAL_WINDOW: IWindowMetrics = { width: 400, height: 800, scale: 3, fontScale: 2 };
 
-let Dimensions: typeof import('@symbiote/engine').Dimensions;
-let PixelRatio: typeof import('@symbiote/engine').PixelRatio;
+let Dimensions: typeof import('@symbiotejs/engine').Dimensions;
+let PixelRatio: typeof import('@symbiotejs/engine').PixelRatio;
 let useWindowDimensions: typeof import('../../../../adapters/react/src/hooks/use-window-dimensions').useWindowDimensions;
 
 let deviceHub: IDeviceHub | undefined;
@@ -47,7 +47,7 @@ beforeEach(async () => {
   };
 
   vi.resetModules();
-  ({ Dimensions, PixelRatio } = await import('@symbiote/engine'));
+  ({ Dimensions, PixelRatio } = await import('@symbiotejs/engine'));
   ({ useWindowDimensions } =
     await import('../../../../adapters/react/src/hooks/use-window-dimensions'));
 });

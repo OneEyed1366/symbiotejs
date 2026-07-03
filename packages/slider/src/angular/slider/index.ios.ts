@@ -3,7 +3,7 @@
 // Also the base (./index re-exports it) for headless. Mirrors the library's iOS branches.
 
 import { ChangeDetectionStrategy, Component } from '@angular/core';
-import { DescriptorOutlet } from '@symbiote/angular';
+import { DescriptorOutlet } from '@symbiotejs/angular';
 import { SliderBase } from './shared';
 import { SLIDER_IOS_DEFAULT_HEIGHT, SLIDER_STEP_RESOLUTION_IOS } from '../../core';
 export type { ISliderProps } from './shared';

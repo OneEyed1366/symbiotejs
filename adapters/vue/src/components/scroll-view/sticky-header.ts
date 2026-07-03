@@ -8,7 +8,7 @@
 // `stickyHeaderIndices` to native is a silent no-op. So we replicate the JS layer: subscribe each
 // flagged child to the scroll offset and translate it to stay pinned. The interpolation mirrors
 // ScrollViewStickyHeader.js (non-inverted + inverted branches) and lives, framework-agnostic, in
-// @symbiote/components (computeStickyInterpolation, ADR 0024); this file holds the Vue component
+// @symbiotejs/components (computeStickyInterpolation, ADR 0024); this file holds the Vue component
 // shell, the layout state, and the child-wrapping. Render shared verbatim with React via the math.
 // Vue supplies only the reactive lifecycle (refs/watch instead of useState/useEffect).
 
@@ -31,7 +31,7 @@ import {
   Platform,
   dlog,
   type ISymbioteEvent,
-} from '@symbiote/engine';
+} from '@symbiotejs/engine';
 import {
   computeStickyInterpolation,
   nextStickyHeaderY,
@@ -39,7 +39,7 @@ import {
   stickyDebounceMs,
   STICKY_HEADER_Z_INDEX,
   type IStickyHeaderProps,
-} from '@symbiote/components';
+} from '@symbiotejs/components';
 import { Animated } from '../../modules/animated';
 
 // A custom StickyHeaderComponent override (RN StickyHeaderComponent) must accept the same shape

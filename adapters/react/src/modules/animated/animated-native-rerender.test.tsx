@@ -9,8 +9,8 @@
 
 import { type ReactElement } from 'react';
 import { beforeAll, describe, expect, it } from 'vitest';
-import { createSurface, setEventDispatcher, type IRootTag } from '@symbiote/engine';
-import { installFabric } from '@symbiote/test-utils';
+import { createSurface, setEventDispatcher, type IRootTag } from '@symbiotejs/engine';
+import { installFabric } from '@symbiotejs/test-utils';
 import reconciler, { withDiscretePriority } from '../../host-config';
 import { LegacyRoot } from '../../reconciler-constants';
 import { Animated } from './index';

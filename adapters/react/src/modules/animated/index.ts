@@ -1,6 +1,6 @@
-// The Animated namespace for @symbiote/react. createAnimatedComponent applied to
+// The Animated namespace for @symbiotejs/react. createAnimatedComponent applied to
 // the adapter's primitives gives Animated.View / Text / Image; the value graph,
-// easing and imperative drivers come from @symbiote/engine (framework-agnostic,
+// easing and imperative drivers come from @symbiotejs/engine (framework-agnostic,
 // JS-driven, ADR 0016). Both halves meet here in one `Animated` object so the
 // familiar surface (`Animated.timing(new Animated.Value(0), …).start()`) works.
 
@@ -27,19 +27,19 @@ import {
   event,
   forkEvent,
   unforkEvent,
-} from '@symbiote/engine';
+} from '@symbiotejs/engine';
 import { View, Text } from '../../components';
 import { Image } from '../../components/image';
 import { ScrollView } from '../../components/scroll-view';
 import { FlatList } from '../../components/flat-list';
 import { SectionList } from '../../components/section-list';
 import { createAnimatedComponent } from './create-animated-component';
-import { AnimatedMock } from '@symbiote/engine';
+import { AnimatedMock } from '@symbiotejs/engine';
 
 export { createAnimatedComponent } from './create-animated-component';
-// The pure graph leaves now live in @symbiote/engine (they extend AnimatedWithChildren,
-// no React); re-exported here so @symbiote/react's Animated surface is unchanged.
-export { AnimatedProps, AnimatedStyle, AnimatedTransform } from '@symbiote/engine';
+// The pure graph leaves now live in @symbiotejs/engine (they extend AnimatedWithChildren,
+// no React); re-exported here so @symbiotejs/react's Animated surface is unchanged.
+export { AnimatedProps, AnimatedStyle, AnimatedTransform } from '@symbiotejs/engine';
 
 // View/Text/Image are pure host primitives, so wrap them eagerly.
 const AnimatedView = createAnimatedComponent(View);

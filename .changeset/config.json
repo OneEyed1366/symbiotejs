@@ -8,8 +8,8 @@
   "baseBranch": "master",
   "updateInternalDependencies": "patch",
   "ignore": [
-    "@symbiote/test-utils",
-    "@symbiote/docs-site",
+    "@symbiotejs/test-utils",
+    "@symbiotejs/docs-site",
     "Canary",
     "vue-sfc-canary",
     "vue-tsx-canary",

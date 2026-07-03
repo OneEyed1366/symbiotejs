@@ -1,9 +1,9 @@
-# @symbiote/angular
+# @symbiotejs/angular
 
 The **Angular adapter** for [symbiote](../../README.md) — render real native iOS/Android views
 from Angular, on the *same* untouched core as React and Vue, with React Native's own renderer
 never in the path. It is a `Renderer2`/`RendererFactory2` whose calls map onto the engine's
-four-call mutation API; `@symbiote/engine` does the clone-on-write commit into Fabric.
+four-call mutation API; `@symbiotejs/engine` does the clone-on-write commit into Fabric.
 
 Angular is the **second proof the core is genuinely framework-agnostic** (milestone M4): a third
 framework, with its own change-detection model and AOT compilation pipeline, driving the
@@ -22,13 +22,13 @@ already-validated engine with zero changes to it.
 ## Use it
 
 The native entry reaches the *same* `registerRunnable` seam as React and Vue — only the adapter
-changes. It hands the surface's `rootTag` to `mount` from `@symbiote/angular`, which drives the
+changes. It hands the surface's `rootTag` to `mount` from `@symbiotejs/angular`, which drives the
 engine through Angular's `Renderer2`:
 
 ```js
 // index.js
 import { AppRegistry as RNAppRegistry } from 'react-native';
-import { mount } from '@symbiote/angular';
+import { mount } from '@symbiotejs/angular';
 import { AppComponent } from './App';
 import { name as appName } from './app.json';
 
@@ -39,12 +39,12 @@ RNAppRegistry.registerRunnable(appName, ({ rootTag }) => {
 });
 ```
 
-The app is ordinary standalone Angular — it just imports primitives from `@symbiote/angular`
+The app is ordinary standalone Angular — it just imports primitives from `@symbiotejs/angular`
 instead of `react-native`. A tap→increment counter:
 
 ```ts
 import { Component, signal } from '@angular/core';
-import { View, Text, Pressable } from '@symbiote/angular';
+import { View, Text, Pressable } from '@symbiotejs/angular';
 
 @Component({
   selector: 'app-root',
@@ -75,12 +75,12 @@ reference canaries, standalone components, zoneless change detection.
 Angular reaches the same 21+ primitives, runtime modules, `Animated` on both drivers, gestures,
 accessibility, and the `VirtualizedList` family as React and Vue. That parity is **structural, not
 hand-copied**: the component logic (state machines + render functions) is written **once** in
-`@symbiote/components`, and Angular supplies only its lifecycle (`Renderer2` + zoneless change
+`@symbiotejs/components`, and Angular supplies only its lifecycle (`Renderer2` + zoneless change
 detection + the descriptor→`createElement` bridge).
 
 One deliberate gap, tracked, not blocking the canary — **third-party React component packages**
 (`@react-native-community/slider`) run only under the React adapter: their body calls React hooks
-off the React dispatcher, which is null under Angular. `@symbiote/slider` (this repo's own
+off the React dispatcher, which is null under Angular. `@symbiotejs/slider` (this repo's own
 wrapper) *does* ship a real Angular build, reachable through the same `createNode`-by-ViewConfig
 path Angular uses for its own primitives — that wrapper is what makes a third-party native view
 usable from a non-React adapter at all.

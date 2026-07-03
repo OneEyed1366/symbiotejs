@@ -16,7 +16,7 @@ import {
   AnimatedAddition,
   AnimatedDiffClamp,
   AnimatedValue,
-} from '@symbiote/engine';
+} from '@symbiotejs/engine';
 
 describe('Animated operators — JS path', () => {
   it('add / subtract / multiply over two values', () => {

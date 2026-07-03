@@ -219,7 +219,7 @@ export function parseCSS(
   // nested rules never leak into the output.
   root.walkAtRules(atRule => {
     console.warn(
-      `[@symbiote/css-parser] "@${atRule.name}" at-rules are not supported, "@${atRule.name} ${atRule.params}" skipped`,
+      `[@symbiotejs/css-parser] "@${atRule.name}" at-rules are not supported, "@${atRule.name} ${atRule.params}" skipped`,
     );
     atRule.remove();
   });

@@ -1,4 +1,4 @@
-// Co-located unit test (ADR 0025): the @symbiote/components seam through the React bridge.
+// Co-located unit test (ADR 0025): the @symbiotejs/components seam through the React bridge.
 // el()/txt() build a Descriptor, descriptorToReact maps it to React elements, and
 // renderActivityIndicator emits the expected Descriptor (size enum + color omission). No native,
 // no engine commit, this isolates the render-fn -> Descriptor -> element bridge every component
@@ -6,7 +6,7 @@
 // headless `descriptor-bridge.smoke.tsx`.
 
 import { describe, expect, it } from 'vitest';
-import { el, txt, renderActivityIndicator } from '@symbiote/components';
+import { el, txt, renderActivityIndicator } from '@symbiotejs/components';
 import { descriptorToReact } from './index';
 
 function isRecord(value: unknown): value is Record<string, unknown> {

@@ -1,5 +1,5 @@
 // Slider, the Vue lifecycle half. The logic (value/limit/disabled folds, the step-option layout)
-// and the native render live in @symbiote/slider core, shared verbatim with the future Angular
+// and the native render live in @symbiotejs/slider core, shared verbatim with the future Angular
 // adapter; here Vue supplies the reactivity — a ref tracks the value native last reported (to mark
 // the active step) and a ref the measured width (for the step indicator) — plus the descriptor
 // bridge. The native RNCSlider view carries no symbiote metadata: the engine derives its events
@@ -16,8 +16,8 @@ import {
   emitModelUpdate,
   Image,
   type IImageSourceProp,
-} from '@symbiote/vue';
-import { dlog, type IClassNameValue, type ISymbioteEvent } from '@symbiote/engine';
+} from '@symbiotejs/vue';
+import { dlog, type IClassNameValue, type ISymbioteEvent } from '@symbiotejs/engine';
 import {
   sanitizeSliderValue,
   resolveSliderDisabled,

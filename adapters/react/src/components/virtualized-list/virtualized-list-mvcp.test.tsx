@@ -11,8 +11,8 @@
 
 import { createElement, createRef, type ReactElement } from 'react';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { FlatList, mount, unmount, type IFlatListHandle } from '@symbiote/react';
-import { installFabric, type IFakeNode } from '@symbiote/test-utils';
+import { FlatList, mount, unmount, type IFlatListHandle } from '@symbiotejs/react';
+import { installFabric, type IFakeNode } from '@symbiotejs/test-utils';
 
 interface ICommandCall {
   name: string;

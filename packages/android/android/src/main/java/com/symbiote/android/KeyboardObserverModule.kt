@@ -25,7 +25,7 @@ import com.facebook.react.uimanager.PixelUtil
 // raw ime() inset (the real height), and without a WindowInsetsAnimation callback it fires
 // with the settled target insets — exactly the keyboard frame we want.
 //
-// Named "KeyboardObserver" on purpose: @symbiote/react's Keyboard resolves that module
+// Named "KeyboardObserver" on purpose: @symbiotejs/react's Keyboard resolves that module
 // name on iOS (RCTKeyboardObserver) and now on Android too, so the JS adapter stays
 // platform-uniform and entirely unchanged. The height math mirrors ReactRootView
 // (imeInsets.bottom - systemBars.bottom); we re-derive it here rather than fork RN.

@@ -4,11 +4,11 @@
 // Pressable that owns the press wiring. The native props (nativeBackgroundAndroid /
 // nativeForegroundAndroid) are read by Android's ReactViewManager; on iOS they are inert props, so
 // the component still renders its child with working press wiring. The static factories +
-// background mapping are shared in @symbiote/components/view. React only attaches them onto the
+// background mapping are shared in @symbiotejs/components/view. React only attaches them onto the
 // component value and nests the feedback View.
 
 import { createElement, type FC, type ReactNode } from 'react';
-import { dlog } from '@symbiote/engine';
+import { dlog } from '@symbiotejs/engine';
 import {
   backgroundProps,
   canUseNativeForeground,
@@ -18,7 +18,7 @@ import {
   type INativeFeedbackBackground,
   type IThemeAttrBackground,
   type IRippleBackground,
-} from '@symbiote/components';
+} from '@symbiotejs/components';
 import { View } from '../../components';
 import { Pressable, type IPressableProps } from '../pressable';
 
@@ -26,7 +26,7 @@ export type {
   INativeFeedbackBackground,
   IThemeAttrBackground,
   IRippleBackground,
-} from '@symbiote/components';
+} from '@symbiotejs/components';
 
 type ITouchableNativeFeedbackBaseProps = Omit<IPressableProps, 'style' | 'children'> & {
   background?: INativeFeedbackBackground;

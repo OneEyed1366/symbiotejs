@@ -5,9 +5,9 @@
 // so setValue's flush path doesn't throw; no view is attached.
 
 import { describe, expect, it } from 'vitest';
-import { AnimatedValue, AnimatedMock } from '@symbiote/engine';
-import type { IEndResult } from '@symbiote/engine';
-import { installFabric } from '@symbiote/test-utils';
+import { AnimatedValue, AnimatedMock } from '@symbiotejs/engine';
+import type { IEndResult } from '@symbiotejs/engine';
+import { installFabric } from '@symbiotejs/test-utils';
 
 installFabric();
 

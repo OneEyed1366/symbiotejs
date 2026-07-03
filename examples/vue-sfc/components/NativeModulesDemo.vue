@@ -6,7 +6,7 @@
 -->
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted } from 'vue'
-import { View, Text, Image, Button, I18nManager, Settings } from '@symbiote/vue'
+import { View, Text, Image, Button, I18nManager, Settings } from '@symbiotejs/vue'
 
 const LOGO_URI = 'https://vuejs.org/images/logo.png'
 // A distinct cache key for the prefetch demo: same asset, different URL (query

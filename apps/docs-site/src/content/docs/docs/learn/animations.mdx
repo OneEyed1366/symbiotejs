@@ -8,7 +8,7 @@ import { Aside } from '@astrojs/starlight/components';
 Symbiote ships a from-scratch, framework-agnostic port of React Native's
 `Animated` API. The value graph, easing curves, interpolation, and composition
 helpers (`timing`, `spring`, `decay`, `parallel`, `sequence`, `stagger`,
-`loop`, `delay`) live once in `@symbiote/engine` — every adapter re-exports the
+`loop`, `delay`) live once in `@symbiotejs/engine` — every adapter re-exports the
 same `Animated` namespace and the same `createAnimatedComponent` mechanism, so
 `Animated.Value`, `Animated.spring`, and the rest behave identically no matter
 which framework renders them.
@@ -18,7 +18,7 @@ which framework renders them.
 React:
 
 ```tsx
-import { Animated } from '@symbiote/react';
+import { Animated } from '@symbiotejs/react';
 
 const pulse = useRef(new Animated.Value(0)).current;
 
@@ -38,7 +38,7 @@ Vue:
 ```vue
 <script setup lang="ts">
 import { onMounted, onUnmounted } from 'vue';
-import { Animated } from '@symbiote/vue';
+import { Animated } from '@symbiotejs/vue';
 
 // Animated.View has a dot in its name, so it can't be a template tag directly —
 // alias it to a plain identifier first.
@@ -63,7 +63,7 @@ Angular:
 
 ```ts
 import { Component, OnInit, OnDestroy } from '@angular/core';
-import { Animated, AnimatedView } from '@symbiote/angular';
+import { Animated, AnimatedView } from '@symbiotejs/angular';
 
 @Component({
   selector: 'pulse-dot',
@@ -93,7 +93,7 @@ export class PulseDot implements OnInit, OnDestroy {
   Angular's reason is deeper: `ngc`'s AOT partial-mode compiler statically
   evaluates template type-checking and can't trace a component class through
   property access on an external, pre-compiled namespace object — only through
-  a direct named import binding. `@symbiote/angular` exports `AnimatedView`,
+  a direct named import binding. `@symbiotejs/angular` exports `AnimatedView`,
   `AnimatedText`, `AnimatedImage`, `AnimatedScrollView`, `AnimatedFlatList`,
   and `AnimatedSectionList` as top-level named symbols for exactly this
   reason; plain `tsc`/Vitest won't catch a dotted alias slipping through, only

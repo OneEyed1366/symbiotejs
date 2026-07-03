@@ -1,13 +1,13 @@
 // Regression test for the package-level RNCSlider fallback registration. The app/examples still
-// inject RN's ReactNativeViewConfigRegistry when available, but @symbiote/slider must be self-
+// inject RN's ReactNativeViewConfigRegistry when available, but @symbiotejs/slider must be self-
 // contained: importing this package registers RNCSlider's events + tint processors even when the
 // registry lookup misses on a real host.
 
 import { createElement } from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { mount, unmount, setNativeViewConfigSource } from '@symbiote/react';
-import { setColorProcessor, type ISymbioteEvent } from '@symbiote/engine';
-import { installFabric, type IFakeNode } from '@symbiote/test-utils';
+import { mount, unmount, setNativeViewConfigSource } from '@symbiotejs/react';
+import { setColorProcessor, type ISymbioteEvent } from '@symbiotejs/engine';
+import { installFabric, type IFakeNode } from '@symbiotejs/test-utils';
 import './register';
 
 vi.mock('@react-native-community/slider/dist/RNCSliderNativeComponent', () => ({}));

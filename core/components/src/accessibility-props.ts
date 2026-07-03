@@ -6,10 +6,10 @@
 // in JS before commit; `resolveAccessibilityProps` does that, mirroring RN's
 // own View.js transform. Types are kept in sync with RN's ViewAccessibility.js.
 //
-// Framework-agnostic (imports only @symbiote/engine), so every adapter (React,
+// Framework-agnostic (imports only @symbiotejs/engine), so every adapter (React,
 // Vue, and the next) folds aria/role into accessibility* identically (ADR 0024).
 
-import { dlog, type ISymbioteEvent } from '@symbiote/engine';
+import { dlog, type ISymbioteEvent } from '@symbiotejs/engine';
 
 // Kept in sync with the AccessibilityRolesMask in RN's RCTViewManager.m
 // (ViewAccessibility.js `AccessibilityRole`). The trailing `string & {}` keeps

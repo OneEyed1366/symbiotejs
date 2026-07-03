@@ -1,5 +1,5 @@
 {
-  "name": "@symbiote/android",
+  "name": "@symbiotejs/android",
   "version": "0.0.0",
   "description": "symbiote's Android host-shim native modules — re-provide RN host signals (keyboard events, ...) that symbiote's own Fabric surface bypasses. iOS needs none of this; its equivalents are global native observers RN already ships.",
   "react-native": "android",

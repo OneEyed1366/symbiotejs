@@ -10,7 +10,7 @@
 -->
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted, type Ref } from 'vue';
-import { View, Text, Animated, Button } from '@symbiote/vue';
+import { View, Text, Animated, Button } from '@symbiotejs/vue';
 
 const AnimatedView = Animated.View;
 

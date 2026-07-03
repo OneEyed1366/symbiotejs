@@ -62,8 +62,8 @@ const config = {
       return context.resolveRequest(context, moduleName, platform);
     },
     extraNodeModules: {
-      '@symbiote/engine': enginePkg,
-      '@symbiote/components': componentsPkg,
+      '@symbiotejs/engine': enginePkg,
+      '@symbiotejs/components': componentsPkg,
       '@angular/core': path.resolve(projectRoot, 'node_modules/@angular/core'),
       react: path.resolve(projectRoot, 'node_modules/react'),
     },

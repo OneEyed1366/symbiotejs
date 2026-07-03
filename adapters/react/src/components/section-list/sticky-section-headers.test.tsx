@@ -11,8 +11,8 @@
 
 import { createElement, type ReactElement } from 'react';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { VirtualizedSectionList, mount, unmount } from '@symbiote/react';
-import { installFabric, type IFakeNode } from '@symbiote/test-utils';
+import { VirtualizedSectionList, mount, unmount } from '@symbiotejs/react';
+import { installFabric, type IFakeNode } from '@symbiotejs/test-utils';
 
 interface IRow {
   id: number;

@@ -1,4 +1,4 @@
-// createPortal for @symbiote/angular — the Angular twin of the React/Vue same-surface portal
+// createPortal for @symbiotejs/angular — the Angular twin of the React/Vue same-surface portal
 // (create-portal.ts / Teleport in runtime-helpers.ts). Scope is identical: the target must be
 // an already-mounted location WITHIN THE SAME SURFACE as the portal's call site — see the
 // react-adapter-portal skill for why cross-surface targets are permanently out of scope

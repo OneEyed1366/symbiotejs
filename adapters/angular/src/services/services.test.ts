@@ -1,8 +1,8 @@
 import '@angular/compiler';
 import { Component, inject } from '@angular/core';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { Appearance, Dimensions } from '@symbiote/engine';
-import { installFabric } from '@symbiote/test-utils';
+import { Appearance, Dimensions } from '@symbiotejs/engine';
+import { installFabric } from '@symbiotejs/test-utils';
 
 import { mount, unmount } from '../render';
 import { ColorSchemeService } from './color-scheme.service';

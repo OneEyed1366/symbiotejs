@@ -5,7 +5,7 @@ description: A native slider wrapper over @react-native-community/slider, shared
 
 import { Aside } from '@astrojs/starlight/components';
 
-`@symbiote/slider` wraps the `RNCSlider` native view from
+`@symbiotejs/slider` wraps the `RNCSlider` native view from
 [`@react-native-community/slider`](https://github.com/callstack/react-native-slider) so every
 symbiote adapter can render it — without importing that library's React component body. It is
 the reference implementation of the [third-party native-view wrapper](#how-the-wrapper-works)
@@ -28,14 +28,14 @@ pattern: the recipe to follow for any future community RN view.
 pnpm add @react-native-community/slider
 ```
 
-`@symbiote/slider` itself is a workspace package (`packages/slider`), not yet published — add it
+`@symbiotejs/slider` itself is a workspace package (`packages/slider`), not yet published — add it
 as a workspace dependency the same way the examples do.
 
 <Aside type="caution">
   `@react-native-community/slider` ships a React component (`Slider.tsx`) built on hooks. Never
   import that component directly in a non-React adapter — it throws with `Cannot read property
   'useState' of null` because the React dispatcher is absent. Always import from
-  `@symbiote/slider/react` or `@symbiote/slider/vue`, never from the community package itself.
+  `@symbiotejs/slider/react` or `@symbiotejs/slider/vue`, never from the community package itself.
 </Aside>
 
 ## Usage
@@ -49,7 +49,7 @@ as a workspace dependency the same way the examples do.
 
 ```tsx
 import { useState } from 'react';
-import { Slider } from '@symbiote/slider/react';
+import { Slider } from '@symbiotejs/slider/react';
 
 export default function VolumeControl() {
   const [volume, setVolume] = useState(0.5);
@@ -73,7 +73,7 @@ export default function VolumeControl() {
 ```vue
 <script setup lang="ts">
 import { ref } from 'vue';
-import { Slider } from '@symbiote/slider/vue';
+import { Slider } from '@symbiotejs/slider/vue';
 
 const volume = ref(0.5);
 </script>
@@ -98,7 +98,7 @@ explicit form. See the [Vue API reference](/symbiote/docs/api/vue/#model-binding
 
 ```ts
 import { Component, signal } from '@angular/core';
-import { Slider } from '@symbiote/slider/angular';
+import { Slider } from '@symbiotejs/slider/angular';
 
 @Component({
   standalone: true,
@@ -168,7 +168,7 @@ a Vue scoped slot) — see [shared vs framework-specific](/symbiote/docs/api/com
 
 ## How the wrapper works
 
-`@symbiote/slider` ships **zero runtime metadata** for `RNCSlider` — the engine derives its
+`@symbiotejs/slider` ships **zero runtime metadata** for `RNCSlider` — the engine derives its
 events and color/image processors from the library's own codegen `ViewConfig` at first commit
 (`setNativeViewConfigSource`). The package only supplies the pure JS folding the library's React
 wrapper normally does (value/limit sanitizing, the step-indicator layout) plus the native

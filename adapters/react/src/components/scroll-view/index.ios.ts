@@ -3,8 +3,8 @@
 // Also the base (scroll-view.ts re-exports it) for headless / web. See ADR 0020.
 
 import { createElement, forwardRef, useImperativeHandle, useRef } from 'react';
-import type { ISymbioteNode } from '@symbiote/engine';
-import { buildScrollViewHandle } from '@symbiote/components';
+import type { ISymbioteNode } from '@symbiotejs/engine';
+import { buildScrollViewHandle } from '@symbiotejs/components';
 import {
   usePreparedScrollView,
   useNativeStickyScrollAttach,

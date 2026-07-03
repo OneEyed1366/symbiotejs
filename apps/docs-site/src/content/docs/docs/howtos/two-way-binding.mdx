@@ -9,14 +9,14 @@ wiring your own change handler by hand.
 ## Vue — `v-model`
 
 `Switch`, `TextInput`, and `Slider` all support it. `Switch`/`TextInput` come
-from `@symbiote/vue`; `Slider` ships from the separate
-[`@symbiote/slider`](/symbiote/docs/packages/slider/) wrapper package
-(`@symbiote/slider/vue`), not the adapter's own barrel:
+from `@symbiotejs/vue`; `Slider` ships from the separate
+[`@symbiotejs/slider`](/symbiote/docs/packages/slider/) wrapper package
+(`@symbiotejs/slider/vue`), not the adapter's own barrel:
 
 ```vue
 <script setup lang="ts">
-import { Switch, TextInput } from '@symbiote/vue';
-import { Slider } from '@symbiote/slider/vue';
+import { Switch, TextInput } from '@symbiotejs/vue';
+import { Slider } from '@symbiotejs/slider/vue';
 </script>
 
 <template>
@@ -36,11 +36,11 @@ to upfront.
 
 The same three components expose a matching `value` input +
 `valueChange` output, so Angular's `[(value)]` sugar works unmodified —
-`Slider` again from the separate `@symbiote/slider/angular` package:
+`Slider` again from the separate `@symbiotejs/slider/angular` package:
 
 ```ts
-import { Switch, TextInput } from '@symbiote/angular';
-import { Slider } from '@symbiote/slider/angular';
+import { Switch, TextInput } from '@symbiotejs/angular';
+import { Slider } from '@symbiotejs/slider/angular';
 
 // template: `
 //   <Switch [(value)]="enabled" />
@@ -63,7 +63,7 @@ to reach for, and none is planned.
 
 The controlled-write correction (native reports a change, you don't update
 `value`, Symbiote commands native back to the JS value) is shared logic in
-`@symbiote/components`, not reimplemented per adapter or per binding style —
+`@symbiotejs/components`, not reimplemented per adapter or per binding style —
 `v-model`/`[(value)]` are sugar on top of the same contract described in the
 [Events guide](/symbiote/docs/learn/events/#controlled-components) and the
 [Vue API reference](/symbiote/docs/api/vue/#model-bindings-v-model).

@@ -4,8 +4,8 @@
 // wrapper's child order. This asserts that shape. No simulator.
 
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { mount, unmount, Text, ImageBackground } from '@symbiote/react';
-import { installFabric } from '@symbiote/test-utils';
+import { mount, unmount, Text, ImageBackground } from '@symbiotejs/react';
+import { installFabric } from '@symbiotejs/test-utils';
 
 const fabric = installFabric();
 const ROOT_TAG = 14;

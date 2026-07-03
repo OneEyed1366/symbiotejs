@@ -16,7 +16,7 @@ core packages.
   native `display: none` without unmounting; `Teleport` is the same portal
   primitive as React's `createPortal`, targeted at a host-node ref instead of a
   CSS selector. Also exposes `AppRegistry`, the same app-entry-point API as
-  React, over a shared `@symbiote/engine` core.
+  React, over a shared `@symbiotejs/engine` core.
 - Angular — the second non-React adapter. Renderer seam
   (`Renderer2`/`RendererFactory2`), DOM-less bootstrap, and full component
   parity are implemented and tested (`examples/angular`). Every component
@@ -27,22 +27,22 @@ core packages.
   input on `ScrollView` and the list components because it must also accept
   an `Animated.event(...)` marker, which `@Output()` can't express. On the
   landing page's live framework switcher now; the Slider wrapper package also
-  ships an Angular build (`@symbiote/slider/angular`).
+  ships an Angular build (`@symbiotejs/slider/angular`).
 - Svelte — not started. Architecture diagrams and roadmap text only.
 - Solid — not started. Architecture diagrams and roadmap text only.
 
 ## Core status
 
-- `@symbiote/engine` — retained tree, Fabric commit path, style/runtime
+- `@symbiotejs/engine` — retained tree, Fabric commit path, style/runtime
   utilities, native events, and the shared `AppRegistry` core every adapter
   wraps.
-- `@symbiote/css-parser` — build-time compiler for plain CSS, CSS Modules, and
+- `@symbiotejs/css-parser` — build-time compiler for plain CSS, CSS Modules, and
   SCSS/Sass, Less, and Stylus preprocessor sources, resolved at runtime
   through a class registry shared by React, Vue, and Angular. Also ships a
   `css-dts` CLI (typo-safe `.module.css` `.d.ts` generation) and a
   `typescript-plugin` for live in-editor autocomplete — see the
   [roadmap](/symbiote/docs/project/roadmap/).
-- `@symbiote/components` — shared component state, render helpers,
+- `@symbiotejs/components` — shared component state, render helpers,
   accessibility, and parity logic.
 - React/Vue/Angular adapters — framework lifecycle and public API bridges over
   the shared core.

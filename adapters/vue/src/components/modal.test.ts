@@ -1,6 +1,6 @@
 // Co-located Vue-driven pipeline test, the Vue twin of
 // adapters/react/src/components/modal/modal.test.tsx. Proves the SAME shared contract
-// (renderModal/modalReducer/shouldRenderModal from @symbiote/components) through Vue's own
+// (renderModal/modalReducer/shouldRenderModal from @symbiotejs/components) through Vue's own
 // lifecycle: a visible modal commits ModalHostView(RCTView(RCTView)) with children nested under
 // the container (one childSet, not a second root); a hidden modal commits no modal node; the
 // direct events round-trip back to Vue emits; and the RN-faithful style precedence (transparent
@@ -9,8 +9,8 @@
 
 import { defineComponent, h, ref } from '@vue/runtime-core';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { Modal, mount, unmount } from '@symbiote/vue';
-import { installFabric, type IFakeNode } from '@symbiote/test-utils';
+import { Modal, mount, unmount } from '@symbiotejs/vue';
+import { installFabric, type IFakeNode } from '@symbiotejs/test-utils';
 
 const ROOT_TAG = 421;
 

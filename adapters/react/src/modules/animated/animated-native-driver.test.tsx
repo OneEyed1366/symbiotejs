@@ -8,8 +8,8 @@
 
 import { type ReactElement } from 'react';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { mount, unmount, Animated } from '@symbiote/react';
-import { installFabric, type IFakeNode } from '@symbiote/test-utils';
+import { mount, unmount, Animated } from '@symbiotejs/react';
+import { installFabric, type IFakeNode } from '@symbiotejs/test-utils';
 
 // ---- fake NativeAnimatedTurboModule (records calls) ----------------------
 

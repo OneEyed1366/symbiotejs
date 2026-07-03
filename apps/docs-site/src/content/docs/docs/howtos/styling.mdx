@@ -14,14 +14,14 @@ is what every current example app (`examples/react`, `examples/vue-sfc`,
 
 ```tsx
 import './App.css';
-import { Text, View } from '@symbiote/react';
+import { Text, View } from '@symbiotejs/react';
 
 <View className="card">
   <Text>Native surface</Text>
 </View>;
 ```
 
-`@symbiote/css-parser` compiles the rule at build time; `className="card"`
+`@symbiotejs/css-parser` compiles the rule at build time; `className="card"`
 resolves it back at render time through a runtime class registry shared by
 every adapter. Plain CSS, CSS Modules, plus optional SCSS/Sass, Less, and
 Stylus preprocessing (`<style lang="scss">`, `.module.scss`, …) — no
@@ -49,12 +49,12 @@ engine exists:
 
 ## The alternative — `StyleSheet.create`
 
-Every adapter re-exports `StyleSheet` from `@symbiote/engine`. It's still
+Every adapter re-exports `StyleSheet` from `@symbiotejs/engine`. It's still
 fully supported and needs no build-time CSS step — reach for it for a value
 that's genuinely computed at runtime, or if you'd rather skip CSS entirely:
 
 ```tsx
-import { StyleSheet, Text, View } from '@symbiote/react';
+import { StyleSheet, Text, View } from '@symbiotejs/react';
 
 const styles = StyleSheet.create({
   card: { padding: 16, borderRadius: 12, backgroundColor: '#111827' },
@@ -73,10 +73,10 @@ CSS.
 ## Want typo-safe `.module.css` keys
 
 A bare `.module.css` import type-checks as `Record<string, string>` unless
-you wire two pieces from `@symbiote/css-parser` — add it as a devDependency:
+you wire two pieces from `@symbiotejs/css-parser` — add it as a devDependency:
 
 ```sh
-pnpm add -D @symbiote/css-parser
+pnpm add -D @symbiotejs/css-parser
 ```
 
 ```json
@@ -88,7 +88,7 @@ pnpm add -D @symbiote/css-parser
 // tsconfig.json
 {
   "compilerOptions": {
-    "plugins": [{ "name": "@symbiote/css-parser/typescript-plugin" }]
+    "plugins": [{ "name": "@symbiotejs/css-parser/typescript-plugin" }]
   }
 }
 ```

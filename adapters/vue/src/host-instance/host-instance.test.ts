@@ -6,14 +6,14 @@
 // yield null. Commit is coalesced, so each mount is followed by a macrotask `tick` that
 // drains the engine's commit before the assert reads the committed tree.
 //
-// findNodeHandle is imported from its own module (not the @symbiote/vue barrel) so the test
-// stands without touching the barrel; once the export lands it can move to '@symbiote/vue'.
+// findNodeHandle is imported from its own module (not the @symbiotejs/vue barrel) so the test
+// stands without touching the barrel; once the export lands it can move to '@symbiotejs/vue'.
 
 import { defineComponent, h, shallowRef } from '@vue/runtime-core';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { View, mount, unmount } from '@symbiote/vue';
-import { createElement, isSymbioteNode, type ISymbioteNode } from '@symbiote/engine';
-import { installFabric, type IFakeNode } from '@symbiote/test-utils';
+import { View, mount, unmount } from '@symbiotejs/vue';
+import { createElement, isSymbioteNode, type ISymbioteNode } from '@symbiotejs/engine';
+import { installFabric, type IFakeNode } from '@symbiotejs/test-utils';
 import { findNodeHandle, type IHostInstance } from './index';
 
 const ROOT_TAG = 318;

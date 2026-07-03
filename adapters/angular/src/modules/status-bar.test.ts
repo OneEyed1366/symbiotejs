@@ -1,8 +1,8 @@
 import '@angular/compiler';
 import { Component } from '@angular/core';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import * as engine from '@symbiote/engine';
-import { installFabric } from '@symbiote/test-utils';
+import * as engine from '@symbiotejs/engine';
+import { installFabric } from '@symbiotejs/test-utils';
 
 import { mount, unmount } from '../render';
 import { StatusBar } from './status-bar';

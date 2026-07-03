@@ -1,7 +1,7 @@
 /**
  * Symbiote canary app. Every primitive here (View, Text, ScrollView, TextInput,
  * Image, Switch, ActivityIndicator, Button, Pressable, Modal, FlatList,
- * RefreshControl) comes from @symbiote/react, not react-native. The tree is
+ * RefreshControl) comes from @symbiotejs/react, not react-native. The tree is
  * rendered by our own react-reconciler host config straight onto Fabric; React
  * Native's renderer is never involved. Run with DEBUG=1 to watch each interaction
  * commit incrementally (created=0, only the touched branch clones) in Metro's logs.
@@ -52,12 +52,12 @@ import {
   type ISymbioteEvent,
   type IFlatListHandle,
   type ISection,
-} from '@symbiote/react';
-// A real third-party native view, driven through symbiote's own wrapper (@symbiote/slider)
+} from '@symbiotejs/react';
+// A real third-party native view, driven through symbiote's own wrapper (@symbiotejs/slider)
 // rather than the library's React component: the wrapper registers RNCSlider's ViewConfig and
 // renders the native leaf through the engine, so the SAME slider works on Vue/Angular too. App
-// code and the app manifest name only @symbiote/slider; the native package is the wrapper's dep.
-import { Slider } from '@symbiote/slider/react';
+// code and the app manifest name only @symbiotejs/slider; the native package is the wrapper's dep.
+import { Slider } from '@symbiotejs/slider/react';
 import './App.css';
 
 const CHIP_WIDTH = 72;
@@ -1182,7 +1182,7 @@ function App() {
         />
 
         {/* Slider: a THIRD-PARTY native view (@react-native-community/slider) driven via the
-          @symbiote/slider native-proxy wrapper. The engine derives the onValueChange event and
+          @symbiotejs/slider native-proxy wrapper. The engine derives the onValueChange event and
           the track/thumb tint processors from the library's own ViewConfig at runtime. Drag it:
           the value updates live; the colored track proves color derivation. */}
         <View className="section-tight">
@@ -1408,7 +1408,7 @@ function App() {
 
         {/* Modern style props reaching Fabric's C++ parser. Each is an A/B so the effect
           is unmistakable on the dark theme. Kept as inline dynamic style here (not CSS)
-          only because these particular demos predate @symbiote/css-parser's `raw`
+          only because these particular demos predate @symbiotejs/css-parser's `raw`
           passthrough for transform/box-shadow/filter/transform-origin (2026-07) — the CSS
           property itself now works identically (see .gradient-card below, which IS
           authored via CSS) — this is just legacy demo wiring, not a remaining gap. */}
@@ -1446,7 +1446,7 @@ function App() {
         </View>
 
         {/* background-image: a CSS `linear-gradient(...)` authored entirely in App.css
-          (.gradient-card), proving @symbiote/css-parser's `background-image` → RN's
+          (.gradient-card), proving @symbiotejs/css-parser's `background-image` → RN's
           `experimental_backgroundImage` raw passthrough works end to end (css-parser →
           registerStyles → routeProp → core/engine/src/process-background-image → Fabric).
           PASS: the panel shows a blue-to-orange gradient sweeping left to right. */}

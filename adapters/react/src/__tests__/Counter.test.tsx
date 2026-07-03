@@ -4,8 +4,8 @@
 
 import { useState, type ReactElement } from 'react';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { View, Text, mount, unmount } from '@symbiote/react';
-import { installFabric } from '@symbiote/test-utils';
+import { View, Text, mount, unmount } from '@symbiotejs/react';
+import { installFabric } from '@symbiotejs/test-utils';
 
 function Counter(): ReactElement {
   const [count, setCount] = useState(0);

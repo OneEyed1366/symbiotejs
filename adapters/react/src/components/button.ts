@@ -1,16 +1,16 @@
 // Button is the minimal cross-platform button, rendered in its iOS shape per RN's Button.js: a
 // TouchableOpacity wrapping a Text. The base text style, the role constant, and the color fold
-// (caller color tints the label; disabled greys it) are shared in @symbiote/components/view; here
+// (caller color tints the label; disabled greys it) are shared in @symbiotejs/components/view; here
 // React only composes its TouchableOpacity + Text and forwards the native-only props.
 
 import { createElement, type FC } from 'react';
 import { Text } from '../components';
 import { TouchableOpacity } from './touchable';
-import { BUTTON_ACCESSIBILITY_ROLE, resolveButtonTextStyle } from '@symbiote/components';
-import type { IButtonProps as IButtonBaseProps } from '@symbiote/components';
+import { BUTTON_ACCESSIBILITY_ROLE, resolveButtonTextStyle } from '@symbiotejs/components';
+import type { IButtonProps as IButtonBaseProps } from '@symbiotejs/components';
 
 // IButtonProps is otherwise framework-agnostic (it takes a `title` string, no children / ref), so
-// its base lives in @symbiote/components; className is React's own field per
+// its base lives in @symbiotejs/components; className is React's own field per
 // <prop_types_split_agnostic_vs_per_adapter>, not destructured below so it falls into
 // `...accessibilityRest` and forwards onto the outer TouchableOpacity, like every other RN adapter's
 // className field.

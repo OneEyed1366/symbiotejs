@@ -8,8 +8,8 @@
 
 import { type ReactElement } from 'react';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { KeyboardAvoidingView, Keyboard, Text, mount, unmount } from '@symbiote/react';
-import { installFabric, type IFakeNode } from '@symbiote/test-utils';
+import { KeyboardAvoidingView, Keyboard, Text, mount, unmount } from '@symbiotejs/react';
+import { installFabric, type IFakeNode } from '@symbiotejs/test-utils';
 
 const ROOT_TAG = 290;
 

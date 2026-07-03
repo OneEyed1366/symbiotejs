@@ -5,7 +5,7 @@
 // referencing the four channel tags. A fake native module records the native config.
 
 import { beforeAll, describe, expect, it } from 'vitest';
-import { AnimatedColor, AnimatedValue, AnimatedWithChildren } from '@symbiote/engine';
+import { AnimatedColor, AnimatedValue, AnimatedWithChildren } from '@symbiotejs/engine';
 
 describe('AnimatedColor — input forms parse to channels', () => {
   it('parses a 6-digit hex', () => {

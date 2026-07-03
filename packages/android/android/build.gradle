@@ -1,4 +1,4 @@
-// @symbiote/android — autolinked Android host-shim library. Built as a subproject of the
+// @symbiotejs/android — autolinked Android host-shim library. Built as a subproject of the
 // consuming app, so it reads the app's pinned SDK/Kotlin versions from rootProject.ext
 // (the same anchors the app's build.gradle defines), falling back to sane defaults when
 // built in isolation.

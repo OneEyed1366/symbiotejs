@@ -15,10 +15,10 @@
     "e2e:test:android": "detox test --configuration android.emu.debug"
   },
   "dependencies": {
-    "@symbiote/components": "workspace:*",
-    "@symbiote/engine": "workspace:*",
-    "@symbiote/slider": "workspace:*",
-    "@symbiote/vue": "workspace:*",
+    "@symbiotejs/components": "workspace:*",
+    "@symbiotejs/engine": "workspace:*",
+    "@symbiotejs/slider": "workspace:*",
+    "@symbiotejs/vue": "workspace:*",
     "@vue/runtime-core": "catalog:",
     "react": "catalog:",
     "react-native": "catalog:"
@@ -34,8 +34,8 @@
     "@react-native/eslint-config": "catalog:",
     "@react-native/metro-config": "catalog:",
     "@react-native/typescript-config": "catalog:",
-    "@symbiote/css-parser": "workspace:*",
-    "@symbiote/test-utils": "workspace:*",
+    "@symbiotejs/css-parser": "workspace:*",
+    "@symbiotejs/test-utils": "workspace:*",
     "@types/jest": "catalog:",
     "@vue/babel-plugin-jsx": "catalog:",
     "detox": "catalog:",

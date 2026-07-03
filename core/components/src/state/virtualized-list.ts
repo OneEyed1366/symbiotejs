@@ -20,8 +20,8 @@
 // Descriptor render fn for a list — the shared layer for lists is this STATE/logic
 // module, not a view/render-*.ts. See core/components/.docs-note-lists.md.
 
-import type { IViewStyle } from '@symbiote/engine';
-import type { ISymbioteEvent, ISymbioteNode } from '@symbiote/engine';
+import type { IViewStyle } from '@symbiotejs/engine';
+import type { ISymbioteEvent, ISymbioteNode } from '@symbiotejs/engine';
 import type { IScrollViewHandle } from '../scroll-view-commands';
 
 // Defaults match RN. windowSize is measured in viewport-lengths (21 => ten screens

@@ -3,10 +3,10 @@
  *
  * Symbiote Vue canary entry (M3 / R4 on-device proof). We register a RUNNABLE with RN's
  * own AppRegistry, not a component, so the native Fabric host invokes it by app key
- * with the surface's rootTag, and we mount the Vue app via @symbiote/engine. RN's own
+ * with the surface's rootTag, and we mount the Vue app via @symbiotejs/engine. RN's own
  * renderer is never in the path. (The React canary reaches the same registerRunnable seam
- * through @symbiote/react's AppRegistry; the Vue slice has no AppRegistry yet, so we call
- * it directly. It moves into @symbiote/components with the rest of the runtime layer.)
+ * through @symbiotejs/react's AppRegistry; the Vue slice has no AppRegistry yet, so we call
+ * it directly. It moves into @symbiotejs/components with the rest of the runtime layer.)
  */
 
 import {
@@ -19,8 +19,8 @@ import {
   setColorProcessor,
   setDeviceEventSource,
   setNativeViewConfigSource,
-} from '@symbiote/engine';
-import { mount } from '@symbiote/vue';
+} from '@symbiotejs/engine';
+import { mount } from '@symbiotejs/vue';
 import App from './App';
 import { name as appName } from './app.json';
 
@@ -46,7 +46,7 @@ setNativeViewConfigSource(name => {
 });
 
 // Native invokes this runnable by app key with the surface's rootTag; it mounts the Vue
-// app through @symbiote/engine. registerRunnable (not registerComponent) means RN stores
+// app through @symbiotejs/engine. registerRunnable (not registerComponent) means RN stores
 // a raw mount callback and never renders it with its own renderer.
 RNAppRegistry.registerRunnable(appName, ({ rootTag }) => {
   mount(rootTag, App);

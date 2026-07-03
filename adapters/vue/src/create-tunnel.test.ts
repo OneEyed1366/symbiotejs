@@ -7,8 +7,8 @@
 
 import { defineComponent, h, ref } from '@vue/runtime-core';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { createTunnel, mount, unmount } from '@symbiote/vue';
-import { installFabric, type IFakeNode } from '@symbiote/test-utils';
+import { createTunnel, mount, unmount } from '@symbiotejs/vue';
+import { installFabric, type IFakeNode } from '@symbiotejs/test-utils';
 
 const SOURCE_TAG = 622;
 const TARGET_TAG = 623;

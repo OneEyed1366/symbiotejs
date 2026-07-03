@@ -4,7 +4,7 @@
 // rejected toggle and snap native back. The reducer + the two pure predicates here are the
 // whole state machine; the adapter supplies the hook (useReducer / ref / watch) around it.
 
-import type { ISymbioteEvent } from '@symbiote/engine';
+import type { ISymbioteEvent } from '@symbiotejs/engine';
 
 // The value native last reported via `change`, or null before any report. Native is
 // optimistic (it flips its own grip before JS approves), so the lifecycle layer diffs this

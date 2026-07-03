@@ -1,6 +1,6 @@
 // Co-located Vue-driven test (ADR 0025), Vue twin of adapters/react/src/modules/app-registry/
 // app-registry.test.tsx. Proves the AppRegistry entry point: `registerComponent(appKey, () =>
-// App)` stores a runnable that calls `mount` (driving @symbiote/engine) AND bridges it to the
+// App)` stores a runnable that calls `mount` (driving @symbiotejs/engine) AND bridges it to the
 // host registrar (RN's own AppRegistry, injected via `setHostRegistrar`) so native can find it
 // by key. Asserts the bridge fires on registration and that invoking the runnable, from the host
 // or via `runApplication`, mounts the tree onto the given rootTag.
@@ -8,7 +8,7 @@
 import { h } from '@vue/runtime-core';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { AppRegistry, setHostRegistrar, unmount, type IAppParameters, type IRunnable } from '../..';
-import { installFabric } from '@symbiote/test-utils';
+import { installFabric } from '@symbiotejs/test-utils';
 import { Text, View } from '../../components';
 
 const APP_KEY = 'canary';

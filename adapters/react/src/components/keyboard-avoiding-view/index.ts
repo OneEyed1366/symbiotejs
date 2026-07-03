@@ -4,7 +4,7 @@
 // Mirrors RN's Libraries/Components/Keyboard/KeyboardAvoidingView.js, as a function component.
 //
 // The inset math + the behavior → style/structure decision are framework-agnostic and live in
-// @symbiote/components (render-keyboard-avoiding-view), shared verbatim with the Vue adapter.
+// @symbiotejs/components (render-keyboard-avoiding-view), shared verbatim with the Vue adapter.
 // React supplies only the lifecycle: useState for the inset, useRef for the measured frame, a
 // useEffect subscription, and the descriptor-free element assembly around its children.
 
@@ -17,7 +17,7 @@ import {
   type ReactElement,
   type ReactNode,
 } from 'react';
-import { dlog, type ISymbioteEvent } from '@symbiote/engine';
+import { dlog, type ISymbioteEvent } from '@symbiotejs/engine';
 import {
   computeInset,
   readKeyboardFrame,
@@ -26,13 +26,13 @@ import {
   DEFAULT_VERTICAL_OFFSET,
   type IKeyboardAvoidingBehavior,
   type IMeasuredFrame,
-} from '@symbiote/components';
+} from '@symbiotejs/components';
 import { View, type IViewProps } from '../../components';
 import { Keyboard, KEYBOARD_EVENT } from '../../modules/keyboard';
-import type { IAccessibilityProps, IAriaProps } from '@symbiote/components';
+import type { IAccessibilityProps, IAriaProps } from '@symbiotejs/components';
 import type { IStyleProp, IViewStyle } from '../../utils/styles';
 
-export type { IKeyboardAvoidingBehavior } from '@symbiote/components';
+export type { IKeyboardAvoidingBehavior } from '@symbiotejs/components';
 
 export interface IKeyboardAvoidingViewProps extends IAccessibilityProps, IAriaProps {
   behavior?: IKeyboardAvoidingBehavior;

@@ -6,8 +6,8 @@
 // helpers from prepareScrollView. What diverges per platform (ADR 0020), how a RefreshControl
 // integrates, stays in the adapter's .ios/.android files.
 
-import { Platform } from '@symbiote/engine';
-import type { IStyleProp, ISymbioteEvent, IViewStyle } from '@symbiote/engine';
+import { Platform } from '@symbiotejs/engine';
+import type { IStyleProp, ISymbioteEvent, IViewStyle } from '@symbiotejs/engine';
 import type { ISymbioteIntrinsic } from '../component-names/shared';
 
 // Pull a numeric field out of an onLayout event's nativeEvent.layout without a cast:

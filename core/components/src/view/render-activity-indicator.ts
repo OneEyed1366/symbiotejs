@@ -9,8 +9,8 @@
 // iOS's ActivityIndicatorView takes neither and defaults to GRAY. The adapter's per-host
 // file supplies those bits via `platform`.
 
-import { dlog } from '@symbiote/engine';
-import type { IStyleProp, IViewStyle, ISymbioteEvent } from '@symbiote/engine';
+import { dlog } from '@symbiotejs/engine';
+import type { IStyleProp, IViewStyle, ISymbioteEvent } from '@symbiotejs/engine';
 import { el } from '../descriptor';
 import type { IDescriptor } from '../descriptor';
 import type { IAccessibilityProps, IAriaProps } from '../accessibility-props';

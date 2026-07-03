@@ -1,5 +1,5 @@
 // Slider, the React lifecycle half. The logic (value/limit/disabled folds, the step-option layout)
-// and the native render live in @symbiote/slider core, shared verbatim with the Vue adapter; here
+// and the native render live in @symbiotejs/slider core, shared verbatim with the Vue adapter; here
 // React supplies the lifecycle — useState for the last-reported value (to mark the active step)
 // and the measured width (for the step indicator), useEffect for the limit warning — plus the
 // descriptor bridge and forwardRef to the native view (matching the library's forwardRef). The
@@ -16,10 +16,10 @@ import type {
   ReactElement,
   RefAttributes,
 } from 'react';
-import { descriptorToReact, Image } from '@symbiote/react';
-import { resolveAccessibilityProps } from '@symbiote/components';
-import type { IDescriptor, IDescriptorChild, IImageSourceProp } from '@symbiote/components';
-import { dlog, type ISymbioteEvent, type ISymbioteNode } from '@symbiote/engine';
+import { descriptorToReact, Image } from '@symbiotejs/react';
+import { resolveAccessibilityProps } from '@symbiotejs/components';
+import type { IDescriptor, IDescriptorChild, IImageSourceProp } from '@symbiotejs/components';
+import { dlog, type ISymbioteEvent, type ISymbioteNode } from '@symbiotejs/engine';
 import {
   sanitizeSliderValue,
   resolveSliderDisabled,

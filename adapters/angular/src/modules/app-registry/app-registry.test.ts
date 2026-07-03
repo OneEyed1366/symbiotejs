@@ -1,7 +1,7 @@
 // Co-located Angular-driven test (ADR 0025), Angular twin of adapters/react/src/modules/
 // app-registry/app-registry.test.tsx. Proves the AppRegistry entry point:
 // `registerComponent(appKey, () => App)` stores a runnable that calls `mount` (driving
-// @symbiote/engine) AND bridges it to the host registrar (RN's own AppRegistry, injected via
+// @symbiotejs/engine) AND bridges it to the host registrar (RN's own AppRegistry, injected via
 // `setHostRegistrar`) so native can find it by key. Also proves the Angular-specific
 // `setWrapperComponentProvider` seam: a pre-authored standalone wrapper receives the root's
 // host node as projected `<ng-content>`, the AOT-safe twin of React's
@@ -10,7 +10,7 @@
 import '@angular/compiler';
 import { Component, Input, type Type } from '@angular/core';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { installFabric } from '@symbiote/test-utils';
+import { installFabric } from '@symbiotejs/test-utils';
 import { AppRegistry, setHostRegistrar, type IAppParameters, type IRunnable } from '../..';
 import { unmount } from '../../render';
 

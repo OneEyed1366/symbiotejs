@@ -11,8 +11,8 @@ import {
   createSurface,
   toPublicInstance,
   type ISymbioteNode,
-} from '@symbiote/engine';
-import { installFabric, type IFakeNode } from '@symbiote/test-utils';
+} from '@symbiotejs/engine';
+import { installFabric, type IFakeNode } from '@symbiotejs/test-utils';
 
 const ROOT_TAG = 77;
 const METHOD_NAMES = [

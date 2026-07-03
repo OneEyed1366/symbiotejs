@@ -6,7 +6,7 @@
 //
 // The windowing engine (offset table, window compute, batch throttle, viewability,
 // edge-reached, the child PLAN, the imperative-handle surface) lives in
-// @symbiote/components/state, shared verbatim with the Vue adapter — a windowing or
+// @symbiotejs/components/state, shared verbatim with the Vue adapter — a windowing or
 // viewability bug is fixed once for all adapters (<adapters_reach_full_feature_parity>).
 // React supplies only its lifecycle (state/refs/effects), the imperative-handle wiring,
 // and the per-cell element creation (createElement). Lists have no Descriptor render fn
@@ -31,7 +31,7 @@ import {
   type ReactNode,
   type Ref,
 } from 'react';
-import { dlog, type ISymbioteEvent, type ISymbioteNode } from '@symbiote/engine';
+import { dlog, type ISymbioteEvent, type ISymbioteNode } from '@symbiotejs/engine';
 import {
   DEFAULT_END_REACHED_THRESHOLD,
   DEFAULT_INITIAL_NUM_TO_RENDER,
@@ -67,10 +67,10 @@ import {
   type IViewabilityConfig,
   type IViewabilityConfigCallbackPair,
   type IVirtualizedListHandle,
-} from '@symbiote/components';
+} from '@symbiotejs/components';
 import { ScrollView, type IScrollViewHandle, type IScrollViewProps } from '../scroll-view';
 import { RefreshControl } from '../refresh-control';
-import type { IAccessibilityProps, IAriaProps } from '@symbiote/components';
+import type { IAccessibilityProps, IAriaProps } from '@symbiotejs/components';
 import type { IStyleProp, IViewStyle } from '../../utils/styles';
 
 // Re-export the shared list types so flat-list / virtualized-section-list keep importing them

@@ -1,4 +1,4 @@
-// createAnimatedComponent for @symbiote/angular: the Angular twin of the React/Vue
+// createAnimatedComponent for @symbiotejs/angular: the Angular twin of the React/Vue
 // wrapper. React/Vue have a runtime HOC (`createAnimatedComponent(Component)` builds a
 // fresh wrapped component on the fly). Angular has NO such idiom AND it cannot have one:
 // the AOT-under-Metro build (angular-adapter skill §4) compiles every @Component at build
@@ -13,7 +13,7 @@
 //
 // The framework-agnostic half (reduceProps / readPassthroughStyle / resolveHostNode /
 // AnimatedProps / attachNativeEventHandler / isNativeAnimatedAvailable) comes from
-// @symbiote/engine, shared verbatim with React and Vue (ADR 0016/0017). Angular supplies
+// @symbiotejs/engine, shared verbatim with React and Vue (ADR 0016/0017). Angular supplies
 // only the lifecycle wiring. The per-frame path NEVER goes through Angular change
 // detection: value.setValue / animation -> flushValue -> AnimatedProps.update() ->
 // setNativeProps(node), exactly as on the other adapters.
@@ -42,7 +42,7 @@ import {
   resolveHostNode,
   whenCommitted,
   type ISymbioteNode,
-} from '@symbiote/engine';
+} from '@symbiotejs/engine';
 import { Image, ScrollView, Text, View } from '../../components';
 import {
   anchorHostStyle,

@@ -11,13 +11,13 @@
 import { defineComponent, h } from '@vue/runtime-core';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { mount, unmount } from '../../render';
-import { clearGlobalStyles, registerStyles } from '@symbiote/engine';
-import { installFabric, type IFakeNode } from '@symbiote/test-utils';
+import { clearGlobalStyles, registerStyles } from '@symbiotejs/engine';
+import { installFabric, type IFakeNode } from '@symbiotejs/test-utils';
 import { RefreshControl } from '../refresh-control';
 import { ScrollView } from './index.android';
 
 const ROOT_TAG = 512;
-// @symbiote/components' component-names always resolves its iOS names under Vitest (no Metro
+// @symbiotejs/components' component-names always resolves its iOS names under Vitest (no Metro
 // platform resolution), so the wrapper's Fabric view name is 'PullToRefreshView' regardless of
 // which platform ScrollView assemble file is under test.
 const REFRESH_WRAPPER_VIEW = 'PullToRefreshView';

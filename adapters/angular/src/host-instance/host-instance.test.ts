@@ -3,8 +3,8 @@
 // reactTag, and null/undefined to a native tag using the engine's getNativeTag.
 
 import { describe, expect, it } from 'vitest';
-import { createElement, createSurface, getNativeTag } from '@symbiote/engine';
-import { installFabric } from '@symbiote/test-utils';
+import { createElement, createSurface, getNativeTag } from '@symbiotejs/engine';
+import { installFabric } from '@symbiotejs/test-utils';
 import { findNodeHandle } from './index';
 
 installFabric();

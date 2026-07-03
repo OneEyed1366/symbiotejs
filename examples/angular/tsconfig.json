@@ -8,7 +8,7 @@
     // here so editor diagnostics for the whole example (not just App.ts) match the real build.
     "lib": ["ES2022", "DOM"],
     "types": [],
-    "plugins": [{ "name": "@symbiote/css-parser/typescript-plugin" }]
+    "plugins": [{ "name": "@symbiotejs/css-parser/typescript-plugin" }]
   },
   "include": ["**/*.ts"],
   "exclude": ["build", "**/node_modules", "**/Pods"]

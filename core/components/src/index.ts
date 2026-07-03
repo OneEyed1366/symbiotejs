@@ -1,4 +1,4 @@
-// @symbiote/components: the framework-agnostic component layer. Pure state machines
+// @symbiotejs/components: the framework-agnostic component layer. Pure state machines
 // (`state/`) and render functions (`view/`) that paint `Descriptor` trees; every adapter
 // wires state→render with ITS lifecycle (React hooks / Vue reactivity) and maps the
 // Descriptor onto its own element. See CLAUDE.md <components_split_logic_view_lifecycle>.
@@ -13,7 +13,7 @@ export type {
 
 // Accessibility folding: the web-alias (aria-*/role) → canonical accessibility* transform
 // and its types. Framework-agnostic (ADR 0024), so React, Vue, and the next adapter all fold
-// identically; moved here from @symbiote/react. RefreshControl/SafeAreaView/ScrollView consume it.
+// identically; moved here from @symbiotejs/react. RefreshControl/SafeAreaView/ScrollView consume it.
 export { resolveAccessibilityProps } from './accessibility-props';
 export type {
   IAccessibilityProps,

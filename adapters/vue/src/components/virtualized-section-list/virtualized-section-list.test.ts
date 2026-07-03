@@ -13,8 +13,8 @@ import {
   mount,
   unmount,
   type IVirtualizedSectionListHandle,
-} from '@symbiote/vue';
-import { installFabric, type IFakeNode } from '@symbiote/test-utils';
+} from '@symbiotejs/vue';
+import { installFabric, type IFakeNode } from '@symbiotejs/test-utils';
 
 // VirtualizedSectionList is a generic component (generic construct signature), which h()'s overloads
 // can't resolve. Drive it through a loose functional-component handle (generic-component h() limit).

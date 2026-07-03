@@ -1,5 +1,5 @@
 // Bridges Vue scoped slots to the render-function / render-component surface the shared list
-// windowing layer (@symbiote/components) expects. The Vue-facing list API is slots
+// windowing layer (@symbiotejs/components) expects. The Vue-facing list API is slots
 // (#item / #separator / #header / #footer / #empty / #sectionHeader / #sectionFooter /
 // #sectionSeparator) — the idiomatic Vue surface; React's twin is the renderItem /
 // ItemSeparatorComponent prop family. This is the ONE place that translation lives, so a list's

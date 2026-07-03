@@ -13,7 +13,7 @@ import {
   isSymbioteNode,
   type IHostInstance,
   type IStyleProp,
-} from '@symbiote/engine';
+} from '@symbiotejs/engine';
 
 /**
  * A composed Angular component (Pressable, SafeAreaView, ScrollView, ...) is created as a

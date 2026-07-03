@@ -1,8 +1,8 @@
 // Pressable: the React lifecycle half. The press lifecycle (the long-press timer, unstable_press-
 // Delay deferral, the pressRetentionOffset drift test, the suppression flags) lives in
-// @symbiote/components/state as a pure machine over a runtime + host; the render decisions (the
+// @symbiotejs/components/state as a pure machine over a runtime + host; the render decisions (the
 // responder listeners, the disabled→accessibilityState fold, the ripple prop) in
-// @symbiote/components/view. Here React owns only the lifecycle: useState for `pressed`, a ref for
+// @symbiotejs/components/view. Here React owns only the lifecycle: useState for `pressed`, a ref for
 // the runtime, a ref for the View instance (the measure handle), and a useMemo that rebuilds the
 // handlers when the config changes. This is the React twin of the Vue adapter's setup-scope
 // runtime + setPressed ref.
@@ -26,17 +26,17 @@ import {
   type IPressHandler,
   type IRectOffset,
   type IPressableAndroidRippleConfig,
-} from '@symbiote/components';
+} from '@symbiotejs/components';
 import { View } from '../../components';
 import type { IHostInstance } from '../../host-instance';
 import type {
   IAccessibilityProps,
   IAccessibilityStateValue,
   IAriaProps,
-} from '@symbiote/components';
+} from '@symbiotejs/components';
 import type { IStyleProp, IViewStyle } from '../../utils/styles';
 
-export type { IPressState, IPressableAndroidRippleConfig } from '@symbiote/components';
+export type { IPressState, IPressableAndroidRippleConfig } from '@symbiotejs/components';
 
 type IPressableStyle = IStyleProp<IViewStyle> | ((state: IPressState) => IStyleProp<IViewStyle>);
 type IChildrenProp = ReactNode | ((state: IPressState) => ReactNode);

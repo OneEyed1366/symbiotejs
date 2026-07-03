@@ -15,9 +15,9 @@ import {
   mount,
   processColor,
   unmount,
-} from '@symbiote/react';
-import { isOpaqueColorValue, setColorProcessor } from '@symbiote/engine';
-import { installFabric } from '@symbiote/test-utils';
+} from '@symbiotejs/react';
+import { isOpaqueColorValue, setColorProcessor } from '@symbiotejs/engine';
+import { installFabric } from '@symbiotejs/test-utils';
 
 const STRING_SENTINEL = 0xff_00_00_ff;
 const ROOT_TAG = 260;

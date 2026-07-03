@@ -1,7 +1,7 @@
 // Modal: the React lifecycle half. RCTModalHostView is an ordinary Fabric host node committing
 // through the same childSet as the rest of the tree (no second JS surface). The style math (the
 // backdrop override, the container/host styles, the presentationStyle default), the visible gate,
-// and the iOS keep-alive reducer all live framework-agnostic in @symbiote/components and are
+// and the iOS keep-alive reducer all live framework-agnostic in @symbiotejs/components and are
 // shared verbatim with Vue; here React supplies only the lifecycle: useReducer over the keep-alive
 // state machine + a post-render effect to drive the visible→hidden transition, and the Descriptor
 // bridge, nesting the user children UNDER the container View.
@@ -13,7 +13,7 @@
 // callback contract.
 
 import { createElement, useEffect, useReducer, type FC, type ReactNode } from 'react';
-import { dlog } from '@symbiote/engine';
+import { dlog } from '@symbiotejs/engine';
 import {
   createInitialModalState,
   modalReducer,
@@ -26,7 +26,7 @@ import {
   type IModalOrientation,
   type IModalOrientationChangeEvent,
   type IModalPresentationStyle,
-} from '@symbiote/components';
+} from '@symbiotejs/components';
 import type { IStyleProp, IViewStyle } from '../../utils/styles';
 
 export type {
@@ -34,7 +34,7 @@ export type {
   IModalPresentationStyle,
   IModalOrientation,
   IModalOrientationChangeEvent,
-} from '@symbiote/components';
+} from '@symbiotejs/components';
 
 export interface IModalProps extends IAccessibilityProps, IAriaProps {
   visible?: boolean;

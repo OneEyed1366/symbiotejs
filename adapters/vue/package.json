@@ -1,5 +1,5 @@
 {
-  "name": "@symbiote/vue",
+  "name": "@symbiotejs/vue",
   "version": "0.0.0",
   "type": "module",
   "main": "src/index.ts",
@@ -36,9 +36,9 @@
     "format": "prettier --write \"src/**/*.{ts,tsx}\""
   },
   "dependencies": {
-    "@symbiote/components": "workspace:*",
-    "@symbiote/css-parser": "workspace:*",
-    "@symbiote/engine": "workspace:*",
+    "@symbiotejs/components": "workspace:*",
+    "@symbiotejs/css-parser": "workspace:*",
+    "@symbiotejs/engine": "workspace:*",
     "@vue/runtime-core": "catalog:"
   },
   "peerDependencies": {
@@ -46,6 +46,6 @@
     "react-native": ">=0.86"
   },
   "devDependencies": {
-    "@symbiote/test-utils": "workspace:*"
+    "@symbiotejs/test-utils": "workspace:*"
   }
 }

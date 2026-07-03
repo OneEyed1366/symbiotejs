@@ -7,7 +7,7 @@
 -->
 <script setup lang="ts">
 import { ref, shallowRef, onMounted } from 'vue'
-import { View, Text, Button, findNodeHandle, type IHostInstance } from '@symbiote/vue'
+import { View, Text, Button, findNodeHandle, type IHostInstance } from '@symbiotejs/vue'
 
 // shallowRef, NOT ref: the engine node is held by IDENTITY so measure()/setNativeProps()
 // hit the engine's WeakMap mirror (a plain ref wraps it in a reactive Proxy → mirror miss).

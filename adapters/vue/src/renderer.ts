@@ -1,4 +1,4 @@
-// A Vue 3 custom renderer over @symbiote/engine. Each RendererOptions method maps onto
+// A Vue 3 custom renderer over @symbiotejs/engine. Each RendererOptions method maps onto
 // the engine's tiny mutation API; the engine owns all Fabric clone-on-write, so Vue
 // drives the exact same retained tree React does: the proof the core is framework-
 // agnostic (M3 / R4).
@@ -18,8 +18,8 @@ import {
   RAW_TEXT_COMPONENT,
   SymbioteSurface,
   type ISymbioteNode,
-} from '@symbiote/engine';
-import { descriptorFor } from '@symbiote/components';
+} from '@symbiotejs/engine';
+import { descriptorFor } from '@symbiotejs/components';
 
 // Vue host nodes are all SymbioteNode (elements, raw text, anchors). The mount
 // container is the surface, so a parent can be either a node or the surface root.

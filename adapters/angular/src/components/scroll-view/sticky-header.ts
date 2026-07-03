@@ -5,7 +5,7 @@
 // drives from `onScroll` feeds each flagged header's translateY through an interpolation that pins
 // it to the top (or bottom, inverted) until the next header collides with it. The native Fabric
 // scroll view does NOT honor `stickyHeaderIndices` on its own. The load-bearing top/inverted
-// interpolation math (computeStickyInterpolation) lives framework-agnostic in @symbiote/components
+// interpolation math (computeStickyInterpolation) lives framework-agnostic in @symbiotejs/components
 // (ADR 0024); this file holds the Angular component shell, the layout state, and the interpolation
 // build, sharing the math verbatim with React/Vue. Angular supplies only the lifecycle (inputs +
 // manual change detection instead of useState/useEffect or refs/watch).
@@ -35,14 +35,14 @@ import {
   Platform,
   dlog,
   type ISymbioteEvent,
-} from '@symbiote/engine';
+} from '@symbiotejs/engine';
 import {
   computeStickyInterpolation,
   readLayoutNumber,
   stickyDebounceMs,
   STICKY_HEADER_Z_INDEX,
   type IStickyHeaderProps,
-} from '@symbiote/components';
+} from '@symbiotejs/components';
 import { AnimatedView } from '../../modules/animated';
 import { anchorHostStyle } from '../../primitives';
 

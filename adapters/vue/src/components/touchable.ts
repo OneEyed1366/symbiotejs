@@ -1,6 +1,6 @@
 // The Touchable* family for Vue, all built on Pressable, the Vue twin of the React adapter. The
 // press-timing constants and the deactivation-floor math are shared with React
-// (@symbiote/components/state/touchable); here Vue owns only the Animated wiring + the press
+// (@symbiotejs/components/state/touchable); here Vue owns only the Animated wiring + the press
 // scheduling state:
 //   TouchableOpacity: animate an Animated.Value opacity toward activeOpacity on press-in, back
 //     to 1 on press-out, driven from Pressable's onPressIn/onPressOut.
@@ -23,8 +23,8 @@ import {
   RESTING_OPACITY,
   type IPressState,
   type IPressTimingProps,
-} from '@symbiote/components';
-import { dlog, type ISymbioteEvent, type IStyleProp, type IViewStyle } from '@symbiote/engine';
+} from '@symbiotejs/components';
+import { dlog, type ISymbioteEvent, type IStyleProp, type IViewStyle } from '@symbiotejs/engine';
 import {
   Pressable,
   emitPressableEvents,

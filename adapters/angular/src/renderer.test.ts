@@ -11,8 +11,8 @@ import {
   disposeRoot,
   isSymbioteNode,
   registerStyles,
-} from '@symbiote/engine';
-import { installFabric } from '@symbiote/test-utils';
+} from '@symbiotejs/engine';
+import { installFabric } from '@symbiotejs/test-utils';
 import { SymbioteRenderer, SymbioteRendererFactory } from './renderer';
 
 const ROOT_TAG = 707;

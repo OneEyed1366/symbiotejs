@@ -14,11 +14,11 @@
 // uncommitted or unknown input has no tag yet and surfaces as null.
 
 import { isRef, toRaw } from '@vue/runtime-core';
-import { getNativeTag, isSymbioteNode, dlog } from '@symbiote/engine';
+import { getNativeTag, isSymbioteNode, dlog } from '@symbiotejs/engine';
 
 // The public instance a Vue host ref hands back: the grafted engine node. Re-exported from the
 // engine so a call site reads in parity with the React adapter's IHostInstance.
-export type { IHostInstance } from '@symbiote/engine';
+export type { IHostInstance } from '@symbiotejs/engine';
 
 export function findNodeHandle(componentOrHandle: unknown): number | null {
   const candidate = isRef(componentOrHandle) ? componentOrHandle.value : componentOrHandle;

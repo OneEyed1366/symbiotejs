@@ -8,8 +8,8 @@
 
 import { defineComponent, h } from '@vue/runtime-core';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { mount, unmount, TextInput } from '@symbiote/vue';
-import { installFabric } from '@symbiote/test-utils';
+import { mount, unmount, TextInput } from '@symbiotejs/vue';
+import { installFabric } from '@symbiotejs/test-utils';
 
 interface ICommandCall {
   name: string;

@@ -14,7 +14,7 @@
 //
 // Color note: RN runs `tintColor` / `cancelButtonTintColor` / `titleTextColor`
 // through processColor before handing them to native. symbiote centralizes color
-// processing in @symbiote/engine, so we do NOT process colors here; options pass
+// processing in @symbiotejs/engine, so we do NOT process colors here; options pass
 // through untouched. The canary needs no colors; revisit when wiring real colors.
 
 import { dlog } from '../debug';

@@ -1,7 +1,7 @@
 <!--
   The Vue canary, as a multi-file SFC. Metro compiles every .vue through metro-vue-transformer.js
   (parse → compileScript+inlineTemplate → 'vue'→@vue/runtime-core), so authoring is ordinary Vue —
-  <template> + <script setup> — while every vnode still recommits through @symbiote/engine into
+  <template> + <script setup> — while every vnode still recommits through @symbiotejs/engine into
   Fabric, React Native's renderer never in the path (M3 / R4).
 
   This is the FULL "all primitives" canary, the SFC twin of examples/vue-tsx/App.tsx and
@@ -51,10 +51,10 @@ import {
   Share,
   type ISymbioteEvent,
   type IHostInstance,
-} from '@symbiote/vue';
+} from '@symbiotejs/vue';
 // A third-party native view via symbiote's own wrapper (not the library's React component); the
 // engine derives RNCSlider's events + tint processors from its ViewConfig. Same wrapper as React.
-import { Slider } from '@symbiote/slider/vue';
+import { Slider } from '@symbiotejs/slider/vue';
 
 import AnimatedDemo from './components/AnimatedDemo.vue';
 import AnimatedParityDemo from './components/AnimatedParityDemo.vue';
@@ -306,7 +306,7 @@ const freezeJs3s = (): void => {
 };
 
 // Every static look lives in the <style scoped> block below (compiled at build time by
-// @symbiote/css-parser into the same RN style objects StyleSheet.create used to produce —
+// @symbiotejs/css-parser into the same RN style objects StyleSheet.create used to produce —
 // see the symbiote-sfc-style-compiler skill). What stays here is ONLY what a CSS class
 // truly cannot express:
 //   - a value computed at runtime (an Animated interpolation, item.color, a pressed/active
@@ -390,7 +390,7 @@ const rotationStyle = {
           >
           <Text class="hero-title">symbiote · Vue SFC adapter</Text>
           <Text class="hero-body"
-            >Vue SFC templates drive @symbiote/engine, then Fabric paints real
+            >Vue SFC templates drive @symbiotejs/engine, then Fabric paints real
             native views.</Text
           >
         </View>
@@ -551,7 +551,7 @@ const rotationStyle = {
         size="large"
       />
 
-      <!-- Slider: the @react-native-community/slider native view via @symbiote/slider/vue. The
+      <!-- Slider: the @react-native-community/slider native view via @symbiotejs/slider/vue. The
            engine derives its events + tint processors from the library's ViewConfig; same wrapper
            backs the React canary. -->
       <View class="section-tight">
@@ -819,7 +819,7 @@ const rotationStyle = {
       </View>
 
       <!-- background-image: a CSS `linear-gradient(...)` authored entirely in the <style
-           scoped> block below (.gradient-card), proving @symbiote/css-parser's
+           scoped> block below (.gradient-card), proving @symbiotejs/css-parser's
            `background-image` → RN's `experimental_backgroundImage` raw passthrough works
            end to end. PASS: the panel shows a blue-to-orange gradient sweeping left to right. -->
       <View class="gradient-card">

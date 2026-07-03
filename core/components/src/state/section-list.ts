@@ -5,7 +5,7 @@
 // is pure transform — every adapter reuses it; the adapter supplies only the per-entry
 // element creation (renderSectionHeader / renderItem / …) and the ref wiring.
 
-import type { ISymbioteNode } from '@symbiote/engine';
+import type { ISymbioteNode } from '@symbiotejs/engine';
 import type { IScrollViewHandle } from '../scroll-view-commands';
 
 export interface ISection<ItemT> {

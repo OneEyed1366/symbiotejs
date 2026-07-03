@@ -261,7 +261,7 @@ describe('metro-vue-transformer compileSfc <style> support', () => {
   it('injects registerStyles() with the parsed class map for a single <style> block', async () => {
     const code = await compileSfc(SFC_WITH_ONE_STYLE_BLOCK, 'Card.vue');
     expect(code).toContain('registerStyles(');
-    expect(code).toContain("from '@symbiote/engine'");
+    expect(code).toContain("from '@symbiotejs/engine'");
     expect(extractRegisterStylesArg(code)).toEqual({
       card: { padding: 10, backgroundColor: 'red' },
     });
@@ -277,7 +277,7 @@ describe('metro-vue-transformer compileSfc <style> support', () => {
   it('injects no registerStyles() call when the SFC has no <style> block', async () => {
     const code = await compileSfc(SFC_WITHOUT_STYLE_BLOCK, 'Plain.vue');
     expect(code).not.toContain('registerStyles(');
-    expect(code).not.toContain("from '@symbiote/engine'");
+    expect(code).not.toContain("from '@symbiotejs/engine'");
   });
 
   it('compiles a lang="scss" block — nesting, a variable, and a mixin', async () => {
@@ -327,7 +327,7 @@ describe('metro-vue-transformer compileSfc <style scoped> support', () => {
     const code = await compileSfc(SFC_WITH_SCOPED_STYLE_BLOCK, 'Card.vue');
     const scopeId = scopeIdOf(code);
 
-    expect(code).toContain("import { registerStyles, scopeClassName as __scopeClass } from '@symbiote/engine'");
+    expect(code).toContain("import { registerStyles, scopeClassName as __scopeClass } from '@symbiotejs/engine'");
     expect(code).toContain(
       `__scopeClass({ active: isActive }, __localScopedClassNames, __scopeId)`,
     );

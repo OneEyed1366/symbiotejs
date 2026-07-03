@@ -15,7 +15,7 @@ import {
   setText,
   SymbioteSurface,
   type ISymbioteNode,
-} from '@symbiote/engine';
+} from '@symbiotejs/engine';
 import {
   DefaultEventPriority,
   DiscreteEventPriority,
@@ -23,11 +23,11 @@ import {
 } from './reconciler-constants';
 import { toPublicInstance, type IHostInstance } from './host-instance';
 // Intrinsic JSX type -> Fabric component name. The name table + resolver live once in
-// @symbiote/components, shared by every adapter so the names can't drift (one engine, one
+// @symbiotejs/components, shared by every adapter so the names can't drift (one engine, one
 // Fabric). The table is Metro-split (.ios/.android, filename selects, no Platform.OS read,
 // per ADR 0020). Adding a primitive is one entry in each name table there, plus its thin
 // component in components.ts: no host-config logic per primitive.
-import { descriptorFor } from '@symbiote/components';
+import { descriptorFor } from '@symbiotejs/components';
 
 type IProps = Record<string, unknown>;
 

@@ -1,7 +1,7 @@
 // AppRegistry: the JS entry point RN apps already use:
 //   AppRegistry.registerComponent(appKey, () => App)
 // The registry bookkeeping (sections, host-registrar bridge, headless tasks) is
-// framework-agnostic and lives in @symbiote/engine's createAppRegistry; this file supplies
+// framework-agnostic and lives in @symbiotejs/engine's createAppRegistry; this file supplies
 // only the one Vue-specific seam — building a runnable from a component provider via a
 // synthetic functional root (h() has no createElement-style prop/children spread of its
 // own targets, so the wrap step is a render function rather than an object merge) — so
@@ -9,7 +9,7 @@
 // React already has.
 
 import { h, type Component, type FunctionalComponent, type VNode } from '@vue/runtime-core';
-import { createAppRegistry, dlog, type IAppParameters, type IRunnable } from '@symbiote/engine';
+import { createAppRegistry, dlog, type IAppParameters, type IRunnable } from '@symbiotejs/engine';
 import { mount } from '../../render';
 
 // RN's IComponentProvider: a thunk returning the root component (lazy so the module
@@ -58,4 +58,4 @@ export type {
   ITaskProvider,
   ITaskCanceller,
   ITaskCancelProvider,
-} from '@symbiote/engine';
+} from '@symbiotejs/engine';

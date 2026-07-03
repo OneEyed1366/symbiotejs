@@ -5,7 +5,7 @@ import {
   PlatformColor,
   Text,
   View,
-} from '@symbiote/angular';
+} from '@symbiotejs/angular';
 // static look lives in the compiled stylesheet (symbiote-sfc-style-compiler skill)
 import './PlatformColorDemo.css';
 

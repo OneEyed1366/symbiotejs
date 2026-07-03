@@ -4,7 +4,7 @@
 // handler (fabric.fireEvent drives it).
 
 import { beforeEach, describe, expect, it } from 'vitest';
-import { installFabric } from '@symbiote/test-utils';
+import { installFabric } from '@symbiotejs/test-utils';
 import { appendChild, createElement, type ISymbioteEvent, type ISymbioteNode } from '../index';
 import { installEventHandler } from '../events';
 // `change`/`changeCapture` is not a ViewConfig event for a bare RCTView, so routeProp would route

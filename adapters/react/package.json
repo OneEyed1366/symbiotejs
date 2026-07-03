@@ -1,5 +1,5 @@
 {
-  "name": "@symbiote/react",
+  "name": "@symbiotejs/react",
   "version": "0.0.0",
   "type": "module",
   "main": "src/index.ts",
@@ -31,9 +31,9 @@
     "format": "prettier --write \"src/**/*.{ts,tsx}\""
   },
   "dependencies": {
-    "@symbiote/components": "workspace:*",
-    "@symbiote/css-parser": "workspace:*",
-    "@symbiote/engine": "workspace:*",
+    "@symbiotejs/components": "workspace:*",
+    "@symbiotejs/css-parser": "workspace:*",
+    "@symbiotejs/engine": "workspace:*",
     "react-reconciler": "catalog:"
   },
   "peerDependencies": {
@@ -41,7 +41,7 @@
     "react-native": ">=0.86"
   },
   "devDependencies": {
-    "@symbiote/test-utils": "workspace:*",
+    "@symbiotejs/test-utils": "workspace:*",
     "@types/react": "catalog:",
     "@types/react-reconciler": "catalog:",
     "react": "catalog:"

@@ -1,7 +1,7 @@
 // Modal: the Angular lifecycle half. RCTModalHostView is an ordinary Fabric host node committing
 // through the same childSet as the rest of the tree (no second JS surface). The style math (the
 // backdrop override, the container/host styles, the presentationStyle default), the visible gate,
-// and the iOS keep-alive reducer all live framework-agnostic in @symbiote/components and are shared
+// and the iOS keep-alive reducer all live framework-agnostic in @symbiotejs/components and are shared
 // verbatim with React/Vue; here Angular supplies only the lifecycle: the keep-alive state + a
 // POST-render transition (ngOnChanges queues the reducer on a microtask so it runs AFTER the render
 // that used the OLD state, the Angular twin of React's useEffect / Vue's post-flush watch — one
@@ -36,8 +36,8 @@ import {
   type IModalOrientationChangeEvent,
   type IModalPresentationStyle,
   type IModalState,
-} from '@symbiote/components';
-import { dlog, type IStyleProp, type ISymbioteEvent, type IViewStyle } from '@symbiote/engine';
+} from '@symbiotejs/components';
+import { dlog, type IStyleProp, type ISymbioteEvent, type IViewStyle } from '@symbiotejs/engine';
 import { anchorHostStyle, ModalHost, SymbioteHostPropsDirective, ViewHost } from '../primitives';
 
 export type {
@@ -45,7 +45,7 @@ export type {
   IModalPresentationStyle,
   IModalOrientation,
   IModalOrientationChangeEvent,
-} from '@symbiote/components';
+} from '@symbiotejs/components';
 
 // Angular infers an `(event)` binding's $event as the DOM Event for a custom-schema element,
 // so each handler enters as `unknown` and is narrowed here before reaching a typed callback.

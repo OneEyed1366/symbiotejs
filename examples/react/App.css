@@ -1,4 +1,4 @@
-/* Symbiote canary app — static styles, compiled at build time by @symbiote/css-parser
+/* Symbiote canary app — static styles, compiled at build time by @symbiotejs/css-parser
    into the same RN style objects StyleSheet.create used to produce (see the
    symbiote-sfc-style-compiler skill). Referenced via className, now supported on every
    component's public prop type. `transform`/`transformOrigin`/`filter`/`box-shadow`/
@@ -447,7 +447,7 @@
   font-size: 12px;
   text-align: center;
 }
-/* boxShadow stays dynamic — outside @symbiote/css-parser's supported property table */
+/* boxShadow stays dynamic — outside @symbiotejs/css-parser's supported property table */
 .shadow-card {
   height: 64px;
   border-radius: 12px;

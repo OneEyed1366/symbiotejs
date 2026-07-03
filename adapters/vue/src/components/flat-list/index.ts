@@ -2,7 +2,7 @@
 // and derives getItem/getItemCount; numColumns packs items into rows (a horizontal sub-View),
 // so the virtualized stream is rows, not items (RN's FlatList). All windowing / viewability /
 // batching / imperative scrolling are inherited from VirtualizedList; the data shaping and the
-// row/viewability/separator transforms are shared from @symbiote/components.
+// row/viewability/separator transforms are shared from @symbiotejs/components.
 //
 // This is the FIRST generic component on the typed-emits pattern (the symbiote port of pd-web-kit):
 // a GENERIC setup function `<ItemT,>(props, ctx: ICtx<IFlatListEmits<ItemT>>)` so the events emit
@@ -36,14 +36,14 @@ import {
   type IViewableItemsChangedInfo,
   type IVirtualizedListHandle,
   type IScrollViewHandle,
-} from '@symbiote/components';
+} from '@symbiotejs/components';
 import {
   dlog,
   resolveClassName,
   type ISymbioteNode,
   type IStyleProp,
   type IViewStyle,
-} from '@symbiote/engine';
+} from '@symbiotejs/engine';
 import { VirtualizedList } from '../virtualized-list';
 import { normalizeVueAttrs } from '../../utils/normalize-attrs';
 import type { ICtx } from '../../utils/component-helpers';

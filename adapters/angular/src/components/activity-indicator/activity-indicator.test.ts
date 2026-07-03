@@ -1,7 +1,7 @@
 import '@angular/compiler';
 import { Component, signal } from '@angular/core';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { installFabric, type IFakeNode } from '@symbiote/test-utils';
+import { installFabric, type IFakeNode } from '@symbiotejs/test-utils';
 
 import { mount, unmount } from '../../render';
 import { ActivityIndicator } from './index';

@@ -6,8 +6,8 @@
 // feature; on iOS the native prop is inert but still committed (exactly what we assert).
 
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { View, TouchableNativeFeedback, mount, unmount } from '@symbiote/react';
-import { installFabric, type IFakeNode } from '@symbiote/test-utils';
+import { View, TouchableNativeFeedback, mount, unmount } from '@symbiotejs/react';
+import { installFabric, type IFakeNode } from '@symbiotejs/test-utils';
 
 const ROOT_TAG = 130;
 const TOUCH_START = 'topTouchStart';

@@ -47,7 +47,7 @@ core, N thin adapters.
 Vue · Svelte · Solid · Angular · React     thin reconciler / createRenderer per framework
         │  insert / remove / setProp / commit
         ▼
-@symbiote/engine : retained shadow-tree + diff→childSet + event normalization
+@symbiotejs/engine : retained shadow-tree + diff→childSet + event normalization
         │  ALL clone-on-write lives HERE, in one place
         ▼
 nativeFabricUIManager   createNode · cloneNodeWithNewProps · appendChildToSet · completeRoot
@@ -59,7 +59,7 @@ The hard part is that Vue/Svelte/Solid/Angular **mutate** nodes in place
 (`el.setAttribute`), while Fabric is **persistent** — every change clones the node with
 new props and atomically commits a new child set. That mutation→clone-on-write translation
 is the entire engineering substance of the project, and it lives **once** in
-`@symbiote/engine`. Adapters see only a four-call mutation API. A persistence bug is fixed
+`@symbiotejs/engine`. Adapters see only a four-call mutation API. A persistence bug is fixed
 once, for every framework.
 
 <details>
@@ -92,7 +92,7 @@ The only thing symbiote replaces is the JS renderer.
 
 ## See It Work
 
-The *same* native app — same `@symbiote/engine`, same stock Fabric core — driven by three different
+The *same* native app — same `@symbiotejs/engine`, same stock Fabric core — driven by three different
 frameworks on the iOS simulator. React Native's own renderer is never in the path of any of them:
 
 <div align="center">
@@ -113,11 +113,11 @@ frameworks on the iOS simulator. React Native's own renderer is never in the pat
 </div>
 
 The smallest slice is a tap→increment counter. The app is ordinary React (or Vue) — it just
-imports primitives from `@symbiote/*` instead of `react-native`:
+imports primitives from `@symbiotejs/*` instead of `react-native`:
 
 ```jsx
 import { useState } from 'react';
-import { View, Text, Pressable } from '@symbiote/react';
+import { View, Text, Pressable } from '@symbiotejs/react';
 
 export default function App() {
   const [count, setCount] = useState(0);
@@ -132,13 +132,13 @@ export default function App() {
 }
 ```
 
-That tree paints real native views, and the tap re-commits through `@symbiote/engine` into Fabric.
+That tree paints real native views, and the tap re-commits through `@symbiotejs/engine` into Fabric.
 The entry seam (a low-level *runnable*, not a component), the full canary, and how to run each one
 live in the per-adapter READMEs:
 
-- **[`adapters/react`](./adapters/react)** — `@symbiote/react`, the reference adapter (full RN surface, iOS + Android).
-- **[`adapters/vue`](./adapters/vue)** — `@symbiote/vue`, Vue 3 on the same core (`examples/vue-tsx`, `examples/vue-sfc`).
-- **[`adapters/angular`](./adapters/angular)** — `@symbiote/angular`, `Renderer2`/`RendererFactory2` on the same core (`examples/angular`).
+- **[`adapters/react`](./adapters/react)** — `@symbiotejs/react`, the reference adapter (full RN surface, iOS + Android).
+- **[`adapters/vue`](./adapters/vue)** — `@symbiotejs/vue`, Vue 3 on the same core (`examples/vue-tsx`, `examples/vue-sfc`).
+- **[`adapters/angular`](./adapters/angular)** — `@symbiotejs/angular`, `Renderer2`/`RendererFactory2` on the same core (`examples/angular`).
 
 ---
 
@@ -156,7 +156,7 @@ live in the per-adapter READMEs:
 (`View` / `Text` / `Image` / `ScrollView` / `TextInput` / `Pressable` / `Switch` / `Modal` / the
 `VirtualizedList` family / …), the runtime-module layer (`Platform` / `StyleSheet` / `Dimensions` /
 `Alert` / `Share` / …), `Animated` on **both** the JS and native drivers, the gesture/responder
-lifecycle, accessibility, and RN's JS style processors — all committing through `@symbiote/engine`
+lifecycle, accessibility, and RN's JS style processors — all committing through `@symbiotejs/engine`
 into Fabric. Each adapter's full surface and what's verified where lives in its README:
 [**React →**](./adapters/react) · [**Vue →**](./adapters/vue) · [**Angular →**](./adapters/angular).
 
@@ -179,7 +179,7 @@ without per-framework reinvention.
 - **Headless — `vitest`.** Colocated unit + smoke tests drive the engine against a fake
   `nativeFabricUIManager` slot (`installFabric`) and read the committed Fabric props back — the real
   commit path, no simulator, mirroring RN's own Fantom approach. ~500 tests run in Node in seconds,
-  and because the engine and `@symbiote/components` are the shared layer, one suite covers the logic
+  and because the engine and `@symbiotejs/components` are the shared layer, one suite covers the logic
   every adapter rides on. `pnpm test` at the workspace root.
 - **On-device — `Detox`.** End-to-end user-journey tests run against the real app on a
   simulator/emulator. One `canary-journeys` spec is mirrored across `examples/react`,
@@ -219,16 +219,16 @@ app can't ship without is a more urgent proof than a fourth/fifth framework adap
 | ↳ M2.6 | Long-tail prop edges | continuous hardening of remaining components and per-prop edges as the canary surface widens — not a gate on M2 | 🔁 ongoing |
 | **M3** | **Vue adapter (R4)** | `createRenderer` + nodeOps on the validated core — first non-React framework, same canary surface | ✅ done |
 | ↳ M3.1 | Vue canary parity | `examples/vue-tsx` (TSX) + `examples/vue-sfc` (SFC) render the React canary's surface, minus React-only third-party components | ✅ done |
-| ↳ M3.2 | Shared component layer | `VirtualizedList` family + component logic extracted to `@symbiote/components`, inherited by React **and** Vue | ✅ done |
+| ↳ M3.2 | Shared component layer | `VirtualizedList` family + component logic extracted to `@symbiotejs/components`, inherited by React **and** Vue | ✅ done |
 | ↳ M3.3 | Test harness per adapter | colocated `vitest` (headless, fake Fabric slot) + `Detox` e2e mirrored across all three example apps | ✅ done |
 | **M4** | Angular adapter | `Renderer2`/`RendererFactory2` + DOM-less bootstrap on the validated core — second non-React framework, full canary component parity, on the live framework switcher | ✅ done |
-| **M5** | **App-ready ecosystem** | the minimal third-party surface a real app needs, built once against the agnostic core (like `@symbiote/slider`) rather than ported per-framework — starting with **navigation** | ⏳ planned |
-| ↳ M5.1 | Navigation | a framework-agnostic navigation core (stack/state) in `@symbiote/engine`/`@symbiote/components`, with a thin per-adapter screen/transition bridge — the `react-navigation` UI itself is React-only (`<third_party_rn_packages_are_react_only>`), so this can't be a wrapper, it's a genuine new shared component | ⏳ planned |
+| **M5** | **App-ready ecosystem** | the minimal third-party surface a real app needs, built once against the agnostic core (like `@symbiotejs/slider`) rather than ported per-framework — starting with **navigation** | ⏳ planned |
+| ↳ M5.1 | Navigation | a framework-agnostic navigation core (stack/state) in `@symbiotejs/engine`/`@symbiotejs/components`, with a thin per-adapter screen/transition bridge — the `react-navigation` UI itself is React-only (`<third_party_rn_packages_are_react_only>`), so this can't be a wrapper, it's a genuine new shared component | ⏳ planned |
 | ↳ M5.2 | Remaining gaps | audit the rest of the "can't ship a real app without it" list (e.g. persistent storage, safe-area edge cases beyond `SafeAreaView`) once navigation lands | ⏳ planned |
 | **M6** | Svelte adapter | compiled-output framework driving the engine's mutation API | ⏳ planned |
 | **M7** | Solid adapter | fine-grained reactivity driving the engine's mutation API | ⏳ planned |
 | **M8** | Web *(stretch)* | the same trees rendered to the web as a default platform target | 💭 maybe |
-| **DX** | `create-symbiote` scaffolder | pins `react-native` + `react` at the app root so your app code imports only `@symbiote/*`, never `react-native` | ⏳ planned |
+| **DX** | `create-symbiote` scaffolder | pins `react-native` + `react` at the app root so your app code imports only `@symbiotejs/*`, never `react-native` | ⏳ planned |
 
 **End goal:** each framework — Vue, Angular, Svelte, Solid, React — can render native iOS and
 Android apps the same way React Native does today, off one untouched native core, **with the
@@ -244,17 +244,17 @@ localizable.
 
 ```
 core/
-  engine/      @symbiote/engine     — retained tree + clone-on-write commit engine + events
-  components/  @symbiote/components  — framework-agnostic component logic (state + render), shared by every adapter
+  engine/      @symbiotejs/engine     — retained tree + clone-on-write commit engine + events
+  components/  @symbiotejs/components  — framework-agnostic component logic (state + render), shared by every adapter
 adapters/
-  react/       @symbiote/react      — react-reconciler host config (mutation mode) + primitives
-  vue/         @symbiote/vue         — @vue/runtime-core createRenderer + nodeOps over the engine
-  angular/     @symbiote/angular    — Renderer2/RendererFactory2 + DOM-less bootstrap over the engine
+  react/       @symbiotejs/react      — react-reconciler host config (mutation mode) + primitives
+  vue/         @symbiotejs/vue         — @vue/runtime-core createRenderer + nodeOps over the engine
+  angular/     @symbiotejs/angular    — Renderer2/RendererFactory2 + DOM-less bootstrap over the engine
 packages/
-  android/     @symbiote/android    — autolinked native host shims (keyboard, settings) for Android
-  slider/      @symbiote/slider     — third-party native-view wrapper (React + Vue + Angular builds)
+  android/     @symbiotejs/android    — autolinked native host shims (keyboard, settings) for Android
+  slider/      @symbiotejs/slider     — third-party native-view wrapper (React + Vue + Angular builds)
 examples/
-  react/       stock RN 0.86 app driven by @symbiote/react (the reference canary)
+  react/       stock RN 0.86 app driven by @symbiotejs/react (the reference canary)
   vue-tsx/     the same canary in Vue 3, authored in TSX
   vue-sfc/     the same canary in Vue 3, authored in single-file components
   angular/     the same canary in Angular, standalone components
@@ -284,7 +284,7 @@ steps are identical bar the directory:
 - **[adapters/vue →](./adapters/vue)** — `examples/vue-tsx`, `examples/vue-sfc`
 - **[adapters/angular →](./adapters/angular)** — `examples/angular`
 
-> **A note on logs.** All diagnostics go through `dlog` / `isDebug` from `@symbiote/engine`,
+> **A note on logs.** All diagnostics go through `dlog` / `isDebug` from `@symbiotejs/engine`,
 > off by default, gated by `DEBUG` (each example's `index.js` mirrors it onto
 > `globalThis.__SYMBIOTE_DEBUG__` once at start, so changing it needs a fresh Metro
 > `--reset-cache`, not a rebuild). They are an asset — never deleted, only added.
@@ -298,7 +298,7 @@ decision, not a drift:
 
 - **The native core is never forked.** `react-native` is a dependency; only the JS renderer
   is replaced.
-- **All clone-on-write lives in `@symbiote/engine`.** Adapters never reimplement the
+- **All clone-on-write lives in `@symbiotejs/engine`.** Adapters never reimplement the
   persistence dance.
 - **Adapters stay thin.** Layout, commit batching, event normalization, and ViewConfig
   handling all live in the engine.

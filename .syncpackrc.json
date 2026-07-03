@@ -1,8 +1,8 @@
 {
   "versionGroups": [
     {
-      "label": "Local @symbiote/* packages use the pnpm workspace protocol, not the catalog",
-      "dependencies": ["@symbiote/**"],
+      "label": "Local @symbiotejs/* packages use the pnpm workspace protocol, not the catalog",
+      "dependencies": ["@symbiotejs/**"],
       "isIgnored": true
     },
     {

@@ -2,7 +2,7 @@
  * @format
  *
  * Symbiote Angular canary entry. Our own AppRegistry (the RN-identical
- * `registerComponent(appKey, () => App)`) mounts via @symbiote/engine, not React Native's
+ * `registerComponent(appKey, () => App)`) mounts via @symbiotejs/engine, not React Native's
  * renderer. setHostRegistrar hands it RN's AppRegistry so the native Fabric host can find our
  * runnable by app key and call it with the surface's rootTag; our renderer drives
  * nativeFabricUIManager directly from there — the same entry point the React canary uses.
@@ -20,7 +20,7 @@ import {
   setColorProcessor,
   setDeviceEventSource,
   setNativeViewConfigSource,
-} from '@symbiote/angular';
+} from '@symbiotejs/angular';
 import { AppComponent } from './build/angular/App';
 import { name as appName } from './app.json';
 
@@ -41,5 +41,5 @@ setNativeViewConfigSource(name => {
 setHostRegistrar(RNAppRegistry);
 
 // RN-identical app entry: registerComponent stores a runnable that mounts via
-// @symbiote/engine (not React Native's renderer) and bridges it to the host above.
+// @symbiotejs/engine (not React Native's renderer) and bridges it to the host above.
 AppRegistry.registerComponent(appName, () => AppComponent);

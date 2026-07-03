@@ -10,8 +10,8 @@
 
 import { defineComponent, h, ref, type FunctionalComponent } from '@vue/runtime-core';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { FlatList, mount, unmount, type IFlatListHandle } from '@symbiote/vue';
-import { installFabric, type IFakeNode } from '@symbiote/test-utils';
+import { FlatList, mount, unmount, type IFlatListHandle } from '@symbiotejs/vue';
+import { installFabric, type IFakeNode } from '@symbiotejs/test-utils';
 
 // FlatList (over the generic VirtualizedList) is a GENERIC component, so its value is a generic
 // construct signature that h()'s overloads can't resolve. These are runtime pipeline tests, not type

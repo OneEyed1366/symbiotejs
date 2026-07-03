@@ -10,7 +10,7 @@
   gap: 12px;
 }
 /* background-color stays dynamic — systemBlue is PlatformColor(...), an opaque runtime
-   value @symbiote/css-parser cannot express (App.ts's [style] binding) */
+   value @symbiotejs/css-parser cannot express (App.ts's [style] binding) */
 .color-tile {
   flex: 1;
   height: 56px;

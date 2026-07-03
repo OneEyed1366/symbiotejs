@@ -1,13 +1,13 @@
 // The Vue canary, authored in Vue JSX (.tsx) — the FULL port of examples/react/App.tsx (the
 // ориентир), every primitive and demo it carries, on the same engine and palette. @vue/babel-
 // plugin-jsx compiles the JSX in each setup()'s render fn to @vue/runtime-core createVNode calls
-// (Metro aliases 'vue' → @vue/runtime-core), so every vnode recommits through @symbiote/engine into
+// (Metro aliases 'vue' → @vue/runtime-core), so every vnode recommits through @symbiotejs/engine into
 // Fabric, with React Native's renderer never in the path (M3 / R4). Same engine, same components,
 // same palette as the React and SFC canaries; only the authoring differs — the proof the whole
 // component surface is template-agnostic.
 //
 // Every primitive here (View, Text, ScrollView, TextInput, Image, Switch, ActivityIndicator,
-// Button, Pressable, Modal, FlatList, SectionList, RefreshControl, …) comes from @symbiote/vue,
+// Button, Pressable, Modal, FlatList, SectionList, RefreshControl, …) comes from @symbiotejs/vue,
 // not react-native. The 8 sub-components and root composition mirror the React canary 1:1; the
 // ONLY visual difference is the top badge line naming which one is rendering. Run with DEBUG=1 to
 // watch each interaction commit incrementally (only the touched branch clones) in Metro's logs.
@@ -66,12 +66,12 @@ import {
   type IFlatListSlots,
   type ISectionListSlots,
   type ISection,
-} from '@symbiote/vue';
+} from '@symbiotejs/vue';
 // A third-party native view (@react-native-community/slider) driven through symbiote's own
 // wrapper — NOT the library's React component (which uses hooks and throws under Vue's null
 // dispatcher). The engine derives RNCSlider's events + tint processors from the library's
-// ViewConfig; the same wrapper backs the React canary. App code names only @symbiote/*.
-import { Slider } from '@symbiote/slider/vue';
+// ViewConfig; the same wrapper backs the React canary. App code names only @symbiotejs/*.
+import { Slider } from '@symbiotejs/slider/vue';
 
 const CHIP_WIDTH = 72;
 const CHIP_GAP = 12;
@@ -1287,7 +1287,7 @@ const App = defineComponent({
             size="large"
           />
 
-          {/* Slider: the @react-native-community/slider native view via @symbiote/slider/vue. Drag
+          {/* Slider: the @react-native-community/slider native view via @symbiotejs/slider/vue. Drag
             it — onValueChange streams live; the colored track proves the engine ran the tint
             processors it derived from the library's ViewConfig. Same wrapper as the React canary. */}
           <View class="section-tight">
@@ -1536,7 +1536,7 @@ const App = defineComponent({
           </View>
 
           {/* background-image: a CSS `linear-gradient(...)` authored entirely in App.css
-            (.gradient-card), proving @symbiote/css-parser's `background-image` → RN's
+            (.gradient-card), proving @symbiotejs/css-parser's `background-image` → RN's
             `experimental_backgroundImage` raw passthrough works end to end.
             PASS: the panel shows a blue-to-orange gradient sweeping left to right. */}
           <View class="gradient-card">

@@ -1,5 +1,5 @@
 import { DestroyRef, inject, Injectable, signal } from '@angular/core';
-import { Appearance, type IColorSchemeName } from '@symbiote/engine';
+import { Appearance, type IColorSchemeName } from '@symbiotejs/engine';
 
 /**
  * Angular twin of React's `useColorScheme` and Vue's `useColorScheme` composable. The service

@@ -1,7 +1,7 @@
 // ScrollView, the Vue lifecycle half (Phase 1: base, ADR 0024). The Fabric tree is nested:
 // a scroll view wraps a content view that holds the children (RN's ScrollView.js shape). The
 // platform-invariant math (decelerationRate, the per-axis intrinsics/base style, the
-// content-size dedupe, the imperative handle, the aria/role fold) lives in @symbiote/components,
+// content-size dedupe, the imperative handle, the aria/role fold) lives in @symbiotejs/components,
 // shared verbatim with React. Here Vue supplies only the reactivity: a shallowRef holds the host
 // node, a setup-scope `lastContentSize` dedupes onContentSizeChange, and expose() wires the
 // imperative handle. This is the Vue twin of the React adapter's useRef + buildScrollViewHandle.
@@ -44,7 +44,7 @@ import {
   type IAriaProps,
   type IContentSize,
   type ISymbioteIntrinsic,
-} from '@symbiote/components';
+} from '@symbiotejs/components';
 import {
   AnimatedValue,
   dlog,
@@ -58,11 +58,11 @@ import {
   type ISymbioteEvent,
   type ISymbioteNode,
   type IViewStyle,
-} from '@symbiote/engine';
+} from '@symbiotejs/engine';
 import { wrapStickyHeaders, type IStickyHeaderComponentType } from './sticky-header';
 import { normalizeVueAttrs } from '../../utils/normalize-attrs';
 
-export type { IScrollViewHandle } from '@symbiote/components';
+export type { IScrollViewHandle } from '@symbiotejs/components';
 
 type IScrollHandler = (event: ISymbioteEvent) => void;
 
@@ -203,7 +203,7 @@ function isStyleProp(value: unknown): value is IStyleProp<IViewStyle> {
 // wrapper's layout style, BEFORE that later resolution ever runs, so a class-only layout prop
 // (flex, height, gap, …) never reaches the wrapper and it collapses to nothing. See the
 // symbiote-sfc-style-compiler skill for the failure this caused on a real Android device.
-// isClassNameProp is @symbiote/engine's own isClassNameValue guard (shared, not redeclared —
+// isClassNameProp is @symbiotejs/engine's own isClassNameValue guard (shared, not redeclared —
 // routeProp's centralized class+style merge needs the identical narrowing).
 const isClassNameProp = isClassNameValue;
 

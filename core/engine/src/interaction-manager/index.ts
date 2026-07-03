@@ -4,7 +4,7 @@
 // implementation, not the deprecated no-op stub).
 //
 // It is pure JS (timers + a tiny event emitter, no React and no native bridge), so
-// per symbiote's layering invariant it lives in @symbiote/engine, where every adapter
+// per symbiote's layering invariant it lives in @symbiotejs/engine, where every adapter
 // re-exports it.
 //
 // Mechanics: each `runAfterInteractions` task is pushed onto a queue and the queue is

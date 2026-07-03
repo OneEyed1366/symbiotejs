@@ -1,5 +1,5 @@
 // Slider, the Angular lifecycle half. The logic (value/limit/disabled folds, the step-option
-// layout) and the native render live in @symbiote/slider core, shared verbatim with the Vue
+// layout) and the native render live in @symbiotejs/slider core, shared verbatim with the Vue
 // adapter; here Angular supplies plain class fields (mirroring ActivityIndicatorBase/SwitchBase)
 // plus real @Output() EventEmitters for the four native callbacks, and renders through
 // DescriptorOutlet — the generic descriptorToAngular bridge (angular-adapter skill §6) — since
@@ -31,15 +31,15 @@ import {
   Output,
   type OnChanges,
 } from '@angular/core';
-import { anchorHostStyle } from '@symbiote/angular';
-import { resolveAccessibilityProps } from '@symbiote/components';
+import { anchorHostStyle } from '@symbiotejs/angular';
+import { resolveAccessibilityProps } from '@symbiotejs/components';
 import type {
   IAccessibilityProps,
   IAccessibilityStateValue,
   IAriaProps,
   IDescriptor,
-} from '@symbiote/components';
-import { dlog, type ISymbioteEvent } from '@symbiote/engine';
+} from '@symbiotejs/components';
+import { dlog, type ISymbioteEvent } from '@symbiotejs/engine';
 import {
   sanitizeSliderValue,
   resolveSliderDisabled,
@@ -160,7 +160,7 @@ export abstract class SliderBase implements ISliderProps, OnChanges {
 
   private readonly changeDetector = inject(ChangeDetectorRef);
   // This component's OWN host — the non-painting anchor `class="..."` at the use site resolves
-  // onto (see anchorHostStyle's doc comment, @symbiote/angular) — NOT the descriptor-outlet-
+  // onto (see anchorHostStyle's doc comment, @symbiotejs/angular) — NOT the descriptor-outlet-
   // rendered wrapper the `descriptor` getter below builds. Merged FIRST so an explicit `style`
   // @Input still wins (flattenStyle's later-wins collapse), mirroring every other composed
   // component's anchor merge.

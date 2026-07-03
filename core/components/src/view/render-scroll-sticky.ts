@@ -7,7 +7,7 @@
 // byte-for-byte from ScrollViewStickyHeader.js's effect. The adapter owns the component shell,
 // the layout state, and building the interpolation onto its Animated value.
 
-import type { AnimatedValue, ISymbioteEvent } from '@symbiote/engine';
+import type { AnimatedValue, ISymbioteEvent } from '@symbiotejs/engine';
 
 // RN gives the sticky wrapper zIndex:10 (ScrollViewStickyHeader.js styles.header) so the
 // pinned header paints OVER the rows that scroll up under it. Without it the next rows (later

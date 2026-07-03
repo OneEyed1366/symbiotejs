@@ -6,8 +6,8 @@
 // +grant, no -> reject), LCA scoping, multi-touch end-vs-release, and transfer ordering.
 
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { mount, unmount, View } from '@symbiote/react';
-import { installFabric } from '@symbiote/test-utils';
+import { mount, unmount, View } from '@symbiotejs/react';
+import { installFabric } from '@symbiotejs/test-utils';
 
 const ROOT_TAG = 160;
 const TOUCH_START = 'topTouchStart';

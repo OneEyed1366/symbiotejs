@@ -5,13 +5,13 @@
 // ngtsc's partial-mode static evaluator (real AOT) can't trace a component class through property
 // access on `Animated` (an external, pre-compiled namespace object) — only through a direct named
 // import binding — so the dotted alias fails real `ngc` with NG1010 the moment this file enters an
-// ngc program, even though it type-checks fine under plain tsc. `@symbiote/angular` exports
+// ngc program, even though it type-checks fine under plain tsc. `@symbiotejs/angular` exports
 // `AnimatedView`/`AnimatedText`/`AnimatedImage`/`AnimatedScrollView` as top-level named symbols for
 // exactly this reason.
 
 import { Component, OnDestroy, OnInit } from '@angular/core';
-import { Animated, AnimatedView, Button, Text, View } from '@symbiote/angular';
-// Static look lives in AnimatedDemo.css — compiled at build time by @symbiote/css-parser.
+import { Animated, AnimatedView, Button, Text, View } from '@symbiotejs/angular';
+// Static look lives in AnimatedDemo.css — compiled at build time by @symbiotejs/css-parser.
 import './AnimatedDemo.css';
 
 const PULSE_DURATION_MS = 1400;

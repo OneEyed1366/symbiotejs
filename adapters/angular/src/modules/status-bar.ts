@@ -1,5 +1,5 @@
 // StatusBar, the Angular lifecycle half. The native StatusBarManager driving, the imperative
-// statics, and the Android bar-height constant all live in @symbiote/engine, shared verbatim with
+// statics, and the Android bar-height constant all live in @symbiotejs/engine, shared verbatim with
 // React and Vue; Metro selects the engine's platform variant. Angular supplies only the
 // declarative shape: a component that renders nothing and re-applies the props through
 // ngOnChanges on mount + every prop change. Imperative statics are attached to the component
@@ -13,9 +13,9 @@ import {
   type IColorValue,
   type IStatusBarProps,
   type IStatusBarStyle,
-} from '@symbiote/engine';
+} from '@symbiotejs/engine';
 
-export type { IStatusBarProps, IStatusBarStyle } from '@symbiote/engine';
+export type { IStatusBarProps, IStatusBarStyle } from '@symbiotejs/engine';
 
 @Component({
   selector: 'StatusBar',

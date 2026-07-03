@@ -4,7 +4,7 @@
 // ViewConfig gate that keeps a non-event onX as a prop.
 
 import { beforeEach, describe, expect, it } from 'vitest';
-import { installFabric } from '@symbiote/test-utils';
+import { installFabric } from '@symbiotejs/test-utils';
 import {
   appendChild,
   createElement,

@@ -1,6 +1,6 @@
 // StatusBar, the Vue lifecycle half. The native StatusBarManager driving (applyStatusBarProps),
 // the imperative statics (statusBarImperative), and the Android bar-height constant all live in
-// @symbiote/engine, shared verbatim with React; Metro selects the engine's status-bar.ios.ts /
+// @symbiotejs/engine, shared verbatim with React; Metro selects the engine's status-bar.ios.ts /
 // status-bar.android.ts per host, so the platform divergence never reaches this file. Vue supplies
 // only the declarative shape: a component that renders NOTHING and re-applies the props through a
 // watchEffect on mount + every prop change, with the imperative statics attached to the component
@@ -19,8 +19,8 @@ import {
   type IColorValue,
   type IStatusBarProps,
   type IStatusBarStyle,
-} from '@symbiote/engine';
-export type { IStatusBarProps, IStatusBarStyle } from '@symbiote/engine';
+} from '@symbiotejs/engine';
+export type { IStatusBarProps, IStatusBarStyle } from '@symbiotejs/engine';
 import { normalizeVueAttrs } from '../utils/normalize-attrs';
 
 function asBoolean(value: unknown): boolean | undefined {

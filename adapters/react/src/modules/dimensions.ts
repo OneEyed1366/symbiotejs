@@ -1,6 +1,6 @@
-// Dimensions moved to @symbiote/engine (a framework-agnostic device-state module re-exported
-// by every adapter). This thin re-export keeps @symbiote/react's public surface identical.
-export { Dimensions } from '@symbiote/engine';
+// Dimensions moved to @symbiotejs/engine (a framework-agnostic device-state module re-exported
+// by every adapter). This thin re-export keeps @symbiotejs/react's public surface identical.
+export { Dimensions } from '@symbiotejs/engine';
 export type {
   IDisplayMetrics,
   IDisplayMetricsAndroid,
@@ -9,4 +9,4 @@ export type {
   IDimensionsKey,
   IDimensionsChangeListener,
   IDimensionsStatic,
-} from '@symbiote/engine';
+} from '@symbiotejs/engine';

@@ -2,7 +2,7 @@
 // 128-point resolution, and keeps the step row at the top. Mirrors the library's Android branches.
 
 import { ChangeDetectionStrategy, Component } from '@angular/core';
-import { DescriptorOutlet } from '@symbiote/angular';
+import { DescriptorOutlet } from '@symbiotejs/angular';
 import { SliderBase } from './shared';
 import { SLIDER_STEP_RESOLUTION_ANDROID } from '../../core';
 export type { ISliderProps } from './shared';

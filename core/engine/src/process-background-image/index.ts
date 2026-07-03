@@ -54,7 +54,7 @@ export type IParsedRadialGradient = {
 export type IParsedBackgroundImage = IParsedLinearGradient | IParsedRadialGradient;
 
 // The structured input shape: mirrors react's BackgroundImageValue but declared locally to avoid
-// a cross-package import cycle (shared must not depend on @symbiote/react). Read loosely: callers
+// a cross-package import cycle (shared must not depend on @symbiotejs/react). Read loosely: callers
 // pass plain records, so each field is narrowed at the point of use — same idiom as
 // process-box-shadow's IRawBoxShadow.
 type IRawBackgroundImage = Record<string, unknown>;

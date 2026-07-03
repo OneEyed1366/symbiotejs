@@ -1,6 +1,6 @@
 // Co-located React-driven test (ADR 0025), ported from `app-registry.smoke.tsx`.
 // Proves the AppRegistry entry point: `registerComponent(appKey, () => App)` stores a
-// runnable that calls `mount` (driving @symbiote/engine) AND bridges it to the host
+// runnable that calls `mount` (driving @symbiotejs/engine) AND bridges it to the host
 // registrar (RN's own AppRegistry, injected via `setHostRegistrar`) so native can find
 // it by key. Asserts the bridge fires on registration and that invoking the runnable,
 // from the host or via `runApplication`, mounts the tree onto the given rootTag.
@@ -16,8 +16,8 @@ import {
   unmount,
   type IAppParameters,
   type IRunnable,
-} from '@symbiote/react';
-import { installFabric } from '@symbiote/test-utils';
+} from '@symbiotejs/react';
+import { installFabric } from '@symbiotejs/test-utils';
 
 const APP_KEY = 'canary';
 const ROOT_TAG = 210;

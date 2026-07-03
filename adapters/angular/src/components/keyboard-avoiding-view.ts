@@ -1,6 +1,6 @@
 // KeyboardAvoidingView: the Angular lifecycle half. A plain View that shifts out of the
 // keyboard's way as it shows/hides. The inset math + the behavior → style/structure decision
-// live framework-agnostic in @symbiote/components (render-keyboard-avoiding-view), shared verbatim
+// live framework-agnostic in @symbiotejs/components (render-keyboard-avoiding-view), shared verbatim
 // with React/Vue; Angular supplies only the lifecycle: a plain inset field, ngOnInit subscribes to
 // the core Keyboard module (show / changeFrame / hide) and markForCheck pulls the OnPush view (the
 // Angular twin of React's setState / Vue's reactive ref), ngOnDestroy tears the subscriptions down,
@@ -37,7 +37,7 @@ import {
   type IKeyboardAvoidingBehavior,
   type IKeyboardAvoidingLayout,
   type IMeasuredFrame,
-} from '@symbiote/components';
+} from '@symbiotejs/components';
 import {
   Keyboard,
   KEYBOARD_EVENT,
@@ -46,10 +46,10 @@ import {
   type IStyleProp,
   type ISymbioteEvent,
   type IViewStyle,
-} from '@symbiote/engine';
+} from '@symbiotejs/engine';
 import { anchorHostStyle, SymbioteHostPropsDirective, ViewHost } from '../primitives';
 
-export type { IKeyboardAvoidingBehavior } from '@symbiote/components';
+export type { IKeyboardAvoidingBehavior } from '@symbiotejs/components';
 
 // Angular infers an `(event)` binding's $event as the DOM Event for a custom-schema element,
 // so each handler enters as `unknown` and is narrowed here before reaching a typed callback.

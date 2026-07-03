@@ -2,7 +2,7 @@
 // forkEvent / unforkEvent (RN AnimatedImplementation.js ~519-538). Pure JS, no Fabric slot.
 
 import { describe, expect, it } from 'vitest';
-import { AnimatedValue, event, forkEvent, unforkEvent } from '@symbiote/engine';
+import { AnimatedValue, event, forkEvent, unforkEvent } from '@symbiotejs/engine';
 
 describe('forkEvent / unforkEvent', () => {
   it('returns the new listener as the handler when existing is undefined', () => {

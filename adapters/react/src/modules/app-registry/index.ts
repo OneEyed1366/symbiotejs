@@ -1,12 +1,12 @@
 // AppRegistry: the JS entry point RN apps already use:
 //   AppRegistry.registerComponent(appKey, () => App)
 // The registry bookkeeping (sections, host-registrar bridge, headless tasks) is
-// framework-agnostic and lives in @symbiote/engine's createAppRegistry; this file supplies
+// framework-agnostic and lives in @symbiotejs/engine's createAppRegistry; this file supplies
 // only the one React-specific seam — building a runnable from a component provider via
 // createElement + mount — so existing RN app-entry code ports verbatim.
 
 import { createElement, type ComponentType } from 'react';
-import { createAppRegistry, dlog, type IAppParameters, type IRunnable } from '@symbiote/engine';
+import { createAppRegistry, dlog, type IAppParameters, type IRunnable } from '@symbiotejs/engine';
 import { mount } from '../../render';
 
 // RN's IComponentProvider: a thunk returning the root component (lazy so the module
@@ -51,4 +51,4 @@ export type {
   ITaskProvider,
   ITaskCanceller,
   ITaskCancelProvider,
-} from '@symbiote/engine';
+} from '@symbiotejs/engine';

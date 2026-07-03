@@ -6,8 +6,8 @@
 // detaches it. The fake driver keeps the test off the real timeline.
 
 import { beforeAll, describe, expect, it } from 'vitest';
-import { AnimatedValue, AnimatedTracking, timing } from '@symbiote/engine';
-import type { IAnimation, IEndCallback } from '@symbiote/engine';
+import { AnimatedValue, AnimatedTracking, timing } from '@symbiotejs/engine';
+import type { IAnimation, IEndCallback } from '@symbiotejs/engine';
 
 // Part A starts a real TimingAnimation (to prove the public wiring), which needs a host rAF. We
 // never advance a frame, so a no-op rAF that never fires is enough.

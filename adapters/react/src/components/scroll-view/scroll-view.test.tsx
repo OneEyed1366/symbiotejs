@@ -5,8 +5,8 @@
 
 import { type ReactElement } from 'react';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { View, mount, unmount } from '@symbiote/react';
-import { installFabric } from '@symbiote/test-utils';
+import { View, mount, unmount } from '@symbiotejs/react';
+import { installFabric } from '@symbiotejs/test-utils';
 // ScrollView isn't on the iOS-resolved barrel for the horizontal app below, so reach the source
 // directly the way the smoke did (resolves identically from examples/react).
 import { ScrollView } from './index';

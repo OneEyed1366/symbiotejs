@@ -6,7 +6,7 @@
 // Fabric slot: these are imperative statics.
 
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { Image, setImageSourceResolver } from '@symbiote/react';
+import { Image, setImageSourceResolver } from '@symbiotejs/react';
 
 // Fake the native module under the bridgeless key (globalThis.nativeModuleProxy), keyed by the iOS
 // module name `ImageLoader`.

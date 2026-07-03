@@ -1,7 +1,7 @@
-// The Animated namespace for @symbiote/angular: the Angular twin of adapters/vue/src/modules/
+// The Animated namespace for @symbiotejs/angular: the Angular twin of adapters/vue/src/modules/
 // animated/index.ts. The animated COMPONENTS (View / Text / Image / ScrollView) are explicit
 // standalone components (Angular has no runtime HOC — see create-animated-component.ts); the
-// value graph, easing and imperative drivers come from @symbiote/engine (framework-agnostic,
+// value graph, easing and imperative drivers come from @symbiotejs/engine (framework-agnostic,
 // JS-driven, ADR 0016), spread in verbatim. Both halves meet here so the familiar surface,
 // `Animated.timing(new Animated.Value(0), …).start()`, works against the Angular-driven engine.
 
@@ -29,7 +29,7 @@ import {
   event,
   forkEvent,
   unforkEvent,
-} from '@symbiote/engine';
+} from '@symbiotejs/engine';
 import {
   AnimatedFlatList,
   AnimatedImage,

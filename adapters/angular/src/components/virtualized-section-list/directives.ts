@@ -4,7 +4,7 @@
 // content is a TEMPLATE. So the app supplies each section slot as an `<ng-template>` carrying one
 // of these structural directives, and VirtualizedSectionList stamps the windowed slice through
 // them. This is the per-adapter children/render split of <prop_types_split_agnostic_vs_per_adapter>:
-// the shared flatten/window surface stays in @symbiote/components, only the cell-AUTHORING shape is
+// the shared flatten/window surface stays in @symbiotejs/components, only the cell-AUTHORING shape is
 // framework-specific. SectionList (the next layer) reuses these same directives verbatim.
 //
 // Authoring API (what the app imports and what SectionList builds on):
@@ -24,7 +24,7 @@
 // site (the Angular twin of renderItem / renderSectionHeader's typed info arg).
 
 import { Directive, TemplateRef, inject } from '@angular/core';
-import type { ISection, ISeparators } from '@symbiote/components';
+import type { ISection, ISeparators } from '@symbiotejs/components';
 
 // The context a `vSectionItem` template receives, mirroring RN's section renderItem info arg
 // ({ item, index, section, separators }). `$implicit` is the item, so `let-item` (no key) binds it.

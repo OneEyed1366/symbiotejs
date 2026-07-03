@@ -38,9 +38,9 @@ const config = {
     // core/css-parser/src/preprocessors.ts and the symbiote-sfc-style-compiler skill.
     sourceExts: [...defaultConfig.resolver.sourceExts, 'css', 'scss', 'sass', 'less', 'styl'],
     extraNodeModules: {
-      '@symbiote/engine': enginePkg,
-      '@symbiote/components': componentsPkg,
-      '@symbiote/vue': vuePkg,
+      '@symbiotejs/engine': enginePkg,
+      '@symbiotejs/components': componentsPkg,
+      '@symbiotejs/vue': vuePkg,
       react: path.resolve(projectRoot, 'node_modules/react'),
       '@vue/runtime-core': runtimeCore,
       // @vue/babel-plugin-jsx injects helper imports `from 'vue'`; there is no vue/runtime-dom

@@ -5,8 +5,8 @@
 // ios_backgroundColor folds into the style as the pill that shows through the shrunken track.
 // Pure and prop-driven; no hooks, no events. The adapter owns those.
 
-import { dlog } from '@symbiote/engine';
-import type { IStyleProp, IViewStyle, ISymbioteEvent } from '@symbiote/engine';
+import { dlog } from '@symbiotejs/engine';
+import type { IStyleProp, IViewStyle, ISymbioteEvent } from '@symbiotejs/engine';
 import { el } from '../descriptor';
 import type { IDescriptor } from '../descriptor';
 import type { IAccessibilityProps, IAriaProps } from '../accessibility-props';

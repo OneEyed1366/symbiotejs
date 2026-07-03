@@ -1,11 +1,11 @@
 // A ready-made Metro babel transformer wrapper for .css/.scss/.sass/.less/.styl (+ their
 // .module.* twins) support, so a consuming app's own metro.config.js needs only a 3-line wiring
 // file instead of hand-rolling the "compile a style file, delegate everything else to upstream"
-// boilerplate three times (once per adapter's example, before this existed). @symbiote/css-parser
-// is a regular `dependency` of every adapter package (@symbiote/react, @symbiote/vue,
-// @symbiote/angular), so this is transitively resolvable from any app that already depends on one
+// boilerplate three times (once per adapter's example, before this existed). @symbiotejs/css-parser
+// is a regular `dependency` of every adapter package (@symbiotejs/react, @symbiotejs/vue,
+// @symbiotejs/angular), so this is transitively resolvable from any app that already depends on one
 // of them — this repo's shamefully-hoist pnpm config (.npmrc) makes that resolvable without the
-// app adding @symbiote/css-parser to its own package.json. See the symbiote-sfc-style-compiler
+// app adding @symbiotejs/css-parser to its own package.json. See the symbiote-sfc-style-compiler
 // skill.
 //
 // Sync vs async: `transform()` is async uniformly, for every recognized style extension

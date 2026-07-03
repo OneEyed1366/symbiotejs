@@ -8,12 +8,12 @@ import {
   type IActivityIndicatorProps,
   type IActivityIndicatorSize,
   type IAriaProps,
-} from '@symbiote/components';
-import type { ISymbioteEvent } from '@symbiote/engine';
-import type { IDescriptor } from '@symbiote/components';
+} from '@symbiotejs/components';
+import type { ISymbioteEvent } from '@symbiotejs/engine';
+import type { IDescriptor } from '@symbiotejs/components';
 import { anchorHostStyle } from '../../primitives';
 
-export type { IActivityIndicatorProps, IActivityIndicatorSize } from '@symbiote/components';
+export type { IActivityIndicatorProps, IActivityIndicatorSize } from '@symbiotejs/components';
 
 // Narrows anchorHostStyle's `unknown` (it reads an opaque engine prop bag) to the shape
 // IActivityIndicatorProps['style'] actually declares, the same runtime guard image/shared.ts's

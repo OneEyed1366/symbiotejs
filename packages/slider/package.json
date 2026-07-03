@@ -1,5 +1,5 @@
 {
-  "name": "@symbiote/slider",
+  "name": "@symbiotejs/slider",
   "version": "0.0.0",
   "type": "module",
   "main": "src/core/index.ts",
@@ -66,13 +66,13 @@
   },
   "dependencies": {
     "@react-native-community/slider": "catalog:",
-    "@symbiote/components": "workspace:*",
-    "@symbiote/engine": "workspace:*"
+    "@symbiotejs/components": "workspace:*",
+    "@symbiotejs/engine": "workspace:*"
   },
   "peerDependencies": {
-    "@symbiote/angular": "workspace:*",
-    "@symbiote/react": "workspace:*",
-    "@symbiote/vue": "workspace:*",
+    "@symbiotejs/angular": "workspace:*",
+    "@symbiotejs/react": "workspace:*",
+    "@symbiotejs/vue": "workspace:*",
     "@angular/core": ">=20",
     "@vue/runtime-core": "^3.5.13",
     "react": ">=19.0.0",
@@ -80,13 +80,13 @@
     "vue": ">=3.5.0"
   },
   "peerDependenciesMeta": {
-    "@symbiote/angular": {
+    "@symbiotejs/angular": {
       "optional": true
     },
-    "@symbiote/react": {
+    "@symbiotejs/react": {
       "optional": true
     },
-    "@symbiote/vue": {
+    "@symbiotejs/vue": {
       "optional": true
     },
     "@angular/core": {
@@ -106,10 +106,10 @@
     "@angular/compiler": "catalog:",
     "@angular/compiler-cli": "catalog:",
     "@angular/core": "catalog:",
-    "@symbiote/angular": "workspace:*",
-    "@symbiote/react": "workspace:*",
-    "@symbiote/test-utils": "workspace:*",
-    "@symbiote/vue": "workspace:*",
+    "@symbiotejs/angular": "workspace:*",
+    "@symbiotejs/react": "workspace:*",
+    "@symbiotejs/test-utils": "workspace:*",
+    "@symbiotejs/vue": "workspace:*",
     "@types/node": "catalog:",
     "@types/react": "catalog:",
     "@vue/runtime-core": "catalog:",

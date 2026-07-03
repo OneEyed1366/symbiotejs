@@ -2,7 +2,7 @@
 // over VirtualizedList. Each section contributes a header row, its item rows, then a footer row
 // (RN counts 2 per section); the flattened tagged sequence is fed to VirtualizedList as one list,
 // so headers/items/footers are all windowed by the same machinery. The flattening, entry keying,
-// separator-item unwrap, and scrollToLocation mapping are shared from @symbiote/components; this
+// separator-item unwrap, and scrollToLocation mapping are shared from @symbiotejs/components; this
 // file wires Vue lifecycle (typed-prop inputs + handle re-expose + the per-entry render dispatch).
 // The Vue twin of the React adapter's VirtualizedSectionList.
 //
@@ -36,7 +36,7 @@ import {
   type IScrollViewHandle,
   type IVirtualizedListHandle,
   type IVirtualizedSectionListHandle,
-} from '@symbiote/components';
+} from '@symbiotejs/components';
 import {
   Platform,
   dlog,
@@ -44,7 +44,7 @@ import {
   type ISymbioteEvent,
   type ISymbioteNode,
   type IViewStyle,
-} from '@symbiote/engine';
+} from '@symbiotejs/engine';
 import { VirtualizedList } from '../virtualized-list';
 import { normalizeVueAttrs } from '../../utils/normalize-attrs';
 import type { ICtx } from '../../utils/component-helpers';
@@ -55,7 +55,7 @@ const VirtualizedListHost = VirtualizedList as unknown as FunctionalComponent<
   Record<string, unknown>
 >;
 
-export type { ISection } from '@symbiote/components';
+export type { ISection } from '@symbiotejs/components';
 // Re-export the shared handle type so section-list imports it from '../virtualized-section-list'.
 export type { IVirtualizedSectionListHandle };
 

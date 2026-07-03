@@ -1,9 +1,9 @@
-# @symbiote/react
+# @symbiotejs/react
 
 The **React adapter** for [symbiote](../../README.md) — drive real native iOS/Android views from
 React, with React Native's own renderer never in the path. It is a `react-reconciler` host config
 in **mutation mode** (`appendChild` / `insertBefore` / `removeChild` → the engine's four-call
-mutation API); `@symbiote/engine` does the clone-on-write commit into Fabric.
+mutation API); `@symbiotejs/engine` does the clone-on-write commit into Fabric.
 
 This is the **reference adapter**: the known-good driver used to validate the native pipe and the
 commit engine before any other framework lands, so a break in Vue/Svelte/Solid isolates to *that*
@@ -22,11 +22,11 @@ adapter, not the core.
 
 ## Use it
 
-The app is ordinary React — it imports primitives from `@symbiote/react`, not `react-native`:
+The app is ordinary React — it imports primitives from `@symbiotejs/react`, not `react-native`:
 
 ```jsx
 import { useState } from 'react';
-import { View, Text, Pressable } from '@symbiote/react';
+import { View, Text, Pressable } from '@symbiotejs/react';
 
 export default function App() {
   const [count, setCount] = useState(0);
@@ -49,8 +49,8 @@ UIManager` is driven directly, RN's own renderer never runs.
 // index.js
 import { AppRegistry, processColor } from 'react-native';
 import { createElement } from 'react';
-import { mount } from '@symbiote/react';
-import { setColorProcessor } from '@symbiote/engine';
+import { mount } from '@symbiotejs/react';
+import { setColorProcessor } from '@symbiotejs/engine';
 import App from './App';
 import { name as appName } from './app.json';
 
@@ -71,7 +71,7 @@ canary ([`App.tsx`](../../examples/react/App.tsx)) exercises every block of the 
 
 ## Surface — verified on device, iOS + Android
 
-Every interaction commits through `@symbiote/engine` into Fabric, with RN's renderer never in the
+Every interaction commits through `@symbiotejs/engine` into Fabric, with RN's renderer never in the
 path (R1 + R2 + R3 — decision record 0009):
 
 - **Primitives** — `View` · `Text` · `Image` · `ImageBackground` · `ScrollView` · `TextInput` ·
@@ -99,9 +99,9 @@ path (R1 + R2 + R3 — decision record 0009):
 
 ### Android
 
-The same canary runs on an Android emulator through the same `@symbiote/engine` core. Two signals
+The same canary runs on an Android emulator through the same `@symbiotejs/engine` core. Two signals
 RN ties to a view host symbiote bypasses — or never shipped on Android — are re-supplied by a small
-`@symbiote/android` native package (`KeyboardObserver` host shim; `SettingsManager` →
+`@symbiotejs/android` native package (`KeyboardObserver` host shim; `SettingsManager` →
 `SharedPreferences`). `Platform` and the component-name map are Metro-split per OS (`.ios` /
 `.android`), so there is no `Platform.OS` runtime branch. iOS stays the reference surface (more
 real-hardware time, wider prop-edge coverage); `ActionSheetIOS` is iOS-only by design, and
@@ -126,7 +126,7 @@ DEBUG=1 npm start --reset-cache
 
 # terminal 2 — build + launch
 npm run ios                    # iOS simulator (the reference surface)
-npm run android                # Android emulator (manual-links @symbiote/android)
+npm run android                # Android emulator (manual-links @symbiotejs/android)
 ```
 
 Press <kbd>R</kbd> in the simulator to reload. Because `DEBUG` is Babel-inlined into the bundle,

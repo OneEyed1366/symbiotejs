@@ -10,7 +10,7 @@
 // and the adapter builds its own element tree with its children. Mirrors RN's
 // Libraries/Components/Keyboard/KeyboardAvoidingView.js inset/behavior logic.
 
-import type { IStyleProp, IViewStyle } from '@symbiote/engine';
+import type { IStyleProp, IViewStyle } from '@symbiotejs/engine';
 
 export type IKeyboardAvoidingBehavior = 'height' | 'position' | 'padding';
 

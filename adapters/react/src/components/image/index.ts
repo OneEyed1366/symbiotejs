@@ -5,7 +5,7 @@ import {
   resolveAccessibilityProps,
   type IImageStatics,
   type IImageProps as IImageBaseProps,
-} from '@symbiote/components';
+} from '@symbiotejs/components';
 import { descriptorToReact } from '../../descriptor-to-react';
 
 // React's own idiom for a registered class name (mirrors IViewProps.className) — a per-adapter
@@ -59,11 +59,11 @@ export type IImageWithStatics = FC<IImageProps> & IImageStatics;
 
 export const Image: IImageWithStatics = Object.assign(ImageComponent, imageStatics);
 
-export { setImageSourceResolver } from '@symbiote/components';
+export { setImageSourceResolver } from '@symbiotejs/components';
 export type {
   IImageSource,
   IImageSourceProp,
   IResizeMode,
   IImageSize,
   IImageCacheStatus,
-} from '@symbiote/components';
+} from '@symbiotejs/components';

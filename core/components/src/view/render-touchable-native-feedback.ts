@@ -4,7 +4,7 @@
 // both live here so every adapter inherits the exact same surface. The adapter only attaches these
 // statics onto its component value and nests the feedback View under its Pressable.
 
-import { Platform } from '@symbiote/engine';
+import { Platform } from '@symbiotejs/engine';
 
 // The two background dict shapes RN's static factories produce. A discriminated union on `type`
 // so a caller narrows without a cast.

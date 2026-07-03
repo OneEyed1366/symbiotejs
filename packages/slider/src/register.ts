@@ -8,7 +8,7 @@
 // CLAUDE.md <third_party_rn_packages_are_react_only> and ADR 0027.
 
 import '@react-native-community/slider/dist/RNCSliderNativeComponent';
-import { processColor, registerComponent, type IColorValue } from '@symbiote/engine';
+import { processColor, registerComponent, type IColorValue } from '@symbiotejs/engine';
 import {
   RNC_SLIDER_VIEW_NAME,
   SLIDER_ON_CHANGE,

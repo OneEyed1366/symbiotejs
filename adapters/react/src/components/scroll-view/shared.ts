@@ -8,7 +8,7 @@
 //
 // The framework-agnostic pieces (decelerationRate, the per-axis intrinsics/base style, the
 // content-size dedupe, the imperative handle, splitLayoutProps, the sticky math, the native
-// scroll-attach) live in @symbiote/components (ADR 0024); this file holds only the React
+// scroll-attach) live in @symbiotejs/components (ADR 0024); this file holds only the React
 // lifecycle (refs/state/effects) and the element assembly that consumes them.
 
 import {
@@ -29,7 +29,7 @@ import {
   resolveClassName,
   type ISymbioteEvent,
   type ISymbioteNode,
-} from '@symbiote/engine';
+} from '@symbiotejs/engine';
 import {
   attachStickyScroll,
   didContentSizeChange,
@@ -38,16 +38,16 @@ import {
   resolveDecelerationRate,
   selectScrollIntrinsics,
   type ISymbioteIntrinsic,
-} from '@symbiote/components';
+} from '@symbiotejs/components';
 import {
   resolveAccessibilityProps,
   type IAccessibilityProps,
   type IAriaProps,
-} from '@symbiote/components';
+} from '@symbiotejs/components';
 import type { IStyleProp, IViewStyle } from '../../utils/styles';
 import { wrapStickyHeaders, type IStickyHeaderComponentType } from './sticky-header';
 
-export type { IScrollViewHandle } from '@symbiote/components';
+export type { IScrollViewHandle } from '@symbiotejs/components';
 
 type IScrollHandler = (event: ISymbioteEvent) => void;
 type ILayoutHandler = (event: ISymbioteEvent) => void;
@@ -238,7 +238,7 @@ export function usePreparedScrollView(rawProps: IScrollViewProps): IPreparedScro
       : contentContainerStyle;
 
   // The per-axis intrinsics, base style, and content style come from the shared selector
-  // (@symbiote/components): on Android horizontal resolves to its own ViewManager, on iOS both
+  // (@symbiotejs/components): on Android horizontal resolves to its own ViewManager, on iOS both
   // map back to RCTScrollView; here we only pass the axis.
   const { scrollViewIntrinsic, contentIntrinsic, scrollViewBaseStyle, contentStyle } =
     selectScrollIntrinsics(isHorizontal, resolvedContentContainerStyle);
@@ -377,7 +377,7 @@ export function usePreparedScrollView(rawProps: IScrollViewProps): IPreparedScro
 // Called by each platform ScrollView with its committed scroll-node ref; the value then tracks
 // scroll on the UI thread and the sticky-header interpolations ride it natively (no JS jitter).
 // No-op when native sticky is unavailable or the node hasn't committed. Detaches on unmount.
-// The attach/detach itself lives in @symbiote/components (attachStickyScroll); this is the React
+// The attach/detach itself lives in @symbiotejs/components (attachStickyScroll); this is the React
 // effect that drives it.
 export function useNativeStickyScrollAttach(
   scrollNodeRef: RefObject<ISymbioteNode | null>,

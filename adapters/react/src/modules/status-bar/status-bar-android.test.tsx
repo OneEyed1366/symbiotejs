@@ -8,9 +8,9 @@
 
 import { type ReactElement } from 'react';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { View, mount, unmount } from '@symbiote/react';
-import { setColorProcessor } from '@symbiote/engine';
-import { installFabric } from '@symbiote/test-utils';
+import { View, mount, unmount } from '@symbiotejs/react';
+import { setColorProcessor } from '@symbiotejs/engine';
+import { installFabric } from '@symbiotejs/test-utils';
 import { StatusBar } from './index.android';
 
 const STATUS_BAR_HEIGHT = 24;

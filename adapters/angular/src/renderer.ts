@@ -1,4 +1,4 @@
-// An Angular custom renderer over @symbiote/engine. Angular components never touch the
+// An Angular custom renderer over @symbiotejs/engine. Angular components never touch the
 // DOM directly — every paint goes through Renderer2 (created per-component by
 // RendererFactory2). We provide OUR factory, so each Renderer2 method maps onto the
 // engine's tiny mutation API; the engine owns all Fabric clone-on-write, shared with
@@ -23,8 +23,8 @@ import {
   RAW_TEXT_COMPONENT,
   SymbioteSurface,
   type ISymbioteNode,
-} from '@symbiote/engine';
-import { descriptorFor } from '@symbiote/components';
+} from '@symbiotejs/engine';
+import { descriptorFor } from '@symbiotejs/components';
 import type { Renderer2, RendererFactory2, RendererType2 } from '@angular/core';
 import {
   getScrollViewProjection,

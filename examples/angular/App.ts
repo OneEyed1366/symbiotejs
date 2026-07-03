@@ -39,12 +39,12 @@ import {
   WindowDimensionsService,
   createTunnel,
   type ISymbioteEvent,
-} from '@symbiote/angular';
-// A real third-party native view, driven through symbiote's own wrapper (@symbiote/slider)
+} from '@symbiotejs/angular';
+// A real third-party native view, driven through symbiote's own wrapper (@symbiotejs/slider)
 // rather than the library's React component — the wrapper renders through DescriptorOutlet
 // (descriptorToAngular), so the SAME slider works on React/Vue/Angular. App code and the app
-// manifest name only @symbiote/slider; the native package is the wrapper's own dependency.
-import { Slider } from '@symbiote/slider/angular';
+// manifest name only @symbiotejs/slider; the native package is the wrapper's own dependency.
+import { Slider } from '@symbiotejs/slider/angular';
 import { AccessibilityDemo } from './components/AccessibilityDemo';
 import { AnimatedDemo } from './components/AnimatedDemo';
 import { AnimatedParityDemo } from './components/AnimatedParityDemo';
@@ -54,7 +54,7 @@ import { PlatformColorDemo } from './components/PlatformColorDemo';
 import { RefApiDemo } from './components/RefApiDemo';
 import { ResponderDemo } from './components/ResponderDemo';
 // Static look lives in App.css — a plain global .css file, compiled at build time by
-// @symbiote/css-parser and resolved at runtime through the shared style registry every
+// @symbiotejs/css-parser and resolved at runtime through the shared style registry every
 // adapter's class/className/addClass path shares (symbiote-sfc-style-compiler skill).
 import './App.css';
 
@@ -151,7 +151,7 @@ const overlayTunnel = createTunnel();
             </Text>
             <Text class="title">symbiote · Angular adapter</Text>
             <Text class="body">
-              Angular templates drive @symbiote/engine, then Fabric paints real
+              Angular templates drive @symbiotejs/engine, then Fabric paints real
               native views.
             </Text>
           </View>
@@ -307,7 +307,7 @@ const overlayTunnel = createTunnel();
             class="spinner"
           />
           <Text class="native-row-text">
-            host intrinsics exported from @symbiote/angular
+            host intrinsics exported from @symbiotejs/angular
           </Text>
         </View>
 
@@ -456,7 +456,7 @@ const overlayTunnel = createTunnel();
         </View>
 
         <!-- background-image: a CSS linear-gradient(...) authored entirely in App.css
-            (.gradient-card), proving @symbiote/css-parser's background-image to RN's
+            (.gradient-card), proving @symbiotejs/css-parser's background-image to RN's
             experimental_backgroundImage raw passthrough works end to end.
             PASS: the panel shows a red-to-orange gradient sweeping left to right. -->
         <View class="gradient-card">

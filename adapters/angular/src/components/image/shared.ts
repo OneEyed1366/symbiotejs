@@ -8,10 +8,10 @@ import {
   type IImageProps,
   type IImageSourceProp,
   type IResizeMode,
-} from '@symbiote/components';
-import type { IStyleProp, ISymbioteEvent, IViewStyle } from '@symbiote/engine';
+} from '@symbiotejs/components';
+import type { IStyleProp, ISymbioteEvent, IViewStyle } from '@symbiotejs/engine';
 
-export { setImageSourceResolver } from '@symbiote/components';
+export { setImageSourceResolver } from '@symbiotejs/components';
 export type {
   IImageProps,
   IImageSource,
@@ -19,7 +19,7 @@ export type {
   IResizeMode,
   IImageSize,
   IImageCacheStatus,
-} from '@symbiote/components';
+} from '@symbiotejs/components';
 
 export const IMAGE_INPUTS = [
   'source',

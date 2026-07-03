@@ -1,9 +1,9 @@
-// @symbiote/angular: a thin Angular reconciler over @symbiote/engine. A custom Renderer2 +
+// @symbiotejs/angular: a thin Angular reconciler over @symbiotejs/engine. A custom Renderer2 +
 // RendererFactory2 map each node op onto the engine's mutation API; all Fabric clone-on-write
-// lives in the engine, shared with every other adapter. App code names only @symbiote/angular.
+// lives in the engine, shared with every other adapter. App code names only @symbiotejs/angular.
 //
 // SEAM SCAFFOLD: mount/unmount + the renderer seam + host intrinsic selectors. Full RN-like
-// composed components still flow through the shared @symbiote/components bridge — see the
+// composed components still flow through the shared @symbiotejs/components bridge — see the
 // `angular-adapter` skill (§6 descriptorToAngular, the layered milestones).
 
 export {
@@ -51,7 +51,7 @@ export { Animated } from './modules/animated';
 // Also exposed as named top-level symbols (not just Animated.View/.Text/...): ngtsc's partial-mode
 // static evaluator (real AOT, see angular-adapter skill §4) can't trace a component class through
 // property access on an external namespace object, only through a direct named import binding —
-// so `<AnimatedView>` in a template requires `import { AnimatedView } from '@symbiote/angular'`,
+// so `<AnimatedView>` in a template requires `import { AnimatedView } from '@symbiotejs/angular'`,
 // not `const AnimatedView = Animated.View`. Plain tsc/vitest don't catch this; only a real ngc run does.
 export {
   AnimatedFlatList,
@@ -125,7 +125,7 @@ export { setImageSourceResolver } from './components';
 export { mount, unmount } from './render';
 // The generic Descriptor→Angular bridge (§6 of the angular-adapter skill), the twin of
 // descriptorToReact/descriptorToVue. Exported so a component defined OUTSIDE this package (e.g.
-// @symbiote/slider) can render a shared @symbiote/components/@symbiote/slider Descriptor tree
+// @symbiotejs/slider) can render a shared @symbiotejs/components/@symbiotejs/slider Descriptor tree
 // without hand-writing its own Renderer2 walker.
 export { DescriptorOutlet } from './descriptor-to-angular';
 // createPortal (same-surface only — see the file header) and createTunnel (cross-surface,
@@ -158,8 +158,8 @@ export type {
 } from './modules/app-registry';
 export { ColorSchemeService, WindowDimensionsService } from './services';
 
-// Framework-agnostic runtime modules from @symbiote/engine. Every adapter re-exports them so
-// app code names only @symbiote/angular.
+// Framework-agnostic runtime modules from @symbiotejs/engine. Every adapter re-exports them so
+// app code names only @symbiotejs/angular.
 export {
   Alert,
   Share,
@@ -185,7 +185,7 @@ export {
   PixelRatio,
   PlatformColor,
   DynamicColorIOS,
-} from '@symbiote/engine';
+} from '@symbiotejs/engine';
 export type {
   IAlertType,
   IAlertButtonStyle,
@@ -242,7 +242,7 @@ export type {
   IColorValue,
   IOpaqueColorValue,
   IDynamicColorIOSTuple,
-} from '@symbiote/engine';
+} from '@symbiotejs/engine';
 export {
   dlog,
   flattenStyle,
@@ -253,5 +253,5 @@ export {
   setDeviceEventSource,
   setNativeViewConfigSource,
   StyleSheet,
-} from '@symbiote/engine';
-export type { IRootTag, ISymbioteEvent, ISymbioteNode } from '@symbiote/engine';
+} from '@symbiotejs/engine';
+export type { IRootTag, ISymbioteEvent, ISymbioteNode } from '@symbiotejs/engine';

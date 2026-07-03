@@ -1,6 +1,6 @@
-// @symbiote/vue: a thin Vue 3 reconciler over @symbiote/engine. createRenderer maps
+// @symbiotejs/vue: a thin Vue 3 reconciler over @symbiotejs/engine. createRenderer maps
 // each RendererOptions call onto the engine's mutation API; all Fabric clone-on-write
-// lives in the engine, shared with every other adapter. App code names only @symbiote/vue.
+// lives in the engine, shared with every other adapter. App code names only @symbiotejs/vue.
 
 export { mount, unmount } from './render';
 // createTunnel: cross-surface content sharing (Teleport stays same-surface-only by design —
@@ -8,7 +8,7 @@ export { mount, unmount } from './render';
 export { createTunnel, type ITunnel } from './create-tunnel';
 export { View, Text } from './components';
 // Accessibility / ARIA prop types: framework-agnostic, shared verbatim from
-// @symbiote/components (the same source the React adapter re-exports).
+// @symbiotejs/components (the same source the React adapter re-exports).
 export type {
   IAccessibilityProps,
   IAriaProps,
@@ -19,7 +19,7 @@ export type {
   IAccessibilityActionInfo,
   // Gesture-responder props: framework-agnostic, the shared base of View props.
   IResponderProps,
-} from '@symbiote/components';
+} from '@symbiotejs/components';
 // findNodeHandle: RN's ref -> native reactTag lookup, the Vue twin of the React adapter's
 // host-instance resolution. IHostInstance is the raw engine node (Vue host refs fall
 // through to it; imperative methods live on each component's expose() handle).
@@ -27,7 +27,7 @@ export { findNodeHandle } from './host-instance';
 export type { IHostInstance } from './host-instance';
 // Image. Full parity with React: source/src/srcSet resolution, the width/height → style fold,
 // alt → accessibility, and the Image statics (getSize / prefetch / queryCache / …) are shared
-// verbatim from @symbiote/components via renderImage; Vue supplies only the functional bridge.
+// verbatim from @symbiotejs/components via renderImage; Vue supplies only the functional bridge.
 export { Image, setImageSourceResolver } from './components/image';
 export type {
   IImageProps,
@@ -37,7 +37,7 @@ export type {
   IImageSize,
   IImageCacheStatus,
 } from './components/image';
-// First component off the shared @symbiote/components layer: render-only, drives the
+// First component off the shared @symbiotejs/components layer: render-only, drives the
 // agnostic renderActivityIndicator through descriptorToVue. Proof the layer is reusable:
 // the render fn is shared verbatim with React; Vue supplies only the bridge.
 export { ActivityIndicator } from './components/activity-indicator';
@@ -51,7 +51,7 @@ export type { ISwitchProps, ISwitchTrackColor } from './components/switch';
 // (iOS sibling / Android wrap, Phase 2), and sticky headers (Phase 3: the scroll AnimatedValue,
 // the headerLayoutYs cross-talk, and the per-header Animated.View wrap). The pure math (intrinsics,
 // decelerationRate, content-size dedupe, the handle, the sticky interpolation) is shared verbatim
-// with React from @symbiote/components.
+// with React from @symbiotejs/components.
 export { ScrollView } from './components/scroll-view';
 export type {
   IScrollViewProps,
@@ -59,7 +59,7 @@ export type {
   IScrollViewHandle,
 } from './components/scroll-view';
 // Pressable family. Full parity with React (the 3-layer split): the press state machine + render
-// decisions are shared in @symbiote/components; Vue supplies the reactivity + descriptor bridge.
+// decisions are shared in @symbiotejs/components; Vue supplies the reactivity + descriptor bridge.
 export { Pressable } from './components/pressable';
 export type {
   IPressableProps,
@@ -87,13 +87,13 @@ export type {
 export { Button } from './components/button';
 export type { IButtonProps } from './components/button';
 // TextInput. Full parity with React (the 3-layer split): the value/selection folds + the
-// controlled-write predicate live in @symbiote/components; Vue supplies the reactivity
+// controlled-write predicate live in @symbiotejs/components; Vue supplies the reactivity
 // (shallowRef host node, post-flush watch) + the imperative handle via expose().
 export { TextInput } from './components/text-input';
 export type { ITextInputProps, ITextInputHandle } from './components/text-input';
 // VirtualizedList family. Full parity with React: the windowing math (visible range, cell
 // keys, viewability token diffing, edge-reached, the list plan) is shared in
-// @symbiote/components; Vue supplies the reactive lifecycle + the per-cell element.
+// @symbiotejs/components; Vue supplies the reactive lifecycle + the per-cell element.
 export { VirtualizedList } from './components/virtualized-list';
 export type {
   IVirtualizedListProps,
@@ -138,21 +138,21 @@ export { RefreshControl } from './components/refresh-control';
 export type { IRefreshControlProps, IRefreshControlEmits } from './components/refresh-control';
 export { descriptorToVue } from './descriptor-to-vue';
 // normalizeVueAttrs: the kebab→camel attr fold every component applies at entry. Exported so an
-// external wrapper package (e.g. @symbiote/slider/vue over a third-party native view) can fold
+// external wrapper package (e.g. @symbiotejs/slider/vue over a third-party native view) can fold
 // its incoming attrs through the SAME transform rather than reimplementing it.
 export { normalizeVueAttrs } from './utils/normalize-attrs';
 // resolveModelValue/emitModelUpdate: the v-model (Rule 6, vue-adapter-events skill) helper every
 // controlled-value component uses. Exported for the same external-package reason as
-// normalizeVueAttrs above (e.g. @symbiote/slider/vue).
+// normalizeVueAttrs above (e.g. @symbiotejs/slider/vue).
 export { resolveModelValue, emitModelUpdate } from './utils/model-binding';
 export { createSymbioteRenderer } from './renderer';
 // Animated (ADR 0024 Phase 3a): Animated.View/Text/Image + the lazy Animated.ScrollView over the
-// Vue primitives, with the value graph / easing / drivers spread from @symbiote/engine. The wrap
+// Vue primitives, with the value graph / easing / drivers spread from @symbiotejs/engine. The wrap
 // mechanism (createAnimatedComponent) is the Vue twin of React's; the pure leaves live in the
 // engine.
 export { Animated, createAnimatedComponent } from './modules/animated';
 
-// Visual components off the shared @symbiote/components layer (wave: simple-visual).
+// Visual components off the shared @symbiotejs/components layer (wave: simple-visual).
 export { ImageBackground } from './components/image-background';
 export type { IImageBackgroundProps } from './components/image-background';
 export { InputAccessoryView } from './components/input-accessory-view';
@@ -195,7 +195,7 @@ export type {
 export { useColorScheme } from './composables/use-color-scheme';
 export { useWindowDimensions } from './composables/use-window-dimensions';
 
-// Imperative runtime modules: the SAME module both adapters share, re-exported from @symbiote/engine.
+// Imperative runtime modules: the SAME module both adapters share, re-exported from @symbiotejs/engine.
 export {
   Alert,
   Share,
@@ -216,7 +216,7 @@ export {
   RESULTS,
   AccessibilityInfo,
   LayoutAnimation,
-} from '@symbiote/engine';
+} from '@symbiotejs/engine';
 export type {
   IAlertType,
   IAlertButtonStyle,
@@ -260,7 +260,7 @@ export type {
   ILayoutAnimationProperty,
   ILayoutAnimationConfig,
   ILayoutAnimationAnim,
-} from '@symbiote/engine';
+} from '@symbiotejs/engine';
 
 // Re-export the framework-agnostic engine surface (pure utilities + diagnostics).
 export {
@@ -270,8 +270,8 @@ export {
   setColorProcessor,
   dlog,
   isDebug,
-} from '@symbiote/engine';
-export type { ISymbioteEvent, ISymbioteNode, IRootTag } from '@symbiote/engine';
+} from '@symbiotejs/engine';
+export type { ISymbioteEvent, ISymbioteNode, IRootTag } from '@symbiotejs/engine';
 // Style + Platform value types and the native-view-config seam: pure / seam-backed, so
 // they live in the engine and both adapters re-export them (parity with the React adapter).
 export type {
@@ -284,11 +284,11 @@ export type {
   IPlatformConstantsIOS,
   IPlatformConstantsAndroid,
   IPlatformSelectSpec,
-} from '@symbiote/engine';
+} from '@symbiotejs/engine';
 // Wired once by the app entry on a real host (like setColorProcessor): hands the engine
 // RN's ViewConfig registry so third-party Fabric views auto-derive their metadata.
-export { setNativeViewConfigSource } from '@symbiote/engine';
-export type { INativeViewConfig, INativeViewConfigSource } from '@symbiote/engine';
+export { setNativeViewConfigSource } from '@symbiotejs/engine';
+export type { INativeViewConfig, INativeViewConfigSource } from '@symbiotejs/engine';
 // Pure utilities that moved to the engine (single source, both adapters re-export):
 // PixelRatio + PanResponder, plus the color builders and the interaction scheduler.
 export {
@@ -297,19 +297,19 @@ export {
   PlatformColor,
   DynamicColorIOS,
   InteractionManager,
-} from '@symbiote/engine';
-export type { IPixelRatioStatic } from '@symbiote/engine';
+} from '@symbiotejs/engine';
+export type { IPixelRatioStatic } from '@symbiotejs/engine';
 export type {
   IPanResponderGestureState,
   IPanResponderCallbacks,
   IGestureResponderHandlers,
   IPanResponderInstance,
-} from '@symbiote/engine';
-export type { IColorValue, IOpaqueColorValue, IDynamicColorIOSTuple } from '@symbiote/engine';
+} from '@symbiotejs/engine';
+export type { IColorValue, IOpaqueColorValue, IDynamicColorIOSTuple } from '@symbiotejs/engine';
 export type {
   IInteractionEvent,
   ISimpleTask,
   IPromiseTask,
   ITask,
   IHandle,
-} from '@symbiote/engine';
+} from '@symbiotejs/engine';

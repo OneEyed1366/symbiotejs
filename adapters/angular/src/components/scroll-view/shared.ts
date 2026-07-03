@@ -2,7 +2,7 @@
 // wraps a content view that holds the children (RN's ScrollView.js shape). The platform-invariant
 // math (decelerationRate, the per-axis intrinsics/base style, the content-size dedupe, the
 // imperative handle, the native sticky scroll-attach, the aria/role fold) lives in
-// @symbiote/components, shared verbatim with React/Vue. Here Angular supplies only the lifecycle:
+// @symbiotejs/components, shared verbatim with React/Vue. Here Angular supplies only the lifecycle:
 // the host node held by IDENTITY through a directive's ElementRef, a forwarded-prop bag set onto
 // that node through Renderer2 (-> routeProp), the imperative handle (scrollTo/scrollToEnd/
 // flashScrollIndicators), the content-size dedupe, and the native sticky scroll-attach wired
@@ -45,7 +45,7 @@ import {
   type IAriaProps,
   type IContentSize,
   type IScrollViewHandle,
-} from '@symbiote/components';
+} from '@symbiotejs/components';
 import {
   AnimatedValue,
   dlog,
@@ -58,12 +58,12 @@ import {
   type ISymbioteEvent,
   type ISymbioteNode,
   type IViewStyle,
-} from '@symbiote/engine';
+} from '@symbiotejs/engine';
 import { SymbioteHostPropsDirective } from '../../primitives';
 import { RefreshControl } from '../refresh-control';
 import { ScrollViewProjectionController } from './projection';
 
-export type { IScrollViewHandle } from '@symbiote/components';
+export type { IScrollViewHandle } from '@symbiotejs/components';
 
 type IScrollHandler = (event: ISymbioteEvent) => void;
 type IContentSizeHandler = (width: number, height: number) => void;

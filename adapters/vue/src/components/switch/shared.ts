@@ -1,6 +1,6 @@
 // Switch, the Vue lifecycle half. The logic (the lastNativeReport reducer, valueFromChange,
-// the snap-back decision) lives in @symbiote/components/state and the render in
-// @symbiote/components/view, both shared verbatim with the React adapter. Here Vue supplies
+// the snap-back decision) lives in @symbiotejs/components/state and the render in
+// @symbiotejs/components/view, both shared verbatim with the React adapter. Here Vue supplies
 // the reactivity: a ref holds what native last reported, a function ref grabs the host node,
 // and a post-flush watch snaps native back when the parent rejects a toggle. This is the Vue
 // twin of the React adapter's useReducer + useLayoutEffect + dispatchViewCommand.
@@ -21,7 +21,7 @@ import {
   type ISwitchProps as ISwitchBaseProps,
   type ISwitchState,
   type ISwitchTrackColor,
-} from '@symbiote/components';
+} from '@symbiotejs/components';
 import {
   dispatchViewCommand,
   isSymbioteNode,
@@ -30,7 +30,7 @@ import {
   type ISymbioteEvent,
   type ISymbioteNode,
   type IViewStyle,
-} from '@symbiote/engine';
+} from '@symbiotejs/engine';
 import { descriptorToVue } from '../../descriptor-to-vue';
 import { normalizeVueAttrs } from '../../utils/normalize-attrs';
 import { resolveModelValue, emitModelUpdate } from '../../utils/model-binding';
@@ -39,7 +39,7 @@ import { resolveModelValue, emitModelUpdate } from '../../utils/model-binding';
 // command name. Supplied whole by switch.ios.ts / switch.android.ts (Metro filename-selected).
 type ISwitchHostPlatform = ISwitchPlatform & { snapBackCommand: string };
 
-// ISwitchProps lives framework-agnostic in @symbiote/components; `class` can't join it there,
+// ISwitchProps lives framework-agnostic in @symbiotejs/components; `class` can't join it there,
 // so it's added locally, exactly like Image's IImageProps. Not in HANDLED_ATTRS below, so it
 // rides into `passthrough` and lands on the SAME symbiote-switch node `style` targets.
 export type ISwitchProps = Omit<ISwitchBaseProps, 'onValueChange'> & {

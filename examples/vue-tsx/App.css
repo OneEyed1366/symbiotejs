@@ -1,4 +1,4 @@
-/* Static styles for examples/vue-tsx/App.tsx, compiled at build time by @symbiote/css-parser
+/* Static styles for examples/vue-tsx/App.tsx, compiled at build time by @symbiotejs/css-parser
    into the same RN style objects StyleSheet.create used to produce (see the
    symbiote-sfc-style-compiler skill). This app has no .vue SFC files (JSX/TSX only via
    @vue/babel-plugin-jsx), so it has no inline <style> block option — this standalone .css file,
@@ -16,7 +16,7 @@
    - a value derived from a module-level JS constant a CSS selector has no way to read
      (XY_SPAN, HEADER_COLLAPSE, CHIP_WIDTH, CHIP_GAP, PARITY_ROW_H).
    - `boxShadow` / `filter` / `transformOrigin` + `transform` — RN's array-of-operations shape
-     has no 1:1 CSS source syntax @symbiote/css-parser compiles yet (documented gap). */
+     has no 1:1 CSS source syntax @symbiotejs/css-parser compiles yet (documented gap). */
 
 /* ===== shared / common ===== */
 .screen {

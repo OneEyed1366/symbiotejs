@@ -1,6 +1,6 @@
 // VirtualizedList, the Angular lifecycle half. The windowing engine (offset table, window
 // compute, batch throttle, viewability, edge-reached, the child PLAN, the imperative-handle
-// geometry) lives in @symbiote/components/state, shared verbatim with the React and Vue adapters
+// geometry) lives in @symbiotejs/components/state, shared verbatim with the React and Vue adapters
 // (<adapters_reach_full_feature_parity>). Here Angular supplies only the lifecycle: plain fields
 // for scroll offset / viewport / measurement bumps, a once-per-CD metrics + view recompute in
 // ngDoCheck (the Angular twin of React render / Vue `computed` — it owns the controlled
@@ -81,7 +81,7 @@ import {
   type IViewabilityConfigCallbackPair,
   type IViewableItemsChangedInfo,
   type IVirtualizedListHandle,
-} from '@symbiote/components';
+} from '@symbiotejs/components';
 import {
   dlog,
   flattenStyle,
@@ -89,7 +89,7 @@ import {
   type ISymbioteEvent,
   type ISymbioteNode,
   type IViewStyle,
-} from '@symbiote/engine';
+} from '@symbiotejs/engine';
 import { ScrollView } from '../scroll-view';
 import { RefreshControl } from '../refresh-control';
 import { anchorHostStyle, ViewHost } from '../../primitives';
@@ -115,7 +115,7 @@ export type {
   IViewabilityConfig,
   IViewabilityConfigCallbackPair,
   IVirtualizedListHandle,
-} from '@symbiote/components';
+} from '@symbiotejs/components';
 export {
   VListEmptyDirective,
   VListFooterDirective,

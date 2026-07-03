@@ -12,7 +12,7 @@
 // without a render. So the logic layer is the pure folds/maps + the controlled-write predicate;
 // each adapter holds the two pieces in ITS own primitives (React useState/useRef, Vue ref/let).
 
-import type { ISymbioteEvent, ITextStyle } from '@symbiote/engine';
+import type { ISymbioteEvent, ITextStyle } from '@symbiotejs/engine';
 import type { IAccessibilityProps, IAriaProps } from '../accessibility-props';
 
 export type IInputMode =

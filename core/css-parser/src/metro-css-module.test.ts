@@ -37,7 +37,7 @@ describe('compileCssFile — plain .css', () => {
   it('registers classes globally with no default export', async () => {
     const { code } = await compileCssFile('.card { padding: 10px; }', 'theme.css');
 
-    expect(code).toContain("from '@symbiote/engine'");
+    expect(code).toContain("from '@symbiotejs/engine'");
     expect(extractRegisterStylesArg(code)).toEqual({ card: { padding: 10 } });
     expect(code).not.toContain('export default');
   });

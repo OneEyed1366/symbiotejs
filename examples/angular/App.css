@@ -1,5 +1,5 @@
 /* symbiote Angular canary — static look lives here, compiled at build time by
-   @symbiote/css-parser into the same RN style objects StyleSheet.create used to produce
+   @symbiotejs/css-parser into the same RN style objects StyleSheet.create used to produce
    (symbiote-sfc-style-compiler skill), resolved at runtime through the shared style registry
    via Ivy's per-token addClass/removeClass (angular-adapter skill §1). What stays in App.ts
    is ONLY what a CSS class truly cannot express:

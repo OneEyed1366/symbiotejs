@@ -18,7 +18,7 @@
 import '@angular/compiler';
 import { Component, CUSTOM_ELEMENTS_SCHEMA } from '@angular/core';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { installFabric } from '@symbiote/test-utils';
+import { installFabric } from '@symbiotejs/test-utils';
 import { mount, unmount } from '../../render';
 import { AnimatedScrollView } from './create-animated-component';
 

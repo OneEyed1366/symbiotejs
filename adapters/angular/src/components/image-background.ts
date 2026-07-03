@@ -1,7 +1,7 @@
 // ImageBackground: the Angular lifecycle half. ImageBackground has NO native host of its own —
 // it composes an outer View, an absolute-fill Image behind the user children, and the children
 // on top. The composition math (the absolute-fill, the wrapper-dimension proxy onto the inner
-// image, the imageStyle merge) lives framework-agnostic in @symbiote/components/renderImageBackground
+// image, the imageStyle merge) lives framework-agnostic in @symbiotejs/components/renderImageBackground
 // and is shared verbatim with React/Vue. React/Vue bridge the Descriptor it returns; Angular has
 // no hyperscript bridge, so it composes with a TEMPLATE instead and reuses renderImageBackground
 // ONLY to compute the inner image's merged style (read off the tree it returns) — the math stays
@@ -29,13 +29,13 @@ import {
   type IImageProps,
   type IImageSourceProp,
   type IResizeMode,
-} from '@symbiote/components';
+} from '@symbiotejs/components';
 import {
   resolveClassName,
   type IStyleProp,
   type ISymbioteEvent,
   type IViewStyle,
-} from '@symbiote/engine';
+} from '@symbiotejs/engine';
 import { Image } from './image';
 import { anchorHostStyle, ViewHost } from '../primitives';
 

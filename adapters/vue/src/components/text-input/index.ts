@@ -1,6 +1,6 @@
 // TextInput, the Vue lifecycle half. The folds/maps (value->text, the W3C/alias resolution)
-// and the controlled-write predicate live in @symbiote/components/state, the render (intrinsic
-// + native-prop mapping) in @symbiote/components/view, both shared verbatim with the React
+// and the controlled-write predicate live in @symbiotejs/components/state, the render (intrinsic
+// + native-prop mapping) in @symbiotejs/components/view, both shared verbatim with the React
 // adapter. Here Vue supplies only the reactivity: a shallowRef holds the host node, a ref holds
 // the acknowledged event count (so the exposed handle echoes the latest), setup-scope `let`s
 // hold the last native text + focus flag, a post-flush watch runs the controlled-write command,
@@ -11,7 +11,7 @@
 // onValueChange MUST be stripped from the forwarded attrs: it is not a ViewConfig event (it's
 // derived from the native onChange), so leaking it would reach Fabric as a function prop and
 // crash Android's folly::dynamic. The imperative module (blurTextInput / setInput*) is imported
-// from @symbiote/engine, the same framework-agnostic singleton both adapters share.
+// from @symbiotejs/engine, the same framework-agnostic singleton both adapters share.
 
 import { defineComponent, onBeforeUnmount, ref, shallowRef, watch } from '@vue/runtime-core';
 import {
@@ -27,7 +27,7 @@ import {
   type ITextInputProps as ITextInputBaseProps,
   type ITextInputHandle,
   type ITextInputSelection,
-} from '@symbiote/components';
+} from '@symbiotejs/components';
 import {
   dispatchViewCommand,
   isSymbioteNode,
@@ -39,12 +39,12 @@ import {
   type IClassNameValue,
   type ISymbioteEvent,
   type ISymbioteNode,
-} from '@symbiote/engine';
+} from '@symbiotejs/engine';
 import { descriptorToVue } from '../../descriptor-to-vue';
 import { normalizeVueAttrs } from '../../utils/normalize-attrs';
 import { resolveModelValue, emitModelUpdate } from '../../utils/model-binding';
 
-// ITextInputProps lives framework-agnostic in @symbiote/components; `class` can't join it
+// ITextInputProps lives framework-agnostic in @symbiotejs/components; `class` can't join it
 // there, so it's added locally, exactly like Image's IImageProps. Not in HANDLED_ATTRS below
 // (neither is `style`), so it rides through forwardAttrs onto the SAME host node style targets.
 export type ITextInputProps = Omit<ITextInputBaseProps, 'onValueChange' | 'onFocus' | 'onBlur'> & {

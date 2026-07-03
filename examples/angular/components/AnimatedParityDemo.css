@@ -1,4 +1,4 @@
-/* AnimatedParityDemo — static look lives here, compiled at build time by @symbiote/css-parser
+/* AnimatedParityDemo — static look lives here, compiled at build time by @symbiotejs/css-parser
    into RN style objects, resolved at runtime through the shared style registry (see App.css /
    symbiote-sfc-style-compiler skill). Every style key below was fully static in the original
    StyleSheet.create block; the 4 keys that also carry an Animated transform keep that transform

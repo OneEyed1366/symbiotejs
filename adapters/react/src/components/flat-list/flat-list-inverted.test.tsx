@@ -9,8 +9,8 @@
 
 import { createElement, type ReactElement } from 'react';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { FlatList, mount, unmount, type IViewableItemsChangedInfo } from '@symbiote/react';
-import { installFabric, type IFakeNode } from '@symbiote/test-utils';
+import { FlatList, mount, unmount, type IViewableItemsChangedInfo } from '@symbiotejs/react';
+import { installFabric, type IFakeNode } from '@symbiotejs/test-utils';
 
 const ROOT_TAG = 22;
 

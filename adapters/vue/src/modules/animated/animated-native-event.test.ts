@@ -9,8 +9,8 @@
 
 import { defineComponent, h } from '@vue/runtime-core';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { mount, unmount, Animated } from '@symbiote/vue';
-import { installFabric, type IFakeNode } from '@symbiote/test-utils';
+import { mount, unmount, Animated } from '@symbiotejs/vue';
+import { installFabric, type IFakeNode } from '@symbiotejs/test-utils';
 
 interface INativeCall {
   method: string;

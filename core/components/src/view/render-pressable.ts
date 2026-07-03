@@ -4,7 +4,7 @@
 // listeners the responder View carries (gated on disabled + cancelable), and how `disabled` folds
 // into accessibilityState. The adapter feeds these into its View element. Pure, no framework.
 
-import { dlog } from '@symbiote/engine';
+import { dlog } from '@symbiotejs/engine';
 import type { IAccessibilityStateValue } from '../accessibility-props';
 import type { IPressHandlers } from '../state/pressable';
 

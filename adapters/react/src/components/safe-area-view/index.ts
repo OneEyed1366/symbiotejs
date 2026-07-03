@@ -4,12 +4,12 @@
 // the inset math, so this maps style + children straight onto the intrinsic.
 
 import { createElement, type FC, type ReactNode } from 'react';
-import { dlog, type ISymbioteEvent } from '@symbiote/engine';
+import { dlog, type ISymbioteEvent } from '@symbiotejs/engine';
 import {
   resolveAccessibilityProps,
   type IAccessibilityProps,
   type IAriaProps,
-} from '@symbiote/components';
+} from '@symbiotejs/components';
 import type { IStyleProp, IViewStyle } from '../../utils/styles';
 
 export interface ISafeAreaViewProps extends IAccessibilityProps, IAriaProps {

@@ -6,7 +6,7 @@
   device-only: a wrong name silently falls back, so this is verified on simulator.
 -->
 <script setup lang="ts">
-import { View, Text, PlatformColor, DynamicColorIOS, useColorScheme } from '@symbiote/vue'
+import { View, Text, PlatformColor, DynamicColorIOS, useColorScheme } from '@symbiotejs/vue'
 
 const scheme = useColorScheme()
 </script>

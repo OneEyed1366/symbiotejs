@@ -34,9 +34,9 @@ const config = {
     // core/css-parser/src/preprocessors.ts and the symbiote-sfc-style-compiler skill.
     sourceExts: [...defaultConfig.resolver.sourceExts, 'css', 'scss', 'sass', 'less', 'styl'],
     extraNodeModules: {
-      '@symbiote/engine': enginePkg,
-      '@symbiote/components': componentsPkg,
-      '@symbiote/react': reactPkg,
+      '@symbiotejs/engine': enginePkg,
+      '@symbiotejs/components': componentsPkg,
+      '@symbiotejs/react': reactPkg,
       react: path.resolve(projectRoot, 'node_modules/react'),
       'react-reconciler': path.resolve(projectRoot, 'node_modules/react-reconciler'),
     },

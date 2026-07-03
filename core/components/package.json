@@ -1,5 +1,5 @@
 {
-  "name": "@symbiote/components",
+  "name": "@symbiotejs/components",
   "version": "0.0.0",
   "type": "module",
   "main": "src/index.ts",
@@ -28,6 +28,6 @@
     "format": "prettier --write \"src/**/*.{ts,tsx}\""
   },
   "dependencies": {
-    "@symbiote/engine": "workspace:*"
+    "@symbiotejs/engine": "workspace:*"
   }
 }

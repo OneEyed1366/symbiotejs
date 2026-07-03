@@ -18,7 +18,7 @@ Framework adapter
 Mutation API
   insert · remove · setProp · commit
         ↓
-@symbiote/engine
+@symbiotejs/engine
   retained tree · clone-on-write · event normalization
         ↓
 nativeFabricUIManager
@@ -38,7 +38,7 @@ The engine is the translation layer between those worlds. It owns the retained
 shadow tree and turns adapter mutations into Fabric child set commits.
 
 That means each framework adapter stays thin. A persistence bug is fixed once in
-`@symbiote/engine`, not once per framework.
+`@symbiotejs/engine`, not once per framework.
 
 ## What stays stock
 

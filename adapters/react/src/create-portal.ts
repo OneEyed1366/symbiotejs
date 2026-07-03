@@ -3,7 +3,7 @@
 // config runs in PERSISTENT mode and never implements the mutation-mode container ops
 // (appendChildToContainer / insertInContainerBefore / removeChildFromContainer) createPortal
 // needs — see facebook/react-native#36273 ("Portal children gets overriden in Fabric").
-// @symbiote/react is deliberately MUTATION mode and already implements all three (host-config.ts),
+// @symbiotejs/react is deliberately MUTATION mode and already implements all three (host-config.ts),
 // so a portal here structurally works where it never could in real RN.
 //
 // Scope (v1): the target must be an already-mounted node WITHIN THE SAME SURFACE as the portal's
@@ -12,7 +12,7 @@
 // fires for the primary root's own container, so a different surface's tree would never repaint.
 
 import type { ReactNode, ReactPortal } from 'react';
-import { isSymbioteNode, SymbioteSurface, type ISymbioteNode } from '@symbiote/engine';
+import { isSymbioteNode, SymbioteSurface, type ISymbioteNode } from '@symbiotejs/engine';
 import reconciler from './host-config';
 
 export type IPortalContainer = ISymbioteNode | SymbioteSurface;

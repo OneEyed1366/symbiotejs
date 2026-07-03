@@ -11,10 +11,10 @@
 
 import { defineComponent, h, ref, shallowRef, withDirectives } from '@vue/runtime-core';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { mount, unmount } from '@symbiote/vue';
-import { isSymbioteNode, type ISymbioteNode } from '@symbiote/engine';
+import { mount, unmount } from '@symbiotejs/vue';
+import { isSymbioteNode, type ISymbioteNode } from '@symbiotejs/engine';
 import { Teleport, vShow } from './runtime-helpers';
-import { installFabric, type IFakeNode } from '@symbiote/test-utils';
+import { installFabric, type IFakeNode } from '@symbiotejs/test-utils';
 
 const ROOT_TAG = 340;
 const VIEW = 'RCTView';

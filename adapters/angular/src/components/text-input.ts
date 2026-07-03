@@ -1,6 +1,6 @@
 // TextInput, the Angular lifecycle half. The folds/maps (value->text, the W3C/alias resolution)
-// and the controlled-write predicate live in @symbiote/components/state, the render (intrinsic
-// + native-prop mapping) in @symbiote/components/view, both shared verbatim with the React and
+// and the controlled-write predicate live in @symbiotejs/components/state, the render (intrinsic
+// + native-prop mapping) in @symbiotejs/components/view, both shared verbatim with the React and
 // Vue adapters. Here Angular supplies only the lifecycle: renderTextInput picks ONE of two host
 // intrinsics at runtime (symbiote-text-input / symbiote-text-input-multiline) via `@if`/`@else`,
 // each wired through the shared `SymbioteHostPropsDirective` (`[symbioteHostProps]="hostProps"`,
@@ -23,7 +23,7 @@
 // time has no Fabric tag yet; the controlled write + autoFocus defer through whenCommitted, the
 // same gotcha Vue hits. The controlled handshake hinges on commanding native back with the
 // ACKNOWLEDGED event count (setTextAndSelection), never a plain prop re-push — see
-// @symbiote/components/state/text-input.
+// @symbiotejs/components/state/text-input.
 
 import {
   CUSTOM_ELEMENTS_SCHEMA,
@@ -60,7 +60,7 @@ import {
   type ITextInputEventHandler,
   type ITextInputHandle,
   type ITextInputSelection,
-} from '@symbiote/components';
+} from '@symbiotejs/components';
 import {
   blurTextInput,
   dispatchViewCommand,
@@ -73,7 +73,7 @@ import {
   type ISymbioteEvent,
   type ISymbioteNode,
   type ITextStyle,
-} from '@symbiote/engine';
+} from '@symbiotejs/engine';
 import {
   anchorHostStyle,
   MultilineTextInputHost,

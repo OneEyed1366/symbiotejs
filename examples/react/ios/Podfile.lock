@@ -2016,7 +2016,7 @@ DEPENDENCIES:
   - ReactCodegen (from `build/generated/ios/ReactCodegen`)
   - ReactCommon/turbomodule/core (from `../node_modules/react-native/ReactCommon`)
   - ReactNativeDependencies (from `../node_modules/react-native/third-party-podspecs/ReactNativeDependencies.podspec`)
-  - "symbiote-slider (from `../node_modules/@symbiote/slider`)"
+  - "symbiote-slider (from `../node_modules/@symbiotejs/slider`)"
   - Yoga (from `../node_modules/react-native/ReactCommon/yoga`)
 
 EXTERNAL SOURCES:
@@ -2172,7 +2172,7 @@ EXTERNAL SOURCES:
   ReactNativeDependencies:
     :podspec: "../node_modules/react-native/third-party-podspecs/ReactNativeDependencies.podspec"
   symbiote-slider:
-    :path: "../node_modules/@symbiote/slider"
+    :path: "../node_modules/@symbiotejs/slider"
   Yoga:
     :path: "../node_modules/react-native/ReactCommon/yoga"
 

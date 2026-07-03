@@ -10,7 +10,7 @@ This example shows state, native layout, text, and a press event.
 ```tsx
 import './App.css';
 import { useState } from 'react';
-import { Text, View } from '@symbiote/react';
+import { Text, View } from '@symbiotejs/react';
 
 export default function App() {
   const [count, setCount] = useState(0);
@@ -34,7 +34,7 @@ export default function App() {
 ```vue
 <script setup lang="ts">
 import { ref } from 'vue';
-import { Text, View } from '@symbiote/vue';
+import { Text, View } from '@symbiotejs/vue';
 
 const count = ref(0);
 </script>
@@ -55,7 +55,7 @@ const count = ref(0);
 
 ```ts
 import { Component } from '@angular/core';
-import { Pressable, Text, View } from '@symbiote/angular';
+import { Pressable, Text, View } from '@symbiotejs/angular';
 import './app.css';
 
 @Component({

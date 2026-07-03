@@ -1,4 +1,4 @@
-/* Static look lives here, compiled at build time by @symbiote/css-parser (symbiote-sfc-style-
+/* Static look lives here, compiled at build time by @symbiotejs/css-parser (symbiote-sfc-style-
    compiler skill). opacity/transform stay dynamic — Animated-driven values composed at the use
    site via [style] in AnimatedDemo.ts, alongside each dot's class for its static half. */
 

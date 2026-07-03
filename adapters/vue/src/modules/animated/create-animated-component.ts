@@ -3,7 +3,7 @@
 // Same JS-driven path, NO native driver in the hot loop: a frame is the scoped commit
 // setNativeProps drives from the AnimatedProps leaf (ADR 0016). The framework-agnostic
 // pieces (reduceProps / readPassthroughStyle / resolveHostNode / isAnimatedNode + the
-// AnimatedProps leaf itself) live in @symbiote/engine, shared verbatim with React; here
+// AnimatedProps leaf itself) live in @symbiotejs/engine, shared verbatim with React; here
 // Vue supplies only the lifecycle.
 //
 // React → hooks: useMemo(leaf) + three useEffects + a callback ref. Vue → reactivity:
@@ -29,7 +29,7 @@ import {
   reduceProps,
   readPassthroughStyle,
   resolveHostNode,
-} from '@symbiote/engine';
+} from '@symbiotejs/engine';
 import { normalizeVueAttrs } from '../../utils/normalize-attrs';
 
 // RN's prop carrying explicit (already-rasterized) values that override the animated prop in

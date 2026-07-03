@@ -1,4 +1,4 @@
-// @symbiote/css-parser/typescript-plugin — a TypeScript language-service plugin that gives live,
+// @symbiotejs/css-parser/typescript-plugin — a TypeScript language-service plugin that gives live,
 // in-editor autocomplete AND typo-catching for a standalone `.module.css` import
 // (`import styles from './Card.module.css'`). No terminal, no watch process, no generation step
 // a developer has to remember to run: it hooks into the IDE's OWN TS server (VS Code/WebStorm),
@@ -12,7 +12,7 @@
 // synthesize a virtual .d.ts for the import), fixing two real bugs found by reading that source
 // directly: (1) its class extractor never converts kebab-case to camelCase, so a suggested key
 // like `section-tight` does NOT match the ACTUAL exported key our runtime produces
-// (@symbiote/css-parser's parseCSS always camelCases — see src/generate-dts.ts's
+// (@symbiotejs/css-parser's parseCSS always camelCases — see src/generate-dts.ts's
 // classNamesToDtsSource, which this plugin's dts shape mirrors); (2) its dts cache never
 // invalidates, so autocomplete goes stale after editing the CSS file until the IDE restarts
 // tsserver — this version keys the cache on the file's mtime instead. wolf-tui's package.json

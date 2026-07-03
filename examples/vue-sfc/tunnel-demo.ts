@@ -3,6 +3,6 @@
 // skill). Kept in its own file rather than inline in App.vue's <script setup>, since an SFC's
 // <script setup> body re-runs per component INSTANCE, not per module — this file is what
 // actually gives every importer the SAME tunnel.
-import { createTunnel } from '@symbiote/vue';
+import { createTunnel } from '@symbiotejs/vue';
 
 export const tunnelDemo = createTunnel();

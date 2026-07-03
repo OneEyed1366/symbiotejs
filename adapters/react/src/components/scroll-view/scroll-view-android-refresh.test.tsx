@@ -13,8 +13,8 @@
 
 import { type ReactElement } from 'react';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { View, RefreshControl, mount, unmount } from '@symbiote/react';
-import { installFabric } from '@symbiote/test-utils';
+import { View, RefreshControl, mount, unmount } from '@symbiotejs/react';
+import { installFabric } from '@symbiotejs/test-utils';
 import { ScrollView } from './index.android';
 
 const ROOT_TAG = 52;

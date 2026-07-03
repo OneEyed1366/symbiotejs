@@ -1,6 +1,6 @@
-// Re-export shim. The typed style surface moved to @symbiote/engine (it is agnostic and
-// @symbiote/components needs it to type render fns); kept here so the adapter's own modules
-// keep importing styles from one local path. App code reaches these via @symbiote/react.
+// Re-export shim. The typed style surface moved to @symbiotejs/engine (it is agnostic and
+// @symbiotejs/components needs it to type render fns); kept here so the adapter's own modules
+// keep importing styles from one local path. App code reaches these via @symbiotejs/react.
 export type {
   IViewStyle,
   ITextStyle,
@@ -13,4 +13,4 @@ export type {
   IDropShadowValue,
   IFilterFunction,
   IBlendMode,
-} from '@symbiote/engine';
+} from '@symbiotejs/engine';

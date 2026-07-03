@@ -6,9 +6,9 @@
 
 import { createElement, type ReactElement } from 'react';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { clearGlobalStyles, registerStyles } from '@symbiote/engine';
-import { FlatList, mount, unmount } from '@symbiote/react';
-import { installFabric, type IFakeNode } from '@symbiote/test-utils';
+import { clearGlobalStyles, registerStyles } from '@symbiotejs/engine';
+import { FlatList, mount, unmount } from '@symbiotejs/react';
+import { installFabric, type IFakeNode } from '@symbiotejs/test-utils';
 
 const ROOT_TAG = 33;
 const fabric = installFabric();

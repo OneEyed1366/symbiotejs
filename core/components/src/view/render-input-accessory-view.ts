@@ -5,7 +5,7 @@
 // onto the intrinsic and the user children (injected by the adapter) nest under it. Shared
 // verbatim across adapters: React and Vue both bridge this Descriptor.
 
-import { dlog, type IStyleProp, type IViewStyle } from '@symbiote/engine';
+import { dlog, type IStyleProp, type IViewStyle } from '@symbiotejs/engine';
 import { el, type IDescriptor } from '../descriptor';
 
 // The pre-resolved inputs renderInputAccessoryView paints from. The adapter narrows the typed

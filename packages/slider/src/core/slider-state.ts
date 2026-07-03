@@ -4,7 +4,7 @@
 // wrapper does before handing props to the native view: value sanitation, disabled/accessibility
 // resolution, limit defaulting, and the step-indicator option layout. Every adapter reuses these.
 
-import type { ISymbioteEvent } from '@symbiote/engine';
+import type { ISymbioteEvent } from '@symbiotejs/engine';
 import { SLIDER_LIMIT_MAX_VALUE, SLIDER_LIMIT_MIN_VALUE } from './constants';
 
 // The accessibilityState slice the disabled fold reads/writes. Only `disabled` is typed (the only

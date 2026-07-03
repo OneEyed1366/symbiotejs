@@ -1,5 +1,5 @@
-// @symbiote/react: a react-reconciler host config (mutation mode) over
-// @symbiote/engine. React is a known-good driver: it proves the native pipe
+// @symbiotejs/react: a react-reconciler host config (mutation mode) over
+// @symbiotejs/engine. React is a known-good driver: it proves the native pipe
 // (R1) and shared's clone-on-write engine (R2) before any non-React adapter.
 
 export { View, Text } from './components';
@@ -12,7 +12,7 @@ export type {
   IAccessibilityStateValue,
   IAccessibilityValue,
   IAccessibilityActionInfo,
-} from '@symbiote/components';
+} from '@symbiotejs/components';
 export type { IResponderProps } from './utils/responder-props';
 export { Image, setImageSourceResolver } from './components/image';
 export type {
@@ -93,15 +93,15 @@ export type {
 
 export type { IViewStyle, ITextStyle, IFlexAlign, IFlexJustify } from './utils/styles';
 export { mount, unmount } from './render';
-// createPortal: react-reconciler's Fiber-level portal, working here because @symbiote/react is
+// createPortal: react-reconciler's Fiber-level portal, working here because @symbiotejs/react is
 // mutation-mode (unlike stock RN's persistent-mode Fabric renderer, which doesn't support it —
 // see create-portal.ts). v1 scope: target must be an already-mounted node in the SAME surface.
 export { createPortal, type IPortalContainer } from './create-portal';
 // createTunnel: cross-surface content sharing (createPortal/Teleport stay same-surface-only
 // by design — see create-tunnel.tsx and the react-adapter-portal skill for why).
 export { createTunnel, type ITunnel } from './create-tunnel';
-// descriptorToReact: the @symbiote/components Descriptor → React.createElement bridge. Exported so
-// an external wrapper package (e.g. @symbiote/slider/react over a third-party native view) can map
+// descriptorToReact: the @symbiotejs/components Descriptor → React.createElement bridge. Exported so
+// an external wrapper package (e.g. @symbiotejs/slider/react over a third-party native view) can map
 // a shared render fn's Descriptor onto React elements through the SAME bridge the adapter uses.
 export { descriptorToReact } from './descriptor-to-react';
 export { findNodeHandle } from './host-instance';
@@ -128,25 +128,25 @@ export type {
 export { Animated, createAnimatedComponent } from './modules/animated';
 
 // Framework-agnostic runtime utilities live in shared; the adapter re-exports them
-// so app code names only @symbiote/react (RN's surface, one import root).
-export { Platform, StyleSheet } from '@symbiote/engine';
+// so app code names only @symbiotejs/react (RN's surface, one import root).
+export { Platform, StyleSheet } from '@symbiotejs/engine';
 // Color utilities: PlatformColor / DynamicColorIOS build opaque platform colors;
 // processColor runs a color through the injected platform processor. All pure /
 // seam-backed, so they live in shared and the adapter re-exports them.
-export { PlatformColor, DynamicColorIOS, processColor } from '@symbiote/engine';
-export type { IColorValue, IOpaqueColorValue, IDynamicColorIOSTuple } from '@symbiote/engine';
+export { PlatformColor, DynamicColorIOS, processColor } from '@symbiotejs/engine';
+export type { IColorValue, IOpaqueColorValue, IDynamicColorIOSTuple } from '@symbiotejs/engine';
 // Wired once by the app entry on a real host (like setColorProcessor): hands shared
 // RN's ViewConfig registry so third-party Fabric views auto-derive their metadata:
 //   setNativeViewConfigSource(name => ReactNativeViewConfigRegistry.get(name))
-export { setNativeViewConfigSource } from '@symbiote/engine';
-export type { INativeViewConfig, INativeViewConfigSource } from '@symbiote/engine';
+export { setNativeViewConfigSource } from '@symbiotejs/engine';
+export type { INativeViewConfig, INativeViewConfigSource } from '@symbiotejs/engine';
 export type {
   IPlatformStatic,
   IPlatformOSType,
   IPlatformConstantsIOS,
   IPlatformConstantsAndroid,
   IPlatformSelectSpec,
-} from '@symbiote/engine';
+} from '@symbiotejs/engine';
 
 // Runtime modules: native-bridge consumers, same shape as Keyboard/StatusBar:
 // thin JS over getNativeModule + device events, no Fabric component of their own.
@@ -160,8 +160,8 @@ export type {
   IDimensionsChangeListener,
   IDimensionsStatic,
 } from './modules/dimensions';
-export { PixelRatio } from '@symbiote/engine';
-export type { IPixelRatioStatic } from '@symbiote/engine';
+export { PixelRatio } from '@symbiotejs/engine';
+export type { IPixelRatioStatic } from '@symbiotejs/engine';
 export { useWindowDimensions } from './hooks/use-window-dimensions';
 export { Appearance } from './modules/appearance';
 export type { IColorSchemeName, IColorSchemePreference } from './modules/appearance';
@@ -201,13 +201,13 @@ export type { II18nManagerConstants } from './modules/i18n-manager';
 export { Settings } from './modules/settings';
 
 // Interaction subsystems: gestures, deferred work, and layout transitions.
-export { PanResponder } from '@symbiote/engine';
+export { PanResponder } from '@symbiotejs/engine';
 export type {
   IPanResponderGestureState,
   IPanResponderCallbacks,
   IGestureResponderHandlers,
   IPanResponderInstance,
-} from '@symbiote/engine';
+} from '@symbiotejs/engine';
 export { LayoutAnimation } from './modules/layout-animation';
 export type {
   ILayoutAnimationType,
@@ -216,15 +216,15 @@ export type {
   ILayoutAnimationAnim,
 } from './modules/layout-animation';
 // InteractionManager is pure JS, so it lives in shared; re-exported here so app code
-// names only @symbiote/react (RN's single import root).
-export { InteractionManager } from '@symbiote/engine';
+// names only @symbiotejs/react (RN's single import root).
+export { InteractionManager } from '@symbiotejs/engine';
 export type {
   IInteractionEvent,
   ISimpleTask,
   IPromiseTask,
   ITask,
   IHandle,
-} from '@symbiote/engine';
+} from '@symbiotejs/engine';
 
 // Android-only surface (the second-platform pass). Each is a thin JS shim over an
 // Android native module / Fabric view, inert on iOS (no module → graceful no-op,
@@ -242,4 +242,4 @@ export type {
   IThemeAttrBackground,
   IRippleBackground,
 } from './components/touchable-native-feedback';
-export type { ISymbioteEvent } from '@symbiote/engine';
+export type { ISymbioteEvent } from '@symbiotejs/engine';

@@ -10,7 +10,7 @@
 // node plus its measure call). The rest (the timers, the geometry, the suppression flags,
 // the decision of when each callback fires) is here, shared by every adapter.
 
-import { dlog, Platform, type ISymbioteEvent } from '@symbiote/engine';
+import { dlog, Platform, type ISymbioteEvent } from '@symbiotejs/engine';
 
 export const DEFAULT_DELAY_LONG_PRESS_MS = 500;
 // RN's default extra slop kept around a press once it is active, before a drift fires pressOut.

@@ -25,7 +25,7 @@ import {
   setNativeProps,
   whenCommitted,
   type ISymbioteNode,
-} from '@symbiote/engine';
+} from '@symbiotejs/engine';
 
 // setNativeProps merges a partial `style` object onto the node's current one (never clobbering
 // other declarative style fields) and re-commits via the node's OWN tracked rootTag — no

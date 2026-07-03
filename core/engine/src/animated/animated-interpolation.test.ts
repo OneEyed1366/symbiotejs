@@ -5,7 +5,7 @@
 // number->number path stays untouched. Pure functions, so no Fabric slot.
 
 import { describe, expect, it } from 'vitest';
-import { AnimatedValue } from '@symbiote/engine';
+import { AnimatedValue } from '@symbiotejs/engine';
 
 describe('AnimatedInterpolation non-numeric output ranges', () => {
   it("interpolates a degrees string ('0deg' -> '360deg') at 0.5", () => {

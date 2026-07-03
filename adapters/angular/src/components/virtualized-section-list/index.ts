@@ -2,7 +2,7 @@
 // over VirtualizedList. Each section contributes a header row, its item rows, then a footer row
 // (RN counts 2 per section); the flattened tagged sequence is fed to VirtualizedList as one list,
 // so headers/items/footers are all windowed by the same machinery. The flattening, entry keying,
-// separator-item unwrap, and scrollToLocation mapping are shared from @symbiote/components; this
+// separator-item unwrap, and scrollToLocation mapping are shared from @symbiotejs/components; this
 // file wires Angular's lifecycle (typed @Input/@Output surface + the imperative handle + the
 // per-cell-tag template dispatch). The Angular twin of the React/Vue adapters' VirtualizedSectionList.
 //
@@ -44,7 +44,7 @@ import {
   type ISeparators,
   type IScrollViewHandle,
   type IVirtualizedSectionListHandle,
-} from '@symbiote/components';
+} from '@symbiotejs/components';
 import {
   Platform,
   dlog,
@@ -52,7 +52,7 @@ import {
   type ISymbioteEvent,
   type ISymbioteNode,
   type IViewStyle,
-} from '@symbiote/engine';
+} from '@symbiotejs/engine';
 import {
   VirtualizedList,
   VListEmptyDirective,
@@ -73,9 +73,9 @@ import {
   type IVSectionItemContext,
 } from './directives';
 
-export type { ISection } from '@symbiote/components';
+export type { ISection } from '@symbiotejs/components';
 // Re-export the shared handle type so section-list imports it from '../virtualized-section-list'.
-export type { IVirtualizedSectionListHandle } from '@symbiote/components';
+export type { IVirtualizedSectionListHandle } from '@symbiotejs/components';
 // Re-export the section authoring directives + their contexts so flat consumers (and SectionList)
 // import them from '../virtualized-section-list', mirroring how VirtualizedList re-exports its own.
 export {

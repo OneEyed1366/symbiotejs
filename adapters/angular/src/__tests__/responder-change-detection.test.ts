@@ -9,7 +9,7 @@
 import '@angular/compiler';
 import { Component } from '@angular/core';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { installFabric, type IFakeNode } from '@symbiote/test-utils';
+import { installFabric, type IFakeNode } from '@symbiotejs/test-utils';
 
 import { mount, unmount } from '../render';
 import { ViewHost as View, TextHost as Text, SymbioteHostPropsDirective } from '../primitives';

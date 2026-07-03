@@ -2,7 +2,7 @@
  * @format
  *
  * Symbiote Vue canary entry (M3 / R4 on-device proof). Our own AppRegistry (the RN-identical
- * `registerComponent(appKey, () => App)`) mounts via @symbiote/engine, not React Native's
+ * `registerComponent(appKey, () => App)`) mounts via @symbiotejs/engine, not React Native's
  * renderer. setHostRegistrar hands it RN's AppRegistry so the native Fabric host can find our
  * runnable by app key and call it with the surface's rootTag; our renderer drives
  * nativeFabricUIManager directly from there — the same entry point the React canary uses.
@@ -18,8 +18,8 @@ import {
   setColorProcessor,
   setDeviceEventSource,
   setNativeViewConfigSource,
-} from '@symbiote/engine';
-import { AppRegistry, setHostRegistrar } from '@symbiote/vue';
+} from '@symbiotejs/engine';
+import { AppRegistry, setHostRegistrar } from '@symbiotejs/vue';
 import App from './App';
 import { name as appName } from './app.json';
 
@@ -49,5 +49,5 @@ setNativeViewConfigSource(name => {
 setHostRegistrar(RNAppRegistry);
 
 // RN-identical app entry: registerComponent stores a runnable that mounts via
-// @symbiote/engine (not React Native's renderer) and bridges it to the host above.
+// @symbiotejs/engine (not React Native's renderer) and bridges it to the host above.
 AppRegistry.registerComponent(appName, () => App);

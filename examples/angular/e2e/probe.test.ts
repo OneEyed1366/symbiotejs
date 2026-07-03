@@ -1,7 +1,7 @@
 import { by, device, element, waitFor } from 'detox';
 
 // Go/no-go probe for the Angular canary. It proves the native RN host starts, the
-// Angular adapter mounts through @symbiote/engine, and a Fabric view from the Angular
+// Angular adapter mounts through @symbiotejs/engine, and a Fabric view from the Angular
 // template reaches the native hierarchy with its testID.
 describe('Angular symbiote attach probe', () => {
   beforeAll(async () => {

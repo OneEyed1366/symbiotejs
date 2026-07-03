@@ -5,7 +5,7 @@
 // (nativeBackgroundAndroid / nativeForegroundAndroid), inside a <Pressable> that owns the press
 // wiring. The native props are read by Android's ReactViewManager; on iOS they are inert props,
 // so the child still renders with working press wiring. The static factories + background mapping
-// are shared in @symbiote/components and reused verbatim — Angular only attaches them onto the
+// are shared in @symbiotejs/components and reused verbatim — Angular only attaches them onto the
 // component class and nests the feedback view. No JS-side platform branch (one Fabric path both
 // platforms), so this stays a flat single file (ADR 0026), mirroring React/Vue.
 //
@@ -43,8 +43,8 @@ import {
   type INativeFeedbackBackground,
   type IPressableAndroidRippleConfig,
   type IRectOffset,
-} from '@symbiote/components';
-import { dlog, type ISymbioteEvent } from '@symbiote/engine';
+} from '@symbiotejs/components';
+import { dlog, type ISymbioteEvent } from '@symbiotejs/engine';
 import { anchorHostStyle, SymbioteHostPropsDirective, ViewHost } from '../primitives';
 import { Pressable, type IAngularPressableInputs } from './pressable';
 
@@ -52,7 +52,7 @@ export type {
   INativeFeedbackBackground,
   IThemeAttrBackground,
   IRippleBackground,
-} from '@symbiote/components';
+} from '@symbiotejs/components';
 
 // Mirrors React's ITouchableNativeFeedbackProps (Omit<IPressableProps, 'style'> + the native
 // feedback config) minus children (Angular takes children via <ng-content>) and minus the press/

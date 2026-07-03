@@ -4,8 +4,8 @@
 // each adapter's own flavored prop type. ISliderProps here is the shared agnostic base every
 // adapter re-exports and extends; ISliderViewProps is the pre-resolved input the render fn paints.
 
-import type { IColorValue, IStyleProp, IViewStyle } from '@symbiote/engine';
-import type { IAccessibilityProps, IAriaProps, IImageSourceProp } from '@symbiote/components';
+import type { IColorValue, IStyleProp, IViewStyle } from '@symbiotejs/engine';
+import type { IAccessibilityProps, IAriaProps, IImageSourceProp } from '@symbiotejs/components';
 import type { ISliderAccessibilityState } from './slider-state';
 
 // The agnostic public surface, shared by every adapter. Callbacks take a plain number (the

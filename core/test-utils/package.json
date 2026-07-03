@@ -1,5 +1,5 @@
 {
-  "name": "@symbiote/test-utils",
+  "name": "@symbiotejs/test-utils",
   "version": "0.0.0",
   "private": true,
   "type": "module",

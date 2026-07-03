@@ -19,8 +19,8 @@ import {
   shallowRef,
   type FunctionalComponent,
 } from '@vue/runtime-core';
-import type { ISymbioteNode } from '@symbiote/engine';
-import type { IScrollViewHandle, IVirtualizedSectionListHandle } from '@symbiote/components';
+import type { ISymbioteNode } from '@symbiotejs/engine';
+import type { IScrollViewHandle, IVirtualizedSectionListHandle } from '@symbiotejs/components';
 import {
   VirtualizedSectionList,
   type IVirtualizedSectionListEmits,

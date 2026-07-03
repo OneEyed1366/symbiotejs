@@ -1,5 +1,5 @@
 {
-  "name": "@symbiote/engine",
+  "name": "@symbiotejs/engine",
   "version": "0.0.0",
   "type": "module",
   "main": "src/index.ts",
@@ -31,6 +31,6 @@
     "react-native": ">=0.86"
   },
   "devDependencies": {
-    "@symbiote/test-utils": "workspace:*"
+    "@symbiotejs/test-utils": "workspace:*"
   }
 }

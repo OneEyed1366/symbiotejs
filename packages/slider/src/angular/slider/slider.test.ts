@@ -1,4 +1,4 @@
-// Co-located Angular-driven test (ADR 0025) for the @symbiote/slider Angular wrapper. The native
+// Co-located Angular-driven test (ADR 0025) for the @symbiotejs/slider Angular wrapper. The native
 // RNCSlider carries no symbiote metadata — the engine DERIVES its events + tint processors from an
 // injected codegen-shaped ViewConfig (the same shape the React/Vue adapters' slider.test inject,
 // the same shape RN's ReactNativeViewConfigRegistry holds on a real host). We import the Slider
@@ -11,9 +11,9 @@
 import '@angular/compiler';
 import { Component, Input } from '@angular/core';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { mount, unmount, setNativeViewConfigSource } from '@symbiote/angular';
-import { clearGlobalStyles, registerStyles } from '@symbiote/engine';
-import { installFabric, type IFakeNode } from '@symbiote/test-utils';
+import { mount, unmount, setNativeViewConfigSource } from '@symbiotejs/angular';
+import { clearGlobalStyles, registerStyles } from '@symbiotejs/engine';
+import { installFabric, type IFakeNode } from '@symbiotejs/test-utils';
 import { Slider } from '.';
 
 const ROOT_TAG = 312;

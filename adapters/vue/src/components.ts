@@ -1,7 +1,7 @@
 // Host primitives for app code. Thin FUNCTIONAL components over the intrinsic tags the
 // renderer maps to Fabric: `inheritAttrs: false` + a manual attr spread passes every
 // prop and `@event` (onX) straight through to patchProp -> routeProp. The full prop
-// surface (typed ViewProps/TextProps, a11y folding) arrives with @symbiote/components.
+// surface (typed ViewProps/TextProps, a11y folding) arrives with @symbiotejs/components.
 //
 // FUNCTIONAL, not a stateful defineComponent: a functional component has no instance, so
 // a template/function ref on it falls through to its single root host element (the raw
@@ -16,8 +16,8 @@ import type {
   IStyleProp,
   ITextStyle,
   IViewStyle,
-} from '@symbiote/engine';
-import type { IAccessibilityProps, IAriaProps, IResponderProps } from '@symbiote/components';
+} from '@symbiotejs/engine';
+import type { IAccessibilityProps, IAriaProps, IResponderProps } from '@symbiotejs/components';
 import { normalizeVueAttrs } from './utils/normalize-attrs';
 
 export interface IViewProps extends IAccessibilityProps, IAriaProps, IResponderProps {

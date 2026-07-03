@@ -5,7 +5,7 @@
 // falls back to JS restart.
 
 import { beforeAll, beforeEach, describe, expect, it } from 'vitest';
-import { AnimatedValue, timing, loop, sequence } from '@symbiote/engine';
+import { AnimatedValue, timing, loop, sequence } from '@symbiotejs/engine';
 
 interface INativeCall {
   method: string;

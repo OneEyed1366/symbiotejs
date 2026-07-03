@@ -1,6 +1,6 @@
 // Button for Angular. The minimal cross-platform button in RN's iOS shape (Button.js): a
 // TouchableOpacity wrapping a Text. The base text style, the role constant, and the color fold are
-// shared in @symbiote/components/view; here Angular only composes its TouchableOpacity + a
+// shared in @symbiotejs/components/view; here Angular only composes its TouchableOpacity + a
 // symbiote-text child and re-maps the few Button-owned props. The Angular twin of the React/Vue
 // adapter's Button. No JS-side platform branch, so this stays a flat single file (ADR 0026).
 //
@@ -8,7 +8,7 @@
 // into the accessibility state; those three win over any caller value. `title` becomes the Text
 // child; disabled forwards straight; touchSoundDisabled maps to the pressable's android_disableSound.
 // Every OTHER field of the shared IButtonProps (title, color, disabled, touchSoundDisabled, testID,
-// TV-focus, accessibility state) is agnostic and stays RE-EXPORTED from @symbiote/components verbatim
+// TV-focus, accessibility state) is agnostic and stays RE-EXPORTED from @symbiotejs/components verbatim
 // (<prop_types_split_agnostic_vs_per_adapter>). onPress and the four accessibility callbacks are the
 // exceptions: each is a real @Output() here (`press`, `accessibilityAction`, `accessibilityTap`,
 // `magicTap`, `accessibilityEscape`), mirroring the Vue adapter's Button, which forks the SAME onPress
@@ -32,8 +32,8 @@ import {
   type IAccessibilityStateValue,
   type IAriaProps,
   type IButtonProps as ICoreButtonProps,
-} from '@symbiote/components';
-import type { ISymbioteEvent, ITextStyle, IStyleProp, IViewStyle } from '@symbiote/engine';
+} from '@symbiotejs/components';
+import type { ISymbioteEvent, ITextStyle, IStyleProp, IViewStyle } from '@symbiotejs/engine';
 import { anchorStyleProp, TextHost } from '../primitives';
 import { TouchableOpacity } from './touchable';
 

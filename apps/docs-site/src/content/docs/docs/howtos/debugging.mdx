@@ -1,6 +1,6 @@
 ---
 title: 'How to: turn on diagnostic logging'
-description: dlog/isDebug from @symbiote/engine, gated by the DEBUG env var.
+description: dlog/isDebug from @symbiotejs/engine, gated by the DEBUG env var.
 ---
 
 You want visibility into what the engine or an adapter is doing at a
@@ -28,7 +28,7 @@ globalThis.__SYMBIOTE_DEBUG__ = true;
 Every diagnostic log goes through `dlog`, never a bare `console.log`:
 
 ```ts
-import { dlog } from '@symbiote/engine';
+import { dlog } from '@symbiotejs/engine';
 
 dlog(`dispatchViewCommand "${commandName}" skipped: node not committed`);
 ```
@@ -42,7 +42,7 @@ permanently rather than a temporary `console.log`.
 ## Why this exists
 
 `dlog`/`isDebug` live in `core/engine/src/debug.ts` and are exported from
-`@symbiote/engine` so every adapter shares one gating mechanism instead of
+`@symbiotejs/engine` so every adapter shares one gating mechanism instead of
 each inventing its own flag. Grep for `dlog(` across `core/` and `adapters/`
 to see the seams already instrumented — commit timing, native command
 dispatch, ViewConfig resolution — before adding your own.

@@ -6,8 +6,8 @@
 // the smoke waited real wall-clock, here vitest fake timers advance it deterministically.
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { mount, unmount, Text } from '@symbiote/react';
-import { installFabric } from '@symbiote/test-utils';
+import { mount, unmount, Text } from '@symbiotejs/react';
+import { installFabric } from '@symbiotejs/test-utils';
 
 const ROOT_TAG = 140;
 const TOUCH_START = 'topTouchStart';

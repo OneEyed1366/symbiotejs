@@ -15,8 +15,8 @@ import {
   setProp,
   type AnimatedInterpolation,
   type ISymbioteNode,
-} from '@symbiote/engine';
-import { installFabric, type IFakeNode } from '@symbiote/test-utils';
+} from '@symbiotejs/engine';
+import { installFabric, type IFakeNode } from '@symbiotejs/test-utils';
 
 const fabric = installFabric();
 

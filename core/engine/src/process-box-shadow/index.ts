@@ -31,7 +31,7 @@ export interface IParsedBoxShadow {
 }
 
 // The structured input shape: mirrors react's BoxShadowValue but declared locally to
-// avoid a cross-package import cycle (shared must not depend on @symbiote/react). Read
+// avoid a cross-package import cycle (shared must not depend on @symbiotejs/react). Read
 // loosely: callers pass plain records, so each field is narrowed at the point of use.
 type IRawBoxShadow = Record<string, unknown>;
 

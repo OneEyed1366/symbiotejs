@@ -134,7 +134,7 @@ export {
   RefreshControlHost,
   InputAccessoryViewHost,
   SymbioteHostPropsDirective,
-  // Exported so an OUT-OF-PACKAGE composed component (e.g. @symbiote/slider's Angular wrapper,
+  // Exported so an OUT-OF-PACKAGE composed component (e.g. @symbiotejs/slider's Angular wrapper,
   // itself listed in ANCHOR_HOST_COMPONENTS) can merge its own anchor host's class-derived style
   // the same way every in-package composed component does — see anchorHostStyle's doc comment.
   anchorHostStyle,

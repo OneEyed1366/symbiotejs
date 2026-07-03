@@ -7,8 +7,8 @@
 
 import { type ReactElement } from 'react';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { mount, unmount, View, AccessibilityInfo } from '@symbiote/react';
-import { installFabric, type IFakeNode } from '@symbiote/test-utils';
+import { mount, unmount, View, AccessibilityInfo } from '@symbiotejs/react';
+import { installFabric, type IFakeNode } from '@symbiotejs/test-utils';
 
 // ---- augment the shared slot to record sendAccessibilityEvent ------------
 // The shared harness models commit/clone but not the a11y event sink (unique to this suite), so we

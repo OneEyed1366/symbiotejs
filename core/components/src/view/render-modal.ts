@@ -6,7 +6,7 @@
 // full-screen container View that holds the user children (injected by the adapter). Shared
 // verbatim: React and Vue both bridge this Descriptor; the keep-alive state lives in state/modal.ts.
 
-import { dlog, type IStyleProp, type IViewStyle } from '@symbiote/engine';
+import { dlog, type IStyleProp, type IViewStyle } from '@symbiotejs/engine';
 import { el, type IDescriptor } from '../descriptor';
 
 export type IModalAnimationType = 'none' | 'slide' | 'fade';

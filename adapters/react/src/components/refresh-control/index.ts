@@ -5,12 +5,12 @@
 // `topRefresh` event, which shared routes to the `refresh` listener (onRefresh).
 
 import { createElement, type FC, type ReactNode } from 'react';
-import { dlog } from '@symbiote/engine';
+import { dlog } from '@symbiotejs/engine';
 import {
   resolveAccessibilityProps,
   type IAccessibilityProps,
   type IAriaProps,
-} from '@symbiote/components';
+} from '@symbiotejs/components';
 
 export interface IRefreshControlProps extends IAccessibilityProps, IAriaProps {
   refreshing: boolean;

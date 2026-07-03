@@ -10,8 +10,8 @@
 // any mount. Long-press / pressDelay timers run on vitest fake timers.
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { mount, unmount, Pressable, Button } from '@symbiote/react';
-import { installFabric, type IFakeNode } from '@symbiote/test-utils';
+import { mount, unmount, Pressable, Button } from '@symbiotejs/react';
+import { installFabric, type IFakeNode } from '@symbiotejs/test-utils';
 
 const ROOT_TAG = 110;
 const TOUCH_START = 'topTouchStart';

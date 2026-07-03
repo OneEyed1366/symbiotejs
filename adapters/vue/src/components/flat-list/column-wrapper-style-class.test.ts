@@ -5,9 +5,9 @@
 
 import { defineComponent, h, type FunctionalComponent } from '@vue/runtime-core';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { FlatList, mount, unmount } from '@symbiote/vue';
-import { clearGlobalStyles, registerStyles } from '@symbiote/engine';
-import { installFabric, type IFakeNode } from '@symbiote/test-utils';
+import { FlatList, mount, unmount } from '@symbiotejs/vue';
+import { clearGlobalStyles, registerStyles } from '@symbiotejs/engine';
+import { installFabric, type IFakeNode } from '@symbiotejs/test-utils';
 
 // Generic-component limitation (see flat-list.test.ts): drive FlatList through a loose functional
 // handle rather than the typed construct signature h() can't resolve imperatively.

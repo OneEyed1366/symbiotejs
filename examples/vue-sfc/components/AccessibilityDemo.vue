@@ -8,7 +8,7 @@
 -->
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
-import { View, Text, AccessibilityInfo } from '@symbiote/vue'
+import { View, Text, AccessibilityInfo } from '@symbiotejs/vue'
 
 const screenReader = ref('querying…')
 

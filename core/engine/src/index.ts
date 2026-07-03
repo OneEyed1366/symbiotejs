@@ -1,4 +1,4 @@
-// @symbiote/engine: the retained shadow-tree + clone-on-write commit engine.
+// @symbiotejs/engine: the retained shadow-tree + clone-on-write commit engine.
 // Every framework adapter drives this tiny mutation API; all Fabric-specific
 // logic (tag allocation, view-name resolution, clone-on-write, event
 // normalization) lives behind it, in one place.
@@ -87,7 +87,7 @@ export { processBackgroundImage } from './process-background-image';
 export type { IParsedBackgroundImage } from './process-background-image';
 export { flattenStyle } from './style';
 // The typed style surface: agnostic types, re-exported by every adapter (it used to
-// live in @symbiote/react; moved here so @symbiote/components can type render fns).
+// live in @symbiotejs/react; moved here so @symbiotejs/components can type render fns).
 export type {
   IViewStyle,
   ITextStyle,
@@ -229,7 +229,7 @@ export type {
 } from './fabric';
 
 // Imperative runtime modules: framework-agnostic native-bridge consumers (no visual, no
-// lifecycle), moved here from @symbiote/react so every adapter re-exports the SAME module.
+// lifecycle), moved here from @symbiotejs/react so every adapter re-exports the SAME module.
 // Native module names are platform-selected and device-verified, not headless (CLAUDE.md
 // <native_module_name_is_platform_specific>).
 export { Alert } from './alert';

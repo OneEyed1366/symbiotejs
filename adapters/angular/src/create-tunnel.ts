@@ -1,4 +1,4 @@
-// createTunnel for @symbiote/angular — the Angular twin of the React/Vue cross-surface tunnel
+// createTunnel for @symbiotejs/angular — the Angular twin of the React/Vue cross-surface tunnel
 // (adapters/react/src/create-tunnel.tsx, adapters/vue/src/create-tunnel.ts — read their
 // headers for the full "why not just extend the portal across surfaces" rationale; same prior
 // art: pmndrs/tunnel-rat, facebook/react#17147). `TunnelOut` lives in whichever component should

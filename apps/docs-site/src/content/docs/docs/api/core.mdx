@@ -3,10 +3,10 @@ title: Core API
 description: The shared engine and component layers behind every adapter.
 ---
 
-Most app code should import from `@symbiote/react` or `@symbiote/vue`. The core
+Most app code should import from `@symbiotejs/react` or `@symbiotejs/vue`. The core
 packages explain why those adapters can stay thin and consistent.
 
-## @symbiote/engine
+## @symbiotejs/engine
 
 The engine owns the native route:
 
@@ -40,7 +40,7 @@ entry point RN apps already use, plus `setHostRegistrar` to hand it RN's own
 key:
 
 ```ts
-import { AppRegistry, setHostRegistrar } from '@symbiote/react'; // or '@symbiote/vue'
+import { AppRegistry, setHostRegistrar } from '@symbiotejs/react'; // or '@symbiotejs/vue'
 import { AppRegistry as RNAppRegistry } from 'react-native';
 
 setHostRegistrar(RNAppRegistry);
@@ -52,12 +52,12 @@ AppRegistry.registerComponent('MyApp', () => App);
 (`registerHeadlessTask`, `registerCancellableHeadlessTask`,
 `startHeadlessTask`, `cancelHeadlessTask`) round out the same surface RN's
 `AppRegistry` exposes. All of this bookkeeping lives once in
-`@symbiote/engine`'s `createAppRegistry` — the only framework-specific piece
+`@symbiotejs/engine`'s `createAppRegistry` — the only framework-specific piece
 each adapter supplies is `runnableFor`, the function that turns a component
 provider into a mount call (`createElement` + `mount` for React, `createApp`/`h`
 for Vue, `createComponent` for Angular).
 
-## @symbiote/components
+## @symbiotejs/components
 
 The component package owns framework-agnostic component logic:
 

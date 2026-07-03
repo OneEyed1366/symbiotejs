@@ -6,8 +6,8 @@
 import '@angular/compiler';
 import { Component } from '@angular/core';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { clearGlobalStyles, registerStyles } from '@symbiote/engine';
-import { installFabric, type IFakeNode } from '@symbiote/test-utils';
+import { clearGlobalStyles, registerStyles } from '@symbiotejs/engine';
+import { installFabric, type IFakeNode } from '@symbiotejs/test-utils';
 
 import { mount, unmount } from '../render';
 import { ImageBackground } from './image-background';

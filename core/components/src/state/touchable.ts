@@ -4,7 +4,7 @@
 // feedback itself is framework (each adapter's Animated namespace), so it stays in the adapter;
 // only the timing constants + the pure wait computation live here.
 
-import type { ISymbioteEvent } from '@symbiote/engine';
+import type { ISymbioteEvent } from '@symbiotejs/engine';
 
 // TouchableOpacity.js: _opacityActive(150)/_opacityInactive(250), activeOpacity 0.2.
 export const DEFAULT_ACTIVE_OPACITY = 0.2;

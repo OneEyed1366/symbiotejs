@@ -5,7 +5,7 @@
 // with {x, y}.
 
 import { describe, expect, it } from 'vitest';
-import { AnimatedValue } from '@symbiote/engine';
+import { AnimatedValue } from '@symbiotejs/engine';
 import { AnimatedValueXY } from './value-xy';
 
 describe('AnimatedValueXY', () => {

@@ -1,5 +1,5 @@
 // useWindowDimensions, the Vue twin of React's hook, over the now-core Dimensions module
-// (@symbiote/engine). It seeds from Dimensions.get('window'), subscribes to 'change', and
+// (@symbiotejs/engine). It seeds from Dimensions.get('window'), subscribes to 'change', and
 // re-checks once after subscribing to close the gap between the setup-time get and the
 // mount-time listener. Only a real window-metric change updates the ref. React returns the
 // bare value via useState; the underlying Dimensions module is shared verbatim; only the
@@ -11,7 +11,7 @@ import {
   type IDimensionsSet,
   type IDisplayMetrics,
   type IEventSubscription,
-} from '@symbiote/engine';
+} from '@symbiotejs/engine';
 
 export function useWindowDimensions(): Ref<IDisplayMetrics> {
   // A plain ref: the value is a metrics record (plain data), not an engine node.

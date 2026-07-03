@@ -3,10 +3,10 @@ title: Angular API
 description: The Angular adapter public contract.
 ---
 
-Import app-facing APIs from `@symbiote/angular`:
+Import app-facing APIs from `@symbiotejs/angular`:
 
 ```ts
-import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from '@symbiote/angular';
+import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from '@symbiotejs/angular';
 ```
 
 Every symbiote component is a `standalone: true` Angular component — add it to
@@ -45,7 +45,7 @@ own event syntax, not a property binding. Every other component's events
 (`Switch`'s `(valueChange)`, `TextInput`'s `(valueChange)`/`(change)`, the
 accessibility callbacks on the components above, …) are `EventEmitter`s the
 same way, driven by the exact same handler shape the engine and the shared
-`@symbiote/components` state machines already define (`IPressHandler`,
+`@symbiotejs/components` state machines already define (`IPressHandler`,
 `(value: boolean) => void`, …). `TextInput` is the one component with two
 outputs where React/Vue fold their payload into one callback argument list:
 `(valueChange)` stays text-only, since an `EventEmitter` carries exactly one
@@ -62,7 +62,7 @@ binds a template listener expression, never an arbitrary value.
 
 ```ts
 import { Component, ViewChild, type ElementRef } from '@angular/core';
-import { TextInput, type ITextInputHandle } from '@symbiote/angular';
+import { TextInput, type ITextInputHandle } from '@symbiotejs/angular';
 
 @Component({
   standalone: true,
@@ -82,7 +82,7 @@ export class Example {
 
 ```ts
 import { Component, signal } from '@angular/core';
-import { PortalDirective, PortalOutletDirective, Text, View } from '@symbiote/angular';
+import { PortalDirective, PortalOutletDirective, Text, View } from '@symbiotejs/angular';
 
 @Component({
   standalone: true,
@@ -119,7 +119,7 @@ target must live in the same surface as the `*portal` call site.
 
 ```ts
 import { Component, signal } from '@angular/core';
-import { createTunnel, Text, TunnelInDirective, TunnelOut, View } from '@symbiote/angular';
+import { createTunnel, Text, TunnelInDirective, TunnelOut, View } from '@symbiotejs/angular';
 
 const overlayTunnel = createTunnel(); // module-level singleton, importable from both surfaces
 
@@ -157,7 +157,7 @@ React and Vue have the same primitive — see their own API references.
 
 ## App entry point (`AppRegistry`)
 
-`@symbiote/angular` exports the same `AppRegistry`/`setHostRegistrar` entry
+`@symbiotejs/angular` exports the same `AppRegistry`/`setHostRegistrar` entry
 point described in the
 [Core API](/symbiote/docs/api/core/#app-entry-point-appregistry). One Angular-specific
 detail: Angular has no runtime template synthesis (no JIT under AOT/Metro), so
@@ -177,7 +177,7 @@ export class ThemeWrapper {}
 ```
 
 ```ts
-import { AppRegistry } from '@symbiote/angular';
+import { AppRegistry } from '@symbiotejs/angular';
 import { ThemeWrapper } from './theme-wrapper';
 
 AppRegistry.setWrapperComponentProvider(() => ThemeWrapper);
@@ -190,7 +190,7 @@ The adapter re-exports the same stable runtime utilities the React and Vue
 adapters expose, so app code keeps one import root:
 
 ```ts
-import { Alert, Dimensions, Platform, StyleSheet } from '@symbiote/angular';
+import { Alert, Dimensions, Platform, StyleSheet } from '@symbiotejs/angular';
 ```
 
 Two runtime reads are DI-injectable services instead of hooks/composables —
@@ -198,7 +198,7 @@ the Angular-idiomatic shape for reactive lifecycle state:
 
 ```ts
 import { inject } from '@angular/core';
-import { ColorSchemeService, WindowDimensionsService } from '@symbiote/angular';
+import { ColorSchemeService, WindowDimensionsService } from '@symbiotejs/angular';
 
 const colorScheme = inject(ColorSchemeService);
 const dimensions = inject(WindowDimensionsService);
@@ -215,7 +215,7 @@ The rest of the runtime-module surface re-exports the same way as React/Vue:
 `Animated` (both the JS and native driver, plus the `AnimatedView`/
 `AnimatedText`/`AnimatedImage`/`AnimatedScrollView`/`AnimatedFlatList`/
 `AnimatedSectionList` named exports AOT requires) and `PanResponder` are
-re-exported from `@symbiote/angular` — see the
+re-exported from `@symbiotejs/angular` — see the
 [Animations guide](/symbiote/docs/learn/animations/) for the full surface and why the
 named exports exist.
 

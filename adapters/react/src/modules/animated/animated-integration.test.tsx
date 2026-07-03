@@ -6,9 +6,9 @@
 
 import { type ReactElement } from 'react';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { mount, unmount, Animated } from '@symbiote/react';
-import { Easing } from '@symbiote/engine';
-import { installFabric, type IFakeNode } from '@symbiote/test-utils';
+import { mount, unmount, Animated } from '@symbiotejs/react';
+import { Easing } from '@symbiotejs/engine';
+import { installFabric, type IFakeNode } from '@symbiotejs/test-utils';
 
 // rAF is not a Node global; polyfill it (setTimeout-based) before any driver runs. The drivers read
 // requestAnimationFrame from the host at call time, so installing it per-test (before .start()) is

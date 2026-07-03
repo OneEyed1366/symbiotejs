@@ -15,7 +15,7 @@ import com.facebook.react.bridge.WritableMap
 // RN's `Settings` is a wrapper for iOS NSUserDefaults — "a persistent key-value store
 // available only on iOS" (reactnative.dev/docs/settings). Stock RN has no Android half:
 // Settings.js routes non-iOS to SettingsFallback, which just warns and returns null. So
-// @symbiote/react's Settings (which resolves the iOS module name "SettingsManager")
+// @symbiotejs/react's Settings (which resolves the iOS module name "SettingsManager")
 // finds nothing on Android and silently loses every write on reload.
 //
 // This shim re-supplies that signal: it owns the "SettingsManager" name on Android too

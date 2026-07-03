@@ -2,7 +2,7 @@
 // not the partial-Ivy `ngc` output Metro consumes. The adapter tsconfig must therefore enable
 // TypeScript's legacy decorator lowering so Node never sees raw `@Component` / `@Directive`
 // syntax. Importing `@angular/compiler` enables JIT metadata creation for these source-only tests;
-// production still proves AOT/partial-Ivy through `pnpm --filter @symbiote/angular ng:build`.
+// production still proves AOT/partial-Ivy through `pnpm --filter @symbiotejs/angular ng:build`.
 
 import '@angular/compiler';
 import { ElementRef, Injector, runInInjectionContext } from '@angular/core';

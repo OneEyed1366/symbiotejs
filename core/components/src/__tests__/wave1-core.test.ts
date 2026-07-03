@@ -3,7 +3,7 @@
 // adapter, no Fabric slot. Ported from the headless `wave1-core.smoke.ts`.
 
 import { describe, expect, it } from 'vitest';
-import { flattenStyle } from '@symbiote/engine';
+import { flattenStyle } from '@symbiotejs/engine';
 import type { IDescriptor, IDescriptorChild } from '../descriptor';
 import { renderImageBackground } from '../view/render-image-background';
 import { renderInputAccessoryView } from '../view/render-input-accessory-view';

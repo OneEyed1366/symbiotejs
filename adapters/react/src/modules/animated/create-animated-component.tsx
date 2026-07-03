@@ -30,7 +30,7 @@ import {
   reduceProps,
   readPassthroughStyle,
   resolveHostNode,
-} from '@symbiote/engine';
+} from '@symbiotejs/engine';
 
 // A ref can be a function or a `.current` object; assign through both forms without
 // casting so a forwarded ref from the caller still receives the instance. Framework-

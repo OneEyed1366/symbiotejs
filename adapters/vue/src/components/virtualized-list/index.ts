@@ -1,6 +1,6 @@
 // VirtualizedList, the Vue lifecycle half. The windowing engine (offset table, window
 // compute, batch throttle, viewability, edge-reached, the child PLAN, the imperative-handle
-// surface) lives in @symbiote/components/state, shared verbatim with the React adapter. Here
+// surface) lives in @symbiotejs/components/state, shared verbatim with the React adapter. Here
 // Vue supplies only the reactivity: refs for scroll offset / viewport / measurement bumps, a
 // `computed` that runs the shared windowing math, post-flush watchers for the after-commit
 // work (batch fill, onEndReached/onStartReached, viewability, initialScroll, MVCP), and the
@@ -74,14 +74,14 @@ import {
   type IViewabilityConfigCallbackPair,
   type IViewableItemsChangedInfo,
   type IVirtualizedListHandle,
-} from '@symbiote/components';
+} from '@symbiotejs/components';
 import {
   dlog,
   type IStyleProp,
   type ISymbioteEvent,
   type ISymbioteNode,
   type IViewStyle,
-} from '@symbiote/engine';
+} from '@symbiotejs/engine';
 import { ScrollView } from '../scroll-view';
 import { RefreshControl } from '../refresh-control';
 import { normalizeVueAttrs } from '../../utils/normalize-attrs';
@@ -99,7 +99,7 @@ export type {
   IViewabilityConfig,
   IViewabilityConfigCallbackPair,
   IVirtualizedListHandle,
-} from '@symbiote/components';
+} from '@symbiotejs/components';
 
 type IRenderItem<ItemT> = (info: {
   item: ItemT;
@@ -469,7 +469,7 @@ export const VirtualizedList = defineComponent(
       return p.keyExtractor ? p.keyExtractor(item, index) : String(index);
     };
 
-    // The windowing math, run through the shared @symbiote/components functions. It mutates the
+    // The windowing math, run through the shared @symbiotejs/components functions. It mutates the
     // non-reactive committedWindow as it throttles (the controlled side effect React runs during
     // render): committedWindow is plain state, so the write triggers no reactivity loop.
     const metrics = computed(() => {

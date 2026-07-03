@@ -10,7 +10,7 @@
 // class strings instead of being gated behind "no part looks like a utility class".
 //
 // kebab-case authoring: a CSS selector `.section-label` always registers under the
-// camelCase key `sectionLabel` (@symbiote/css-parser's extractClassName), so a template
+// camelCase key `sectionLabel` (@symbiotejs/css-parser's extractClassName), so a template
 // can write EITHER `class="sectionLabel"` OR `class="section-label"` — resolveOne below
 // falls back to the kebab->camel form on a miss. Reinstated (wolf-tui had this, an
 // earlier port here dropped it on the assumption authors would always match the
@@ -129,7 +129,7 @@ function capitalize(value: string): string {
   return value.length === 0 ? value : value[0].toUpperCase() + value.slice(1);
 }
 
-// Duplicated from @symbiote/css-parser's identical helper rather than imported: css-parser
+// Duplicated from @symbiotejs/css-parser's identical helper rather than imported: css-parser
 // pulls in postcss and is build-time only (never shipped in the app bundle), and this registry
 // is the opposite — pure runtime, in every app bundle — so importing it here would leak a
 // build-time dependency into the shipped app. The conversion itself is two lines; keeping both

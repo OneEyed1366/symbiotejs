@@ -1,6 +1,6 @@
 // Button for Vue. The minimal cross-platform button in RN's iOS shape (Button.js): a
 // TouchableOpacity wrapping a Text. The base text style, the role constant, and the color fold are
-// shared in @symbiote/components/view; here Vue only composes its TouchableOpacity + Text and
+// shared in @symbiotejs/components/view; here Vue only composes its TouchableOpacity + Text and
 // forwards the native-only props. The Vue twin of the React adapter's Button.
 
 import { defineComponent, h } from '@vue/runtime-core';
@@ -8,8 +8,8 @@ import {
   BUTTON_ACCESSIBILITY_ROLE,
   resolveButtonTextStyle,
   type IButtonProps as ICoreButtonProps,
-} from '@symbiote/components';
-import type { IClassNameValue, ISymbioteEvent } from '@symbiote/engine';
+} from '@symbiotejs/components';
+import type { IClassNameValue, ISymbioteEvent } from '@symbiotejs/engine';
 import { Text } from '../components';
 import { TouchableOpacity } from './touchable';
 import { normalizeVueAttrs } from '../utils/normalize-attrs';
@@ -34,7 +34,7 @@ function forwardAttrs(attrs: Record<string, unknown>): Record<string, unknown> {
   return result;
 }
 
-// ICoreButtonProps is the framework-agnostic shared type (@symbiote/components); `class` can't
+// ICoreButtonProps is the framework-agnostic shared type (@symbiotejs/components); `class` can't
 // live there, so it's added locally, exactly like Image's IImageProps. Not in HANDLED above, so
 // it forwards via forwardAttrs onto the TouchableOpacity, which (after its own fix) routes it to
 // the same Animated.View `style` targets.

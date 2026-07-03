@@ -8,8 +8,8 @@
 
 import { defineComponent, h, ref, type FunctionalComponent } from '@vue/runtime-core';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { FlatList, mount, unmount, type IFlatListHandle } from '@symbiote/vue';
-import { installFabric, type IFakeNode } from '@symbiote/test-utils';
+import { FlatList, mount, unmount, type IFlatListHandle } from '@symbiotejs/vue';
+import { installFabric, type IFakeNode } from '@symbiotejs/test-utils';
 
 // FlatList is a GENERIC component (its setup is `<ItemT,>(props, ctx)`), so its value is a generic
 // construct signature. JSX infers ItemT from `data` (proven in examples/vue-tsx/App.tsx), but the

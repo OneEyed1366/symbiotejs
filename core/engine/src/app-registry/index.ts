@@ -1,6 +1,6 @@
 // AppRegistry: the JS entry point RN apps already use — `AppRegistry.registerComponent(appKey,
 // () => App)`. RN's version stores a runnable that calls its own React renderer; every symbiote
-// adapter instead stores a runnable that calls ITS OWN `mount`, driving @symbiote/engine. That
+// adapter instead stores a runnable that calls ITS OWN `mount`, driving @symbiotejs/engine. That
 // difference — building a runnable from a component provider — is the ONLY framework-specific
 // bit (React wraps via createElement, Vue via createApp/h, Angular via createComponent), so it is
 // the one thing each adapter supplies; everything else (registry bookkeeping, sections, the

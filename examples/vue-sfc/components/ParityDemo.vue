@@ -22,7 +22,7 @@ import {
   type IHostInstance,
   type IFlatListHandle,
   type ISection,
-} from '@symbiote/vue'
+} from '@symbiotejs/vue'
 
 const PARITY_ROW_H = 30
 const parityRows = Array.from({ length: 30 }, (_unused, index) => ({ id: `pr-${index}`, n: index }))

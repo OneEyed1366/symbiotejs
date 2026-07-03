@@ -1,9 +1,9 @@
-# @symbiote/vue
+# @symbiotejs/vue
 
 The **Vue 3 adapter** for [symbiote](../../README.md) — render real native iOS/Android views from
 Vue, on the *same* untouched core as React, with React Native's own renderer never in the path. It
 is a `@vue/runtime-core` `createRenderer` whose nodeOps map each mutation onto the engine's
-four-call API; `@symbiote/engine` does the clone-on-write commit into Fabric.
+four-call API; `@symbiotejs/engine` does the clone-on-write commit into Fabric.
 
 Vue is the **proof the core is genuinely framework-agnostic** (milestone R4): a second, non-React,
 mutation-oriented framework driving the already-validated engine.
@@ -21,13 +21,13 @@ mutation-oriented framework driving the already-validated engine.
 ## Use it
 
 The native entry reaches the *same* `registerRunnable` seam as React — only the adapter changes. It
-hands the surface's `rootTag` to `mount` from `@symbiote/vue`, which drives the engine through Vue's
+hands the surface's `rootTag` to `mount` from `@symbiotejs/vue`, which drives the engine through Vue's
 `createRenderer`:
 
 ```js
 // index.js
 import { AppRegistry as RNAppRegistry } from 'react-native';
-import { mount } from '@symbiote/vue';
+import { mount } from '@symbiotejs/vue';
 import App from './App';
 import { name as appName } from './app.json';
 
@@ -38,12 +38,12 @@ RNAppRegistry.registerRunnable(appName, ({ rootTag }) => {
 });
 ```
 
-The app is ordinary Vue — it just imports primitives from `@symbiote/vue` instead of
+The app is ordinary Vue — it just imports primitives from `@symbiotejs/vue` instead of
 `react-native`. A tap→increment counter, authored in TSX:
 
 ```jsx
 import { ref } from '@vue/runtime-core';
-import { View, Text, Pressable } from '@symbiote/vue';
+import { View, Text, Pressable } from '@symbiotejs/vue';
 
 export default {
   setup() {
@@ -75,7 +75,7 @@ the demo above is the first one running on the iOS simulator:
 
 Both adapters reach the same primitives, runtime modules, `Animated` on both drivers, gestures,
 accessibility, and the `VirtualizedList` family. That parity is **structural, not hand-copied**: the
-component logic (state machines + render functions) is written **once** in `@symbiote/components`,
+component logic (state machines + render functions) is written **once** in `@symbiotejs/components`,
 and each adapter supplies only its lifecycle (Vue's `ref`/`watch` + the descriptor→`h()` bridge).
 
 The one deliberate gap is third-party **React component** packages such as
@@ -83,8 +83,8 @@ The one deliberate gap is third-party **React component** packages such as
 dispatcher, so they run only under the React adapter — under Vue the dispatcher is null and they
 throw. symbiote makes the *native view* framework-agnostic, not the library's React *component*; such
 a view becomes reachable from Vue only through a thin wrapper over the same `createNode`-by-ViewConfig
-path symbiote uses for its own primitives. `@symbiote/slider` (this repo's own wrapper around
-`@react-native-community/slider`) *does* ship a real Vue build (`@symbiote/slider/vue`) through
+path symbiote uses for its own primitives. `@symbiotejs/slider` (this repo's own wrapper around
+`@react-native-community/slider`) *does* ship a real Vue build (`@symbiotejs/slider/vue`) through
 exactly that path — it's what makes this one third-party native view usable from Vue at all; any
 *other* React-only component package stays React-adapter-only until it gets the same treatment.
 

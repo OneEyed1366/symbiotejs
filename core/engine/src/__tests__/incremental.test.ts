@@ -6,7 +6,7 @@
 // is proven structurally by the reused-by-reference handle rather than a clone counter.
 
 import { beforeAll, describe, expect, it } from 'vitest';
-import { installFabric, type IFakeNode } from '@symbiote/test-utils';
+import { installFabric, type IFakeNode } from '@symbiotejs/test-utils';
 import { appendChild, createElement, createSurface, setProp } from '../index';
 
 const fabric = installFabric();

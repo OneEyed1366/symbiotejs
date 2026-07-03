@@ -1,13 +1,13 @@
 // TextInput: the React lifecycle half. The folds/maps (value->text, the W3C/alias resolution)
-// and the controlled-write predicate live in @symbiote/components/state; the render (intrinsic
-// + native-prop mapping) in @symbiote/components/view; both shared verbatim with the Vue
+// and the controlled-write predicate live in @symbiotejs/components/state; the render (intrinsic
+// + native-prop mapping) in @symbiotejs/components/view; both shared verbatim with the Vue
 // adapter. Here React supplies only the lifecycle: useState for the acknowledged event count
 // (it must re-render so the imperative handle echoes the latest), a ref for the host node and
 // the last text native holds, the useLayoutEffect controlled-write, the mount autoFocus, and
 // useImperativeHandle for focus/blur/clear/isFocused/setSelection.
 //
 // The controlled handshake hinges on commanding native back with the ACKNOWLEDGED event count
-// (setTextAndSelection), never a plain prop re-push. See @symbiote/components/state/text-input.
+// (setTextAndSelection), never a plain prop re-push. See @symbiotejs/components/state/text-input.
 
 import {
   forwardRef,
@@ -23,7 +23,7 @@ import {
   dlog,
   type ISymbioteEvent,
   type ISymbioteNode,
-} from '@symbiote/engine';
+} from '@symbiotejs/engine';
 import { blurTextInput, setInputBlurred, setInputFocused } from '../../modules/text-input-state';
 import {
   resolveAccessibilityProps,
@@ -35,16 +35,16 @@ import {
   shouldCommandText,
   INITIAL_EVENT_COUNT,
   SELECTION_NONE,
-} from '@symbiote/components';
+} from '@symbiotejs/components';
 import type {
   ITextInputProps as ITextInputBaseProps,
   ITextInputHandle,
-} from '@symbiote/components';
+} from '@symbiotejs/components';
 import { descriptorToReact } from '../../descriptor-to-react';
 
-export type { ITextInputHandle } from '@symbiote/components';
+export type { ITextInputHandle } from '@symbiotejs/components';
 
-// ITextInputProps is otherwise framework-agnostic, so its base lives in @symbiote/components;
+// ITextInputProps is otherwise framework-agnostic, so its base lives in @symbiotejs/components;
 // className is React's own field per <prop_types_split_agnostic_vs_per_adapter>. Not destructured
 // below, so it falls into `...passthrough` and lands on the single host node, like `style` (also
 // left un-destructured, forwarded the same way).
