@@ -1,6 +1,17 @@
 {
   "name": "@symbiotejs/angular",
-  "version": "0.0.0",
+  "version": "0.1.0",
+  "description": "SymbioteJS's Angular adapter — a Renderer2/RendererFactory2 with DOM-less bootstrap driving real native iOS/Android views through the same engine as the other adapters.",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/OneEyed1366/symbiotejs.git",
+    "directory": "adapters/angular"
+  },
+  "homepage": "https://github.com/OneEyed1366/symbiotejs/tree/master/adapters/angular#readme",
+  "bugs": {
+    "url": "https://github.com/OneEyed1366/symbiotejs/issues"
+  },
+  "author": "Andrey Prokopenko <psevdoproger@gmail.com>",
   "type": "module",
   "main": "src/index.ts",
   "module": "src/index.ts",

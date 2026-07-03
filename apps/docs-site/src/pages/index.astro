@@ -2,7 +2,7 @@
 import '../styles/landing.css';
 
 const description =
-  'symbiote lets Vue, React, and future framework adapters drive real native iOS and Android views through stock React Native Fabric.';
+  'SymbioteJS lets Vue, React, and future framework adapters drive real native iOS and Android views through stock React Native Fabric.';
 
 const base = import.meta.env.BASE_URL;
 
@@ -24,10 +24,10 @@ const symbiotes = [
     <meta name="theme-color" content="#08090d" />
     <meta name="description" content={description} />
     <meta property="og:type" content="website" />
-    <meta property="og:title" content="symbiote — native apps for every framework" />
+    <meta property="og:title" content="SymbioteJS — native apps for every framework" />
     <meta property="og:description" content={description} />
     <meta name="twitter:card" content="summary" />
-    <title>symbiote — native apps for every framework</title>
+    <title>SymbioteJS — native apps for every framework</title>
 
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -48,11 +48,11 @@ const symbiotes = [
     <header class="nav">
       <a class="brand" href={base}>
         <span class="brand-mark" aria-hidden="true"></span>
-        symbiote
+        SymbioteJS
       </a>
       <nav class="nav-links" aria-label="Primary">
         <a href={`${base}/docs/`}>Docs</a>
-        <a href="https://github.com/OneEyed1366/symbiote">GitHub</a>
+        <a href="https://github.com/OneEyed1366/symbiotejs">GitHub</a>
       </nav>
     </header>
 
@@ -239,7 +239,7 @@ const symbiotes = [
           <h2>Stock native stack</h2>
           <p>
             Fabric, JSI, Yoga, Hermes, and the iOS/Android host stay ordinary
-            React Native dependencies. symbiote swaps the JavaScript renderer,
+            React Native dependencies. SymbioteJS swaps the JavaScript renderer,
             never the native stack.
           </p>
         </article>
@@ -333,7 +333,7 @@ const symbiotes = [
               Headless <code>vitest</code> covers component and integration
               logic with no simulator involved. <code>Detox</code> drives the
               real app end to end — and because it attaches below the
-              renderer symbiote replaces, the identical spec file runs
+              renderer SymbioteJS replaces, the identical spec file runs
               unmodified against the React, Vue SFC, and Vue TSX canaries.
               Angular has its own real-device Detox suite too.
             </p>
@@ -359,15 +359,15 @@ const symbiotes = [
         </div>
         <div class="demo-grid">
           <figure data-fw="react" class="is-active">
-            <img src={`${base}/react-demo.gif`} alt="React driving a native symbiote counter demo" />
+            <img src={`${base}/react-demo.gif`} alt="React driving a native SymbioteJS counter demo" />
             <figcaption><span class="dot" data-fw="react"></span>React · live adapter</figcaption>
           </figure>
           <figure data-fw="vue">
-            <img src={`${base}/vue-demo.gif`} alt="Vue 3 driving a native symbiote counter demo" />
+            <img src={`${base}/vue-demo.gif`} alt="Vue 3 driving a native SymbioteJS counter demo" />
             <figcaption><span class="dot" data-fw="vue"></span>Vue · live adapter</figcaption>
           </figure>
           <figure data-fw="angular">
-            <img src={`${base}/angular-demo.gif`} alt="Angular driving a native symbiote counter demo" />
+            <img src={`${base}/angular-demo.gif`} alt="Angular driving a native SymbioteJS counter demo" />
             <figcaption><span class="dot" data-fw="angular"></span>Angular · live adapter</figcaption>
           </figure>
         </div>
@@ -376,7 +376,7 @@ const symbiotes = [
       <section class="seam" aria-labelledby="seam-title">
         <span class="eyebrow">The seam</span>
         <h2 id="seam-title">Framework → adapter → engine → Fabric.</h2>
-        <ol class="pipeline" aria-label="symbiote render pipeline">
+        <ol class="pipeline" aria-label="SymbioteJS render pipeline">
           <li>Vue · React · future adapters</li>
           <li>thin reconciler</li>
           <li>@symbiotejs/engine</li>
@@ -420,7 +420,7 @@ const symbiotes = [
     </main>
 
     <footer class="foot">
-      <span>symbiote — framework-agnostic React Native renderer.</span>
+      <span>SymbioteJS — framework-agnostic React Native renderer.</span>
       <a href={`${base}/docs/`}>Documentation</a>
     </footer>
 

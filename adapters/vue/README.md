@@ -1,6 +1,6 @@
 # @symbiotejs/vue
 
-The **Vue 3 adapter** for [symbiote](../../README.md) — render real native iOS/Android views from
+The **Vue 3 adapter** for [SymbioteJS](../../README.md) — render real native iOS/Android views from
 Vue, on the *same* untouched core as React, with React Native's own renderer never in the path. It
 is a `@vue/runtime-core` `createRenderer` whose nodeOps map each mutation onto the engine's
 four-call API; `@symbiotejs/engine` does the clone-on-write commit into Fabric.
@@ -10,11 +10,11 @@ mutation-oriented framework driving the already-validated engine.
 
 <div align="center">
 
-![Vue 3 driving real native iOS views through symbiote](../../assets/vue-demo.gif)
+![Vue 3 driving real native iOS views through SymbioteJS](../../assets/vue-demo.gif)
 
 </div>
 
-> New to symbiote? The [root README](../../README.md) has the architecture.
+> New to SymbioteJS? The [root README](../../README.md) has the architecture.
 
 ---
 
@@ -81,9 +81,9 @@ and each adapter supplies only its lifecycle (Vue's `ref`/`watch` + the descript
 The one deliberate gap is third-party **React component** packages such as
 `@react-native-community/slider` used directly. Their body calls React hooks off the React
 dispatcher, so they run only under the React adapter — under Vue the dispatcher is null and they
-throw. symbiote makes the *native view* framework-agnostic, not the library's React *component*; such
+throw. SymbioteJS makes the *native view* framework-agnostic, not the library's React *component*; such
 a view becomes reachable from Vue only through a thin wrapper over the same `createNode`-by-ViewConfig
-path symbiote uses for its own primitives. `@symbiotejs/slider` (this repo's own wrapper around
+path SymbioteJS uses for its own primitives. `@symbiotejs/slider` (this repo's own wrapper around
 `@react-native-community/slider`) *does* ship a real Vue build (`@symbiotejs/slider/vue`) through
 exactly that path — it's what makes this one third-party native view usable from Vue at all; any
 *other* React-only component package stays React-adapter-only until it gets the same treatment.

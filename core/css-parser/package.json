@@ -1,6 +1,17 @@
 {
   "name": "@symbiotejs/css-parser",
-  "version": "0.0.0",
+  "version": "0.1.0",
+  "description": "Build-time CSS/SCSS/Less/Stylus compiler for SymbioteJS — compiles stylesheets to React Native style objects, resolved at runtime via a cross-adapter class-name registry.",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/OneEyed1366/symbiotejs.git",
+    "directory": "core/css-parser"
+  },
+  "homepage": "https://github.com/OneEyed1366/symbiotejs/tree/master/core/css-parser#readme",
+  "bugs": {
+    "url": "https://github.com/OneEyed1366/symbiotejs/issues"
+  },
+  "author": "Andrey Prokopenko <psevdoproger@gmail.com>",
   "type": "module",
   "main": "src/index.ts",
   "module": "src/index.ts",

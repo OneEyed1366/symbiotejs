@@ -1,11 +1,11 @@
 ---
 title: React guide
-description: How to write Symbiote apps with the React adapter.
+description: How to write SymbioteJS apps with the React adapter.
 ---
 
 The React adapter is the most familiar entry point if you already know React
 Native. It exposes React components and callback props, but it commits through
-`symbiote`'s shared engine instead of React Native's own Fabric host config.
+SymbioteJS's shared engine instead of React Native's own Fabric host config.
 
 ## Minimal component
 
@@ -37,7 +37,7 @@ export default function App() {
 ```
 
 `StyleSheet.create` works identically if you'd rather keep style objects
-inline instead of a CSS file — see the [Styling guide](/symbiote/docs/learn/styling/)
+inline instead of a CSS file — see the [Styling guide](/symbiotejs/docs/learn/styling/)
 for both paths.
 
 ## React contract
@@ -54,10 +54,10 @@ React uses the React Native-style surface:
 - app code imports from `@symbiotejs/react`, while the consuming app still pins
   `react` and `react-native` at the top level.
 
-## What Symbiote owns
+## What SymbioteJS owns
 
 React still owns hooks, component state, and render scheduling. The adapter owns
 only the host bridge: it maps React reconciler mutations to `@symbiotejs/engine`.
 The engine then translates those mutations into Fabric's persistent commit model.
 
-Read the exact API surface in the [React API reference](/symbiote/docs/api/react/).
+Read the exact API surface in the [React API reference](/symbiotejs/docs/api/react/).

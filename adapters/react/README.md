@@ -1,6 +1,6 @@
 # @symbiotejs/react
 
-The **React adapter** for [symbiote](../../README.md) — drive real native iOS/Android views from
+The **React adapter** for [SymbioteJS](../../README.md) — drive real native iOS/Android views from
 React, with React Native's own renderer never in the path. It is a `react-reconciler` host config
 in **mutation mode** (`appendChild` / `insertBefore` / `removeChild` → the engine's four-call
 mutation API); `@symbiotejs/engine` does the clone-on-write commit into Fabric.
@@ -11,11 +11,11 @@ adapter, not the core.
 
 <div align="center">
 
-![React driving real native iOS views through symbiote](../../assets/react-demo.gif)
+![React driving real native iOS views through SymbioteJS](../../assets/react-demo.gif)
 
 </div>
 
-> New to symbiote? The [root README](../../README.md) has the architecture and the one fact it
+> New to SymbioteJS? The [root README](../../README.md) has the architecture and the one fact it
 > rests on — React is just *one client* of `nativeFabricUIManager`.
 
 ---
@@ -85,7 +85,7 @@ path (R1 + R2 + R3 — decision record 0009):
   `interpolate` · `ValueXY` · tracking · `diffClamp`). Native offload is proven by jamming the JS
   thread 1.5 s: the native-driven animations keep moving, the JS-driven one stalls (ADR 0016 · 0017).
 - **Third-party native views** — `@react-native-community/slider` used straight from the package
-  with zero symbiote metadata; the engine derives its events and prop processors from the library's
+  with zero SymbioteJS metadata; the engine derives its events and prop processors from the library's
   own ViewConfig at runtime — the "install the package, use its component" path.
 - **Gestures & events** — the responder lifecycle (grant/move/release/terminate, LCA-scoped
   re-negotiation), two-phase capture→bubble delivery, `Pressable` press-retention, `Touchable*`
@@ -100,7 +100,7 @@ path (R1 + R2 + R3 — decision record 0009):
 ### Android
 
 The same canary runs on an Android emulator through the same `@symbiotejs/engine` core. Two signals
-RN ties to a view host symbiote bypasses — or never shipped on Android — are re-supplied by a small
+RN ties to a view host SymbioteJS bypasses — or never shipped on Android — are re-supplied by a small
 `@symbiotejs/android` native package (`KeyboardObserver` host shim; `SettingsManager` →
 `SharedPreferences`). `Platform` and the component-name map are Metro-split per OS (`.ios` /
 `.android`), so there is no `Platform.OS` runtime branch. iOS stays the reference surface (more
@@ -145,5 +145,5 @@ npm run e2e:test:ios           # run the canary journeys on the iOS simulator
 # …or the android equivalents: e2e:build:android / e2e:test:android
 ```
 
-Why these come for free — a symbiote app is a stock RN app underneath, so RN's whole testing
+Why these come for free — a SymbioteJS app is a stock RN app underneath, so RN's whole testing
 ecosystem applies unchanged. See [Testing](../../README.md#testing).

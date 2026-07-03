@@ -20,7 +20,7 @@ below the component surface: host mutations go through `@symbiotejs/engine`.
 | Children        | `children?: ReactNode`                                     |
 | Render children | `(state) => ReactNode`, for components such as `Pressable` |
 | Refs            | React refs to host instances or component handles          |
-| Styles          | `style={styles.root}` with React Native-style objects, or `className` for a registered CSS class (see the [Styling guide](/symbiote/docs/learn/styling/)) |
+| Styles          | `style={styles.root}` with React Native-style objects, or `className` for a registered CSS class (see the [Styling guide](/symbiotejs/docs/learn/styling/)) |
 
 ## Common events
 
@@ -67,7 +67,7 @@ re-exported.
 ## Animations and gestures
 
 `Animated` (both the JS and native driver) and `PanResponder` are re-exported
-from `@symbiotejs/react` — see the [Animations guide](/symbiote/docs/learn/animations/)
+from `@symbiotejs/react` — see the [Animations guide](/symbiotejs/docs/learn/animations/)
 for the full surface and per-driver tradeoffs.
 
 ## Portals
@@ -86,14 +86,14 @@ config runs in persistent mode and never implements the mutation-mode
 container operations a portal needs. `@symbiotejs/react` is mutation-mode, so
 this works structurally where it never could in real RN.
 
-The target (`containerNodeOrRef`) must be an already-mounted symbiote host
+The target (`containerNodeOrRef`) must be an already-mounted SymbioteJS host
 node or `SymbioteSurface` — typically a ref to a persistent "overlay host"
 `View` near the app root — not a CSS-selector-style string. **v1 scope:** the
 target must live in the *same* surface as the portal's call site; portaling
 into a second, independently-mounted surface isn't wired yet.
 
 Vue has the equivalent through its own `Teleport` — see the
-[Vue API reference](/symbiote/docs/api/vue/#portals-teleport).
+[Vue API reference](/symbiotejs/docs/api/vue/#portals-teleport).
 
 ## Cross-surface content (`createTunnel`)
 
@@ -132,7 +132,7 @@ Vue and Angular have the same primitive — see their own API references.
 ## App entry point (`AppRegistry`)
 
 `@symbiotejs/react` exports the same `AppRegistry`/`setHostRegistrar` entry point
-described in the [Core API](/symbiote/docs/api/core/#app-entry-point-appregistry). A
+described in the [Core API](/symbiotejs/docs/api/core/#app-entry-point-appregistry). A
 component passed to `setWrapperComponentProvider` receives the app root as an
 ordinary React `children` prop:
 

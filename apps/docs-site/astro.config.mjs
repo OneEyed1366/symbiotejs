@@ -1,14 +1,14 @@
 import { defineConfig } from 'astro/config';
 import starlight from '@astrojs/starlight';
 
-const base = '/symbiote';
+const base = '/symbiotejs';
 
 export default defineConfig({
   site: 'https://oneeyed1366.github.io',
   base,
   integrations: [
     starlight({
-      title: 'symbiote',
+      title: 'SymbioteJS',
       description: 'Framework-agnostic React Native renderer for real native iOS and Android apps.',
       favicon: '/symbiote.svg',
       logo: {
@@ -96,14 +96,14 @@ export default defineConfig({
         {
           icon: 'github',
           label: 'GitHub',
-          href: 'https://github.com/OneEyed1366/symbiote',
+          href: 'https://github.com/OneEyed1366/symbiotejs',
         },
       ],
       sidebar: [
         {
           label: 'Start here',
           items: [
-            { label: 'What is symbiote?', slug: 'docs' },
+            { label: 'What is SymbioteJS?', slug: 'docs' },
             { label: 'Quick start', slug: 'docs/quick-start' },
             { label: 'How it works', slug: 'docs/how-it-works' },
           ],

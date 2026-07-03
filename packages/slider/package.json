@@ -1,6 +1,17 @@
 {
   "name": "@symbiotejs/slider",
-  "version": "0.0.0",
+  "version": "0.1.0",
+  "description": "Third-party native Slider view wrapped for SymbioteJS — one framework-agnostic core, built once and reachable from the React, Vue, and Angular adapters.",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/OneEyed1366/symbiotejs.git",
+    "directory": "packages/slider"
+  },
+  "homepage": "https://github.com/OneEyed1366/symbiotejs/tree/master/packages/slider#readme",
+  "bugs": {
+    "url": "https://github.com/OneEyed1366/symbiotejs/issues"
+  },
+  "author": "Andrey Prokopenko <psevdoproger@gmail.com>",
   "type": "module",
   "main": "src/core/index.ts",
   "module": "src/core/index.ts",

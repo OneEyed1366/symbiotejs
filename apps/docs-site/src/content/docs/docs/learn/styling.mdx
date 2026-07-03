@@ -1,9 +1,9 @@
 ---
 title: Styling
-description: Style Symbiote native views with CSS classes, CSS Modules, or StyleSheet.create.
+description: Style SymbioteJS native views with CSS classes, CSS Modules, or StyleSheet.create.
 ---
 
-Symbiote's preferred way to style a native view is ordinary CSS — a class
+SymbioteJS's preferred way to style a native view is ordinary CSS — a class
 string resolved through a shared runtime registry, compiled to native style
 objects at build time. Every current example app (React, Vue SFC, Vue TSX,
 Angular) styles this way. `StyleSheet.create` — React Native's own JS-object
@@ -87,7 +87,7 @@ same class name in two components never collides. `:global(...)` is the
 escape hatch back out — for a utility class meant to apply anywhere, exactly
 like real Vue's scoped-CSS semantics, minus the DOM underneath. See the
 `.row`/`.flex1` utility classes in
-[`examples/vue-sfc/App.vue`](https://github.com/OneEyed1366/symbiote/blob/master/examples/vue-sfc/App.vue)
+[`examples/vue-sfc/App.vue`](https://github.com/OneEyed1366/symbiotejs/blob/master/examples/vue-sfc/App.vue)
 for a real `scoped` stylesheet with a `:global()` escape running on device.
 
 `box-shadow`, `transform`, `filter`, `transform-origin`, and `background-image`
@@ -348,7 +348,7 @@ needs any of the three.
 There is no DOM, so there is nothing for a browser selector to match —
 pseudo-classes (`:hover`, `:focus`, `:nth-child`), media queries, and
 `animation` have no RN target and are dropped at build time, not silently
-misapplied. Tailwind CSS and a Svelte adapter are not supported — Symbiote
+misapplied. Tailwind CSS and a Svelte adapter are not supported — SymbioteJS
 ships React, Vue, and Angular adapters today. Everything else — plain CSS
 (including `box-shadow`, `transform`, `filter`, `transform-origin`, and
 `background-image`), CSS Modules, and the SCSS/Less/Stylus preprocessors

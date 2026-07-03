@@ -5,8 +5,8 @@ description: Headless component tests with Vitest, real-device journeys with Det
 
 import { Aside } from '@astrojs/starlight/components';
 
-An app built with symbiote is tested the same way as any other React Native
-app — symbiote doesn't ask for a different tool. Two layers: headless
+An app built with SymbioteJS is tested the same way as any other React Native
+app — SymbioteJS doesn't ask for a different tool. Two layers: headless
 component/integration tests, and real-device end-to-end journeys.
 
 ## Component and integration tests — Vitest
@@ -38,7 +38,7 @@ The `e2e:*` scripts live in each example's own `package.json`
 not the repo root.
 
 <Aside type="tip" title="One spec file, shared across React and Vue">
-  Detox attaches to the stock React Native host **below** the layer symbiote
+  Detox attaches to the stock React Native host **below** the layer SymbioteJS
   replaces — it drives the real native views through Fabric's own
   accessibility tree, the same way it would for a plain React Native app.
   The same `canary-journeys` e2e spec runs unmodified across `examples/react`,

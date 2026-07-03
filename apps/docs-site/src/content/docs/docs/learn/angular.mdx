@@ -1,6 +1,6 @@
 ---
 title: Angular guide
-description: How to write Symbiote apps with the Angular adapter.
+description: How to write SymbioteJS apps with the Angular adapter.
 ---
 
 import { Aside } from '@astrojs/starlight/components';
@@ -15,8 +15,8 @@ import { Aside } from '@astrojs/starlight/components';
   `ScrollView` and the list components forever, because they can carry an
   `Animated.event(...)` marker for native-driven scroll, and `@Output()` can
   only bind a template listener expression, not an arbitrary value. Wrapper
-  packages have followed: [Slider](/symbiote/docs/packages/slider/) ships an Angular
-  build too — see the [status page](/symbiote/docs/project/status/) for the exact
+  packages have followed: [Slider](/symbiotejs/docs/packages/slider/) ships an Angular
+  build too — see the [status page](/symbiotejs/docs/project/status/) for the exact
   line.
 </Aside>
 
@@ -26,7 +26,7 @@ framework-agnostic rendering seam. Bootstrap is DOM-less: no
 `platform-browser`, no zone.js. Angular renderer operations become engine
 mutations, then Fabric commits real native views.
 
-<img src={`${import.meta.env.BASE_URL}/angular-demo.gif`} alt="Angular driving a native symbiote demo" width="260" />
+<img src={`${import.meta.env.BASE_URL}/angular-demo.gif`} alt="Angular driving a native SymbioteJS demo" width="260" />
 
 *The `examples/angular` canary — the same component surface and engine as
 the React and Vue canaries, driven through `Renderer2` instead.*
@@ -66,14 +66,14 @@ export class App {
 ```
 
 `StyleSheet.create` works identically if you'd rather keep style objects
-inline instead of a CSS file — see the [Styling guide](/symbiote/docs/learn/styling/)
+inline instead of a CSS file — see the [Styling guide](/symbiotejs/docs/learn/styling/)
 for both paths.
 
 ## Angular contract
 
 Angular is a standalone-components-only adapter:
 
-- every symbiote component is `standalone: true` — import it directly in the
+- every SymbioteJS component is `standalone: true` — import it directly in the
   consuming component's `imports` array, there is no `NgModule`;
 - every component event is a real Angular `@Output()` `EventEmitter` —
   `(press)="onTap($event)"`, `(longPress)="..."`, `(hoverIn)="..."`,
@@ -97,7 +97,7 @@ Angular is a standalone-components-only adapter:
   templates read like `<Pressable>`/`<View>`/`<Text>` while the underlying
   primitive hosts stay `symbiote-view` / `symbiote-text` / etc.;
 - imperative handles use `@ViewChild(..., { read: ElementRef })` — the
-  `nativeElement` is the symbiote host node, not a DOM element;
+  `nativeElement` is the SymbioteJS host node, not a DOM element;
 - change detection is zoneless: the adapter runs on Angular's own
   `ApplicationRef.tick()`, wired in via the internal
   `ɵprovideZonelessChangeDetectionInternal()` helper rather than the public
@@ -106,4 +106,4 @@ Angular is a standalone-components-only adapter:
   same way Vue's `requestCommit()` does, without zone.js patching Hermes
   globals.
 
-Read the exact API surface in the [Angular API reference](/symbiote/docs/api/angular/).
+Read the exact API surface in the [Angular API reference](/symbiotejs/docs/api/angular/).

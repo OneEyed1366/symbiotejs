@@ -1,26 +1,26 @@
 ---
 title: FAQ
-description: Common Symbiote questions for app and wrapper authors.
+description: Common SymbioteJS questions for app and wrapper authors.
 ---
 
-## Is Symbiote a WebView?
+## Is SymbioteJS a WebView?
 
-No. Symbiote drives React Native Fabric and paints real native iOS and Android
+No. SymbioteJS drives React Native Fabric and paints real native iOS and Android
 views.
 
-## Does Symbiote fork React Native?
+## Does SymbioteJS fork React Native?
 
 No. The native stack stays stock React Native: Fabric, JSI, Yoga, Hermes, and the
-platform hosts remain ordinary dependencies. Symbiote replaces the JavaScript
+platform hosts remain ordinary dependencies. SymbioteJS replaces the JavaScript
 renderer path that talks to Fabric.
 
-## Does symbiote support React Native's New Architecture?
+## Does SymbioteJS support React Native's New Architecture?
 
-It requires it — there is no other option. Symbiote's renderer talks directly
+It requires it — there is no other option. SymbioteJS's renderer talks directly
 to `global.nativeFabricUIManager`, the JSI-bound mutation API the New
 Architecture's Fabric renderer exposes (`createNode`, `cloneNodeWithNewProps`,
 `completeRoot`, …). That API doesn't exist under the legacy bridge, so there
-is no old-architecture fallback to support — symbiote is built on Fabric from
+is no old-architecture fallback to support — SymbioteJS is built on Fabric from
 the ground up, not migrated onto it. Any React Native version and toolchain
 that runs Fabric (0.76+ with the New Architecture on by default, or an earlier
 version with it explicitly enabled) works; anything still on the legacy
@@ -29,7 +29,7 @@ renderer does not.
 ## Why does the app still depend on react-native?
 
 `react-native` is the native runtime singleton and Metro/native version anchor.
-Apps should pin it explicitly at the top level. Symbiote hides most imports from
+Apps should pin it explicitly at the top level. SymbioteJS hides most imports from
 app code, not the runtime dependency from the app manifest.
 
 ## Can Vue render any React Native package?
@@ -47,12 +47,12 @@ payload and shared logic can be the same while the framework contract differs.
 ## Is Angular a first-class adapter?
 
 Yes — it's on the landing page's live framework switcher alongside React and
-Vue, with its own [guide](/symbiote/docs/learn/angular/), demo GIF, and
-[API reference](/symbiote/docs/api/angular/), and wrapper packages like Slider ship an
+Vue, with its own [guide](/symbiotejs/docs/learn/angular/), demo GIF, and
+[API reference](/symbiotejs/docs/api/angular/), and wrapper packages like Slider ship an
 Angular build too. One thing is still catching up: Angular has its own
 real-device Detox e2e suite, but doesn't yet share the identical
 `canary-journeys` spec file that React and Vue run byte-for-byte. See the
-[status page](/symbiote/docs/project/status/) for the exact line.
+[status page](/symbiotejs/docs/project/status/) for the exact line.
 
 ## What about Svelte and Solid?
 

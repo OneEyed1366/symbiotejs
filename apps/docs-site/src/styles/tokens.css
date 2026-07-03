@@ -1,5 +1,5 @@
 /*
-  symbiote design tokens — the single source both the landing page and the
+  SymbioteJS design tokens — the single source both the landing page and the
   Starlight docs read from. CORE tokens (fonts, neutrals, layout) never
   change between skins. ADAPTER tokens (--accent / --radius / --bond-ms /
   --glow) swap per [data-symbiote], so a bonded framework re-skins the whole

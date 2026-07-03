@@ -10,7 +10,7 @@ wiring your own change handler by hand.
 
 `Switch`, `TextInput`, and `Slider` all support it. `Switch`/`TextInput` come
 from `@symbiotejs/vue`; `Slider` ships from the separate
-[`@symbiotejs/slider`](/symbiote/docs/packages/slider/) wrapper package
+[`@symbiotejs/slider`](/symbiotejs/docs/packages/slider/) wrapper package
 (`@symbiotejs/slider/vue`), not the adapter's own barrel:
 
 ```vue
@@ -62,8 +62,8 @@ to reach for, and none is planned.
 ## Why this isn't fragile
 
 The controlled-write correction (native reports a change, you don't update
-`value`, Symbiote commands native back to the JS value) is shared logic in
+`value`, SymbioteJS commands native back to the JS value) is shared logic in
 `@symbiotejs/components`, not reimplemented per adapter or per binding style —
 `v-model`/`[(value)]` are sugar on top of the same contract described in the
-[Events guide](/symbiote/docs/learn/events/#controlled-components) and the
-[Vue API reference](/symbiote/docs/api/vue/#model-bindings-v-model).
+[Events guide](/symbiotejs/docs/learn/events/#controlled-components) and the
+[Vue API reference](/symbiotejs/docs/api/vue/#model-bindings-v-model).

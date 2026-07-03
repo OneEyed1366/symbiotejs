@@ -1,13 +1,13 @@
 ---
 title: How it works
-description: The symbiote render pipeline from framework adapters to the stock React Native Fabric host.
+description: The SymbioteJS render pipeline from framework adapters to the stock React Native Fabric host.
 ---
 
-symbiote is built around one architectural fact: Fabric already exposes a
+SymbioteJS is built around one architectural fact: Fabric already exposes a
 framework-agnostic JavaScript seam.
 
 React Native's React renderer talks to this seam from its Fabric host config.
-symbiote talks to the same seam from its own engine.
+SymbioteJS talks to the same seam from its own engine.
 
 ## Render pipeline
 
@@ -42,7 +42,7 @@ That means each framework adapter stays thin. A persistence bug is fixed once in
 
 ## What stays stock
 
-symbiote does not fork React Native native code. These stay ordinary React Native
+SymbioteJS does not fork React Native native code. These stay ordinary React Native
 runtime pieces:
 
 - Fabric C++ shadow tree
@@ -56,7 +56,7 @@ The only replaced layer is the JavaScript renderer that drives Fabric.
 ## Events
 
 Fabric returns events to the same handle passed at node creation time. In React,
-that handle is a Fiber. In symbiote, it is a retained-tree node owned by the
+that handle is a Fiber. In SymbioteJS, it is a retained-tree node owned by the
 engine. The adapter maps framework event syntax onto engine listeners, and the
 engine normalizes native events back into those listeners.
 

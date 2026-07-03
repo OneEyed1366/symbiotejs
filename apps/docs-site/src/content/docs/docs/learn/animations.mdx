@@ -5,7 +5,7 @@ description: React Native's Animated API, ported framework-agnostic and shared b
 
 import { Aside } from '@astrojs/starlight/components';
 
-Symbiote ships a from-scratch, framework-agnostic port of React Native's
+SymbioteJS ships a from-scratch, framework-agnostic port of React Native's
 `Animated` API. The value graph, easing curves, interpolation, and composition
 helpers (`timing`, `spring`, `decay`, `parallel`, `sequence`, `stagger`,
 `loop`, `delay`) live once in `@symbiotejs/engine` — every adapter re-exports the
@@ -112,7 +112,7 @@ commit per frame.
 
 Both drivers use the exact same `Animated.Value`/`Animated.timing` call —
 `useNativeDriver` is the only thing that changes. See
-[`examples/react/App.tsx`](https://github.com/OneEyed1366/symbiote/blob/master/examples/react/App.tsx)'s
+[`examples/react/App.tsx`](https://github.com/OneEyed1366/symbiotejs/blob/master/examples/react/App.tsx)'s
 `AnimatedDemo` for a JS-driven dot and a native-driven dot running side by
 side, with `DEBUG=1` logging showing the difference directly (a native run
 logs one `native: startAnimatingNode`; a JS run logs a `commit … incremental`
@@ -137,17 +137,17 @@ The full RN `Animated` surface ported, not just `timing`:
 - **`Animated.parallel`/`sequence`/`stagger`/`loop`/`delay`** — the same
   composition helpers RN ships, unchanged.
 
-[`examples/react/App.tsx`](https://github.com/OneEyed1366/symbiote/blob/master/examples/react/App.tsx)'s
+[`examples/react/App.tsx`](https://github.com/OneEyed1366/symbiotejs/blob/master/examples/react/App.tsx)'s
 `AnimatedParityDemo` exercises all of this in one place: a `ValueXY`-driven
 drag box clamped with `PanResponder`, a spring that chases a moving lead
 value (tracking), and a `diffClamp`-driven collapsing header.
 
 ## What is not built
 
-Symbiote's `Animated` is the RN `Animated` API, not Reanimated — there is no
+SymbioteJS's `Animated` is the RN `Animated` API, not Reanimated — there is no
 worklet system, no `useSharedValue`/`useAnimatedStyle`, and no gesture-handler
 integration beyond what `PanResponder` already provides. `react-native-reanimated`
-itself is not tested against symbiote's engine; it hooks much deeper into RN's
+itself is not tested against SymbioteJS's engine; it hooks much deeper into RN's
 runtime than a plain native-view library does, so treat it as unverified
 rather than assuming it works the same way a
-[wrapped third-party native view](/symbiote/docs/howtos/third-party-views/) would.
+[wrapped third-party native view](/symbiotejs/docs/howtos/third-party-views/) would.

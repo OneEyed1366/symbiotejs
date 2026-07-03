@@ -7,7 +7,7 @@ import { Aside } from '@astrojs/starlight/components';
 
 `@symbiotejs/slider` wraps the `RNCSlider` native view from
 [`@react-native-community/slider`](https://github.com/callstack/react-native-slider) so every
-symbiote adapter can render it — without importing that library's React component body. It is
+SymbioteJS adapter can render it — without importing that library's React component body. It is
 the reference implementation of the [third-party native-view wrapper](#how-the-wrapper-works)
 pattern: the recipe to follow for any future community RN view.
 
@@ -92,7 +92,7 @@ const volume = ref(0.5);
 
 `v-model` is sugar over the same `value`/`@value-change` pair — write
 `:value="volume" @value-change="volume = $event"` instead if you need the
-explicit form. See the [Vue API reference](/symbiote/docs/api/vue/#model-bindings-v-model).
+explicit form. See the [Vue API reference](/symbiotejs/docs/api/vue/#model-bindings-v-model).
 
 ### Angular
 
@@ -145,7 +145,7 @@ pass a `StepMarker` (React) or fill the `#stepMarker` scoped slot (Vue) — both
 
 Every prop below is framework-agnostic and shared verbatim by every adapter, **except**
 `StepMarker`, which is per-adapter because it returns a framework element (a React component vs
-a Vue scoped slot) — see [shared vs framework-specific](/symbiote/docs/api/components/#shared-vs-framework-specific).
+a Vue scoped slot) — see [shared vs framework-specific](/symbiotejs/docs/api/components/#shared-vs-framework-specific).
 
 | Prop | Type | Default | Notes |
 | --- | --- | --- | --- |
@@ -183,8 +183,8 @@ packages/slider/src/
 ```
 
 Both adapters import `../register` first (never the library's `Slider.tsx`), then call into the
-same `core` render — the same logic/view/lifecycle split as every other symbiote component (see
-[how it works](/symbiote/docs/how-it-works/)). Wrapping a different third-party native view follows this
+same `core` render — the same logic/view/lifecycle split as every other SymbioteJS component (see
+[how it works](/symbiotejs/docs/how-it-works/)). Wrapping a different third-party native view follows this
 exact recipe; see
-[decision 0027](https://github.com/OneEyed1366/symbiote/blob/main/.docs/decisions/0027-third-party-native-view-wrapper-package.md)
+[decision 0027](https://github.com/OneEyed1366/symbiotejs/blob/main/.docs/decisions/0027-third-party-native-view-wrapper-package.md)
 for the full rationale.

@@ -1,6 +1,6 @@
 # @symbiotejs/angular
 
-The **Angular adapter** for [symbiote](../../README.md) — render real native iOS/Android views
+The **Angular adapter** for [SymbioteJS](../../README.md) — render real native iOS/Android views
 from Angular, on the *same* untouched core as React and Vue, with React Native's own renderer
 never in the path. It is a `Renderer2`/`RendererFactory2` whose calls map onto the engine's
 four-call mutation API; `@symbiotejs/engine` does the clone-on-write commit into Fabric.
@@ -11,11 +11,11 @@ already-validated engine with zero changes to it.
 
 <div align="center">
 
-![Angular driving real native iOS views through symbiote](../../assets/angular-demo.gif)
+![Angular driving real native iOS views through SymbioteJS](../../assets/angular-demo.gif)
 
 </div>
 
-> New to symbiote? The [root README](../../README.md) has the architecture.
+> New to SymbioteJS? The [root README](../../README.md) has the architecture.
 
 ---
 
@@ -143,5 +143,5 @@ pnpm e2e:test:ios              # run the canary journeys on the iOS simulator
 # …or the android equivalents: e2e:build:android / e2e:test:android
 ```
 
-Why these come for free — a symbiote app is a stock RN app underneath, so RN's whole testing
+Why these come for free — a SymbioteJS app is a stock RN app underneath, so RN's whole testing
 ecosystem applies unchanged. See [Testing](../../README.md#testing).

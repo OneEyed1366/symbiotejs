@@ -1,6 +1,17 @@
 {
   "name": "@symbiotejs/react",
-  "version": "0.0.0",
+  "version": "0.1.0",
+  "description": "SymbioteJS's React adapter — a react-reconciler host config (mutation mode) driving real native iOS/Android views through stock React Native Fabric.",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/OneEyed1366/symbiotejs.git",
+    "directory": "adapters/react"
+  },
+  "homepage": "https://github.com/OneEyed1366/symbiotejs/tree/master/adapters/react#readme",
+  "bugs": {
+    "url": "https://github.com/OneEyed1366/symbiotejs/issues"
+  },
+  "author": "Andrey Prokopenko <psevdoproger@gmail.com>",
   "type": "module",
   "main": "src/index.ts",
   "module": "src/index.ts",

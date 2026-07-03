@@ -1,6 +1,17 @@
 {
   "name": "@symbiotejs/engine",
-  "version": "0.0.0",
+  "version": "0.1.0",
+  "description": "SymbioteJS's retained shadow-tree engine — clone-on-write commit path + event normalization over React Native Fabric, shared by every framework adapter.",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/OneEyed1366/symbiotejs.git",
+    "directory": "core/engine"
+  },
+  "homepage": "https://github.com/OneEyed1366/symbiotejs/tree/master/core/engine#readme",
+  "bugs": {
+    "url": "https://github.com/OneEyed1366/symbiotejs/issues"
+  },
+  "author": "Andrey Prokopenko <psevdoproger@gmail.com>",
   "type": "module",
   "main": "src/index.ts",
   "module": "src/index.ts",

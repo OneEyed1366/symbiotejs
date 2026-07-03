@@ -1,7 +1,17 @@
 {
   "name": "@symbiotejs/android",
-  "version": "0.0.0",
-  "description": "symbiote's Android host-shim native modules — re-provide RN host signals (keyboard events, ...) that symbiote's own Fabric surface bypasses. iOS needs none of this; its equivalents are global native observers RN already ships.",
+  "version": "0.1.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/OneEyed1366/symbiotejs.git",
+    "directory": "packages/android"
+  },
+  "description": "SymbioteJS's Android host-shim native modules — re-provide RN host signals (keyboard events, ...) that SymbioteJS's own Fabric surface bypasses. iOS needs none of this; its equivalents are global native observers RN already ships.",
+  "homepage": "https://github.com/OneEyed1366/symbiotejs/tree/master/packages/android#readme",
+  "bugs": {
+    "url": "https://github.com/OneEyed1366/symbiotejs/issues"
+  },
+  "author": "Andrey Prokopenko <psevdoproger@gmail.com>",
   "react-native": "android",
   "files": [
     "android"

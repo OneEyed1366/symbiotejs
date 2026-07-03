@@ -9,7 +9,7 @@ Import app-facing APIs from `@symbiotejs/angular`:
 import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from '@symbiotejs/angular';
 ```
 
-Every symbiote component is a `standalone: true` Angular component — add it to
+Every SymbioteJS component is a `standalone: true` Angular component — add it to
 the consuming component's `imports` array, there is no `NgModule` to register.
 
 ## Component shape
@@ -19,7 +19,7 @@ the consuming component's `imports` array, there is no `NgModule` to register.
 | Event callbacks | Real `@Output()` `EventEmitter`s everywhere (`(press)`, `(longPress)`, `(hoverIn)`, `(valueChange)`, `(accessibilityAction)`, …), except the scroll family (`onScroll`, `onScrollBeginDrag`, `onScrollEndDrag`, `onMomentumScrollBegin`, `onMomentumScrollEnd`), which stays a plain callback **input** (`[onScroll]`) permanently — it must accept an `Animated.event(...)` marker, not just a template listener. `TextInput` alone keeps a second output, `(change)`, for the raw native event alongside text-only `(valueChange)` |
 | Children        | `<ng-content></ng-content>` (projected content)                       |
 | Selectors       | Dual: PascalCase alias + `symbiote-*`, e.g. `Pressable, symbiote-pressable` |
-| Refs            | `@ViewChild('host', { read: ElementRef })`, `.nativeElement` is the symbiote host node |
+| Refs            | `@ViewChild('host', { read: ElementRef })`, `.nativeElement` is the SymbioteJS host node |
 | Styles          | `[style]="styles.root"` with React Native-style objects                |
 
 ## Common events
@@ -159,7 +159,7 @@ React and Vue have the same primitive — see their own API references.
 
 `@symbiotejs/angular` exports the same `AppRegistry`/`setHostRegistrar` entry
 point described in the
-[Core API](/symbiote/docs/api/core/#app-entry-point-appregistry). One Angular-specific
+[Core API](/symbiotejs/docs/api/core/#app-entry-point-appregistry). One Angular-specific
 detail: Angular has no runtime template synthesis (no JIT under AOT/Metro), so
 a component passed to `setWrapperComponentProvider` must be a pre-authored
 standalone `@Component` whose template renders `<ng-content>` — the Angular
@@ -216,7 +216,7 @@ The rest of the runtime-module surface re-exports the same way as React/Vue:
 `AnimatedText`/`AnimatedImage`/`AnimatedScrollView`/`AnimatedFlatList`/
 `AnimatedSectionList` named exports AOT requires) and `PanResponder` are
 re-exported from `@symbiotejs/angular` — see the
-[Animations guide](/symbiote/docs/learn/animations/) for the full surface and why the
+[Animations guide](/symbiotejs/docs/learn/animations/) for the full surface and why the
 named exports exist.
 
 ## Change detection
@@ -229,7 +229,7 @@ bootstrap this DOM-less renderer does not use.
 
 A native event or `markForCheck()` still walks dirty flags up to every ancestor
 to the root, same as any zoneless Angular app — an unrelated press re-running
-the whole tree isn't a symbiote quirk, it's why demo screens are split into
+the whole tree isn't a SymbioteJS quirk, it's why demo screens are split into
 real child components instead of `@if`/`@for` blocks, which always re-execute
 with their containing view.
 
@@ -238,5 +238,5 @@ with their containing view.
 Do not pass React component packages to the Angular adapter. A third-party
 React Native package that ships a JavaScript React component still uses the
 React dispatcher internally. Non-React adapters need native-view wrappers
-instead — see the [Slider package](/symbiote/docs/packages/slider/) for the reference
+instead — see the [Slider package](/symbiotejs/docs/packages/slider/) for the reference
 implementation, shipping on React, Vue, and Angular alike.

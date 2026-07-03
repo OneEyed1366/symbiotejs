@@ -1,6 +1,6 @@
 ---
 title: Vue guide
-description: How to write Symbiote apps with the Vue adapter.
+description: How to write SymbioteJS apps with the Vue adapter.
 ---
 
 The Vue adapter lets Vue 3 drive the same native Fabric engine as React. The
@@ -15,11 +15,11 @@ compile down to the exact same `@vue/runtime-core` vnode tree, so both drive
 the identical adapter, the identical component surface, and the identical
 native output. Neither is a reduced mode of the other.
 
-<img src={`${import.meta.env.BASE_URL}/vue-demo.gif`} alt="Vue SFC driving a native symbiote demo" width="260" />
+<img src={`${import.meta.env.BASE_URL}/vue-demo.gif`} alt="Vue SFC driving a native SymbioteJS demo" width="260" />
 
 *Vue SFC (`.vue`) — the reference canary at `examples/vue-sfc`.*
 
-<img src={`${import.meta.env.BASE_URL}/vue-tsx-demo.gif`} alt="Vue TSX driving a native symbiote demo" width="260" />
+<img src={`${import.meta.env.BASE_URL}/vue-tsx-demo.gif`} alt="Vue TSX driving a native SymbioteJS demo" width="260" />
 
 *Vue JSX/TSX (`.tsx`) — the same canary, authored render-function-first at
 `examples/vue-tsx`, proving the component surface is template-agnostic.*
@@ -51,7 +51,7 @@ const count = ref(0);
 
 `StyleSheet.create` works identically if you'd rather keep style objects
 inline instead of an SFC `<style>` block — see the
-[Styling guide](/symbiote/docs/learn/styling/) for both paths.
+[Styling guide](/symbiotejs/docs/learn/styling/) for both paths.
 
 ## Vue contract
 
@@ -63,9 +63,9 @@ Vue uses Vue-shaped APIs where the framework semantics differ from React:
 - template attributes can use kebab-case, and the adapter folds them to the
   native camelCase contract before commit;
 - imperative handles are exposed through Vue template refs;
-- controlled-value components (`Switch`, `TextInput`, the [Slider](/symbiote/docs/packages/slider/)
+- controlled-value components (`Switch`, `TextInput`, the [Slider](/symbiotejs/docs/packages/slider/)
   wrapper) support real Vue `v-model`, alongside the explicit `value`/`@change-*` pair;
-- `v-show` works on any symbiote host node — it toggles native `display: none`
+- `v-show` works on any SymbioteJS host node — it toggles native `display: none`
   instead of unmounting, same semantics as Vue's DOM `v-show`.
 
 ```vue
@@ -85,4 +85,4 @@ component also accepts the named form `v-model:value="x"`. Mixing `v-model`
 with the explicit `value`/`@value-change` pair on the same element is
 redundant but harmless — both fire.
 
-Read the exact API surface in the [Vue API reference](/symbiote/docs/api/vue/).
+Read the exact API surface in the [Vue API reference](/symbiotejs/docs/api/vue/).
