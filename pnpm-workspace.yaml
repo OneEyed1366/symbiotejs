@@ -19,6 +19,7 @@ minimumReleaseAgeExclude:
   - '@symbiote-native/react@0.1.1'
   - '@symbiote-native/slider@0.1.1'
   - '@symbiote-native/vue@0.1.1'
+  - '@symbiote-native/test-utils@0.1.1'
 
 # Single source of truth for dependency versions (pnpm catalogs).
 # A package references a version with `catalog:` (default) or `catalog:<name>`
@@ -90,7 +91,7 @@ catalog:
   '@symbiote-native/components': ^0.1.1
   '@symbiote-native/css-parser': ^0.1.1
   '@symbiote-native/slider': ^0.1.1
-  '@symbiote-native/test-utils': ^0.1.0
+  '@symbiote-native/test-utils': ^0.1.1
 
   # React Native app toolchain — single-versioned, used only by examples/*
   '@react-native/babel-preset': 0.86.0

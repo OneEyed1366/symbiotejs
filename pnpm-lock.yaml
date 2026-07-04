@@ -84,6 +84,9 @@ catalogs:
     '@symbiote-native/slider':
       specifier: ^0.1.1
       version: 0.1.1
+    '@symbiote-native/test-utils':
+      specifier: ^0.1.1
+      version: 0.1.1
     '@symbiote-native/vue':
       specifier: ^0.1.1
       version: 0.1.1
@@ -554,8 +557,8 @@ importers:
         specifier: 'catalog:'
         version: 0.1.1(typescript@6.0.3)
       '@symbiote-native/test-utils':
-        specifier: workspace:*
-        version: link:../../core/test-utils
+        specifier: 'catalog:'
+        version: 0.1.1
       '@types/jest':
         specifier: 'catalog:'
         version: 29.5.14
@@ -742,8 +745,8 @@ importers:
         specifier: 'catalog:'
         version: 0.1.1(typescript@6.0.3)
       '@symbiote-native/test-utils':
-        specifier: workspace:*
-        version: link:../../core/test-utils
+        specifier: 'catalog:'
+        version: 0.1.1
       '@types/jest':
         specifier: 'catalog:'
         version: 29.5.14
@@ -2855,6 +2858,9 @@ packages:
         optional: true
       vue:
         optional: true
+
+  '@symbiote-native/test-utils@0.1.1':
+    resolution: {integrity: sha512-pzreAWXEmT/d7QDQ1RlyIoiHmA6GDJxitsj2Qiih/l7OOTDn3wx1Y1OcuJC68gHQOAJ9H9On+oqUlJeVT+aIhA==}
 
   '@symbiote-native/vue@0.1.1':
     resolution: {integrity: sha512-hMhmEgh052nXkMrjyN9Q1WJHFoLa89MnXjxBuS6yLQppayvhiTgR07PJwbM9azmjWZ4wIr0mS07CAwu2jjlfQg==}
@@ -10153,6 +10159,8 @@ snapshots:
       '@vue/runtime-core': 3.5.38
       react: 19.2.3
       vue: 3.5.38(typescript@6.0.3)
+
+  '@symbiote-native/test-utils@0.1.1': {}
 
   '@symbiote-native/vue@0.1.1(react-native@0.86.0(@babel/core@7.29.7)(@react-native-community/cli@20.1.0(typescript@6.0.3))(@react-native/metro-config@0.86.0(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3))(typescript@6.0.3)(vue@3.5.38(typescript@6.0.3))':
     dependencies:
