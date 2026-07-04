@@ -1,7 +1,17 @@
 {
   "name": "@symbiote-native/test-utils",
-  "version": "0.0.0",
-  "private": true,
+  "version": "0.1.0",
+  "description": "Shared, framework-agnostic fake-Fabric test harness for SymbioteNative — the fake nativeFabricUIManager recorder used by the co-located test suites across the engine, every adapter, and the example apps.",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/OneEyed1366/symbiote-native.git",
+    "directory": "core/test-utils"
+  },
+  "homepage": "https://github.com/OneEyed1366/symbiote-native/tree/master/core/test-utils#readme",
+  "bugs": {
+    "url": "https://github.com/OneEyed1366/symbiote-native/issues"
+  },
+  "author": "Andrey Prokopenko <psevdoproger@gmail.com>",
   "type": "module",
   "main": "src/index.ts",
   "module": "src/index.ts",
@@ -9,7 +19,23 @@
   "exports": {
     ".": "./src/index.ts"
   },
+  "files": [
+    "build"
+  ],
+  "publishConfig": {
+    "access": "public",
+    "main": "./build/index.js",
+    "module": "./build/index.js",
+    "types": "./build/index.d.ts",
+    "exports": {
+      ".": {
+        "types": "./build/index.d.ts",
+        "default": "./build/index.js"
+      }
+    }
+  },
   "scripts": {
+    "typecheck": "tsc --build",
     "format": "prettier --write \"src/**/*.{ts,tsx}\""
   }
 }

@@ -1,6 +1,7 @@
 {
   "files": [],
   "references": [
+    { "path": "core/test-utils" },
     { "path": "core/engine" },
     { "path": "core/components" },
     { "path": "core/css-parser" },

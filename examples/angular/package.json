@@ -17,10 +17,10 @@
   },
   "dependencies": {
     "@angular/core": "catalog:",
-    "@symbiote-native/angular": "workspace:*",
-    "@symbiote-native/components": "workspace:*",
-    "@symbiote-native/engine": "workspace:*",
-    "@symbiote-native/slider": "workspace:*",
+    "@symbiote-native/angular": "catalog:",
+    "@symbiote-native/components": "catalog:",
+    "@symbiote-native/engine": "catalog:",
+    "@symbiote-native/slider": "catalog:",
     "react": "catalog:",
     "react-native": "catalog:"
   },
@@ -37,7 +37,7 @@
     "@react-native/eslint-config": "catalog:",
     "@react-native/metro-config": "catalog:",
     "@react-native/typescript-config": "catalog:",
-    "@symbiote-native/css-parser": "workspace:*",
+    "@symbiote-native/css-parser": "catalog:",
     "@types/jest": "catalog:",
     "@types/node": "catalog:",
     "detox": "catalog:",
