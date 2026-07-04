@@ -16,13 +16,13 @@ allowBuilds:
   sharp: true
 minimumReleaseAgeExclude:
   - prettier@3.9.1
-  - '@symbiote-native/angular@0.1.1'
-  - '@symbiote-native/components@0.1.1'
-  - '@symbiote-native/css-parser@0.1.1'
+  - '@symbiote-native/angular@0.3.0'
+  - '@symbiote-native/components@0.1.1 || 0.2.0'
+  - '@symbiote-native/css-parser@0.2.0'
   - '@symbiote-native/engine@0.1.1'
-  - '@symbiote-native/react@0.1.1'
-  - '@symbiote-native/slider@0.1.1'
-  - '@symbiote-native/vue@0.1.1'
+  - '@symbiote-native/react@0.2.1'
+  - '@symbiote-native/slider@2.0.0'
+  - '@symbiote-native/vue@0.3.0'
   - '@symbiote-native/test-utils@0.1.1'
 
 # Single source of truth for dependency versions (pnpm catalogs).
@@ -88,13 +88,13 @@ catalog:
   # release train in one place. @symbiote-native/navigation stays workspace:* directly
   # in examples/react (not published yet); internal cross-package deps between
   # core/adapters/packages also stay workspace:* (see .syncpackrc.json).
-  '@symbiote-native/react': ^0.1.1
-  '@symbiote-native/vue': ^0.1.1
-  '@symbiote-native/angular': ^0.1.1
+  '@symbiote-native/react': ^0.2.1
+  '@symbiote-native/vue': ^0.3.0
+  '@symbiote-native/angular': ^0.3.0
   '@symbiote-native/engine': ^0.1.1
   '@symbiote-native/components': ^0.1.1
-  '@symbiote-native/css-parser': ^0.1.1
-  '@symbiote-native/slider': ^0.1.1
+  '@symbiote-native/css-parser': ^0.2.0
+  '@symbiote-native/slider': ^2.0.0
   '@symbiote-native/test-utils': ^0.1.1
 
   # React Native app toolchain — single-versioned, used only by examples/*
