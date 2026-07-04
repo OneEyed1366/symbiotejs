@@ -55,6 +55,7 @@
   },
   "dependencies": {
     "@angular/compiler-cli": "catalog:",
+    "@react-native/typescript-config": "catalog:",
     "@symbiote-native/components": "workspace:*",
     "@symbiote-native/css-parser": "workspace:*",
     "@symbiote-native/engine": "workspace:*"

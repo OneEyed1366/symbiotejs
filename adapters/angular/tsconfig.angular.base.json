@@ -1,4 +1,11 @@
 {
+  // The original (pre-packaging) example config chain was tsconfig.angular.json → ./tsconfig.json
+  // → @react-native/typescript-config, with tsconfig.angular.json's own compilerOptions (target,
+  // module, noEmit, moduleResolution, allowImportingTsExtensions, types below) overriding the RN
+  // config's conflicting esnext/noEmit:true/jsx settings. Extending it here reproduces that same
+  // precedence for every consumer, not just this repo's examples — a plain Angular+RN app expects
+  // its Angular tsconfig to inherit the RN TS baseline the same way.
+  "extends": "@react-native/typescript-config",
   "compilerOptions": {
     "target": "ES2022",
     "module": "ES2022",
