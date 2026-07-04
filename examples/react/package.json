@@ -37,7 +37,7 @@
     "@react-native/metro-config": "catalog:",
     "@react-native/typescript-config": "catalog:",
     "@symbiote-native/css-parser": "catalog:",
-    "@symbiote-native/test-utils": "workspace:*",
+    "@symbiote-native/test-utils": "catalog:",
     "@types/jest": "catalog:",
     "@types/react": "catalog:",
     "detox": "catalog:",
