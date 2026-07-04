@@ -1,5 +1,16 @@
 # @symbiote-native/angular
 
+## 0.2.0
+
+### Minor Changes
+
+- ab42ee8: Add a zero-config host bootstrap (`bootstrapHost` in `@symbiote-native/components`, plus `registerApp` / `createApp` / `bootstrapApplication` per adapter) that wires the native-host seams and AppRegistry in one call, collapsing the manual per-app wiring every canary previously repeated.
+
+### Patch Changes
+
+- Updated dependencies [ab42ee8]
+  - @symbiote-native/components@0.2.0
+
 ## 0.1.1
 
 ### Patch Changes
