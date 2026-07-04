@@ -1,5 +1,12 @@
 # @symbiote-native/react
 
+## 0.2.1
+
+### Patch Changes
+
+- Updated dependencies [b0f2568]
+  - @symbiote-native/css-parser@0.2.0
+
 ## 0.2.0
 
 ### Minor Changes

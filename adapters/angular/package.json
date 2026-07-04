@@ -1,6 +1,6 @@
 {
   "name": "@symbiote-native/angular",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "SymbioteNative's Angular adapter — a Renderer2/RendererFactory2 with DOM-less bootstrap driving real native iOS/Android views through the same engine as the other adapters.",
   "repository": {
     "type": "git",
