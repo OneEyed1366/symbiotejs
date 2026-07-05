@@ -8,19 +8,19 @@ framework's API conventions. The reference is organized around that split.
 
 ## Framework APIs
 
-- [React API](/symbiote-native/docs/api/react/) — callback props, React children, React refs,
+- [React API](/docs/api/react/) — callback props, React children, React refs,
   and React Native-like imports from `@symbiote-native/react`.
-- [Vue API](/symbiote-native/docs/api/vue/) — typed emits, slots, Vue refs, kebab-case template
+- [Vue API](/docs/api/vue/) — typed emits, slots, Vue refs, kebab-case template
   attributes, and imports from `@symbiote-native/vue`.
-- [Angular API](/symbiote-native/docs/api/angular/) — real `@Output()` `EventEmitter`s,
+- [Angular API](/docs/api/angular/) — real `@Output()` `EventEmitter`s,
   `<ng-content>` projection, standalone components, and imports from
   `@symbiote-native/angular`.
 
 ## Shared APIs
 
-- [Components matrix](/symbiote-native/docs/api/components/) — what components exist and how
+- [Components matrix](/docs/api/components/) — what components exist and how
   React, Vue, and Angular differ for props, events, slots, and handles.
-- [Core API](/symbiote-native/docs/api/core/) — `@symbiote-native/engine` and `@symbiote-native/components`,
+- [Core API](/docs/api/core/) — `@symbiote-native/engine` and `@symbiote-native/components`,
   the shared layers that keep adapters thin.
 
 ## How to read component docs
@@ -28,8 +28,8 @@ framework's API conventions. The reference is organized around that split.
 Each component API should answer four questions:
 
 1. What props are shared across frameworks?
-2. Which events are React callbacks vs Vue emits?
-3. Does the component take children, slots, or render callbacks?
+2. Which events are React callbacks, Vue emits, or Angular `@Output()` EventEmitters?
+3. Does the component take children, slots, or `<ng-content>` projection?
 4. Does it expose an imperative handle, and how does each framework access it?
 
 This is why the docs avoid pretending every framework has identical props. The

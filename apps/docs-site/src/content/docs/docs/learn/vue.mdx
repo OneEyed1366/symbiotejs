@@ -51,7 +51,7 @@ const count = ref(0);
 
 `StyleSheet.create` works identically if you'd rather keep style objects
 inline instead of an SFC `<style>` block — see the
-[Styling guide](/symbiote-native/docs/learn/styling/) for both paths.
+[Styling guide](/docs/learn/styling/) for both paths.
 
 ## Vue contract
 
@@ -63,7 +63,7 @@ Vue uses Vue-shaped APIs where the framework semantics differ from React:
 - template attributes can use kebab-case, and the adapter folds them to the
   native camelCase contract before commit;
 - imperative handles are exposed through Vue template refs;
-- controlled-value components (`Switch`, `TextInput`, the [Slider](/symbiote-native/docs/packages/slider/)
+- controlled-value components (`Switch`, `TextInput`, the [Slider](/docs/packages/slider/)
   wrapper) support real Vue `v-model`, alongside the explicit `value`/`@change-*` pair;
 - `v-show` works on any SymbioteNative host node — it toggles native `display: none`
   instead of unmounting, same semantics as Vue's DOM `v-show`.
@@ -85,4 +85,4 @@ component also accepts the named form `v-model:value="x"`. Mixing `v-model`
 with the explicit `value`/`@value-change` pair on the same element is
 redundant but harmless — both fire.
 
-Read the exact API surface in the [Vue API reference](/symbiote-native/docs/api/vue/).
+Read the exact API surface in the [Vue API reference](/docs/api/vue/).

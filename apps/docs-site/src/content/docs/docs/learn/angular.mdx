@@ -15,8 +15,8 @@ import { Aside } from '@astrojs/starlight/components';
   `ScrollView` and the list components forever, because they can carry an
   `Animated.event(...)` marker for native-driven scroll, and `@Output()` can
   only bind a template listener expression, not an arbitrary value. Wrapper
-  packages have followed: [Slider](/symbiote-native/docs/packages/slider/) ships an Angular
-  build too — see the [status page](/symbiote-native/docs/project/status/) for the exact
+  packages have followed: [Slider](/docs/packages/slider/) ships an Angular
+  build too — see the [status page](/docs/project/status/) for the exact
   line.
 </Aside>
 
@@ -66,7 +66,7 @@ export class App {
 ```
 
 `StyleSheet.create` works identically if you'd rather keep style objects
-inline instead of a CSS file — see the [Styling guide](/symbiote-native/docs/learn/styling/)
+inline instead of a CSS file — see the [Styling guide](/docs/learn/styling/)
 for both paths.
 
 ## Angular contract
@@ -106,4 +106,4 @@ Angular is a standalone-components-only adapter:
   same way Vue's `requestCommit()` does, without zone.js patching Hermes
   globals.
 
-Read the exact API surface in the [Angular API reference](/symbiote-native/docs/api/angular/).
+Read the exact API surface in the [Angular API reference](/docs/api/angular/).
