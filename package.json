@@ -11,7 +11,7 @@
     "typecheck": "tsc --build",
     "typecheck:watch": "tsc --build --watch",
     "build": "pnpm run typecheck && pnpm run fix-esm-extensions && pnpm --filter @symbiote-native/angular --filter @symbiote-native/slider run ng:build && pnpm run docs:build",
-    "fix-esm-extensions": "node scripts/fix-esm-extensions.mjs adapters/react/build adapters/vue/build core/engine/build core/components/build",
+    "fix-esm-extensions": "node scripts/fix-esm-extensions.mjs adapters/react/build adapters/vue/build core/engine/build core/components/build core/test-utils/build",
     "test": "vitest run",
     "test:watch": "vitest",
     "docs:dev": "pnpm --filter @symbiote-native/docs-site dev",
