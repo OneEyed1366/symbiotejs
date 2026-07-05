@@ -88,14 +88,14 @@ catalog:
   # release train in one place. @symbiote-native/navigation stays workspace:* directly
   # in examples/react (not published yet); internal cross-package deps between
   # core/adapters/packages also stay workspace:* (see .syncpackrc.json).
-  '@symbiote-native/react': ^0.2.2
-  '@symbiote-native/vue': ^0.3.1
-  '@symbiote-native/angular': ^0.3.1
-  '@symbiote-native/engine': ^0.1.2
-  '@symbiote-native/components': ^0.2.1
-  '@symbiote-native/css-parser': ^0.2.0
-  '@symbiote-native/slider': ^2.0.0
-  '@symbiote-native/test-utils': ^0.1.1
+  '@symbiote-native/react': latest
+  '@symbiote-native/vue': latest
+  '@symbiote-native/angular': latest
+  '@symbiote-native/engine': latest
+  '@symbiote-native/components': latest
+  '@symbiote-native/css-parser': latest
+  '@symbiote-native/slider': latest
+  '@symbiote-native/test-utils': latest
 
   # React Native app toolchain — single-versioned, used only by examples/*
   '@react-native/babel-preset': 0.86.0
@@ -106,11 +106,14 @@ catalog:
   '@react-native/eslint-config': 0.86.0
   '@react-native/typescript-config': 0.86.0
   '@react-native/gradle-plugin': 0.86.0
+  '@react-native/codegen': 0.86.0
   '@react-native/new-app-screen': 0.86.0
   '@react-native-community/cli': 20.1.0
   '@react-native-community/cli-platform-android': 20.1.0
   '@react-native-community/cli-platform-ios': 20.1.0
   '@react-native-community/slider': ^5.2.0
+  react-native-bootsplash: ^7.3.2
+  react-native-is-edge-to-edge: ^1.3.1
   react-native-screens: ^4.25.2
   react-native-safe-area-context: ^5.5.2
   '@babel/core': ^7.25.2
