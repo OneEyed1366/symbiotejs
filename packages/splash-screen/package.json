@@ -33,7 +33,9 @@
     "src",
     "build",
     "build-ngc",
-    "cli.cjs"
+    "cli.cjs",
+    "react-native.config.cjs",
+    "symbiote-splash-screen.podspec"
   ],
   "publishConfig": {
     "access": "public",
