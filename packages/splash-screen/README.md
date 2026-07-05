@@ -67,14 +67,77 @@ nothing to hide.
 ## Asset generation CLI
 
 ```bash
-npx @symbiote-native/splash-screen generate <logo> [options]
+npx symbiote-splash-screen generate <logo> [options]
 ```
 
-A thin rebrand of `react-native-bootsplash`'s own generator — it writes native Android/iOS/web
-project files (drawables, `colors.xml`, `LaunchScreen.storyboard`, `Info.plist`), independent of
-which adapter the app uses. Zero reimplementation; run `--help` for the full flag list (`--brand`,
-`--dark-*`, etc. — the multi-density/dark-mode addon flags require a paid `--license-key` from
-the upstream author; pass it through as-is, this package doesn't attempt to replicate it).
+A thin rebrand of `react-native-bootsplash`'s own generator (`bin: symbiote-splash-screen`,
+spawned as a child process of its real `cli.js` since that script sits outside upstream's
+`exports` map) — it writes native Android/iOS/web project files (drawables, `styles.xml`'s
+`Theme.BootSplash`, `LaunchScreen.storyboard`, `Info.plist`'s launch-screen key) plus
+`assets/bootsplash/manifest.json` (the same shape `IManifest` expects: `background`,
+`logo.{width,height}`, optional `darkBackground`/`brand`), independent of which adapter the app
+uses. Zero reimplementation; run `--help` for the full flag list (`--brand`, `--dark-*`, etc. —
+the multi-density/dark-mode addon flags require a paid `--license-key` from the upstream author;
+pass it through as-is, this package doesn't attempt to replicate it).
+
+## Use it
+
+`hide()` is the simple case — call it once your JS tree has mounted:
+
+```tsx
+// React — examples/react/App.tsx
+import { hide } from '@symbiote-native/splash-screen/react';
+
+useEffect(() => {
+  hide();
+}, []);
+```
+
+```vue
+<!-- Vue — examples/vue-sfc/App.vue -->
+<script setup lang="ts">
+import { onMounted } from 'vue';
+import { hide } from '@symbiote-native/splash-screen/vue';
+
+onMounted(() => hide());
+</script>
+```
+
+```ts
+// Angular — examples/angular/App.ts
+import { hide } from '@symbiote-native/splash-screen/angular';
+// call once from the root component's constructor/ngOnInit.
+```
+
+For a fade transition gated on real readiness (layout committed + logo/brand images loaded +
+your own `ready` flag) instead of an immediate `hide()`, use `useHideAnimation` — it returns the
+same `{ container, logo, brand }` prop bags upstream's hook does, which you bind onto your own
+`View`/`Image`:
+
+```tsx
+import { useHideAnimation } from '@symbiote-native/splash-screen/react';
+import manifest from '../assets/bootsplash/manifest.json';
+
+const { container, logo } = useHideAnimation({
+  manifest,
+  logo: require('../assets/bootsplash/logo.png'),
+  animate: () => {
+    /* your own fade-out, e.g. an Animated.timing to opacity 0 */
+  },
+});
+```
+
+See the docs-site package page (`docs/packages/splash-screen`) for the full config surface and
+the Vue/Angular equivalents.
+
+## Test it
+
+Headless hook/composable tests live next to each adapter entry
+(`src/{react,vue}/{hooks,composables}/use-hide-animation.test.{ts,tsx}`) and mock
+`react-native-bootsplash`'s `hide`/`isVisible` plus a fake `__turboModuleProxy` for
+`getConstants()`, so they run without a real Fabric host. Native asset generation and the
+Android/iOS wiring above are verified on-device (see the parent [README](../../README.md) for the
+project's testing model).
 
 ## Out of scope
 
