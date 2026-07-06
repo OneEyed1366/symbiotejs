@@ -72,6 +72,10 @@ import {
 // dispatcher). The engine derives RNCSlider's events + tint processors from the library's
 // ViewConfig; the same wrapper backs the React canary. App code names only @symbiote-native/*.
 import { Slider } from '@symbiote-native/slider/vue';
+// hide() is a zero-lifecycle re-export of react-native-bootsplash's imperative API — proof
+// the package's native call is reachable from Vue app code (full animated hand-off via
+// useHideAnimation is out of scope for this canary wiring).
+import { hide } from '@symbiote-native/splash-screen/vue';
 
 const CHIP_WIDTH = 72;
 const CHIP_GAP = 12;
@@ -1002,6 +1006,13 @@ const App = defineComponent({
       [{ nativeEvent: { contentOffset: { y: parityScrollY } } }],
       { useNativeDriver: true },
     );
+    // Native splash screen: hide() reaches RNBootSplash's TurboModule once the first
+    // frame is up, proving the imperative API is wired end to end (init call lives in
+    // AppDelegate.swift / MainActivity.kt, see the splash-screen package README).
+    onMounted(() => {
+      void hide();
+    });
+
     const kavEnabled = ref(true);
 
     // Tier B runtime modules, read live: the composables pull from Dimensions/Appearance,

@@ -58,6 +58,10 @@ import {
 // renders the native leaf through the engine, so the SAME slider works on Vue/Angular too. App
 // code and the app manifest name only @symbiote-native/slider; the native package is the wrapper's dep.
 import { Slider } from '@symbiote-native/slider/react';
+// Native splash screen, driven through symbiote's own wrapper (@symbiote-native/splash-screen)
+// rather than react-native-bootsplash directly — hide() is a plain re-export from its
+// framework-agnostic core, proving the imperative API is reachable from app code.
+import { hide } from '@symbiote-native/splash-screen/react';
 import './App.css';
 
 const CHIP_WIDTH = 72;
@@ -923,6 +927,12 @@ function App() {
   const [appState, setAppState] = useState<string>(
     AppState.currentState ?? 'unknown',
   );
+
+  // Native splash screen was shown at launch (initWithStoryboard/init in the native
+  // bootstrap); hide it once the JS tree has mounted.
+  useEffect(() => {
+    hide();
+  }, []);
 
   // native -> JS: the device hub pushes keyboard frames; we read the height live.
   useEffect(() => {

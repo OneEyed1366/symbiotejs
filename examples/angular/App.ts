@@ -1,4 +1,4 @@
-import { ChangeDetectorRef, Component, OnDestroy, inject } from '@angular/core';
+import { ChangeDetectorRef, Component, OnDestroy, OnInit, inject } from '@angular/core';
 import {
   ActivityIndicator,
   Alert,
@@ -45,6 +45,10 @@ import {
 // (descriptorToAngular), so the SAME slider works on React/Vue/Angular. App code and the app
 // manifest name only @symbiote-native/slider; the native package is the wrapper's own dependency.
 import { Slider } from '@symbiote-native/slider/angular';
+// Native splash screen: hide() reaches RNBootSplash's TurboModule once the first frame is
+// up, proving the imperative API is wired end to end (init call lives in AppDelegate.swift /
+// MainActivity.kt, see the splash-screen package README).
+import { hide } from '@symbiote-native/splash-screen/angular';
 import { AccessibilityDemo } from './components/AccessibilityDemo';
 import { AnimatedDemo } from './components/AnimatedDemo';
 import { AnimatedParityDemo } from './components/AnimatedParityDemo';
@@ -629,7 +633,7 @@ const overlayTunnel = createTunnel();
     </SafeAreaView>
   `,
 })
-export class AppComponent implements OnDestroy {
+export class AppComponent implements OnInit, OnDestroy {
   private readonly windowDimensions = inject(WindowDimensionsService)
     .dimensions;
   private readonly colorScheme = inject(ColorSchemeService).colorScheme;
@@ -900,6 +904,10 @@ export class AppComponent implements OnDestroy {
       `${Math.round(window.width)}×${Math.round(window.height)} @${PixelRatio.get()}x` +
       ` · ${this.colorScheme() ?? 'no-scheme'} · ${this.appState}`
     );
+  }
+
+  ngOnInit(): void {
+    hide();
   }
 
   ngOnDestroy(): void {
