@@ -1,6 +1,6 @@
 {
   "name": "@symbiote-native/test-utils",
-  "version": "0.1.3",
+  "version": "0.1.4",
   "description": "Shared, framework-agnostic fake-Fabric test harness for SymbioteNative — the fake nativeFabricUIManager recorder used by the co-located test suites across the engine, every adapter, and the example apps.",
   "repository": {
     "type": "git",
