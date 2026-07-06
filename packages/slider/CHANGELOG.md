@@ -1,5 +1,15 @@
 # @symbiote-native/slider
 
+## 2.0.3
+
+### Patch Changes
+
+- d738bc5: Fix the published package missing `react-native.config.cjs` and `symbiote-slider.podspec` (omitted from `files`), which left iOS with no native `RNCSliderComponentView` to autolink and rendered the slider as `Unimplemented component: <RNCSlider>` in any app installing the package from npm.
+  - @symbiote-native/angular@0.3.2
+  - @symbiote-native/react@0.2.3
+  - @symbiote-native/vue@0.3.2
+  - @symbiote-native/engine@0.1.3
+
 ## 2.0.2
 
 ### Patch Changes
