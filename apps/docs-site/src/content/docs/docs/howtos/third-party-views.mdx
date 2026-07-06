@@ -3,7 +3,7 @@ title: 'How to: wrap a third-party native view'
 description: Why a library's React component is React-only, and what can be shared.
 ---
 
-import { Aside } from '@astrojs/starlight/components';
+import { Aside, Tabs, TabItem } from '@astrojs/starlight/components';
 
 You want to use a third-party RN library's native view (e.g.
 `@react-native-community/slider`) from a non-React adapter.
@@ -38,23 +38,29 @@ everywhere else in SymbioteNative.
 `packages/slider` is the real, shipping example — one wrapper package with a
 framework-agnostic core plus a thin entry per adapter:
 
-```tsx
-import { Slider } from '@symbiote-native/slider/react';
-```
+<Tabs syncKey="framework">
+  <TabItem label="React">
+    ```tsx
+    import { Slider } from '@symbiote-native/slider/react';
+    ```
+  </TabItem>
+  <TabItem label="Vue">
+    ```vue
+    <script setup>
+    import { Slider } from '@symbiote-native/slider/vue';
+    </script>
+    ```
+  </TabItem>
+  <TabItem label="Angular">
+    ```ts
+    import { Component } from '@angular/core';
+    import { Slider } from '@symbiote-native/slider/angular';
 
-```vue
-<script setup>
-import { Slider } from '@symbiote-native/slider/vue';
-</script>
-```
-
-```ts
-import { Component } from '@angular/core';
-import { Slider } from '@symbiote-native/slider/angular';
-
-@Component({ standalone: true, imports: [Slider], template: `<Slider [value]="0.5" />` })
-export class VolumeControl {}
-```
+    @Component({ standalone: true, imports: [Slider], template: `<Slider [value]="0.5" />` })
+    export class VolumeControl {}
+    ```
+  </TabItem>
+</Tabs>
 
 The consuming app installs only `@symbiote-native/slider` — the wrapper package
 itself owns the native dependency, `react-native.config.cjs` (Android

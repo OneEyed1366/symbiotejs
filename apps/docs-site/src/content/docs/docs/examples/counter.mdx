@@ -3,83 +3,85 @@ title: Counter example
 description: The smallest useful SymbioteNative app in React, Vue, and Angular.
 ---
 
+import { Tabs, TabItem } from '@astrojs/starlight/components';
+
 This example shows state, native layout, text, and a press event.
 
-## React
+<Tabs syncKey="framework">
+  <TabItem label="React">
+    ```tsx
+    import './App.css';
+    import { useState } from 'react';
+    import { Text, View } from '@symbiote-native/react';
 
-```tsx
-import './App.css';
-import { useState } from 'react';
-import { Text, View } from '@symbiote-native/react';
+    export default function App() {
+      const [count, setCount] = useState(0);
 
-export default function App() {
-  const [count, setCount] = useState(0);
+      return (
+        <View className="root" onPress={() => setCount(value => value + 1)}>
+          <Text className="text">Count is {count}</Text>
+        </View>
+      );
+    }
+    ```
 
-  return (
-    <View className="root" onPress={() => setCount(value => value + 1)}>
-      <Text className="text">Count is {count}</Text>
-    </View>
-  );
-}
-```
+    ```css
+    /* App.css */
+    .root { flex: 1; align-items: center; justify-content: center; }
+    .text { font-size: 24px; }
+    ```
+  </TabItem>
+  <TabItem label="Vue">
+    ```vue
+    <script setup lang="ts">
+    import { ref } from 'vue';
+    import { Text, View } from '@symbiote-native/vue';
 
-```css
-/* App.css */
-.root { flex: 1; align-items: center; justify-content: center; }
-.text { font-size: 24px; }
-```
+    const count = ref(0);
+    </script>
 
-## Vue
-
-```vue
-<script setup lang="ts">
-import { ref } from 'vue';
-import { Text, View } from '@symbiote-native/vue';
-
-const count = ref(0);
-</script>
-
-<template>
-  <View class="root" @press="count += 1">
-    <Text class="text">Count is {{ count }}</Text>
-  </View>
-</template>
-
-<style scoped>
-.root { flex: 1; align-items: center; justify-content: center; }
-.text { font-size: 24px; }
-</style>
-```
-
-## Angular
-
-```ts
-import { Component } from '@angular/core';
-import { Pressable, Text, View } from '@symbiote-native/angular';
-import './app.css';
-
-@Component({
-  selector: 'app-root',
-  standalone: true,
-  imports: [Pressable, Text, View],
-  template: `
-    <View class="root">
-      <Pressable (press)="count = count + 1">
+    <template>
+      <View class="root" @press="count += 1">
         <Text class="text">Count is {{ count }}</Text>
-      </Pressable>
-    </View>
-  `,
-})
-export class App {
-  count = 0;
-}
-```
+      </View>
+    </template>
 
-```css
-/* app.css */
-.root { flex: 1; align-items: center; justify-content: center; }
-.text { font-size: 24px; }
-```
+    <style scoped>
+    .root { flex: 1; align-items: center; justify-content: center; }
+    .text { font-size: 24px; }
+    </style>
+    ```
+  </TabItem>
+  <TabItem label="Angular">
+    ```ts
+    import { Component } from '@angular/core';
+    import { Pressable, Text, View } from '@symbiote-native/angular';
+    import './app.css';
+
+    @Component({
+      selector: 'app-root',
+      standalone: true,
+      imports: [Pressable, Text, View],
+      template: `
+        <View class="root">
+          <Pressable (press)="count = count + 1">
+            <Text class="text">Count is {{ count }}</Text>
+          </Pressable>
+        </View>
+      `,
+    })
+    export class App {
+      count = 0;
+    }
+    ```
+
+    ```css
+    /* app.css */
+    .root { flex: 1; align-items: center; justify-content: center; }
+    .text { font-size: 24px; }
+    ```
+  </TabItem>
+</Tabs>
 
 ## What changed
 
@@ -94,6 +96,6 @@ export class App {
 simplest counter reaches for it directly rather than wrapping in `Pressable`.
 Angular's counter uses `Pressable` here since its non-function-children form
 is the idiomatic starting point on that adapter; either works on every
-adapter (see the [Pressable example](/symbiote-native/docs/examples/pressable/)).
+adapter (see the [Pressable example](/docs/examples/pressable/)).
 `StyleSheet.create` works identically to a CSS class if you'd rather keep
-style objects inline — see the [Styling guide](/symbiote-native/docs/learn/styling/).
+style objects inline — see the [Styling guide](/docs/learn/styling/).

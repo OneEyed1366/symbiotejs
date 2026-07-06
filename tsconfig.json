@@ -8,6 +8,7 @@
     { "path": "adapters/react" },
     { "path": "adapters/vue" },
     { "path": "adapters/angular" },
-    { "path": "packages/slider" }
+    { "path": "packages/slider" },
+    { "path": "packages/splash-screen" }
   ]
 }

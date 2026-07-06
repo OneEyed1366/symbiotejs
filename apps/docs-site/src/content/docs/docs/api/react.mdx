@@ -20,7 +20,7 @@ below the component surface: host mutations go through `@symbiote-native/engine`
 | Children        | `children?: ReactNode`                                     |
 | Render children | `(state) => ReactNode`, for components such as `Pressable` |
 | Refs            | React refs to host instances or component handles          |
-| Styles          | `style={styles.root}` with React Native-style objects, or `className` for a registered CSS class (see the [Styling guide](/symbiote-native/docs/learn/styling/)) |
+| Styles          | `style={styles.root}` with React Native-style objects, or `className` for a registered CSS class (see the [Styling guide](/docs/learn/styling/)) |
 
 ## Common events
 
@@ -67,7 +67,7 @@ re-exported.
 ## Animations and gestures
 
 `Animated` (both the JS and native driver) and `PanResponder` are re-exported
-from `@symbiote-native/react` — see the [Animations guide](/symbiote-native/docs/learn/animations/)
+from `@symbiote-native/react` — see the [Animations guide](/docs/learn/animations/)
 for the full surface and per-driver tradeoffs.
 
 ## Portals
@@ -93,7 +93,7 @@ target must live in the *same* surface as the portal's call site; portaling
 into a second, independently-mounted surface isn't wired yet.
 
 Vue has the equivalent through its own `Teleport` — see the
-[Vue API reference](/symbiote-native/docs/api/vue/#portals-teleport).
+[Vue API reference](/docs/api/vue/#portals-teleport).
 
 ## Cross-surface content (`createTunnel`)
 
@@ -132,7 +132,7 @@ Vue and Angular have the same primitive — see their own API references.
 ## App entry point (`AppRegistry`)
 
 `@symbiote-native/react` exports the same `AppRegistry`/`setHostRegistrar` entry point
-described in the [Core API](/symbiote-native/docs/api/core/#app-entry-point-appregistry). A
+described in the [Core API](/docs/api/core/#app-entry-point-appregistry). A
 component passed to `setWrapperComponentProvider` receives the app root as an
 ordinary React `children` prop:
 

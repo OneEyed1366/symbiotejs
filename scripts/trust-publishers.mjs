@@ -14,11 +14,10 @@
 // registry (do one manual authenticated publish first).
 
 import { execFileSync } from 'node:child_process';
-import { existsSync, readdirSync, readFileSync } from 'node:fs';
-import { join } from 'node:path';
+
+import { publishablePackages } from './lib/publishable-packages.mjs';
 
 const WORKFLOW = '.github/workflows/release.yml';
-const PACKAGE_GROUPS = ['core', 'adapters', 'packages'];
 const DEFAULT_REPO = 'OneEyed1366/symbiote-native';
 
 const repoSlug = () => {
@@ -30,23 +29,6 @@ const repoSlug = () => {
     // no git remote — fall back to the known repo below
   }
   return DEFAULT_REPO;
-};
-
-const publishablePackages = () => {
-  const names = [];
-  for (const group of PACKAGE_GROUPS) {
-    if (!existsSync(group)) continue;
-    for (const entry of readdirSync(group, { withFileTypes: true })) {
-      if (!entry.isDirectory()) continue;
-      const manifest = join(group, entry.name, 'package.json');
-      if (!existsSync(manifest)) continue;
-      const pkg = JSON.parse(readFileSync(manifest, 'utf8'));
-      if (!pkg.private && typeof pkg.name === 'string' && pkg.name.startsWith('@symbiote-native/')) {
-        names.push(pkg.name);
-      }
-    }
-  }
-  return names.sort();
 };
 
 const args = process.argv.slice(2);

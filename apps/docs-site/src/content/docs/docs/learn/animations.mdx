@@ -3,7 +3,7 @@ title: Animations
 description: React Native's Animated API, ported framework-agnostic and shared by every adapter.
 ---
 
-import { Aside } from '@astrojs/starlight/components';
+import { Aside, Tabs, TabItem } from '@astrojs/starlight/components';
 
 SymbioteNative ships a from-scratch, framework-agnostic port of React Native's
 `Animated` API. The value graph, easing curves, interpolation, and composition
@@ -15,77 +15,77 @@ which framework renders them.
 
 ## The same API, every adapter
 
-React:
+<Tabs syncKey="framework">
+  <TabItem label="React">
+    ```tsx
+    import { Animated } from '@symbiote-native/react';
 
-```tsx
-import { Animated } from '@symbiote-native/react';
+    const pulse = useRef(new Animated.Value(0)).current;
 
-const pulse = useRef(new Animated.Value(0)).current;
+    useEffect(() => {
+      Animated.loop(
+        Animated.timing(pulse, { toValue: 1, duration: 1400, useNativeDriver: true }),
+      ).start();
+    }, []);
 
-useEffect(() => {
-  Animated.loop(
-    Animated.timing(pulse, { toValue: 1, duration: 1400, useNativeDriver: true }),
-  ).start();
-}, []);
+    const scale = pulse.interpolate({ inputRange: [0, 0.5, 1], outputRange: [1, 1.3, 1] });
 
-const scale = pulse.interpolate({ inputRange: [0, 0.5, 1], outputRange: [1, 1.3, 1] });
+    <Animated.View style={{ transform: [{ scale }] }} />;
+    ```
+  </TabItem>
+  <TabItem label="Vue">
+    ```vue
+    <script setup lang="ts">
+    import { onMounted, onUnmounted } from 'vue';
+    import { Animated } from '@symbiote-native/vue';
 
-<Animated.View style={{ transform: [{ scale }] }} />;
-```
+    // Animated.View has a dot in its name, so it can't be a template tag directly —
+    // alias it to a plain identifier first.
+    const AnimatedView = Animated.View;
 
-Vue:
+    const pulse = new Animated.Value(0);
+    const heartbeat = Animated.loop(
+      Animated.timing(pulse, { toValue: 1, duration: 1400, useNativeDriver: true }),
+    );
+    onMounted(() => heartbeat.start());
+    onUnmounted(() => heartbeat.stop());
 
-```vue
-<script setup lang="ts">
-import { onMounted, onUnmounted } from 'vue';
-import { Animated } from '@symbiote-native/vue';
+    const scale = pulse.interpolate({ inputRange: [0, 0.5, 1], outputRange: [1, 1.3, 1] });
+    </script>
 
-// Animated.View has a dot in its name, so it can't be a template tag directly —
-// alias it to a plain identifier first.
-const AnimatedView = Animated.View;
+    <template>
+      <AnimatedView :style="{ transform: [{ scale }] }" />
+    </template>
+    ```
+  </TabItem>
+  <TabItem label="Angular">
+    ```ts
+    import { Component, OnInit, OnDestroy } from '@angular/core';
+    import { Animated, AnimatedView } from '@symbiote-native/angular';
 
-const pulse = new Animated.Value(0);
-const heartbeat = Animated.loop(
-  Animated.timing(pulse, { toValue: 1, duration: 1400, useNativeDriver: true }),
-);
-onMounted(() => heartbeat.start());
-onUnmounted(() => heartbeat.stop());
+    @Component({
+      selector: 'pulse-dot',
+      standalone: true,
+      imports: [AnimatedView],
+      template: `<AnimatedView [style]="{ transform: [{ scale }] }"></AnimatedView>`,
+    })
+    export class PulseDot implements OnInit, OnDestroy {
+      private readonly pulse = new Animated.Value(0);
+      private readonly heartbeat = Animated.loop(
+        Animated.timing(this.pulse, { toValue: 1, duration: 1400, useNativeDriver: true }),
+      );
+      readonly scale = this.pulse.interpolate({ inputRange: [0, 0.5, 1], outputRange: [1, 1.3, 1] });
 
-const scale = pulse.interpolate({ inputRange: [0, 0.5, 1], outputRange: [1, 1.3, 1] });
-</script>
-
-<template>
-  <AnimatedView :style="{ transform: [{ scale }] }" />
-</template>
-```
-
-Angular:
-
-```ts
-import { Component, OnInit, OnDestroy } from '@angular/core';
-import { Animated, AnimatedView } from '@symbiote-native/angular';
-
-@Component({
-  selector: 'pulse-dot',
-  standalone: true,
-  imports: [AnimatedView],
-  template: `<AnimatedView [style]="{ transform: [{ scale }] }"></AnimatedView>`,
-})
-export class PulseDot implements OnInit, OnDestroy {
-  private readonly pulse = new Animated.Value(0);
-  private readonly heartbeat = Animated.loop(
-    Animated.timing(this.pulse, { toValue: 1, duration: 1400, useNativeDriver: true }),
-  );
-  readonly scale = this.pulse.interpolate({ inputRange: [0, 0.5, 1], outputRange: [1, 1.3, 1] });
-
-  ngOnInit(): void {
-    this.heartbeat.start();
-  }
-  ngOnDestroy(): void {
-    this.heartbeat.stop();
-  }
-}
-```
+      ngOnInit(): void {
+        this.heartbeat.start();
+      }
+      ngOnDestroy(): void {
+        this.heartbeat.stop();
+      }
+    }
+    ```
+  </TabItem>
+</Tabs>
 
 <Aside type="caution" title="Two different reasons for one workaround">
   Vue and Angular both need a plain identifier instead of `Animated.View`, but
@@ -150,4 +150,4 @@ integration beyond what `PanResponder` already provides. `react-native-reanimate
 itself is not tested against SymbioteNative's engine; it hooks much deeper into RN's
 runtime than a plain native-view library does, so treat it as unverified
 rather than assuming it works the same way a
-[wrapped third-party native view](/symbiote-native/docs/howtos/third-party-views/) would.
+[wrapped third-party native view](/docs/howtos/third-party-views/) would.

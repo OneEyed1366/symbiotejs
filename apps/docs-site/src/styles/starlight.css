@@ -87,11 +87,18 @@
 /* tables: a bordered card like every other landing surface, with predictable
    row heights — `baseline` (Starlight's default) makes a wrapped multi-line
    cell float away from its single-line neighbours in the same row */
+/* Starlight's base table is `width: 100%`; a narrow 2-column table (the
+   platform/adapter support tables) then stretches its bordered card far past
+   its own content, leaving a dead empty strip inside the border on the right
+   — cap it to its content width instead, capped again at the container so a
+   genuinely wide table (the API prop tables) still fills the line. */
 .sl-markdown-content table {
   border: 1px solid var(--core-line);
   border-radius: 10px;
   overflow: hidden;
   font-size: 0.9em;
+  width: fit-content;
+  max-width: 100%;
 }
 
 .sl-markdown-content :is(th, td) {

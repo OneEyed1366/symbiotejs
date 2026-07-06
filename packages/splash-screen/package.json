@@ -1,0 +1,132 @@
+{
+  "name": "@symbiote-native/splash-screen",
+  "version": "0.1.0",
+  "description": "Third-party splash-screen native module wrapped for SymbioteNative — one framework-agnostic core, built once and reachable from the React, Vue, and Angular adapters.",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/OneEyed1366/symbiote-native.git",
+    "directory": "packages/splash-screen"
+  },
+  "homepage": "https://github.com/OneEyed1366/symbiote-native/tree/master/packages/splash-screen#readme",
+  "bugs": {
+    "url": "https://github.com/OneEyed1366/symbiote-native/issues"
+  },
+  "author": "Andrey Prokopenko <psevdoproger@gmail.com>",
+  "type": "module",
+  "main": "src/core/index.ts",
+  "module": "src/core/index.ts",
+  "types": "src/core/index.ts",
+  "bin": {
+    "symbiote-splash-screen": "./cli.cjs"
+  },
+  "exports": {
+    ".": "./src/core/index.ts",
+    "./vue": "./src/vue/index.ts",
+    "./react": "./src/react/index.ts",
+    "./angular": {
+      "types": "./build-ngc/angular/index.d.ts",
+      "react-native": "./build-ngc/angular/index.js",
+      "default": "./src/angular/index.ts"
+    }
+  },
+  "files": [
+    "src",
+    "build",
+    "build-ngc",
+    "cli.cjs",
+    "react-native.config.cjs",
+    "symbiote-splash-screen.podspec"
+  ],
+  "publishConfig": {
+    "access": "public",
+    "main": "./build/core/index.js",
+    "module": "./build/core/index.js",
+    "types": "./build/core/index.d.ts",
+    "exports": {
+      ".": {
+        "types": "./build/core/index.d.ts",
+        "default": "./build/core/index.js"
+      },
+      "./vue": {
+        "types": "./build/vue/index.d.ts",
+        "default": "./build/vue/index.js"
+      },
+      "./react": {
+        "types": "./build/react/index.d.ts",
+        "default": "./build/react/index.js"
+      },
+      "./angular": {
+        "types": "./build-ngc/angular/index.d.ts",
+        "react-native": "./build-ngc/angular/index.js",
+        "default": "./src/angular/index.ts"
+      }
+    }
+  },
+  "codegenConfig": {
+    "name": "RNBootSplashSpec",
+    "type": "modules",
+    "jsSrcsDir": "node_modules/react-native-bootsplash/src/specs",
+    "android": {
+      "javaPackageName": "com.zoontek.rnbootsplash"
+    }
+  },
+  "scripts": {
+    "prepare": "pnpm run ng:build",
+    "typecheck": "tsc --build",
+    "ng:build": "ngc -p tsconfig.angular.json",
+    "format": "prettier --write \"src/**/*.{ts,tsx}\""
+  },
+  "dependencies": {
+    "react-native-bootsplash": "catalog:",
+    "react-native-is-edge-to-edge": "catalog:",
+    "@symbiote-native/components": "workspace:*",
+    "@symbiote-native/engine": "workspace:*"
+  },
+  "peerDependencies": {
+    "@symbiote-native/angular": "workspace:*",
+    "@symbiote-native/react": "workspace:*",
+    "@symbiote-native/vue": "workspace:*",
+    "@angular/core": ">=20",
+    "@vue/runtime-core": "^3.5.13",
+    "react": ">=19.0.0",
+    "react-native": ">=0.86",
+    "vue": ">=3.5.0"
+  },
+  "peerDependenciesMeta": {
+    "@symbiote-native/angular": {
+      "optional": true
+    },
+    "@symbiote-native/react": {
+      "optional": true
+    },
+    "@symbiote-native/vue": {
+      "optional": true
+    },
+    "@angular/core": {
+      "optional": true
+    },
+    "@vue/runtime-core": {
+      "optional": true
+    },
+    "react": {
+      "optional": true
+    },
+    "vue": {
+      "optional": true
+    }
+  },
+  "devDependencies": {
+    "@angular/compiler": "catalog:",
+    "@angular/compiler-cli": "catalog:",
+    "@angular/core": "catalog:",
+    "@symbiote-native/angular": "workspace:*",
+    "@symbiote-native/react": "workspace:*",
+    "@symbiote-native/test-utils": "workspace:*",
+    "@symbiote-native/vue": "workspace:*",
+    "@types/node": "catalog:",
+    "@types/react": "catalog:",
+    "@vue/runtime-core": "catalog:",
+    "react": "catalog:",
+    "typescript": "catalog:"
+  }
+}

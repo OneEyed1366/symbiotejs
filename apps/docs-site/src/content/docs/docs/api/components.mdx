@@ -3,6 +3,8 @@ title: Components API
 description: Component status and framework-specific API differences.
 ---
 
+import { Tabs, TabItem } from '@astrojs/starlight/components';
+
 SymbioteNative's component goal is structural parity: reusable state, render, and
 native plumbing live in shared layers; adapters provide lifecycle and framework
 syntax.
@@ -28,7 +30,7 @@ framework-shaped surface:
 - `ActivityIndicator` — Mostly shared render-only props.
 - Lists — Render item/slot shape differs; windowing math is shared.
 - `Animated` — The value graph is shared; component wrapping differs by
-  adapter (see the [Animations guide](/symbiote-native/docs/learn/animations/)).
+  adapter (see the [Animations guide](/docs/learn/animations/)).
 - `Modal`, `KeyboardAvoidingView`, `SafeAreaView`, `RefreshControl`,
   `ImageBackground`, `InputAccessoryView`, `StatusBar`, `Button` — shared
   render/behavior logic, framework-shaped props and events same as above.
@@ -81,27 +83,33 @@ listener expression, never an arbitrary value.
 
 ## Framework event idioms side by side
 
-```tsx
-// React — callback props
-<Pressable onPress={event => console.log(event)} />
-<Switch value={enabled} onValueChange={setEnabled} />
-```
-
-```vue
-<!-- Vue — emits, or v-model on controlled components -->
-<Pressable @press="event => console.log(event)" />
-<Switch v-model="enabled" />
-```
-
-```ts
-// Angular — @Output() everywhere, except the scroll-family callback @Input()s
-@Component({
-  template: `
-    <Pressable (press)="onPress($event)" />
-    <Switch [value]="enabled" (valueChange)="setEnabled($event)" />
-  `,
-})
-```
+<Tabs syncKey="framework">
+  <TabItem label="React">
+    ```tsx
+    // React — callback props
+    <Pressable onPress={event => console.log(event)} />
+    <Switch value={enabled} onValueChange={setEnabled} />
+    ```
+  </TabItem>
+  <TabItem label="Vue">
+    ```vue
+    <!-- Vue — emits, or v-model on controlled components -->
+    <Pressable @press="event => console.log(event)" />
+    <Switch v-model="enabled" />
+    ```
+  </TabItem>
+  <TabItem label="Angular">
+    ```ts
+    // Angular — @Output() everywhere, except the scroll-family callback @Input()s
+    @Component({
+      template: `
+        <Pressable (press)="onPress($event)" />
+        <Switch [value]="enabled" (valueChange)="setEnabled($event)" />
+      `,
+    })
+    ```
+  </TabItem>
+</Tabs>
 
 ## Reference page template
 
@@ -109,8 +117,10 @@ As component pages split out, each should include:
 
 1. a short React example;
 2. a short Vue example;
-3. shared props;
-4. React-only callback/children/ref notes;
-5. Vue-only emits/slots/ref notes;
-6. platform notes;
-7. parity notes explaining what lives in `@symbiote-native/components`.
+3. a short Angular example;
+4. shared props;
+5. React-only callback/children/ref notes;
+6. Vue-only emits/slots/ref notes;
+7. Angular-only `@Output()`/`<ng-content>`/`@ViewChild` notes;
+8. platform notes;
+9. parity notes explaining what lives in `@symbiote-native/components`.

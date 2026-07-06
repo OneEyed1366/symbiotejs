@@ -1,0 +1,264 @@
+---
+title: Splash screen
+description: A native launch-screen bridge over react-native-bootsplash, shared by every adapter.
+---
+
+import { Aside, Tabs, TabItem } from '@astrojs/starlight/components';
+
+`@symbiote-native/splash-screen` wraps
+[`react-native-bootsplash`](https://github.com/zoontek/react-native-bootsplash) so every
+SymbioteNative adapter can hide the native launch screen and drive its fade-out — without
+importing that library's React hook body. Unlike the
+[slider wrapper](/docs/packages/slider/), bootsplash has no native **view** to
+register: it exposes only an imperative TurboModule (`hide`/`isVisible`/`getConstants()`), so
+there is nothing for the engine's `ViewConfig` path to reach — every adapter calls straight into
+the same native module.
+
+| OS platform | Support |
+| ----------- | ------- |
+| iOS         | ✅ live |
+| Android     | ✅ live |
+
+| Framework adapter | Support    |
+| ------------------ | ---------- |
+| React               | ✅ live    |
+| Vue                 | ✅ live    |
+| Angular             | ✅ live    |
+
+## Installation
+
+```sh
+npm install @symbiote-native/splash-screen
+```
+
+`@symbiote-native/splash-screen` itself is a workspace package (`packages/splash-screen`), not
+yet published — add it as a workspace dependency the same way the examples do. It ships as the
+sole autolinked native proxy for `react-native-bootsplash` (`react-native.config.cjs` +
+`symbiote-splash-screen.podspec`), so an app never lists `react-native-bootsplash` directly.
+
+<Aside type="danger" title="Two setup steps, not one">
+  Installing the JS package is not enough — the native launch screen itself (the thing shown
+  *before* JS runs) has to be generated and wired into your native project files first. Follow
+  [How to: add a native splash screen](/docs/howtos/splash-screen/) for the full
+  asset-generation + Android/iOS wiring steps before reaching for `hide()` below.
+</Aside>
+
+## Usage
+
+### The imperative case: `hide()`
+
+Once the native launch screen is wired up and shown at boot, call `hide()` after your JS tree
+has mounted. `hide()`/`isVisible()` carry zero framework dependency — they are the same
+`react-native-bootsplash` functions, re-exported verbatim by every adapter.
+
+<Tabs syncKey="framework">
+  <TabItem label="React">
+    ```tsx
+    import { useEffect } from 'react';
+    import { hide } from '@symbiote-native/splash-screen/react';
+
+    export default function App() {
+      useEffect(() => {
+        hide();
+      }, []);
+
+      // ...
+    }
+    ```
+  </TabItem>
+  <TabItem label="Vue">
+    ```vue
+    <script setup lang="ts">
+    import { onMounted } from 'vue';
+    import { hide } from '@symbiote-native/splash-screen/vue';
+
+    onMounted(() => hide());
+    </script>
+    ```
+  </TabItem>
+  <TabItem label="Angular">
+    ```ts
+    import { Component } from '@angular/core';
+    import { hide } from '@symbiote-native/splash-screen/angular';
+
+    @Component({ standalone: true, template: `...` })
+    export class AppRoot {
+      constructor() {
+        hide();
+      }
+    }
+    ```
+  </TabItem>
+</Tabs>
+
+### The animated case: `useHideAnimation`
+
+<Aside type="note">
+  `useHideAnimation` does not render anything itself — it returns style/prop bags your own
+  `View`/`Image` bind to. It fires `hide()` exactly once, only after layout has committed, both
+  images (if you asked for them) have loaded, and your own `ready` flag is true — a faithful port
+  of `react-native-bootsplash`'s own `useHideAnimation`.
+</Aside>
+
+<Tabs syncKey="framework">
+  <TabItem label="React">
+    ```tsx
+    import { useState } from 'react';
+    import { View, Image, Animated } from '@symbiote-native/react';
+    import { useHideAnimation } from '@symbiote-native/splash-screen/react';
+    import manifest from '../assets/bootsplash/manifest.json';
+    import logo from '../assets/bootsplash/logo.png';
+
+    export default function AnimatedSplash() {
+      const [opacity] = useState(() => new Animated.Value(1));
+      const [ready, setReady] = useState(false);
+
+      const { container, logo: logoProps } = useHideAnimation({
+        manifest,
+        logo,
+        ready,
+        animate: () => {
+          Animated.timing(opacity, { toValue: 0, duration: 250, useNativeDriver: true }).start();
+        },
+      });
+
+      return (
+        <Animated.View {...container} style={[container.style, { opacity }]}>
+          <Image {...logoProps} />
+        </Animated.View>
+      );
+    }
+    ```
+  </TabItem>
+  <TabItem label="Vue">
+    ```vue
+    <script setup lang="ts">
+    import { ref } from 'vue';
+    import { useHideAnimation } from '@symbiote-native/splash-screen/vue';
+    import manifest from '../assets/bootsplash/manifest.json';
+    import logo from '../assets/bootsplash/logo.png';
+
+    const ready = ref(false);
+
+    const hideAnimation = useHideAnimation(() => ({
+      manifest,
+      logo,
+      ready: ready.value,
+      animate: () => {
+        /* your own fade-out */
+      },
+    }));
+    </script>
+
+    <template>
+      <View v-bind="hideAnimation.container">
+        <Image v-bind="hideAnimation.logo" />
+      </View>
+    </template>
+    ```
+
+    `useHideAnimation` takes a config **getter**, not a plain value — a Vue composable's setup body
+    runs once, so the getter lets it keep reading whatever reactive refs it closes over.
+  </TabItem>
+  <TabItem label="Angular">
+    ```ts
+    import { Component, inject, signal } from '@angular/core';
+    import { HideAnimationService } from '@symbiote-native/splash-screen/angular';
+    import { Image, View } from '@symbiote-native/angular';
+    import manifest from '../assets/bootsplash/manifest.json';
+    import logo from '../assets/bootsplash/logo.png';
+
+    @Component({
+      standalone: true,
+      imports: [View, Image],
+      template: `
+        <View
+          [style]="hideAnimation().container.style"
+          (layout)="hideAnimation().container.onLayout()"
+        >
+          <Image
+            [source]="hideAnimation().logo.source"
+            (loadEnd)="hideAnimation().logo.onLoadEnd?.()"
+          />
+        </View>
+      `,
+    })
+    export class AnimatedSplash {
+      readonly ready = signal(false);
+
+      readonly hideAnimation = inject(HideAnimationService).connect(() => ({
+        manifest,
+        logo,
+        ready: this.ready(),
+        animate: () => {
+          /* your own fade-out */
+        },
+      }));
+    }
+    ```
+
+    `HideAnimationService.connect()` is Angular's twin of the React hook / Vue composable — Angular
+    has no per-instance hook, so state and lifecycle live in DI instead; `connect()` also takes a
+    config getter and returns a `Signal`. Unlike React's `{...container}` spread or Vue's
+    `v-bind="hideAnimation.container"`, Angular has no generic prop-spread — `onLayout`/`onLoadEnd`
+    must be wired explicitly through the real `(layout)`/`(loadEnd)` outputs `View`/`Image` expose,
+    calling the readiness callbacks `container.onLayout`/`logo.onLoadEnd` by hand; skipping them
+    means the readiness gate never completes and `hide()` never fires.
+  </TabItem>
+</Tabs>
+
+## API
+
+### `hide()` / `isVisible()`
+
+| Signature | Description |
+| --- | --- |
+| `hide(config?: { fade?: boolean }): Promise<void>` | Hides the native splash screen. `fade: true` fades the *native* view out before removing it; omitted/`false` removes it immediately — independent of the JS-side `useHideAnimation` fade below |
+| `isVisible(): Promise<boolean>` | Reads whether the native splash screen is currently shown |
+
+### `useHideAnimation()` config
+
+| Field | Type | Default | Description |
+| --- | --- | --- | --- |
+| `manifest` | `IManifest` | *(required)* | The generated `assets/bootsplash/manifest.json` — background color plus logo size, optionally a dark background and/or brand |
+| `logo` / `darkLogo` | `IImageSourceProp` | — | The logo image to fade in; omit to skip the logo readiness gate entirely |
+| `brand` / `darkBrand` | `IImageSourceProp` | — | A secondary "powered by"-style image below the logo; only read when `manifest.brand` is present |
+| `ready` | `boolean` | `true` | Your own extra readiness gate (e.g. "auth check done") — `animate` waits for this to be `true` too |
+| `animate` | `() => void` | *(required)* | Called exactly once, the moment every readiness condition (layout committed + images loaded + `ready`) is met — put your own fade-out here |
+| `statusBarTranslucent` | `boolean` | `false` | Android-only: skip the extra top margin compensation when your app already draws a translucent status bar |
+| `navigationBarTranslucent` | `boolean` | `false` | Android-only: skip the extra bottom margin compensation when your app already draws a translucent navigation bar |
+
+### `useHideAnimation()` return value
+
+| Field | Type | Description |
+| --- | --- | --- |
+| `container` | `{ style, onLayout }` | Bind onto your own `View` — `style` positions and colors the full-screen backdrop, `onLayout` reports layout readiness |
+| `logo` | `{ source, fadeDuration, resizeMode, style, onLoadEnd }` | Bind onto your own `Image` — `onLoadEnd` reports logo-load readiness |
+| `brand` | `{ source, fadeDuration, resizeMode, style, onLoadEnd }` | Same shape as `logo`, bound onto a second `Image` for the optional brand asset |
+
+## How the wrapper works
+
+`@symbiote-native/splash-screen` ships **zero native metadata** of its own — the native launch
+screen is generated once by the bundled `symbiote-splash-screen` CLI (a thin passthrough to
+`react-native-bootsplash`'s own generator) and wired into the app's native entry points by hand,
+see the [native-setup how-to](/docs/howtos/splash-screen/). The package's own
+code is a pure JS bridge:
+
+```
+packages/splash-screen/src/
+├── core/     # framework-agnostic: hide/isVisible re-export, getHideAnimationConstants
+│             # (reads RNBootSplash's TurboModule via getEnforcingNativeModule),
+│             # HideAnimationController (readiness state machine), computeHideAnimationStyles
+├── react/    # React lifecycle (hooks) over the core
+├── vue/      # Vue lifecycle (composables) over the core
+└── angular/  # Angular lifecycle (a DI service) over the core
+```
+
+Every adapter's `useHideAnimation` constructs the **same** `HideAnimationController` once, reads
+native constants once, and re-syncs the controller's config through its own reactivity primitive
+— a React effect with no dependency array, a Vue `watchEffect`, an Angular `effect()`. The style
+computation itself (`computeHideAnimationStyles`) is a faithful, framework-agnostic port of
+`react-native-bootsplash`'s own `useHideAnimation` `useMemo` body, so the container/logo/brand
+prop bags are byte-for-byte the same shape upstream produces — the same logic/lifecycle split as
+every other SymbioteNative component (see
+[how it works](/docs/how-it-works/)).

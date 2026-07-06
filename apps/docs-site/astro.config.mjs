@@ -32,11 +32,22 @@ export default defineConfig({
           },
         },
         {
+          // Restores the bonded framework before paint, AND aligns Starlight's own
+          // <Tabs syncKey="framework"> restore mechanism to the same preference:
+          // Starlight persists the synced tab under `starlight-synced-tabs__framework`
+          // keyed by the tab's LABEL TEXT ("React"/"Vue"/"Angular"), read by its own
+          // inline restore script the instant each <starlight-tabs> connects — before
+          // this page's body finishes parsing. Writing it here, synchronously in
+          // <head>, keeps the two preferences (this site's `symbiote` id and
+          // Starlight's own label-keyed store) always in lockstep on load.
           tag: 'script',
           content: `
             try {
               var s = localStorage.getItem('symbiote');
-              document.documentElement.dataset.symbiote = s === 'vue' || s === 'angular' ? s : 'react';
+              var id = s === 'vue' || s === 'angular' ? s : 'react';
+              document.documentElement.dataset.symbiote = id;
+              var LABEL = { react: 'React', vue: 'Vue', angular: 'Angular' };
+              localStorage.setItem('starlight-synced-tabs__framework', LABEL[id]);
             } catch (e) {}
           `,
         },
@@ -47,39 +58,67 @@ export default defineConfig({
           // match, once the nav DOM exists (unlike the script above, this can't run
           // pre-paint — the tab icon has no CSS-var equivalent to starlight.css's
           // .site-title::before, which is why the sidebar logo uses that instead).
+          //
+          // Docs pages carry no chip switcher of their own — the only way the
+          // preference changes there is clicking a synced <Tabs syncKey="framework">
+          // tab (see docs/packages/*.mdx). The click listener below mirrors that
+          // choice back into the site-wide `symbiote` key + `data-symbiote` attribute
+          // (which the CSS brand-color variables already react to) and re-runs the
+          // same favicon recolor, so leaving to another page — or back to the
+          // landing page — keeps the same bonded framework everywhere.
           tag: 'script',
           content: `
-            document.addEventListener('DOMContentLoaded', function () {
-              try {
-                var GRADIENTS = {
-                  react: ['#61dafb', '#2bb0d6'],
-                  vue: ['#42d392', '#35a479'],
-                  angular: ['#e40035', '#f6007b', '#9c0aab'],
-                };
-                var id = document.documentElement.dataset.symbiote || 'react';
-                var stops = GRADIENTS[id] || GRADIENTS.react;
-                var stopTags = stops
-                  .map(function (c, i) {
-                    return '<stop offset="' + i / (stops.length - 1) + '" stop-color="' + c + '"/>';
-                  })
-                  .join('');
-                var svg =
-                  '<svg width="128" height="128" viewBox="0 0 128 128" fill="none" xmlns="http://www.w3.org/2000/svg">' +
-                  '<rect width="128" height="128" rx="30" fill="#030406"/>' +
-                  '<circle cx="64" cy="64" r="46" fill="' + stops[0] + '" opacity="0.35" filter="url(#glow)"/>' +
-                  '<path d="M45,20 L68,20 A40 40 0 0 1 108,60 L108,77 A31 31 0 0 1 77,108 L60,108 A40 40 0 0 1 20,68 L20,45 A25 25 0 0 1 45,20 Z" fill="url(#g)"/>' +
-                  '<ellipse cx="48" cy="42" rx="14" ry="9" fill="#ffffff" opacity="0.28" filter="url(#sheen)"/>' +
-                  '<defs><linearGradient id="g" x1="20" y1="20" x2="108" y2="108" gradientUnits="userSpaceOnUse">' +
-                  stopTags +
-                  '</linearGradient>' +
-                  '<filter id="glow" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="10"/></filter>' +
-                  '<filter id="sheen" x="-100%" y="-100%" width="300%" height="300%"><feGaussianBlur stdDeviation="6"/></filter>' +
-                  '</defs></svg>';
-                var href = 'data:image/svg+xml,' + encodeURIComponent(svg);
-                var icon = document.querySelector('link[rel~="icon"]');
-                if (icon) icon.href = href;
-              } catch (e) {}
-            });
+            (function () {
+              var GRADIENTS = {
+                react: ['#61dafb', '#2bb0d6'],
+                vue: ['#42d392', '#35a479'],
+                angular: ['#e40035', '#f6007b', '#9c0aab'],
+              };
+              var ID_BY_LABEL = { React: 'react', Vue: 'vue', Angular: 'angular' };
+
+              function recolorFavicon() {
+                try {
+                  var id = document.documentElement.dataset.symbiote || 'react';
+                  var stops = GRADIENTS[id] || GRADIENTS.react;
+                  var stopTags = stops
+                    .map(function (c, i) {
+                      return '<stop offset="' + i / (stops.length - 1) + '" stop-color="' + c + '"/>';
+                    })
+                    .join('');
+                  var svg =
+                    '<svg width="128" height="128" viewBox="0 0 128 128" fill="none" xmlns="http://www.w3.org/2000/svg">' +
+                    '<rect width="128" height="128" rx="30" fill="#030406"/>' +
+                    '<circle cx="64" cy="64" r="46" fill="' + stops[0] + '" opacity="0.35" filter="url(#glow)"/>' +
+                    '<path d="M45,20 L68,20 A40 40 0 0 1 108,60 L108,77 A31 31 0 0 1 77,108 L60,108 A40 40 0 0 1 20,68 L20,45 A25 25 0 0 1 45,20 Z" fill="url(#g)"/>' +
+                    '<ellipse cx="48" cy="42" rx="14" ry="9" fill="#ffffff" opacity="0.28" filter="url(#sheen)"/>' +
+                    '<defs><linearGradient id="g" x1="20" y1="20" x2="108" y2="108" gradientUnits="userSpaceOnUse">' +
+                    stopTags +
+                    '</linearGradient>' +
+                    '<filter id="glow" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="10"/></filter>' +
+                    '<filter id="sheen" x="-100%" y="-100%" width="300%" height="300%"><feGaussianBlur stdDeviation="6"/></filter>' +
+                    '</defs></svg>';
+                  var href = 'data:image/svg+xml,' + encodeURIComponent(svg);
+                  var icon = document.querySelector('link[rel~="icon"]');
+                  if (icon) icon.href = href;
+                } catch (e) {}
+              }
+
+              document.addEventListener('DOMContentLoaded', recolorFavicon);
+
+              document.addEventListener('click', function (e) {
+                var tab =
+                  e.target.closest &&
+                  e.target.closest('starlight-tabs[data-sync-key="framework"] [role="tab"]');
+                if (!tab) return;
+                var id = ID_BY_LABEL[tab.textContent.trim()];
+                if (!id) return;
+                try {
+                  localStorage.setItem('symbiote', id);
+                } catch (err) {}
+                document.documentElement.dataset.symbiote = id;
+                recolorFavicon();
+              });
+            })();
           `,
         },
       ],
@@ -130,6 +169,7 @@ export default defineConfig({
             { label: 'Share content across surfaces', slug: 'docs/howtos/portals-and-tunnels' },
             { label: 'Write platform-specific code', slug: 'docs/howtos/platform-code' },
             { label: 'Wrap a third-party native view', slug: 'docs/howtos/third-party-views' },
+            { label: 'Add a native splash screen', slug: 'docs/howtos/splash-screen' },
             { label: 'Turn on diagnostic logging', slug: 'docs/howtos/debugging' },
           ],
         },
@@ -159,7 +199,10 @@ export default defineConfig({
         },
         {
           label: 'Packages',
-          items: [{ label: 'Slider', slug: 'docs/packages/slider' }],
+          items: [
+            { label: 'Slider', slug: 'docs/packages/slider' },
+            { label: 'Splash screen', slug: 'docs/packages/splash-screen' },
+          ],
         },
         {
           label: 'Project',

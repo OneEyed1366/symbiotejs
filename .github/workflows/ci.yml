@@ -11,26 +11,6 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  lint-and-typecheck:
-    name: Lint & Typecheck
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: pnpm/action-setup@v4
-
-      # cache: pnpm keys off pnpm-lock.yaml and restores pnpm's content-addressable
-      # store, so `pnpm install` only downloads what actually changed instead of
-      # every package on every run.
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22
-          cache: pnpm
-
-      - run: pnpm install --frozen-lockfile
-
-      - name: Lint
-        run: pnpm run lint
-
-      - name: Typecheck
-        run: pnpm run typecheck
+  checks:
+    name: Checks
+    uses: ./.github/workflows/checks.yml

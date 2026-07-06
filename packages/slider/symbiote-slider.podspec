@@ -1,11 +1,28 @@
 require 'json'
-require 'pathname'
+require 'fileutils'
 
 package = JSON.parse(File.read(File.join(__dir__, 'package.json')))
 
 native_slider_package_json = `node --print "require.resolve('@react-native-community/slider/package.json', { paths: [process.argv[1]] })" "#{__dir__}"`.strip
 native_slider_root = File.dirname(native_slider_package_json)
-native_slider_relative_root = Pathname.new(native_slider_root).relative_path_from(Pathname.new(__dir__)).to_s
+
+# CocoaPods' file glob never crosses a symlink (Sandbox::PathList#read_file_system walks the
+# pod dir with ONE recursive Dir.glob, and Ruby's `**` never descends into a symlinked
+# subdirectory it meets mid-walk). Under pnpm, @react-native-community/slider always sits
+# behind a .pnpm-store symlink, so pointing source_files at it via a relative path silently
+# produces zero matched files -> CocoaPods downgrades the pod to an empty PBXAggregateTarget
+# -> RNCSliderComponentView never gets compiled -> NSClassFromString returns nil at runtime
+# -> a crash when RCTThirdPartyComponentsProvider inserts that nil into an NSDictionary
+# literal (Objective-C literals reject nil values). Fix: vendor (copy) the native iOS/common
+# sources into a gitignored folder next to this podspec on every `pod install`, and point
+# source_files at that copy (a purely-downward relative pattern) — same fix already applied
+# to packages/splash-screen/symbiote-splash-screen.podspec.
+vendored_dir = File.join(__dir__, '.rn-slider')
+
+FileUtils.rm_rf(vendored_dir)
+FileUtils.mkdir_p(vendored_dir)
+FileUtils.cp_r(File.join(native_slider_root, 'ios'), File.join(vendored_dir, 'ios'))
+FileUtils.cp_r(File.join(native_slider_root, 'common'), File.join(vendored_dir, 'common'))
 
 Pod::Spec.new do |s|
   s.name         = 'symbiote-slider'
@@ -17,12 +34,12 @@ Pod::Spec.new do |s|
   s.platforms    = { :ios => '9.0', :visionos => '1.0' }
   s.source       = { :git => 'https://github.com/symbiote/symbiote.git', :tag => "v#{s.version}" }
 
-  s.source_files = File.join(native_slider_relative_root, 'ios/**/*.{h,m,mm}')
+  s.source_files = '.rn-slider/ios/**/*.{h,m,mm}'
 
   s.subspec 'common' do |ss|
-    ss.source_files = File.join(native_slider_relative_root, 'common/cpp/**/*.{cpp,h}')
+    ss.source_files = '.rn-slider/common/cpp/**/*.{cpp,h}'
     ss.pod_target_xcconfig = {
-      'HEADER_SEARCH_PATHS' => "\"#{File.join(native_slider_root, 'common/cpp')}\""
+      'HEADER_SEARCH_PATHS' => "\"#{File.join(vendored_dir, 'common/cpp')}\""
     }
   end
 

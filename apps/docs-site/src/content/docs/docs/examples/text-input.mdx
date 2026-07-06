@@ -3,95 +3,97 @@ title: TextInput example
 description: Controlled text input in React, Vue, and Angular.
 ---
 
+import { Tabs, TabItem } from '@astrojs/starlight/components';
+
 `TextInput` is controlled through a `value` prop and a text-change event. The
 controlled write handshake is shared; the public event name is framework-shaped.
 
-## React
+<Tabs syncKey="framework">
+  <TabItem label="React">
+    ```tsx
+    import './NameInput.css';
+    import { useState } from 'react';
+    import { Text, TextInput, View } from '@symbiote-native/react';
 
-```tsx
-import './NameInput.css';
-import { useState } from 'react';
-import { Text, TextInput, View } from '@symbiote-native/react';
+    export function NameInput() {
+      const [name, setName] = useState('Symbiote');
 
-export function NameInput() {
-  const [name, setName] = useState('Symbiote');
+      return (
+        <View className="root">
+          <TextInput value={name} onValueChange={setName} className="input" />
+          <Text>Hello, {name}</Text>
+        </View>
+      );
+    }
+    ```
 
-  return (
-    <View className="root">
-      <TextInput value={name} onValueChange={setName} className="input" />
-      <Text>Hello, {name}</Text>
-    </View>
-  );
-}
-```
+    ```css
+    /* NameInput.css */
+    .root { gap: 12px; }
+    .input { min-width: 220px; padding: 12px; border-width: 1px; }
+    ```
+  </TabItem>
+  <TabItem label="Vue">
+    ```vue
+    <script setup lang="ts">
+    import { ref } from 'vue';
+    import { Text, TextInput, View } from '@symbiote-native/vue';
 
-```css
-/* NameInput.css */
-.root { gap: 12px; }
-.input { min-width: 220px; padding: 12px; border-width: 1px; }
-```
+    const name = ref('Symbiote');
+    </script>
 
-## Vue
+    <template>
+      <View class="root">
+        <TextInput v-model="name" class="input" />
+        <Text>Hello, {{ name }}</Text>
+      </View>
+    </template>
 
-```vue
-<script setup lang="ts">
-import { ref } from 'vue';
-import { Text, TextInput, View } from '@symbiote-native/vue';
+    <style scoped>
+    .root { gap: 12px; }
+    .input { min-width: 220px; padding: 12px; border-width: 1px; }
+    </style>
+    ```
 
-const name = ref('Symbiote');
-</script>
+    `v-model="name"` is sugar over the same `:value`/`@value-change` pair — write
+    that explicit form instead if you also need the raw native event, which
+    arrives as `@value-change`'s second argument: `@value-change="(text, event) => …"`.
+  </TabItem>
+  <TabItem label="Angular">
+    ```ts
+    import { Component } from '@angular/core';
+    import { Text, TextInput, View } from '@symbiote-native/angular';
+    import './name-input.css';
 
-<template>
-  <View class="root">
-    <TextInput v-model="name" class="input" />
-    <Text>Hello, {{ name }}</Text>
-  </View>
-</template>
+    @Component({
+      standalone: true,
+      imports: [Text, TextInput, View],
+      template: `
+        <View class="root">
+          <TextInput [(value)]="name" class="input" />
+          <Text>Hello, {{ name }}</Text>
+        </View>
+      `,
+    })
+    export class NameInput {
+      name = 'Symbiote';
+    }
+    ```
 
-<style scoped>
-.root { gap: 12px; }
-.input { min-width: 220px; padding: 12px; border-width: 1px; }
-</style>
-```
+    ```css
+    /* name-input.css */
+    .root { gap: 12px; }
+    .input { min-width: 220px; padding: 12px; border-width: 1px; }
+    ```
 
-`v-model="name"` is sugar over the same `:value`/`@value-change` pair — write
-that explicit form instead if you also need the raw native event, which
-arrives as `@value-change`'s second argument: `@value-change="(text, event) => …"`.
-
-## Angular
-
-```ts
-import { Component } from '@angular/core';
-import { Text, TextInput, View } from '@symbiote-native/angular';
-import './name-input.css';
-
-@Component({
-  standalone: true,
-  imports: [Text, TextInput, View],
-  template: `
-    <View class="root">
-      <TextInput [(value)]="name" class="input" />
-      <Text>Hello, {{ name }}</Text>
-    </View>
-  `,
-})
-export class NameInput {
-  name = 'Symbiote';
-}
-```
-
-```css
-/* name-input.css */
-.root { gap: 12px; }
-.input { min-width: 220px; padding: 12px; border-width: 1px; }
-```
-
-`[(value)]="name"` is Angular's banana-in-a-box two-way binding, sugar over
-the same `[value]`/`(valueChange)` pair — write that explicit form instead
-(`[value]="name" (valueChange)="setName($event)"`) if you also need the raw
-native event, which arrives on the separate `(change)` output: an
-`EventEmitter` only carries one value, so `(valueChange)` stays text-only to
-keep `[(value)]` working, and `(change)` exists purely for the raw event.
+    `[(value)]="name"` is Angular's banana-in-a-box two-way binding, sugar over
+    the same `[value]`/`(valueChange)` pair — write that explicit form instead
+    (`[value]="name" (valueChange)="setName($event)"`) if you also need the raw
+    native event, which arrives on the separate `(change)` output: an
+    `EventEmitter` only carries one value, so `(valueChange)` stays text-only to
+    keep `[(value)]` working, and `(change)` exists purely for the raw event.
+  </TabItem>
+</Tabs>
 
 ## API takeaway
 
@@ -100,7 +102,7 @@ keep `[(value)]` working, and `(change)` exists purely for the raw event.
 | Text prop          | `value`                         | `:value`<br />or `v-model`                       | `[value]`<br />or `[(value)]`                    |
 | Text change        | `onValueChange(text, event)`    | `@value-change`<br />or `v-model`                | `(valueChange)="handler($event)"` (text only)    |
 | Native event       | *(same callback, 2nd arg)*      | *(same emit, 2nd arg)*                           | `(change)="handler($event)"` (separate output)   |
-| Imperative handle  | React `ref`                     | Vue template ref / exposed handle                | `@ViewChild(..., { read: ElementRef })`          |
+| Imperative handle  | React `ref`                     | Vue template ref / exposed handle                | `@ViewChild(TextInput)` (the component IS the handle) |
 
 `StyleSheet.create` works identically to a CSS class if you'd rather keep
-style objects inline — see the [Styling guide](/symbiote-native/docs/learn/styling/).
+style objects inline — see the [Styling guide](/docs/learn/styling/).

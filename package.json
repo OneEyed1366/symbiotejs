@@ -10,7 +10,8 @@
   "scripts": {
     "typecheck": "tsc --build",
     "typecheck:watch": "tsc --build --watch",
-    "build": "pnpm run typecheck && pnpm run fix-esm-extensions && pnpm --filter @symbiote-native/angular --filter @symbiote-native/slider run ng:build && pnpm run docs:build",
+    "prepublish-build": "pnpm run typecheck && pnpm run fix-esm-extensions && pnpm --filter @symbiote-native/angular --filter @symbiote-native/slider run ng:build",
+    "build": "pnpm run prepublish-build && pnpm run docs:build",
     "fix-esm-extensions": "node scripts/fix-esm-extensions.mjs adapters/react/build adapters/vue/build core/engine/build core/components/build core/test-utils/build",
     "test": "vitest run",
     "test:watch": "vitest",
@@ -38,6 +39,7 @@
     "globals": "catalog:",
     "husky": "catalog:",
     "lint-staged": "catalog:",
+    "pkg-pr-new": "catalog:",
     "prettier": "catalog:",
     "syncpack": "catalog:",
     "typescript": "catalog:",

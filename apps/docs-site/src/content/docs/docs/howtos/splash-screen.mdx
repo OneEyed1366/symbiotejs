@@ -1,0 +1,212 @@
+---
+title: 'How to: add a native splash screen'
+description: Generate the native launch-screen binary, wire it into the native project, then hide it from JS.
+---
+
+import { Aside, Tabs, TabItem } from '@astrojs/starlight/components';
+
+You want a native launch screen shown *before* JS ever runs, hidden once your app is ready. This
+is [`@symbiote-native/splash-screen`](/docs/packages/splash-screen/) — a wrapper
+over `react-native-bootsplash` reachable from React, Vue, and Angular alike.
+
+<Aside type="danger" title="This is two setups, not one">
+  Installing the JS package only gets you `hide()`/`useHideAnimation`. The launch screen itself —
+  the native drawable/storyboard shown at boot — has to be **generated** and **wired into your
+  native project files** first. Skipping either step means there is nothing native to hide, or
+  the hide call has no effect.
+</Aside>
+
+## 1. Install
+
+```sh
+npm install @symbiote-native/splash-screen
+```
+
+Only this package — never `react-native-bootsplash` directly. `@symbiote-native/splash-screen`
+depends on it and ships as the sole autolinked native proxy (`react-native.config.cjs` on
+Android, a podspec on iOS), so your app's `package.json` never names the underlying library.
+
+## 2. Generate the native binary (assets + native config)
+
+The package's `symbiote-splash-screen` bin is a thin passthrough to `react-native-bootsplash`'s
+own asset generator — same flags, same output, zero reimplementation:
+
+```sh
+npx symbiote-splash-screen generate ./logo.png \
+  --background=#0f1e30 \
+  --logo-width=100 \
+  --assets-output=assets/bootsplash
+```
+
+This single command writes, in one pass:
+
+- **`assets/bootsplash/manifest.json`** — the JS-side manifest `useHideAnimation` reads,
+  matching `IManifest` exactly:
+
+  ```json
+  {
+    "background": "#0f1e30",
+    "logo": { "width": 100, "height": 100 }
+  }
+  ```
+
+  plus the logo image at every density (`logo.png`, `logo@2x.png`, `logo@3x.png`, …).
+
+- **Android** — a `Theme.BootSplash`-derived style in `res/values/styles.xml` and a
+  `bootsplash_logo` drawable:
+
+  ```xml
+  <style name="BootTheme" parent="Theme.BootSplash">
+      <item name="bootSplashBackground">@color/bootsplash_background</item>
+      <item name="bootSplashLogo">@drawable/bootsplash_logo</item>
+      <item name="postBootSplashTheme">@style/AppTheme</item>
+  </style>
+  ```
+
+- **iOS** — a `BootSplash.storyboard` file alongside the app's existing storyboards.
+
+Re-run the same command (with `--brand`/`--dark-*` if you have a generator license key) any time
+the logo or colors change — it's idempotent, not a one-shot scaffold.
+
+<Aside type="note">
+  `--platforms`, `--flavor`, `--html`, `--plist` and the rest of the generator's flags all pass
+  through unchanged — run `npx symbiote-splash-screen generate --help` for the full list.
+</Aside>
+
+## 3. Wire the generated theme into your native entry points
+
+The generator does **not** do this part — it writes the theme/storyboard, but your app's own
+`MainActivity`/`AppDelegate`/`Info.plist` still have to reference them.
+
+### Android — `MainActivity.kt`
+
+Call `RNBootSplash.init` in `onCreate`, **before** `super.onCreate`:
+
+```kotlin
+import android.os.Bundle
+import com.zoontek.rnbootsplash.RNBootSplash
+
+class MainActivity : ReactActivity() {
+
+  override fun onCreate(savedInstanceState: Bundle?) {
+    RNBootSplash.init(this, R.style.BootTheme)
+    super.onCreate(savedInstanceState)
+  }
+
+  // ...
+}
+```
+
+### iOS — `AppDelegate.swift` + `Info.plist`
+
+Call `RNBootSplash.initWithStoryboard` from `customize(_:)`:
+
+```swift
+import RNBootSplash
+
+class ReactNativeDelegate: RCTDefaultReactNativeFactoryDelegate {
+  override func customize(_ rootView: RCTRootView) {
+    super.customize(rootView)
+    RNBootSplash.initWithStoryboard("BootSplash", rootView: rootView)
+  }
+}
+```
+
+Then point `Info.plist`'s launch-screen key at the generated storyboard:
+
+```diff
+  <key>UILaunchStoryboardName</key>
+- <string>LaunchScreen</string>
++ <string>BootSplash</string>
+```
+
+Run `pod install` inside `ios/` after adding the dependency — `RNBootSplash`'s native pod only
+links once CocoaPods has resolved it.
+
+<Aside type="caution" title="Verify the native binary is actually wired">
+  Skipping the Android `RNBootSplash.init` call is **not** silent in JS: calling `hide()` /
+  `isVisible()` before it runs throws `Error: react-native-bootsplash has not been initialized`
+  (a real, frequently-reported setup mistake — see
+  [zoontek/react-native-bootsplash#227](https://github.com/zoontek/react-native-bootsplash/issues/227)).
+  A missed iOS storyboard/`Info.plist` step, by contrast, IS silent — the screen just shows the
+  OS default (blank) or the wrong storyboard. Rebuild and run on a real device/simulator after
+  this step and confirm your logo/background shows at cold launch before moving on to step 4.
+</Aside>
+
+## 4. Hide it from JS once your app is ready
+
+With the native binary wired, `hide()` is the simple case — call it once your JS tree has
+mounted:
+
+<Tabs syncKey="framework">
+  <TabItem label="React">
+    ```tsx
+    import { useEffect } from 'react';
+    import { hide } from '@symbiote-native/splash-screen/react';
+
+    useEffect(() => {
+      hide();
+    }, []);
+    ```
+  </TabItem>
+  <TabItem label="Vue">
+    ```vue
+    <script setup lang="ts">
+    import { onMounted } from 'vue';
+    import { hide } from '@symbiote-native/splash-screen/vue';
+
+    onMounted(() => hide());
+    </script>
+    ```
+  </TabItem>
+  <TabItem label="Angular">
+    Called once from the root component's `ngOnInit`:
+
+    ```ts
+    import { Component, OnInit } from '@angular/core';
+    import { hide } from '@symbiote-native/splash-screen/angular';
+
+    @Component({ /* ... */ })
+    export class App implements OnInit {
+      ngOnInit(): void {
+        hide();
+      }
+    }
+    ```
+  </TabItem>
+</Tabs>
+
+If you want a fade transition gated on real readiness (layout committed + logo/brand images
+loaded + your own `ready` flag) instead of an immediate cut, reach for `useHideAnimation` —
+covered with full React/Vue/Angular examples on the
+[package page](/docs/packages/splash-screen/#the-animated-case-usehideanimation).
+
+## Known upstream gotchas
+
+These are `react-native-bootsplash` behaviors this wrapper inherits as-is — worth knowing before
+you file a bug against `@symbiote-native/splash-screen` itself:
+
+- **Dark mode follows the OS appearance setting, not an in-app theme toggle.** `darkBackground`/
+  `darkLogo` in the manifest are picked based on `getConstants().darkModeEnabled` — the *system*
+  dark-mode flag read before JS runs, at native paint time. If your app has its own theme
+  switcher independent of the OS setting, the native splash can briefly flash the *other* color
+  scheme for a frame before your JS-driven UI repaints
+  ([zoontek/react-native-bootsplash#743](https://github.com/zoontek/react-native-bootsplash/issues/743)).
+  There is no JS-side fix — it's a property of native paint happening before any JS runs.
+- **Android: relaunching via a notification can re-show, and occasionally get stuck on, the
+  boot theme**, with `isVisible()` reporting `false` and `hide()` having no visible effect in
+  that stuck state — an open upstream edge case, not something this wrapper can route around
+  ([zoontek/react-native-bootsplash#736](https://github.com/zoontek/react-native-bootsplash/issues/736)).
+  If you see a splash reappear only on notification-triggered launches, this is why.
+
+## Recap
+
+| Step | What | Where |
+| --- | --- | --- |
+| 1 | Install the wrapper | `package.json` |
+| 2 | Generate the binary (assets + native config) | `npx symbiote-splash-screen generate` |
+| 3 | Wire the generated theme/storyboard into native entry points | `MainActivity.kt`, `AppDelegate.swift`, `Info.plist` |
+| 4 | Hide it from JS | `hide()` / `useHideAnimation` in app code |
+
+Steps 1–3 are native, one-time setup per app; step 4 is the only part that lives in your
+framework code, and it's identical in shape across React, Vue, and Angular.

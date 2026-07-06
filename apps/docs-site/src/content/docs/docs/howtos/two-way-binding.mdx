@@ -3,61 +3,64 @@ title: 'How to: two-way bind a value'
 description: Vue v-model and Angular [(value)] on controlled components.
 ---
 
+import { Tabs, TabItem } from '@astrojs/starlight/components';
+
 You want a native control's value to stay in sync with a variable without
 wiring your own change handler by hand.
 
-## Vue — `v-model`
+<Tabs syncKey="framework">
+  <TabItem label="React">
+    React has no equivalent sugar. React's controlled-component idiom (`value` +
+    `onValueChange`, both explicit) is already the two-way binding — there is no
+    `[(value)]`/`v-model` shorthand to reach for, and none is planned.
+  </TabItem>
+  <TabItem label="Vue">
+    This is Vue's `v-model` sugar. `Switch`, `TextInput`, and `Slider` all support
+    it. `Switch`/`TextInput` come from `@symbiote-native/vue`; `Slider` ships from
+    the separate [`@symbiote-native/slider`](/docs/packages/slider/)
+    wrapper package (`@symbiote-native/slider/vue`), not the adapter's own barrel:
 
-`Switch`, `TextInput`, and `Slider` all support it. `Switch`/`TextInput` come
-from `@symbiote-native/vue`; `Slider` ships from the separate
-[`@symbiote-native/slider`](/symbiote-native/docs/packages/slider/) wrapper package
-(`@symbiote-native/slider/vue`), not the adapter's own barrel:
+    ```vue
+    <script setup lang="ts">
+    import { Switch, TextInput } from '@symbiote-native/vue';
+    import { Slider } from '@symbiote-native/slider/vue';
+    </script>
 
-```vue
-<script setup lang="ts">
-import { Switch, TextInput } from '@symbiote-native/vue';
-import { Slider } from '@symbiote-native/slider/vue';
-</script>
+    <template>
+      <Switch v-model="enabled" />
+      <TextInput v-model="name" />
+      <Slider v-model="volume" :minimum-value="0" :maximum-value="1" />
+    </template>
+    ```
 
-<template>
-  <Switch v-model="enabled" />
-  <TextInput v-model="name" />
-  <Slider v-model="volume" :minimum-value="0" :maximum-value="1" />
-</template>
-```
+    Bare `v-model="x"` compiles to prop `modelValue` + emit `update:modelValue`;
+    named `v-model:value="x"` compiles to prop `value` + emit `update:value`. Each
+    component resolves whichever arrived and emits both, so `:value`/`@value-
+    change` and `v-model` are interchangeable, never a choice you have to commit
+    to upfront.
+  </TabItem>
+  <TabItem label="Angular">
+    This is Angular's banana-in-a-box `[(value)]` two-way binding. The same three
+    components expose a matching `value` input + `valueChange` output, so
+    Angular's `[(value)]` sugar works unmodified — `Slider` again from the
+    separate `@symbiote-native/slider/angular` package:
 
-Bare `v-model="x"` compiles to prop `modelValue` + emit `update:modelValue`;
-named `v-model:value="x"` compiles to prop `value` + emit `update:value`. Each
-component resolves whichever arrived and emits both, so `:value`/`@value-
-change` and `v-model` are interchangeable, never a choice you have to commit
-to upfront.
+    ```ts
+    import { Switch, TextInput } from '@symbiote-native/angular';
+    import { Slider } from '@symbiote-native/slider/angular';
 
-## Angular — banana-in-a-box `[(value)]`
+    // template: `
+    //   <Switch [(value)]="enabled" />
+    //   <TextInput [(value)]="name" />
+    //   <Slider [(value)]="volume" [minimumValue]="0" [maximumValue]="1" />
+    // `
+    ```
 
-The same three components expose a matching `value` input +
-`valueChange` output, so Angular's `[(value)]` sugar works unmodified —
-`Slider` again from the separate `@symbiote-native/slider/angular` package:
-
-```ts
-import { Switch, TextInput } from '@symbiote-native/angular';
-import { Slider } from '@symbiote-native/slider/angular';
-
-// template: `
-//   <Switch [(value)]="enabled" />
-//   <TextInput [(value)]="name" />
-//   <Slider [(value)]="volume" [minimumValue]="0" [maximumValue]="1" />
-// `
-```
-
-This is not a special case wired per-component — it falls out of the RN prop
-name (`value`) already matching Angular's `@Output()` naming convention
-(`value` + `valueChange`), which is exactly what `[(x)]` expects.
-
-## React has no equivalent sugar
-
-React's controlled-component idiom (`value` + `onValueChange`, both explicit)
-is already the two-way binding — there is no `[(value)]`/`v-model` shorthand
-to reach for, and none is planned.
+    This is not a special case wired per-component — it falls out of the RN prop
+    name (`value`) already matching Angular's `@Output()` naming convention
+    (`value` + `valueChange`), which is exactly what `[(x)]` expects.
+  </TabItem>
+</Tabs>
 
 ## Why this isn't fragile
 
@@ -65,5 +68,5 @@ The controlled-write correction (native reports a change, you don't update
 `value`, SymbioteNative commands native back to the JS value) is shared logic in
 `@symbiote-native/components`, not reimplemented per adapter or per binding style —
 `v-model`/`[(value)]` are sugar on top of the same contract described in the
-[Events guide](/symbiote-native/docs/learn/events/#controlled-components) and the
-[Vue API reference](/symbiote-native/docs/api/vue/#model-bindings-v-model).
+[Events guide](/docs/learn/events/#controlled-components) and the
+[Vue API reference](/docs/api/vue/#model-bindings-v-model).

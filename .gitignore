@@ -4,6 +4,11 @@ build-ngc/
 dist/
 *.tsbuildinfo
 
+# Native source vendored into a package's proxy podspec at pod-install time (CocoaPods'
+# Dir.glob never crosses a symlink, so a pnpm .pnpm-store symlink breaks pointing
+# source_files at the nested lib in place — see symbiote-third-party-native-view skill).
+packages/*/.rn-*
+
 # iOS
 ios/Pods/
 ios/build/
@@ -25,13 +30,19 @@ DerivedData/
 # raw simulator screen recordings — convert to an optimized gif under assets/ instead
 *.mov
 
-# hidden folders are local-only (.docs, .claude, .notes, .vendors, …); dotfiles stay tracked
+# hidden folders are local-only (.docs, .notes, .vendors, …); dotfiles stay tracked
 .*/
-# ...except tooling config that must ship to every clone/CI run
+# ...except tooling config that must ship to every clone/CI run, and project Claude
+# skills/rules (.claude/skills, .claude/rules) — shared team knowledge, not personal scratch
 !.github/
 !.changeset/
 !.husky/
+!.claude/
 .husky/_/
+
+# ~/.gitignore_global excludes CLAUDE.md globally (personal-scratch default across all repos);
+# re-include it here since this repo's CLAUDE.md is checked-in project documentation, not scratch.
+!CLAUDE.md
 
 # ~/.gitignore_global has a bare `docs`/`docs/` rule (personal-scratch leftover, matches ANY
 # dir named "docs" at any depth) that would otherwise swallow the Astro Starlight content

@@ -4,6 +4,48 @@ on:
   push:
     branches:
       - master
+  workflow_dispatch:
+    inputs:
+      android:
+        description: '@symbiote-native/android'
+        type: boolean
+        default: false
+      angular:
+        description: '@symbiote-native/angular'
+        type: boolean
+        default: false
+      components:
+        description: '@symbiote-native/components'
+        type: boolean
+        default: false
+      css-parser:
+        description: '@symbiote-native/css-parser'
+        type: boolean
+        default: false
+      engine:
+        description: '@symbiote-native/engine'
+        type: boolean
+        default: false
+      react:
+        description: '@symbiote-native/react'
+        type: boolean
+        default: false
+      slider:
+        description: '@symbiote-native/slider'
+        type: boolean
+        default: false
+      splash-screen:
+        description: '@symbiote-native/splash-screen'
+        type: boolean
+        default: false
+      test-utils:
+        description: '@symbiote-native/test-utils'
+        type: boolean
+        default: false
+      vue:
+        description: '@symbiote-native/vue'
+        type: boolean
+        default: false
 
 concurrency: ${{ github.workflow }}-${{ github.ref }}
 
@@ -13,7 +55,17 @@ permissions:
   id-token: write
 
 jobs:
+  # Same three jobs ci.yml runs for fast PR feedback, re-run here so `needs:
+  # checks` below is a real gate on THIS workflow run — GitHub Actions has no
+  # cross-workflow `needs`, so gating release/publish-canary on ci.yml's own
+  # run isn't possible; calling the shared workflow again is the mechanism.
+  checks:
+    name: Checks
+    uses: ./.github/workflows/checks.yml
+
   release:
+    needs: checks
+    if: github.event_name == 'push'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -64,3 +116,55 @@ jobs:
             --target "${{ github.sha }}" \
             --title "Release ${DATE}" \
             --notes "$BODY"
+
+  # Manual, on-demand preview publish of whichever @symbiote-native/*
+  # packages you tick (whichever branch you run this workflow against),
+  # WITHOUT touching the real npm registry at all — pkg.pr.new hosts its own
+  # npm-compatible URLs, so nothing here is ever visible on npmjs.com, no
+  # dist-tag, no version bump, nothing to clean up. Installable in
+  # .examples/*/examples/* to e2e-test the REAL packed tarball (catches
+  # "files" allowlist bugs etc. that workspace:* linking can't reproduce)
+  # without touching the real release line. Requires the pkg.pr.new GitHub
+  # App installed on this repo (github.com/apps/pkg-pr-new).
+  publish-canary:
+    needs: checks
+    if: github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - run: pnpm install --frozen-lockfile
+
+      # Reads every ticked checkbox generically (no hardcoded package list to
+      # keep in sync) so a new per-package input just works.
+      - name: Determine selected packages
+        id: selected
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const inputs = context.payload.inputs || {};
+            const selected = Object.entries(inputs)
+              .filter(([, value]) => value === 'true' || value === true)
+              .map(([key]) => key);
+            if (selected.length === 0) {
+              core.setFailed('No package checkbox was ticked — select at least one package to publish a canary for.');
+              return;
+            }
+            core.setOutput('packages', selected.join(','));
+
+      - run: pnpm run prepublish-build
+
+      - name: Pack selected packages
+        id: pack
+        env:
+          CANARY_PACKAGES: ${{ steps.selected.outputs.packages }}
+        run: node scripts/pack-canary-tarballs.mjs
+
+      - name: Publish canary (pkg.pr.new)
+        run: pnpm exec pkg-pr-new publish "${{ steps.pack.outputs.dir }}/*.tgz"

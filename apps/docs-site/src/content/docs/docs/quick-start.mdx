@@ -3,6 +3,8 @@ title: Quick start
 description: Run the existing SymbioteNative examples and inspect the first native app driven through the shared engine.
 ---
 
+import { Tabs, TabItem } from '@astrojs/starlight/components';
+
 :::note Run from source
 SymbioteNative is a renderer project under active development. The quickest way to try
 it today is to run one of the repository examples instead of starting from a
@@ -24,58 +26,66 @@ From the repository root:
 pnpm install
 ```
 
-## Run the React canary
+## Run an example
 
-```sh
-cd examples/react
-pnpm ios
-```
+<Tabs syncKey="framework">
+  <TabItem label="React">
+    Run the React canary:
 
-For Android:
+    ```sh
+    cd examples/react
+    pnpm ios
+    ```
 
-```sh
-cd examples/react
-pnpm android
-```
+    For Android:
 
-The React example is the reference canary: it drives the SymbioteNative engine through
-a React reconciler in mutation mode, then the engine commits to Fabric.
+    ```sh
+    cd examples/react
+    pnpm android
+    ```
 
-## Run the Vue example
+    The React example is the reference canary: it drives the SymbioteNative engine through
+    a React reconciler in mutation mode, then the engine commits to Fabric.
+  </TabItem>
+  <TabItem label="Vue">
+    Run the Vue example:
 
-```sh
-cd examples/vue-sfc
-pnpm ios
-```
+    ```sh
+    cd examples/vue-sfc
+    pnpm ios
+    ```
 
-or, for the TSX-flavored Vue example:
+    or, for the TSX-flavored Vue example:
 
-```sh
-cd examples/vue-tsx
-pnpm ios
-```
+    ```sh
+    cd examples/vue-tsx
+    pnpm ios
+    ```
 
-The Vue examples prove the same native engine can be driven by Vue's renderer
-operations rather than React's host config.
+    The Vue examples prove the same native engine can be driven by Vue's renderer
+    operations rather than React's host config.
+  </TabItem>
+  <TabItem label="Angular">
+    Run the Angular example:
 
-## Run the Angular example
+    ```sh
+    cd examples/angular
+    pnpm ios
+    ```
 
-```sh
-cd examples/angular
-pnpm ios
-```
+    For Android:
 
-For Android:
+    ```sh
+    cd examples/angular
+    pnpm android
+    ```
 
-```sh
-cd examples/angular
-pnpm android
-```
-
-The Angular example proves the same native engine driven a third way: a custom
-`Renderer2`/`RendererFactory2` — Angular's own framework-agnostic rendering
-seam — maps Angular's operations onto the engine mutation API, with a
-DOM-less bootstrap (no `platform-browser`, no zone.js).
+    The Angular example proves the same native engine driven a third way: a custom
+    `Renderer2`/`RendererFactory2` — Angular's own framework-agnostic rendering
+    seam — maps Angular's operations onto the engine mutation API, with a
+    DOM-less bootstrap (no `platform-browser`, no zone.js).
+  </TabItem>
+</Tabs>
 
 ## What to look for
 
@@ -87,4 +97,4 @@ important part is the route it takes:
 3. The engine translates mutations into Fabric's persistent clone-on-write model.
 4. React Native Fabric updates real native views.
 
-Next, read [how it works](/symbiote-native/docs/how-it-works/) to understand the render pipeline.
+Next, read [how it works](/docs/how-it-works/) to understand the render pipeline.

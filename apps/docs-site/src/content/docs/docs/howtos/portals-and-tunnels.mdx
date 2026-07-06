@@ -3,31 +3,49 @@ title: 'How to: share content across surfaces'
 description: createPortal/Teleport for same-surface content, createTunnel for cross-surface.
 ---
 
-import { Aside } from '@astrojs/starlight/components';
+import { Aside, Tabs, TabItem } from '@astrojs/starlight/components';
 
 You want to render content somewhere other than its own JSX/template
 position — a toast, an overlay — and need to know which mechanism applies.
 
-## Same surface: `createPortal` (React) / `Teleport` (Vue)
+## Same surface: `createPortal` (React) / `Teleport` (Vue) / `*portal` (Angular)
 
 Both move content to an already-mounted node within the **same** mounted
 surface as the call site:
 
-```tsx
-// React
-const [overlay, setOverlay] = useState<IHostInstance | null>(null);
-// ...
-<View ref={setOverlay} />
-{overlay ? createPortal(<Text>ported in</Text>, overlay) : null}
-```
+<Tabs syncKey="framework">
+  <TabItem label="React">
+    ```tsx
+    // React
+    const [overlay, setOverlay] = useState<IHostInstance | null>(null);
+    // ...
+    <View ref={setOverlay} />
+    {overlay ? createPortal(<Text>ported in</Text>, overlay) : null}
+    ```
+  </TabItem>
+  <TabItem label="Vue">
+    ```vue
+    <!-- Vue -->
+    <Teleport v-if="toastVisible && overlayHost" :to="overlayHost">
+      <Text>Ported via Teleport</Text>
+    </Teleport>
+    <View ref="overlayHost" />
+    ```
+  </TabItem>
+  <TabItem label="Angular">
+    Angular has no runtime component synthesis (no JIT under Metro/AOT), so `createPortal`
+    isn't a factory here — `*portal` is a structural directive instead, the same idiom as
+    `*ngIf`, paired with a `portalOutlet` marking the destination:
 
-```vue
-<!-- Vue -->
-<Teleport v-if="toastVisible && overlayHost" :to="overlayHost">
-  <Text>Ported via Teleport</Text>
-</Teleport>
-<View ref="overlayHost" />
-```
+    ```html
+    <!-- Angular -->
+    <View portalOutlet #overlayHost="portalOutlet"></View>
+    @if (toastVisible) {
+      <View *portal="overlayHost"><Text>Ported via *portal</Text></View>
+    }
+    ```
+  </TabItem>
+</Tabs>
 
 Use a state/ref callback (`useState`, not `useRef`, on React) so the target
 resolves once it actually commits — a plain ref is `null` on the entire first
@@ -47,21 +65,43 @@ render.
 For content that must reach a genuinely different, separately-mounted
 surface, use `createTunnel()` instead — a shared store, not a node reference:
 
-```tsx
-// React — module-level singleton, importable from any surface
-export const overlayTunnel = createTunnel();
+<Tabs syncKey="framework">
+  <TabItem label="React">
+    ```tsx
+    // React — module-level singleton, importable from any surface
+    export const overlayTunnel = createTunnel();
 
-// wherever it should paint:
-<overlayTunnel.Out />
-// wherever the content originates, any surface:
-<overlayTunnel.In><ToastCard /></overlayTunnel.In>
-```
+    // wherever it should paint:
+    <overlayTunnel.Out />
+    // wherever the content originates, any surface:
+    <overlayTunnel.In><ToastCard /></overlayTunnel.In>
+    ```
+  </TabItem>
+  <TabItem label="Vue">
+    ```vue
+    <!-- Vue -->
+    <tunnel.Out />
+    <tunnel.In><Text>Ported via createTunnel</Text></tunnel.In>
+    ```
+  </TabItem>
+  <TabItem label="Angular">
+    Same no-JIT constraint as `*portal` above — `TunnelInDirective`/`TunnelOut` are one static,
+    pre-authored pair parameterized by the store `createTunnel()` returns, not a per-call
+    factory output:
 
-```vue
-<!-- Vue -->
-<tunnel.Out />
-<tunnel.In><Text>Ported via createTunnel</Text></tunnel.In>
-```
+    ```ts
+    // Angular — module-level singleton, importable from any component
+    export const overlayTunnel = createTunnel();
+    ```
+
+    ```html
+    @if (toastVisible) {
+      <View *tunnelIn="overlayTunnel"><Text>Ported via createTunnel</Text></View>
+    }
+    <tunnel-out [tunnel]="overlayTunnel" />
+    ```
+  </TabItem>
+</Tabs>
 
 `In`/`Out` are components, not hooks/composables — an earlier hook-based
 React version caused a genuine infinite render loop (the shared store's

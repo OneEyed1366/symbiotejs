@@ -3,7 +3,7 @@ title: Slider
 description: A native slider wrapper over @react-native-community/slider, shared by every adapter.
 ---
 
-import { Aside } from '@astrojs/starlight/components';
+import { Aside, Tabs, TabItem } from '@astrojs/starlight/components';
 
 `@symbiote-native/slider` wraps the `RNCSlider` native view from
 [`@react-native-community/slider`](https://github.com/callstack/react-native-slider) so every
@@ -35,7 +35,8 @@ as a workspace dependency the same way the examples do.
   `@react-native-community/slider` ships a React component (`Slider.tsx`) built on hooks. Never
   import that component directly in a non-React adapter — it throws with `Cannot read property
   'useState' of null` because the React dispatcher is absent. Always import from
-  `@symbiote-native/slider/react` or `@symbiote-native/slider/vue`, never from the community package itself.
+  `@symbiote-native/slider/react`, `@symbiote-native/slider/vue`, or `@symbiote-native/slider/angular`,
+  never from the community package itself.
 </Aside>
 
 ## Usage
@@ -45,83 +46,83 @@ as a workspace dependency the same way the examples do.
   snap back to `value` while the user is dragging, only after `onSlidingComplete`.
 </Aside>
 
-### React
+<Tabs syncKey="framework">
+  <TabItem label="React">
+    ```tsx
+    import { useState } from 'react';
+    import { Slider } from '@symbiote-native/slider/react';
 
-```tsx
-import { useState } from 'react';
-import { Slider } from '@symbiote-native/slider/react';
+    export default function VolumeControl() {
+      const [volume, setVolume] = useState(0.5);
 
-export default function VolumeControl() {
-  const [volume, setVolume] = useState(0.5);
+      return (
+        <Slider
+          value={volume}
+          minimumValue={0}
+          maximumValue={1}
+          step={0.05}
+          onValueChange={setVolume}
+          minimumTrackTintColor="#61dafb"
+          thumbTintColor="#61dafb"
+        />
+      );
+    }
+    ```
+  </TabItem>
+  <TabItem label="Vue">
+    ```vue
+    <script setup lang="ts">
+    import { ref } from 'vue';
+    import { Slider } from '@symbiote-native/slider/vue';
 
-  return (
-    <Slider
-      value={volume}
-      minimumValue={0}
-      maximumValue={1}
-      step={0.05}
-      onValueChange={setVolume}
-      minimumTrackTintColor="#61dafb"
-      thumbTintColor="#61dafb"
-    />
-  );
-}
-```
+    const volume = ref(0.5);
+    </script>
 
-### Vue
+    <template>
+      <Slider
+        v-model="volume"
+        :minimum-value="0"
+        :maximum-value="1"
+        :step="0.05"
+        minimum-track-tint-color="#42d392"
+        thumb-tint-color="#42d392"
+      />
+    </template>
+    ```
 
-```vue
-<script setup lang="ts">
-import { ref } from 'vue';
-import { Slider } from '@symbiote-native/slider/vue';
+    `v-model` is sugar over the same `value`/`@value-change` pair — write
+    `:value="volume" @value-change="volume = $event"` instead if you need the
+    explicit form. See the [Vue API reference](/docs/api/vue/#model-bindings-v-model).
+  </TabItem>
+  <TabItem label="Angular">
+    ```ts
+    import { Component, signal } from '@angular/core';
+    import { Slider } from '@symbiote-native/slider/angular';
 
-const volume = ref(0.5);
-</script>
+    @Component({
+      standalone: true,
+      imports: [Slider],
+      template: `
+        <Slider
+          [(value)]="volume"
+          [minimumValue]="0"
+          [maximumValue]="1"
+          [step]="0.05"
+          minimumTrackTintColor="#dd0031"
+          thumbTintColor="#dd0031"
+        />
+      `,
+    })
+    export class VolumeControl {
+      readonly volume = signal(0.5);
+    }
+    ```
 
-<template>
-  <Slider
-    v-model="volume"
-    :minimum-value="0"
-    :maximum-value="1"
-    :step="0.05"
-    minimum-track-tint-color="#42d392"
-    thumb-tint-color="#42d392"
-  />
-</template>
-```
-
-`v-model` is sugar over the same `value`/`@value-change` pair — write
-`:value="volume" @value-change="volume = $event"` instead if you need the
-explicit form. See the [Vue API reference](/symbiote-native/docs/api/vue/#model-bindings-v-model).
-
-### Angular
-
-```ts
-import { Component, signal } from '@angular/core';
-import { Slider } from '@symbiote-native/slider/angular';
-
-@Component({
-  standalone: true,
-  imports: [Slider],
-  template: `
-    <Slider
-      [(value)]="volume"
-      [minimumValue]="0"
-      [maximumValue]="1"
-      [step]="0.05"
-      minimumTrackTintColor="#dd0031"
-      thumbTintColor="#dd0031"
-    />
-  `,
-})
-export class VolumeControl {
-  readonly volume = signal(0.5);
-}
-```
-
-`[(value)]` is Angular's banana-in-a-box two-way binding over the same
-`value` input + `valueChange` output pair — write `[value]="volume()"
-(valueChange)="volume.set($event)"` instead if you need the explicit form.
+    `[(value)]` is Angular's banana-in-a-box two-way binding over the same
+    `value` input + `valueChange` output pair — write `[value]="volume()"
+    (valueChange)="volume.set($event)"` instead if you need the explicit form.
+  </TabItem>
+</Tabs>
 
 ### Custom step markers
 
@@ -141,29 +142,31 @@ pass a `StepMarker` (React) or fill the `#stepMarker` scoped slot (Vue) — both
 />
 ```
 
-## Props
+## API
+
+### Props
 
 Every prop below is framework-agnostic and shared verbatim by every adapter, **except**
 `StepMarker`, which is per-adapter because it returns a framework element (a React component vs
-a Vue scoped slot) — see [shared vs framework-specific](/symbiote-native/docs/api/components/#shared-vs-framework-specific).
+a Vue scoped slot) — see [shared vs framework-specific](/docs/api/components/#shared-vs-framework-specific).
 
-| Prop | Type | Default | Notes |
+| Prop | Type | Default | Description |
 | --- | --- | --- | --- |
-| `value` | `number` | `0` | Uncontrolled during a drag |
-| `minimumValue` / `maximumValue` | `number` | `0` / `1` | |
-| `step` | `number` | `0` | `0` draws implicit steps at native resolution (iOS 1000, Android 128) |
-| `lowerLimit` / `upperLimit` | `number` | unbounded | Clamp the draggable range without changing `minimumValue`/`maximumValue` |
-| `minimumTrackTintColor` / `maximumTrackTintColor` / `thumbTintColor` | `IColorValue` | native default | |
-| `thumbImage` / `minimumTrackImage` / `maximumTrackImage` / `trackImage` | `IImageSourceProp` | — | |
-| `thumbSize` | `number` | native default | |
-| `disabled` | `boolean` | `false` | |
-| `inverted` | `boolean` | `false` | |
-| `tapToSeek` | `boolean` | `false` | |
-| `vertical` | `boolean` | `false` | |
+| `value` | `number` | `0` | The slider's position. Uncontrolled during a drag — it doesn't snap back to `value` until `onSlidingComplete` fires |
+| `minimumValue` / `maximumValue` | `number` | `0` / `1` | Lower/upper bound of the draggable range |
+| `step` | `number` | `0` | Snaps the thumb to increments of this size; `0` draws implicit steps at native resolution (iOS 1000, Android 128) |
+| `lowerLimit` / `upperLimit` | `number` | unbounded | Clamps the draggable range without changing `minimumValue`/`maximumValue` |
+| `minimumTrackTintColor` / `maximumTrackTintColor` / `thumbTintColor` | `IColorValue` | native default | Color of the track before/after the thumb, and of the thumb itself |
+| `thumbImage` / `minimumTrackImage` / `maximumTrackImage` / `trackImage` | `IImageSourceProp` | — | Replaces the corresponding native default image |
+| `thumbSize` | `number` | native default | Diameter of the thumb, in points |
+| `disabled` | `boolean` | `false` | Disables dragging and dims the control to the native disabled look |
+| `inverted` | `boolean` | `false` | Reverses the direction the track fills in |
+| `tapToSeek` | `boolean` | `false` | Tapping anywhere on the track jumps the thumb there, instead of requiring a drag |
+| `vertical` | `boolean` | `false` | Renders the slider top-to-bottom instead of left-to-right |
 | `renderStepNumber` | `boolean` | `false` | Draws the built-in step-number indicator |
-| `StepMarker` (React) / `#stepMarker` (Vue) | render prop / scoped slot | — | Custom per-step marker |
+| `StepMarker` (React) / `#stepMarker` (Vue) | render prop / scoped slot | — | Custom per-step marker, replacing `renderStepNumber`'s built-in dot |
 | `onValueChange` | `(value: number) => void` | — | Fires continuously while dragging |
-| `onSlidingStart` / `onSlidingComplete` | `(value: number) => void` | — | |
+| `onSlidingStart` / `onSlidingComplete` | `(value: number) => void` | — | Fires once when a drag begins/ends |
 | accessibility / `aria-*` / `testID` / `style` | — | — | Pass through to the native node unchanged |
 
 ## How the wrapper works
@@ -179,12 +182,13 @@ packages/slider/src/
 ├── core/            # framework-agnostic: state folds, render-slider, render-steps-indicator
 ├── register.ts       # side-effect: registers RNCSlider's ViewConfig fallback + event/color processors
 ├── react/            # React lifecycle (hooks) + descriptorToReact bridge
-└── vue/               # Vue lifecycle (refs/emits) + descriptorToVue bridge
+├── vue/               # Vue lifecycle (refs/emits) + descriptorToVue bridge
+└── angular/           # Angular lifecycle (@Output EventEmitters) + DescriptorOutlet bridge
 ```
 
-Both adapters import `../register` first (never the library's `Slider.tsx`), then call into the
+All three adapters import `../register` first (never the library's `Slider.tsx`), then call into the
 same `core` render — the same logic/view/lifecycle split as every other SymbioteNative component (see
-[how it works](/symbiote-native/docs/how-it-works/)). Wrapping a different third-party native view follows
+[how it works](/docs/how-it-works/)). Wrapping a different third-party native view follows
 this same recipe: register its `ViewConfig` fallback and processors as a side effect, then implement the
 shared `core` render once and add a thin per-framework lifecycle bridge around it — never the library's
 own React component.

@@ -3,36 +3,42 @@ title: 'How to: handle press/change events'
 description: Wiring the same native event across React, Vue, and Angular.
 ---
 
-import { Aside } from '@astrojs/starlight/components';
+import { Aside, Tabs, TabItem } from '@astrojs/starlight/components';
 
 You need to react to a native event (a tap, a value change), and the public
 shape of that event differs by framework.
 
-## React — callback props
+<Tabs syncKey="framework">
+  <TabItem label="React">
+    Callback props — the classic imperative style.
 
-```tsx
-<Pressable onPress={() => setCount(count + 1)} />
-<Switch value={enabled} onValueChange={setEnabled} />
-<TextInput value={name} onValueChange={setName} />
-```
+    ```tsx
+    <Pressable onPress={() => setCount(count + 1)} />
+    <Switch value={enabled} onValueChange={setEnabled} />
+    <TextInput value={name} onValueChange={setName} />
+    ```
+  </TabItem>
+  <TabItem label="Vue">
+    Typed emits, or `v-model` sugar on controlled components.
 
-## Vue — typed emits, or `v-model` on controlled components
+    ```vue
+    <Pressable @press="count++" />
+    <Switch v-model="enabled" />
+    <TextInput v-model="name" />
+    ```
+  </TabItem>
+  <TabItem label="Angular">
+    Real `@Output()` `EventEmitter`s carry the event across the boundary.
 
-```vue
-<Pressable @press="count++" />
-<Switch v-model="enabled" />
-<TextInput v-model="name" />
-```
-
-## Angular — real `@Output()` `EventEmitter`s
-
-```ts
-template: `
-  <Pressable (press)="count = count + 1" />
-  <Switch [value]="enabled" (valueChange)="setEnabled($event)" />
-  <TextInput [value]="name" (valueChange)="setName($event)" />
-`
-```
+    ```ts
+    template: `
+      <Pressable (press)="count = count + 1" />
+      <Switch [value]="enabled" (valueChange)="setEnabled($event)" />
+      <TextInput [value]="name" (valueChange)="setName($event)" />
+    `
+    ```
+  </TabItem>
+</Tabs>
 
 <Aside type="caution" title="Scroll events are the one exception">
   `onScroll`/`onScrollBeginDrag`/`onScrollEndDrag`/`onMomentumScrollBegin`/
@@ -50,5 +56,5 @@ values, so Angular keeps `(valueChange)` text-only and adds a separate
 `(change)` output for the raw event.
 
 For the full event-naming table and why a given event became a Vue emit vs
-stayed a raw passthrough listener, see the [Events guide](/symbiote-native/docs/learn/events/)
-and the [Components API](/symbiote-native/docs/api/components/).
+stayed a raw passthrough listener, see the [Events guide](/docs/learn/events/)
+and the [Components API](/docs/api/components/).

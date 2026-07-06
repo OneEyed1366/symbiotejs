@@ -3,7 +3,7 @@ title: Events
 description: Understand how native events surface as React callbacks, Vue emits/v-model, and Angular bindings.
 ---
 
-import { Aside } from '@astrojs/starlight/components';
+import { Aside, Tabs, TabItem } from '@astrojs/starlight/components';
 
 Native Fabric events come back to the engine. Each adapter then exposes them in
 that framework's idiom: React callback props, Vue typed emits (plus `v-model`
@@ -13,32 +13,36 @@ one permanent exception, the scroll-family events, which stay callback inputs
 
 ## Same event, different framework shape
 
-React:
+<Tabs syncKey="framework">
+  <TabItem label="React">
+    ```tsx
+    <Switch value={enabled} onValueChange={setEnabled} />
+    <TextInput value={name} onValueChange={setName} />
+    <Pressable onPress={() => setCount(count + 1)} />
+    ```
+  </TabItem>
+  <TabItem label="Vue">
+    Vue uses typed emits, or `v-model` on the controlled components that support it:
 
-```tsx
-<Switch value={enabled} onValueChange={setEnabled} />
-<TextInput value={name} onValueChange={setName} />
-<Pressable onPress={() => setCount(count + 1)} />
-```
+    ```vue
+    <Switch v-model="enabled" />
+    <TextInput v-model="name" />
+    <Pressable @press="count++" />
+    ```
+  </TabItem>
+  <TabItem label="Angular">
+    Angular uses real `@Output()` `EventEmitter`s everywhere, including `Switch` and
+    `TextInput`:
 
-Vue — typed emits, or `v-model` on the controlled components that support it:
-
-```vue
-<Switch v-model="enabled" />
-<TextInput v-model="name" />
-<Pressable @press="count++" />
-```
-
-Angular — real `@Output()` `EventEmitter`s everywhere, including `Switch` and
-`TextInput`:
-
-```ts
-template: `
-  <Switch [value]="enabled" (valueChange)="setEnabled($event)" />
-  <TextInput [value]="name" (valueChange)="setName($event)" />
-  <Pressable (press)="count = count + 1" />
-`
-```
+    ```ts
+    template: `
+      <Switch [value]="enabled" (valueChange)="setEnabled($event)" />
+      <TextInput [value]="name" (valueChange)="setName($event)" />
+      <Pressable (press)="count = count + 1" />
+    `
+    ```
+  </TabItem>
+</Tabs>
 
 The payload is the same concept. The public API is framework-shaped.
 
@@ -51,7 +55,7 @@ The payload is the same concept. The public API is framework-shaped.
   carry either a plain function or the return value of `Animated.event(...)`,
   a native-driver marker for native-driven scroll animations, and
   `@Output()` can only bind a template listener expression, not an arbitrary
-  value. See the [Angular API reference](/symbiote-native/docs/api/angular/) for the exact
+  value. See the [Angular API reference](/docs/api/angular/) for the exact
   split.
 </Aside>
 
