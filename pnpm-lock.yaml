@@ -92,7 +92,7 @@ catalogs:
       version: 2.0.1
     '@symbiote-native/test-utils':
       specifier: latest
-      version: 0.1.2
+      version: 0.1.4
     '@symbiote-native/vue':
       specifier: latest
       version: 0.3.1
@@ -1004,7 +1004,7 @@ importers:
         version: 0.2.0(@babel/core@7.29.7)(typescript@6.0.3)
       '@symbiote-native/test-utils':
         specifier: 'catalog:'
-        version: 0.1.2
+        version: 0.1.4
       '@types/jest':
         specifier: 'catalog:'
         version: 29.5.14
@@ -1186,7 +1186,7 @@ importers:
         version: 0.2.0(@babel/core@7.29.7)(typescript@6.0.3)
       '@symbiote-native/test-utils':
         specifier: 'catalog:'
-        version: 0.1.2
+        version: 0.1.4
       '@types/jest':
         specifier: 'catalog:'
         version: 29.5.14
@@ -3393,8 +3393,8 @@ packages:
       vue:
         optional: true
 
-  '@symbiote-native/test-utils@0.1.2':
-    resolution: {integrity: sha512-p6yxMKDMOjgaULq0btnjGcukoL9iLRhm5BRTLJXSRADPjEnUDB1pbkN13cAZN/0RuFAor9z7HTNqjyiMKjgDmQ==}
+  '@symbiote-native/test-utils@0.1.4':
+    resolution: {integrity: sha512-sPrD+SAlCKMNsPI2v0qp8BkXCFPRDbuEsc/jHD1nLfHiHB15ldjApxH5H/jAFtcLml88mT82ToX0B+3hga4Zkg==}
 
   '@symbiote-native/vue@0.3.1':
     resolution: {integrity: sha512-hYQe62IbxvnvRBTRclOQozNtVxBEnCUngHlFcy/YSyk741kwQB4sSt3vZCmw00DEfR3zIYKSl18K3pk+q03xjA==}
@@ -10870,7 +10870,7 @@ snapshots:
       react: 19.2.3
       vue: 3.5.39(typescript@6.0.3)
 
-  '@symbiote-native/test-utils@0.1.2': {}
+  '@symbiote-native/test-utils@0.1.4': {}
 
   '@symbiote-native/vue@0.3.1(@babel/core@7.29.7)(react-native@0.86.0(@babel/core@7.29.7)(@react-native-community/cli@20.1.0(typescript@6.0.3))(@react-native/metro-config@0.86.0(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3))(typescript@6.0.3)(vue@3.5.39(typescript@6.0.3))':
     dependencies:
