@@ -167,4 +167,4 @@ jobs:
         run: node scripts/pack-canary-tarballs.mjs
 
       - name: Publish canary (pkg.pr.new)
-        run: pnpm exec pkg-pr-new publish "${{ steps.pack.outputs.dir }}/*.tgz"
+        run: pnpm exec pkg-pr-new publish ${{ steps.pack.outputs.dir }}/*.tgz
