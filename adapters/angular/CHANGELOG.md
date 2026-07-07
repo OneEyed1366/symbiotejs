@@ -1,5 +1,13 @@
 # @symbiote-native/angular
 
+## 0.3.3
+
+### Patch Changes
+
+- Updated dependencies [706e52f]
+  - @symbiote-native/components@0.2.3
+  - @symbiote-native/engine@0.1.4
+
 ## 0.3.2
 
 ### Patch Changes
