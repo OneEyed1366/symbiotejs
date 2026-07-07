@@ -58,6 +58,7 @@ import {
 // renders the native leaf through the engine, so the SAME slider works on Vue/Angular too. App
 // code and the app manifest name only @symbiote-native/slider; the native package is the wrapper's dep.
 import { Slider } from '@symbiote-native/slider/react';
+import { hide } from '@symbiote-native/splash-screen/react';
 import './App.css';
 
 const CHIP_WIDTH = 72;
@@ -915,6 +916,11 @@ function App() {
   // header opacity/translateY are driven without a JS frame per scroll tick.
   const parityScrollY = useRef(new Animated.Value(0)).current;
   const [kavEnabled, setKavEnabled] = useState(true);
+
+  // Native launch screen is shown by the OS before any JS runs; hide it once mounted.
+  useEffect(() => {
+    hide();
+  }, []);
 
   // Tier B runtime modules, read live: the hooks pull from Dimensions/Appearance,
   // appState tracks foreground/background through AppState's device events.

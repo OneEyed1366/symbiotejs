@@ -72,6 +72,7 @@ import {
 // dispatcher). The engine derives RNCSlider's events + tint processors from the library's
 // ViewConfig; the same wrapper backs the React canary. App code names only @symbiote-native/*.
 import { Slider } from '@symbiote-native/slider/vue';
+import { hide } from '@symbiote-native/splash-screen/vue';
 
 const CHIP_WIDTH = 72;
 const CHIP_GAP = 12;
@@ -962,6 +963,9 @@ const ParityDemo = defineComponent({
 const App = defineComponent({
   name: 'App',
   setup() {
+    // Native launch screen is shown by the OS before any JS runs; hide it once mounted.
+    onMounted(() => hide());
+
     const count = ref(0);
     const name = ref('');
     const spinning = ref(true);

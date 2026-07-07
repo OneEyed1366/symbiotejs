@@ -55,6 +55,7 @@ import {
 // A third-party native view via symbiote's own wrapper (not the library's React component); the
 // engine derives RNCSlider's events + tint processors from its ViewConfig. Same wrapper as React.
 import { Slider } from '@symbiote-native/slider/vue';
+import { hide } from '@symbiote-native/splash-screen/vue';
 
 import AnimatedDemo from './components/AnimatedDemo.vue';
 import AnimatedParityDemo from './components/AnimatedParityDemo.vue';
@@ -148,6 +149,9 @@ const scrollRows = Array.from({ length: 6 }, (_value, index) => index);
 const window = useWindowDimensions();
 const colorScheme = useColorScheme();
 const appState = ref<string>(AppState.currentState ?? 'unknown');
+
+// Native launch screen is shown by the OS before any JS runs; hide it once mounted.
+onMounted(() => hide());
 
 // native -> JS: the device hub pushes keyboard frames; we read the height live.
 let keyboardSubs: Array<{ remove(): void }> = [];
