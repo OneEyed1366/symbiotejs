@@ -30,6 +30,7 @@
     "src",
     "build",
     "build-ngc",
+    "codegen-specs",
     "react-native.config.cjs",
     "symbiote-slider.podspec"
   ],
@@ -61,7 +62,7 @@
   "codegenConfig": {
     "name": "RNCSlider",
     "type": "components",
-    "jsSrcsDir": "node_modules/@react-native-community/slider/src",
+    "jsSrcsDir": "codegen-specs",
     "android": {
       "javaPackageName": "com.reactnativecommunity.slider"
     },
@@ -72,7 +73,7 @@
     }
   },
   "scripts": {
-    "prepare": "pnpm run ng:build",
+    "prepare": "node vendor-codegen-specs.cjs && pnpm run ng:build",
     "typecheck": "tsc --build",
     "ng:build": "ngc -p tsconfig.angular.json",
     "format": "prettier --write \"src/**/*.{ts,tsx}\""
