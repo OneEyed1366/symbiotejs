@@ -3,7 +3,10 @@ require 'fileutils'
 
 package = JSON.parse(File.read(File.join(__dir__, 'package.json')))
 
-native_splash_screen_package_json = `node --print "require.resolve('react-native-bootsplash/package.json', { paths: [process.argv[1]] })" "#{__dir__}"`.strip
+# __dir__ is the pod's app-facing node_modules symlink under pnpm; react-native-bootsplash
+# only sits as a flat sibling in the REAL .pnpm store directory, so resolution must walk up
+# from the realpath, not the symlink (walking up from the symlink never reaches it).
+native_splash_screen_package_json = `node --print "require.resolve('react-native-bootsplash/package.json', { paths: [process.argv[1]] })" "#{File.realpath(__dir__)}"`.strip
 native_splash_screen_root = File.dirname(native_splash_screen_package_json)
 
 # CocoaPods' file glob never crosses a symlink (Sandbox::PathList#read_file_system walks the
