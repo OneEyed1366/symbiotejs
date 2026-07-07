@@ -246,27 +246,50 @@ Mechanism:
    `'true'` — so adding an 11th package later means adding its
    workflow_dispatch input, NOT touching this step's logic.
 2. `pnpm run prepublish-build`.
-3. **`scripts/pack-canary-tarballs.mjs`** (+ `scripts/lib/publishable-
+3. **`scripts/select-canary-dirs.mjs`** (+ `scripts/lib/publishable-
    packages.mjs`'s `publishablePackageEntries()`, same package-discovery loop
-   `trust-publishers.mjs` uses) — filters to the selected short names (env
-   `CANARY_PACKAGES`, comma-separated) and runs `pnpm pack --pack-destination
-   <tmp dir>` per package into ONE shared throwaway directory. Deliberately
-   `pnpm pack`, not `npm pack` or letting pkg.pr.new pack it internally:
-   **plain `npm pack` does NOT apply a package's `publishConfig` override**
-   (only pnpm does — verified via `tar -xzf` on the resulting tarball and
-   inspecting `package.json`), and this repo's entire publish mechanism (see
-   "The mechanism" at the top of this doc) depends on that swap happening.
-   Getting this wrong would silently ship a tarball whose `main`/`exports`
-   still point at `src/index.ts` — installable, but broken for any consumer
-   without a TS-aware bundler.
-4. `pnpm exec pkg-pr-new publish "<tmp dir>/*.tgz"` — pkg.pr.new's
-   documented **prebuilt-tarball mode**: tarballs passed this way are
-   "uploaded as-is: pkg.pr.new will not repack them," which is exactly what
-   we need since step 3 already produced the correct one.
+   `trust-publishers.mjs` uses) — resolves the selected short names (env
+   `CANARY_PACKAGES`, comma-separated) to their package DIRECTORIES and writes
+   them space-separated to `GITHUB_OUTPUT` (`dirs=…`). It does NOT pack
+   anything — pkg.pr.new packs the dirs itself in step 4.
+4. `pnpm exec pkg-pr-new publish --pnpm <dir> <dir> …` — pass DIRECTORIES, and
+   the **`--pnpm` flag is mandatory**. Verified against the installed
+   `pkg-pr-new@0.0.75` bundle source (2026-07): its glob resolves with
+   `onlyDirectories: true` (it NEVER matches a prebuilt `.tgz` — the
+   "prebuilt-tarball mode" is an UNRELEASED main-branch feature, absent from
+   every published version), and it packs each dir itself defaulting to
+   `npm pack` unless `--pnpm` is passed. Plain `npm pack` does NOT apply a
+   package's `publishConfig` override (only pnpm does); without `--pnpm` the
+   tarball's `main`/`exports` still point at `src/index.ts` — installable, but
+   broken for any consumer without a TS-aware bundler. (History: an earlier
+   `scripts/pack-canary-tarballs.mjs` pre-packed tarballs and relied on that
+   non-existent prebuilt mode — it silently uploaded nothing. Deleted.)
 
-Install a canary with `pnpm add https://pkg.pr.new/OneEyed1366/symbiote-native/@symbiote-native/<pkg>@<commit-sha>`
+Install a canary with the **repo-qualified long URL form**:
+`pnpm add https://pkg.pr.new/OneEyed1366/symbiote-native/@symbiote-native/<pkg>@<commit-sha> --config.block-exotic-subdeps=false`
 (URL printed by the workflow run / posted as a PR comment if the branch has
-an open PR) in `.examples/*`/`examples/*`.
+an open PR) in `.examples/*`/`examples/*`. `--config.block-exotic-subdeps=false`
+is required under pnpm 11 (its `blockExoticSubdeps: true` default blocks a
+URL dep appearing as a subdependency, which canary cross-deps always do).
+
+**GOTCHA — the URL form is load-bearing, not cosmetic (found 2026-07):** use
+the LONG `pkg.pr.new/OneEyed1366/symbiote-native/@symbiote-native/<pkg>@<sha>`,
+never the short `pkg.pr.new/@symbiote-native/<pkg>@<sha>`. Both resolve to the
+byte-identical tarball (same `integrity` hash), but pkg.pr.new bakes the LONG
+form into every published package's OWN cross-package deps (react→engine,
+components→engine, vue→engine). pnpm keys packages by the URL STRING, so if an
+example pins engine via the short form while `@symbiote-native/react` pulls it
+via the long form, pnpm installs TWO physical engine copies. That splits every
+ENGINE-level singleton: `registerStyles()` (css-parser-generated, runs in app
+context) writes the class map in copy A, but `resolveClassName()` (called from
+inside `@symbiote-native/react`) reads copy B → the map is empty → **every
+`className`/`class` silently resolves to `{}` and all CSS styling vanishes**,
+with no error. Catalog/semver installs never hit this (pnpm dedupes a plain
+version range). Diagnose by comparing
+`readlink -f examples/<app>/node_modules/@symbiote-native/engine` against the
+engine `@symbiote-native/react` resolves to inside its `.pnpm` virtual-store
+dir — they MUST be the same path. `grep -c 'pkg.pr.new/@symbiote-native/'
+pnpm-lock.yaml` (short form) must be `0`.
 
 Nothing here is committed or pushed — the version bump and the generated
 changeset file live only in that one ephemeral CI checkout. Re-running the

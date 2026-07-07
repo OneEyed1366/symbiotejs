@@ -27,11 +27,30 @@ function listJsFiles(dir) {
   return out;
 }
 
+const PLATFORM_SUFFIXES = ['ios', 'android', 'native'];
+
+// ADR 0026 folder-as-module / flat platform-split files (`X.ios.js`, `X/index.android.js`, ...)
+// need to stay extensionless so Metro can layer its own platform suffix on top at bundle time —
+// baking in the resolved base file's extension here would make Metro treat it as literal and skip
+// straight past `.ios`/`.android`, always resolving to the same (headless-fallback) file on every
+// platform. Mirrors react-native-builder-bob's ESM extension-fixer, which skips these same imports.
+function hasPlatformSibling(dirPath, baseName) {
+  return PLATFORM_SUFFIXES.some((platform) => fs.existsSync(path.join(dirPath, `${baseName}.${platform}.js`)));
+}
+
+// Returns the fixed specifier, `'skip'` for an intentional platform-split no-op, or `null` when
+// nothing on disk matches (a real "unresolved" case the caller should report).
 function resolveSpecifier(fromFile, spec) {
   const base = path.resolve(path.dirname(fromFile), spec);
-  if (fs.existsSync(base + '.js')) return spec + '.js';
+  if (fs.existsSync(base + '.js')) {
+    if (hasPlatformSibling(path.dirname(base), path.basename(base))) return 'skip';
+    return spec + '.js';
+  }
   if (fs.existsSync(base) && fs.statSync(base).isDirectory()) {
-    if (fs.existsSync(path.join(base, 'index.js'))) return spec + '/index.js';
+    if (fs.existsSync(path.join(base, 'index.js'))) {
+      if (hasPlatformSibling(base, 'index')) return 'skip';
+      return spec + '/index.js';
+    }
   }
   return null;
 }
@@ -50,6 +69,7 @@ export function fixEsmExtensions(buildDir) {
     const rewrite = (match, prefix, spec, suffix = '') => {
       if (EXT_RE.test(spec)) return match;
       const resolved = resolveSpecifier(file, spec);
+      if (resolved === 'skip') return match;
       if (resolved === null) {
         unresolved.push(`${file} -> ${spec}`);
         return match;

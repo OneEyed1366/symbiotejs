@@ -160,11 +160,16 @@ jobs:
 
       - run: pnpm run prepublish-build
 
-      - name: Pack selected packages
-        id: pack
+      # pkg-pr-new@0.0.75 has no prebuilt-tarball mode yet (that's an unreleased main-branch
+      # feature) — its own glob only matches directories, and it packs them itself, defaulting
+      # to `npm pack` unless told otherwise. `--pnpm` makes it use `pnpm pack`, which — unlike
+      # `npm pack` — resolves each package's `publishConfig` override (ships `build/`, not the
+      # in-repo `src/*.ts` entry).
+      - name: Resolve selected package directories
+        id: dirs
         env:
           CANARY_PACKAGES: ${{ steps.selected.outputs.packages }}
-        run: node scripts/pack-canary-tarballs.mjs
+        run: node scripts/select-canary-dirs.mjs
 
       - name: Publish canary (pkg.pr.new)
-        run: pnpm exec pkg-pr-new publish ${{ steps.pack.outputs.dir }}/*.tgz
+        run: pnpm exec pkg-pr-new publish --pnpm ${{ steps.dirs.outputs.dirs }}

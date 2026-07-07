@@ -1,3 +1,19 @@
+# React Native's autolinking CLI assumes a flat, hoisted node_modules — a native dependency
+# nested several levels deep (e.g. a third-party RN library that is only a dependency of one
+# of our own packages, never the consuming app's own package.json) never gets hoisted to the
+# app's own node_modules root under pnpm's default isolated store, so the RN CLI's autolinking
+# scan (which only walks the app's own tree) never finds it.
+#
+# Deliberately NOT nodeLinker: hoisted + shamefullyHoist (tried and reverted — see git history):
+# that switches pnpm's whole linking algorithm to npm-classic-style deduplication, which also
+# stops guaranteeing a package's OWN direct dependencies a local symlink in its own
+# node_modules. React Native's generated `android/settings.gradle` hardcodes a literal relative
+# path (`../node_modules/@react-native/gradle-plugin`) assuming exactly that guarantee, so full
+# hoisting broke every app's Android build the moment a direct devDependency stopped getting
+# its own local copy. publicHoistPattern only ADDS extra root-level symlinks for matching
+# packages on top of the normal per-package isolated behavior — it does not touch that guarantee.
+publicHoistPattern:
+  - '*react-native*'
 packages:
   - 'core/*'
   - 'adapters/*'
@@ -17,13 +33,15 @@ allowBuilds:
 minimumReleaseAgeExclude:
   - prettier@3.9.1
   - '@symbiote-native/angular@0.3.1'
-  - '@symbiote-native/components@0.2.0 || 0.2.1'
+  - '@symbiote-native/components@0.2.0 || 0.2.1 || 0.2.2'
   - '@symbiote-native/css-parser@0.2.0'
-  - '@symbiote-native/engine@0.1.2'
+  - '@symbiote-native/engine@0.1.2 || 0.1.3'
   - '@symbiote-native/react@0.2.2'
   - '@symbiote-native/slider@2.0.0'
+  - '@symbiote-native/slider@2.0.3'
   - '@symbiote-native/vue@0.3.1'
   - '@symbiote-native/test-utils@0.1.4'
+  - '@symbiote-native/splash-screen@0.1.2'
 
 # Single source of truth for dependency versions (pnpm catalogs).
 # A package references a version with `catalog:` (default) or `catalog:<name>`
@@ -95,7 +113,8 @@ catalog:
   '@symbiote-native/engine': latest
   '@symbiote-native/components': latest
   '@symbiote-native/css-parser': latest
-  '@symbiote-native/slider': latest
+  '@symbiote-native/slider': ^2.0.3
+  '@symbiote-native/splash-screen': ^0.1.1
   '@symbiote-native/test-utils': latest
 
   # React Native app toolchain — single-versioned, used only by examples/*
