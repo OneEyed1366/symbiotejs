@@ -27,6 +27,6 @@ export default defineConfig({
     // `**/e2e/**` keeps the Detox on-device suite (jest-based) out of the vitest run.
     // Its `*.test.ts` files import `detox` and drive a real device, not the fake-Fabric slot.
     exclude: ['**/node_modules/**', '**/build/**', '**/e2e/**'],
-    server: { deps: { inline: [/@symbiote\//] } },
+    server: { deps: { inline: [/@symbiote-native\//] } },
   },
 });
