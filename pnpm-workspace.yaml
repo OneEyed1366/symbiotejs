@@ -32,16 +32,15 @@ allowBuilds:
   sharp: true
 minimumReleaseAgeExclude:
   - prettier@3.9.1
-  - '@symbiote-native/angular@0.3.1'
-  - '@symbiote-native/components@0.2.0 || 0.2.1 || 0.2.2'
-  - '@symbiote-native/css-parser@0.2.0'
-  - '@symbiote-native/engine@0.1.2 || 0.1.3'
-  - '@symbiote-native/react@0.2.2'
-  - '@symbiote-native/slider@2.0.0'
-  - '@symbiote-native/slider@2.0.3'
-  - '@symbiote-native/vue@0.3.1'
-  - '@symbiote-native/test-utils@0.1.4'
-  - '@symbiote-native/splash-screen@0.1.2'
+  - '@symbiote-native/angular@0.3.3'
+  - '@symbiote-native/components@0.2.3'
+  - '@symbiote-native/css-parser@0.2.1'
+  - '@symbiote-native/engine@0.1.4'
+  - '@symbiote-native/react@0.2.4'
+  - '@symbiote-native/slider@2.0.4'
+  - '@symbiote-native/vue@0.3.3'
+  - '@symbiote-native/test-utils@0.1.5'
+  - '@symbiote-native/splash-screen@0.1.3'
 
 # Single source of truth for dependency versions (pnpm catalogs).
 # A package references a version with `catalog:` (default) or `catalog:<name>`
@@ -113,8 +112,8 @@ catalog:
   '@symbiote-native/engine': latest
   '@symbiote-native/components': latest
   '@symbiote-native/css-parser': latest
-  '@symbiote-native/slider': ^2.0.3
-  '@symbiote-native/splash-screen': ^0.1.1
+  '@symbiote-native/slider': latest
+  '@symbiote-native/splash-screen': latest
   '@symbiote-native/test-utils': latest
 
   # React Native app toolchain — single-versioned, used only by examples/*
