@@ -13,8 +13,18 @@
 // Ships as a package-level export (`@symbiote-native/vue/metro-vue-transformer`) rather than living
 // in each consuming app: a consumer's own metro.config.js just points babelTransformerPath at it.
 
-const { parse, compileScript } = require('@vue/compiler-sfc');
+const nodeFs = require('fs');
+const { parse, compileScript, registerTS } = require('@vue/compiler-sfc');
 const { createCompoundExpression } = require('@vue/compiler-core');
+
+// A bare-specifier type import (`import type { X } from '@symbiote-native/navigation/vue'`, as
+// opposed to a relative one) needs real node_modules resolution (package.json exports, pnpm
+// symlinks) to turn the specifier into a file path — compileScript's own `fs` option only reads
+// paths it's already given, it can't do that resolution. @vue/compiler-sfc's sanctioned hook for
+// this is `registerTS`, the same one @vitejs/plugin-vue and vue-tsc call: it hands the compiler a
+// lazy loader for the real `typescript` package, which resolves the specifier via
+// `ts.resolveModuleName` and self-supplies `ts.sys` as the fs fallback.
+registerTS(() => require('typescript'));
 // @symbiote-native/css-parser is a real dependency of THIS package, so requiring it directly here
 // (rather than through the ./metro-css-parser public subpath, which exists for CONSUMERS) resolves
 // straight from this package's own node_modules under pnpm.
@@ -30,6 +40,23 @@ const {
 } = require('@symbiote-native/css-parser');
 
 const upstreamTransformer = resolveUpstreamTransformer();
+
+// compileScript needs file system access to resolve a type-only `defineProps<ISomeProps>()`
+// where ISomeProps is imported from another file — without it, Metro's worker process (a real
+// Node process, but one @vue/compiler-sfc doesn't auto-detect as Node unless the consumer calls
+// its `registerTS` hook) throws "No fs option provided ... in non-Node environment". Wiring
+// Node's own `fs` module straight through is simpler than registering the `typescript` package
+// as a loader (registerTS), and this file already runs in Node at Metro build time.
+const compileScriptFs = {
+  fileExists: (file) => nodeFs.existsSync(file),
+  readFile: (file) => {
+    try {
+      return nodeFs.readFileSync(file, 'utf-8');
+    } catch {
+      return undefined;
+    }
+  },
+};
 
 // Rewrites a Vue template AST so every `class`/`:class` binding on an element resolves
 // against this file's scoped class names at the compiled call site, via @symbiote-native/engine's
@@ -234,6 +261,7 @@ async function compileSfc(src, filename) {
     id: scopeId,
     inlineTemplate: true,
     templateOptions,
+    fs: compileScriptFs,
   });
   // Point every Vue import (the compiler's injected helpers AND the user's own
   // `import { ref } from 'vue'`) at the runtime-helpers shim, which re-exports the same

@@ -60,7 +60,8 @@
     "@symbiote-native/engine": "workspace:*",
     "@vue/compiler-core": "catalog:",
     "@vue/compiler-sfc": "catalog:",
-    "@vue/runtime-core": "catalog:"
+    "@vue/runtime-core": "catalog:",
+    "typescript": "catalog:"
   },
   "peerDependencies": {
     "vue": ">=3.5.0",
