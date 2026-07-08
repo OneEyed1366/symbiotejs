@@ -37,7 +37,7 @@ minimumReleaseAgeExclude:
   - '@symbiote-native/css-parser@0.2.1'
   - '@symbiote-native/engine@0.1.4'
   - '@symbiote-native/react@0.2.4'
-  - '@symbiote-native/slider@2.0.4'
+  - '@symbiote-native/slider@2.0.5'
   - '@symbiote-native/vue@0.3.3'
   - '@symbiote-native/test-utils@0.1.5'
   - '@symbiote-native/splash-screen@0.1.3'

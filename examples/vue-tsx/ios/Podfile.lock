@@ -1823,7 +1823,52 @@ PODS:
     - React-utils (= 0.86.0)
     - ReactNativeDependencies
   - ReactNativeDependencies (0.86.0)
-  - symbiote-splash-screen (0.1.2):
+  - symbiote-slider (2.0.5):
+    - hermes-engine
+    - RCTRequired
+    - RCTTypeSafety
+    - React-Core
+    - React-Core-prebuilt
+    - React-debug
+    - React-Fabric
+    - React-featureflags
+    - React-graphics
+    - React-ImageManager
+    - React-jsi
+    - React-NativeModulesApple
+    - React-RCTFabric
+    - React-renderercss
+    - React-rendererdebug
+    - React-utils
+    - ReactCodegen
+    - ReactCommon/turbomodule/bridging
+    - ReactCommon/turbomodule/core
+    - ReactNativeDependencies
+    - symbiote-slider/common (= 2.0.5)
+    - Yoga
+  - symbiote-slider/common (2.0.5):
+    - hermes-engine
+    - RCTRequired
+    - RCTTypeSafety
+    - React-Core
+    - React-Core-prebuilt
+    - React-debug
+    - React-Fabric
+    - React-featureflags
+    - React-graphics
+    - React-ImageManager
+    - React-jsi
+    - React-NativeModulesApple
+    - React-RCTFabric
+    - React-renderercss
+    - React-rendererdebug
+    - React-utils
+    - ReactCodegen
+    - ReactCommon/turbomodule/bridging
+    - ReactCommon/turbomodule/core
+    - ReactNativeDependencies
+    - Yoga
+  - symbiote-splash-screen (0.1.3):
     - hermes-engine
     - RCTRequired
     - RCTTypeSafety
@@ -1923,6 +1968,7 @@ DEPENDENCIES:
   - ReactCodegen (from `build/generated/ios/ReactCodegen`)
   - ReactCommon/turbomodule/core (from `../node_modules/react-native/ReactCommon`)
   - ReactNativeDependencies (from `../node_modules/react-native/third-party-podspecs/ReactNativeDependencies.podspec`)
+  - "symbiote-slider (from `../node_modules/@symbiote-native/slider`)"
   - "symbiote-splash-screen (from `../node_modules/@symbiote-native/splash-screen`)"
   - Yoga (from `../node_modules/react-native/ReactCommon/yoga`)
 
@@ -2076,6 +2122,8 @@ EXTERNAL SOURCES:
     :path: "../node_modules/react-native/ReactCommon"
   ReactNativeDependencies:
     :podspec: "../node_modules/react-native/third-party-podspecs/ReactNativeDependencies.podspec"
+  symbiote-slider:
+    :path: "../node_modules/@symbiote-native/slider"
   symbiote-splash-screen:
     :path: "../node_modules/@symbiote-native/splash-screen"
   Yoga:
@@ -2156,7 +2204,8 @@ SPEC CHECKSUMS:
   ReactCodegen: 9d54c2d159104c9884696648495cbe78cc9f26dc
   ReactCommon: d5c1bb4427bf51c443de5926aac332c89ddd9363
   ReactNativeDependencies: fa0a54b3f5319ae0e3b9aff32bfee7a424b88e66
-  symbiote-splash-screen: dc5015fc5fae0446adf5e5c38dfab2b8a1391f4c
+  symbiote-slider: dff7851b84a84a310fd5fd82722cbfac4d14b44c
+  symbiote-splash-screen: 73cdd5948a1340168a173118247f0749cbb14e21
   Yoga: fe50ab299e578f397fef753cf309c6703a4db29b
 
 PODFILE CHECKSUM: ddf13891f62870be6b0c3449faaeb28213eb5efc
