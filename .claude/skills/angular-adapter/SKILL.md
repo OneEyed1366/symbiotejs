@@ -405,6 +405,33 @@ needs its class-derived style merged back into the real inner primitive, or `cla
 it silently does nothing (a DIFFERENT, second-order failure of the exact same anchor
 mechanism). See §21.
 
+**§11a. The lookup itself was case-sensitive — every screen mounted by `Stack`/`Tab`/`Drawer`
+missed the allowlist entirely (found 2026-07-09, first real-device run of `@symbiote-native/navigation`'s
+Angular Stack).** A component used as a STATIC template tag (`<Stack>` in `App.ts`) reaches
+`createElement` with its authored selector case intact — the compiler just copies the source
+text. A component mounted DYNAMICALLY via `ViewContainerRef.createComponent`/`NgComponentOutlet`
+(exactly how `Stack`/`Tab`/`Drawer` mount every screen — see `packages/navigation/src/angular/
+stack.ts`'s `*ngComponentOutlet="componentFor(route)"`) does NOT: Angular derives the host tag
+from the component's runtime selector metadata, and its selector-matching internals lowercase it
+(Ivy assumes HTML-style case-insensitive tag names there). So `'MenuScreen'` in the Set never
+matched the runtime-supplied `'menuscreen'` — confirmed by comparing `DEBUG=1` device logs side
+by side: `createElement Stack -> anchor host` (static, case preserved) vs. `createElement
+menuscreen -> menuscreen` (dynamic, lowercased, fell through to a real unrecognized-viewName
+`createNode`). The renderer.ts comment above (§11's own source, written when the navigation
+demo screens were added) explicitly claimed the static and dynamic paths behave identically —
+untested on a real device, and wrong. Symptom was NOT the usual red "Unimplemented component"
+banner — the unrecognized host silently failed to size/paint at all, so its entire (correctly
+rendered, per the commit log — real geometry, real colors, real measured content height) subtree
+was simply invisible: a totally blank screen with a working native header, no error anywhere
+(no crash, no console output, no redbox), which took real device DEBUG logging plus a dlog
+diagnostic already in `core/engine/src/commit.ts` (`logScrollChildren`, unrelated but coincidentally
+present in the log) to rule out before finding the actual `createElement` log line mismatch.
+**Fixed at the root, not by dual-registering every entry**: `ANCHOR_HOST_COMPONENTS` now
+lowercases every entry at Set-construction time and `createElement`/`registerComposedComponent`
+both lowercase their lookup/insert key — closes this for every current AND future composed
+component without touching the (still-necessary, still manually maintained per §11) allowlist
+itself.
+
 ## §16. `[style]="[a, b]"` (RN's array-composition idiom) crashes Angular's built-in `ɵɵstyleMap` — always flatten first (2026-07)
 
 Angular's template compiler special-cases the literal binding name `style` (and `class`,
