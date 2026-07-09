@@ -1,5 +1,12 @@
 # @symbiote-native/splash-screen
 
+## 0.1.4
+
+### Patch Changes
+
+- Updated dependencies [090c789]
+  - @symbiote-native/vue@0.3.4
+
 ## 0.1.3
 
 ### Patch Changes
