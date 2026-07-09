@@ -17,6 +17,7 @@ export {
   getExplicitStyle,
   setText,
   isSymbioteNode,
+  debugNodeId,
   RAW_TEXT_COMPONENT,
 } from './node';
 export { isEventFor } from './view-config';
