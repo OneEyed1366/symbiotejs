@@ -6,6 +6,10 @@ on:
       - master
   workflow_dispatch:
     inputs:
+      cut-release:
+        description: 'Cut a release: open a version-bump PR from this branch into master (run this dispatched from develop)'
+        type: boolean
+        default: false
       android:
         description: '@symbiote-native/android'
         type: boolean
@@ -117,6 +121,41 @@ jobs:
             --title "Release ${DATE}" \
             --notes "$BODY"
 
+  # Manual: dispatched with the `develop` branch selected, opens a version-bump
+  # PR from that branch straight into master (changesets/action's `branch`
+  # input sets the PR's base — the checkout stays on whatever branch the
+  # dispatch ran against, so no hardcoded ref here). Only versions, never
+  # publishes: the existing push-to-master `release` job below picks up the
+  # merge of that PR (no pending changesets left → it publishes directly).
+  cut-release:
+    needs: checks
+    if: github.event_name == 'workflow_dispatch' && inputs.cut-release == true
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          registry-url: https://registry.npmjs.org
+
+      - run: pnpm install --frozen-lockfile
+
+      - name: Open version-bump PR into master
+        uses: changesets/action@v1
+        with:
+          version: pnpm run version-packages
+          branch: master
+          commit: 'chore: version packages'
+          title: 'chore: version packages'
+          createGithubReleases: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
   # Manual, on-demand preview publish of whichever @symbiote-native/*
   # packages you tick (whichever branch you run this workflow against),
   # WITHOUT touching the real npm registry at all — pkg.pr.new hosts its own
@@ -128,7 +167,7 @@ jobs:
   # App installed on this repo (github.com/apps/pkg-pr-new).
   publish-canary:
     needs: checks
-    if: github.event_name == 'workflow_dispatch'
+    if: github.event_name == 'workflow_dispatch' && inputs.cut-release != true
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
