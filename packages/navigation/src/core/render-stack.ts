@@ -47,24 +47,37 @@ import type {
 // screen whose content is a ScrollView, which it resizes directly to the sheet's real frame,
 // bypassing Yoga/flex entirely — not a style choice available from here.
 const SCREEN_CONTENT_WRAPPER_FLEX_STYLE = { flex: 1 };
-const SHEET_CONTENT_WRAPPER_STYLE = { position: 'absolute', top: 0, start: 0, end: 0 };
+const SHEET_CONTENT_WRAPPER_STYLE = {
+  position: 'absolute',
+  top: 0,
+  start: 0,
+  end: 0,
+  bottom: undefined,
+};
 
-// Android's native header (react-native-screens' CustomToolbar) reserves TWO stacked amounts of
-// vertical space: the device's status-bar/cutout inset (now correctly consumed by the toolbar's
-// own padding — see renderHeaderConfig's consumeTopInset) PLUS a fixed OS-standard Material
-// Toolbar content height (?attr/actionBarSize, 56dp, device-independent). A screen's own
-// SafeAreaView (its app-level root, not driven by this package) only ever sees the FIRST amount —
-// WindowInsetsCompat.Type.systemBars() has no idea a sibling Toolbar exists — so content that
-// relies solely on SafeAreaView starts exactly at the status-bar inset and paints its first 56dp
-// UNDER the header's opaque background, invisibly clipped. Verified empirically (2026-07-10):
-// `adb shell uiautomator dump` showed content and header as ordinary siblings (header LATER, so it
-// paints on top) on EVERY screen, and `adb shell screencap` + ImageMagick pixel sampling at a
-// content title's own y-coordinate showed solid header-background color, no text pixels — a
-// symptom invisible in a compressed screenshot and easy to misread as "screen looks fine" (see the
-// navigation-header-content-offset skill for the full incident). iOS's UINavigationController
-// already lays out content below its real nav bar natively, so this is Android-only. Skipped when
-// the header is hidden (nothing to clear) or explicitly translucent (content is DELIBERATELY meant
-// to render under it, matching react-native-screens' own headerTranslucent contract).
+// Android's native header (react-native-screens' CustomToolbar, hosted in a CoordinatorLayout
+// alongside an AppBarLayout) auto-offsets the screen content BELOW the header via a standard
+// Material `AppBarLayout.ScrollingViewBehavior` attached to the screen's own CoordinatorLayout
+// params — see ScreenStackFragment.kt's setToolbarTranslucent: `behavior = if (translucent) null
+// else ScrollingViewBehavior()`. So a PLAIN (non-translucent) header gets this offset for free,
+// natively, and needs no JS compensation. Setting `headerTranslucent: true` explicitly REMOVES
+// that behavior (`behavior = null`) — react-native-screens' own contract for translucent is
+// "the toolbar's opaque background goes away AND content is no longer auto-pushed below it",
+// e.g. for a screen that wants to paint under a see-through header. But an app that sets
+// headerTranslucent purely for a custom (still effectively opaque, just app-styled) header look
+// while still relying on its own SafeAreaView for safe-area content — the common case here —
+// loses the free offset and gets clipped: SafeAreaView's Android inset is WindowInsetsCompat's
+// systemBars() only (status-bar/cutout), which has no idea a sibling Toolbar exists, so content
+// starts right at the status-bar inset and paints its first 56dp UNDER the header, invisibly
+// clipped. Verified empirically (2026-07-10) via `adb shell uiautomator dump` bounds on a real
+// translucent-header screen: content (e.g. a drawer panel) measured starting at y=0, not below
+// the header's real bottom edge (see the navigation-header-content-offset skill for the full
+// incident, including the earlier inverted-condition bug this replaced). iOS's
+// UINavigationController already lays out content below its real nav bar natively regardless of
+// translucency, so this compensation is Android-only, and only when THIS package's ScrollingView-
+// Behavior replacement (the translucent-only removal) is actually in play — i.e. only when
+// translucent. Skipped when the header is hidden (nothing to clear) or NOT translucent (the
+// native behavior already handles it — adding padding there would double-offset).
 const ANDROID_HEADER_TOOLBAR_HEIGHT = 56;
 
 // react-native-screens' own Screen.tsx picks a DIFFERENT Fabric component for a modally-presented
@@ -98,12 +111,24 @@ export function resolveScreenContentWrapperStyle(
   headerTranslucent: boolean | undefined,
   isAndroid: boolean,
 ): Record<string, unknown> {
-  const base =
-    stackPresentation === 'formSheet'
-      ? SHEET_CONTENT_WRAPPER_STYLE
-      : SCREEN_CONTENT_WRAPPER_FLEX_STYLE;
-  if (!isAndroid || headerHidden || headerTranslucent) return base;
-  return { ...base, paddingTop: ANDROID_HEADER_TOOLBAR_HEIGHT };
+  let baseStyles;
+
+  if (stackPresentation !== 'formSheet') {
+    baseStyles = SCREEN_CONTENT_WRAPPER_FLEX_STYLE;
+  } else if (isAndroid) {
+    baseStyles = {
+      ...SHEET_CONTENT_WRAPPER_STYLE,
+      bottom: 0,
+    };
+  } else {
+    baseStyles = SHEET_CONTENT_WRAPPER_STYLE;
+  }
+
+  // paddingTop compensates react-native-screens' Android-only ScrollingViewBehavior removal
+  // (see the comment above ANDROID_HEADER_TOOLBAR_HEIGHT). iOS doesn't need it, so keep the
+  // `!isAndroid` check.
+  if (!isAndroid || headerHidden || !headerTranslucent) return baseStyles;
+  return { ...baseStyles, paddingTop: ANDROID_HEADER_TOOLBAR_HEIGHT };
 }
 
 // A modally-presented screen (anything but 'push') has no UINavigationController of its own on
