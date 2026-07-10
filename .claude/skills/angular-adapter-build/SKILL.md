@@ -382,6 +382,18 @@ After changing anything in the build pipeline:
 
 ## Common failure modes
 
+**A package's `tsc --build` (the real typecheck gate) deliberately EXCLUDES `*.test.ts`**: e.g.
+`packages/navigation/tsconfig.json` excludes test files from its build project. Don't build an
+ad-hoc scratch tsconfig to force-typecheck them: extending `tsconfig.angular.json` (its
+`moduleResolution: "Bundler"` + `angularCompilerOptions.strictTemplates` + `ES2022`/`DOM` lib) onto
+per-file test compilation surfaces a pre-existing TS2339/TS2349 "`Property/expression does not
+exist on type 'never'`" false positive on ordinary guard patterns (`if (!host) throw ...; return
+host.someProp;`), confirmed 2026-07 by diffing against a `git stash`ed pre-change baseline, where
+the identical errors already existed untouched. This is presumably why the project excludes test
+files from the real build in the first place. Trust `pnpm run typecheck` (which excludes tests) +
+`vitest run` (which actually executes them) as the real gates; don't chase this "never" narrowing
+error in a scratch check without first proving it isn't already there on the baseline.
+
 | Failure | Cause | Fix |
 |---|---|---|
 | `ngc` crashes with `TS500: Cannot destructure property 'pos' of 'file.referencedFiles[index]'` | ngc resolved a dependency's raw decorated source instead of its prebuilt `.d.ts` | Add/fix that dependency's `"types"` condition in `exports` |
@@ -393,6 +405,7 @@ After changing anything in the build pipeline:
 | Linker throws an assertVersion/Babel error after a dependency bump | `@babel/core` moved off the ^7 line, or Babel 8 (ESM-only) got pulled in | Pin `@babel/core` ^7 for the linker; do not adopt Babel 8 |
 | ngc fails with `TS5011` on a fresh TS version | TS 6.0 needs an explicit `rootDir` in the Angular tsconfig | Add `rootDir` to `tsconfig.angular.json` |
 | Template compiles but `<View>`/`<Text>` fail schema validation | Custom tags without a hyphen aren't accepted by `CUSTOM_ELEMENTS_SCHEMA` | Declare `View`/`Text`/… as real Angular components/directives with those selectors (not `NO_ERRORS_SCHEMA`) |
+| A consuming app's typecheck still resolves an OLD export name after a rename/delete under a package's `src/angular/**` | `ngc`'s `build-ngc/angular/` output is incremental and doesn't clean up files whose source moved/vanished; the consumer's `package.json` `exports["./angular"].types` points at that stale `.d.ts`, not live source | `pnpm run ng:build` in the renamed package, then `rm -rf` the stale generated subdirectory if `ngc` left one behind, before trusting any consumer's typecheck |
 
 ## Scope boundary
 
