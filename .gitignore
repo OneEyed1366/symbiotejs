@@ -21,6 +21,9 @@ ios/*.xcworkspace/xcuserdata/
 ios/*.xcodeproj/xcuserdata/
 DerivedData/
 
+# native proxy vendor symlinks (podspec-generated, see symbiote-third-party-native-view skill)
+packages/*/.rn-*
+
 # Metro / Hermes
 .metro-health-check*
 *.jsbundle

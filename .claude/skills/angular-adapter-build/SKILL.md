@@ -227,6 +227,27 @@ needs to change to consume it. The new output directory needs a `.gitignore` ent
 doesn't already match an ignored pattern (`build-ngc/` was added for this reason — the root
 `build/` pattern doesn't match a differently-named directory).
 
+**Confirmed missing on `packages/navigation` (found 2026-07-09).** Its `./angular` export was
+still a bare string (`"./angular": "./src/angular/index.ts"`) — the exact anti-pattern this
+section describes — and it reproduced the identical `TS500` crash the moment `.examples/angular`
+added it as a `workspace:*` dependency. Concrete confirmation the generalization above isn't
+hypothetical: any Angular-shipping package that skips this gets the same crash, verbatim. Fixed
+by giving it the same `build-ngc/angular` + `ng:build` + `prepare` + conditional-`exports` shape
+as `packages/slider`.
+
+**Wrong turn to avoid when this crash shows up and the fix above isn't front of mind: do NOT
+widen the CONSUMING app's `tsconfig.angular.json` `rootDir`** (e.g. from `"."` to `"../.."`) to
+make the dependency's raw source "count" as in-root. It silences the crash, but `outDir` mirrors
+the source tree relative to `rootDir`, so the app's own compiled output shifts from the expected
+flat `build/angular/App.js` to a nested `build/angular/<app's-relative-path>/App.js` — breaking
+any fixed downstream import (`index.js`'s `import ... from './build/angular/App'`) and needing a
+postbuild flatten step that has to re-run on every watch recompile. TS project references
+(`composite`/`tsc -b`) and `preserveSymlinks: true` are two more textbook-looking fixes that also
+don't fit here: the former conflicts with the `.examples/*` live-source-edit convention this repo
+relies on (`workspace:*`, no rebuild step — see `symbiote-dev-examples`), and pnpm's own docs warn
+`preserveSymlinks` breaks type resolution for linked `node_modules` generally. The fix is always
+in the DEPENDENCY's `exports`, per this section — never in the consumer's tsconfig.
+
 ### 2a. A plain, decorator-free NEW subpath on `adapters/angular` still needs the SAME conditional shape
 
 Don't assume the conditional-`exports` requirement only applies to the package's main Angular
