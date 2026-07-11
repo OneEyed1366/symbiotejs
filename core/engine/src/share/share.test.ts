@@ -18,17 +18,21 @@ let lastAndroidShare: {
   content: { title?: string; message?: string };
   dialogTitle?: string;
 } | null;
+let lastActionSheetOptions: Record<string, unknown> | null;
+let registeredModuleNames: string[];
 
 beforeEach(async () => {
   completeNextShare = true;
   lastAndroidShare = null;
+  lastActionSheetOptions = null;
 
   const fakeActionSheetManager = {
     showShareActionSheetWithOptions: (
-      _options: Record<string, unknown>,
+      options: Record<string, unknown>,
       _failureCallback: (error: { message: string }) => void,
       successCallback: (completed: boolean, activityType?: string) => void,
     ): void => {
+      lastActionSheetOptions = options;
       successCallback(completeNextShare, completeNextShare ? SHARED_ACTIVITY : undefined);
     },
   };
@@ -48,7 +52,9 @@ beforeEach(async () => {
     ShareModule: fakeShareModule,
   };
 
+  registeredModuleNames = [];
   globalThis.__turboModuleProxy = <T>(name: string): T | null => {
+    registeredModuleNames.push(name);
     const module = registeredModules[name];
     return isPresent<T>(module) ? module : null;
   };
@@ -93,6 +99,20 @@ describe('Share (iOS build -> ActionSheetManager)', () => {
     // JSON.parse yields an untyped value so the deliberately-invalid shape needs no cast.
     const invalidContent: IShareContent = JSON.parse('{"title":"only a title"}');
     await expect(iosShare.share(invalidContent)).rejects.toBeDefined();
+  });
+
+  // Regression net for the action-sheet-ios/share contract merge: Share must keep resolving
+  // through the exact SAME native module name that action-sheet-ios owns, and must still
+  // invoke showShareActionSheetWithOptions with the options Share builds — proving the merged
+  // INativeActionSheetManager type (imported from ../action-sheet-ios) didn't change behavior.
+  it('resolves through the ActionSheetManager module and invokes showShareActionSheetWithOptions with the built options', async () => {
+    await iosShare.share({ message: 'hi', url: 'https://x' }, { subject: 'subj' });
+
+    expect(registeredModuleNames).toContain('ActionSheetManager');
+    expect(lastActionSheetOptions).not.toBeNull();
+    expect(lastActionSheetOptions?.message).toBe('hi');
+    expect(lastActionSheetOptions?.url).toBe('https://x');
+    expect(lastActionSheetOptions?.subject).toBe('subj');
   });
 });
 

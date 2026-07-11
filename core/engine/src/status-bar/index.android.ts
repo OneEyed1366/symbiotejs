@@ -12,9 +12,8 @@
 // light/dark text). See render.ts's installStopSurfaceGlobal.
 
 import { getNativeModule } from '../native-modules';
-import { processColor } from '../commit';
 import { dlog } from '../debug';
-import type { IColorValue } from '../platform-color';
+import { processColor, type IColorValue } from '../platform-color';
 import { STATUS_BAR_MANAGER, type IStatusBarImperative, type IStatusBarProps } from './shared';
 export type { IStatusBarProps, IStatusBarStyle } from './shared';
 

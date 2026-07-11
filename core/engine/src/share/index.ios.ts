@@ -7,23 +7,16 @@
 
 import { dlog } from '../debug';
 import { getNativeModule } from '../native-modules';
-import type { IShareActionSheetIOSOptions, IShareActionSheetError } from '../action-sheet-ios';
+import {
+  ACTION_SHEET_MANAGER,
+  type INativeActionSheetManager,
+  type IShareActionSheetIOSOptions,
+  type IShareActionSheetError,
+} from '../action-sheet-ios';
 import { validateContent, shareActions, SHARED_ACTION, DISMISSED_ACTION } from './shared';
 import type { IShareContent, IShareOptions, IShareAction, IShareStatic } from './shared';
 
 export type { IShareContent, IShareOptions, IShareAction } from './shared';
-
-const ACTION_SHEET_MANAGER = 'ActionSheetManager';
-
-// The one ActionSheetManager method Share needs, typed at the trust boundary (no per-call
-// `as`; the generic on getNativeModule carries it).
-interface IShareActionSheetManager {
-  showShareActionSheetWithOptions(
-    options: IShareActionSheetIOSOptions,
-    failureCallback: (error: IShareActionSheetError) => void,
-    successCallback: (completed: boolean, activityType?: string) => void,
-  ): void;
-}
 
 export const Share: IShareStatic = {
   ...shareActions,
@@ -37,7 +30,7 @@ export const Share: IShareStatic = {
       return Promise.reject(invalid);
     }
     dlog('Share.share (ios)');
-    const manager = getNativeModule<IShareActionSheetManager>(ACTION_SHEET_MANAGER);
+    const manager = getNativeModule<INativeActionSheetManager>(ACTION_SHEET_MANAGER);
     if (manager === null) {
       dlog(`Share: "${ACTION_SHEET_MANAGER}" unresolved`);
       return Promise.reject(new Error('Share: ActionSheetManager native module unavailable'));

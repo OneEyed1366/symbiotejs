@@ -20,7 +20,7 @@
 import { dlog } from '../debug';
 import { getNativeModule } from '../native-modules';
 
-const ACTION_SHEET_MANAGER = 'ActionSheetManager';
+export const ACTION_SHEET_MANAGER = 'ActionSheetManager';
 
 export interface IActionSheetIOSOptions {
   title?: string;
@@ -62,8 +62,10 @@ export interface IShareActionSheetError {
 // The native module typed as the interface we vouch for. Single trust-boundary
 // point (no per-call `as`); the generic on getNativeModule carries it. The
 // callback `buttonIndex`/`completed`/`activityType` arrive typed because we
-// declare them here.
-interface INativeActionSheetManager {
+// declare them here. This is the sole owner of the ActionSheetManager contract —
+// Share (share/index.ios.ts) imports this interface rather than redeclaring its
+// own narrower view onto the same native module.
+export interface INativeActionSheetManager {
   showActionSheetWithOptions(
     options: IActionSheetIOSOptions,
     callback: (buttonIndex: number) => void,

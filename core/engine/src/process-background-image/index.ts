@@ -3,14 +3,10 @@
 // enableNativeCSSParsing(), which DEFAULTS TO FALSE, so RN's stock path parses the CSS gradient
 // string / structured array in JS and sends only the processed array to native — Fabric's C++
 // never sees the raw string. This restores that missing JS parse.
-//
-// processColor is referenced from ../commit at RUNTIME only (inside function bodies), never at
-// module-init, so the cyclic import (commit -> here -> commit) has no TDZ hazard — same pattern
-// as process-box-shadow/process-filter.
 
-import { processColor } from '../commit';
-import { isOpaqueColorValue } from '../platform-color';
+import { isOpaqueColorValue, processColor } from '../platform-color';
 import { dlog } from '../debug';
+import { isRecord } from '../type-guards';
 import type { IRadialGradientPosition, IRadialGradientShape, IRadialGradientSize } from '../styles';
 
 // RN processBackgroundImage.js: pre-compiled patterns.
@@ -58,10 +54,6 @@ export type IParsedBackgroundImage = IParsedLinearGradient | IParsedRadialGradie
 // pass plain records, so each field is narrowed at the point of use — same idiom as
 // process-box-shadow's IRawBoxShadow.
 type IRawBackgroundImage = Record<string, unknown>;
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null;
-}
 
 function isStringOrNumber(value: unknown): value is string | number {
   return typeof value === 'string' || typeof value === 'number';
