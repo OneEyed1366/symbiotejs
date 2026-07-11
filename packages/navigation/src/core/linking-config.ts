@@ -21,6 +21,7 @@
 
 import { dlog } from '@symbiote-native/engine';
 import type { IRoute } from './navigator-state';
+import { isRecord } from './guards';
 
 export type IScreenLinkingConfig =
   | string
@@ -40,10 +41,6 @@ type IFlatRoutePattern = {
   name: string;
   pattern: string;
 };
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null && !Array.isArray(value);
-}
 
 // Strips leading/trailing slashes so segments join predictably regardless of how the caller
 // wrote a path ('feed/:sort', '/feed/:sort/', etc).

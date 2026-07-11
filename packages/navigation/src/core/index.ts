@@ -60,12 +60,16 @@ export {
   isHeaderInModal,
   resolveHeaderInModalStackStyle,
   resolveHeaderInModalScreenStyle,
+  buildSearchBarPassthrough,
+  resolveScreenRenderPlan,
 } from './render-stack';
+export type { IScreenRenderPlanInput, IScreenRenderPlan } from './render-stack';
 
 export { serializeNavigatorState, deserializeNavigatorState } from './state-persistence';
 
 export {
   createNavigationEmitter,
+  diffFocusedRoute,
   NAVIGATION_EVENT_FOCUS,
   NAVIGATION_EVENT_BLUR,
   NAVIGATION_EVENT_STATE,
@@ -75,7 +79,13 @@ export type {
   INavigationEmitter,
   INavigationEventListener,
   INavigationEventName,
+  IFocusTransition,
 } from './navigation-events';
+
+// Runtime guards shared across core (and re-exported for adapters narrowing their own untyped
+// inputs — vnode props, gesture/event data, persisted JSON) — see guards.ts's header for which
+// call sites this consolidates and why array-exclusion is the right default everywhere it's used.
+export { isRecord } from './guards';
 
 // Bottom-tabs navigator: a FOCUSED-INDEX router (not a stack — see tab-router-state.ts) driving
 // a pure-JS tab bar render, framework-agnostic and shared verbatim by every adapter.
@@ -128,7 +138,28 @@ export {
   isSwipeStartInEdge,
   isHorizontalDrag,
   resolveSwipeIntent,
+  clamp01,
+  startPageXOf,
+  resolveDragProgress,
+  shouldClaimDrawerSwipe,
+  resolveDrawerSlotInterpolation,
+} from './drawer-options';
+export type {
+  IDrawerInterpolationRange,
+  IDrawerContentSlotInterpolation,
+  IDrawerOverlaySlotInterpolation,
+  IDrawerPanelSlotInterpolation,
 } from './drawer-options';
 
 export { renderDrawer, drawerChildOrder } from './render-drawer';
 export type { IDrawerSlot, IDrawerViewProps } from './render-drawer';
+
+// Imperative navigator handles (Stack/Tab/Drawer): framework-agnostic, declared once here and
+// re-exported verbatim by every adapter (see navigator-handles.ts's header).
+export type {
+  INavigatorHandle,
+  ITabNavigatorHandle,
+  IDrawerNavigatorHandle,
+  IDrawerDescriptorMap,
+  IAnyNavigatorHandle,
+} from './navigator-handles';

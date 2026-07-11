@@ -5,15 +5,35 @@
 // react/drawer.test.tsx needs to drive the same math through a live gesture.
 
 import { describe, expect, it } from 'vitest';
-import type { IPanResponderGestureState } from '@symbiote-native/engine';
+import { createElement } from '@symbiote-native/engine';
+import type { IPanResponderGestureState, ISymbioteEvent } from '@symbiote-native/engine';
 import {
   DRAWER_DEFAULT_WIDTH,
+  clamp01,
   isHorizontalDrag,
   isSwipeStartInEdge,
+  resolveDragProgress,
   resolveDrawerGeometry,
   resolveSwipeIntent,
+  shouldClaimDrawerSwipe,
+  startPageXOf,
 } from './drawer-options';
 import type { IDrawerOptions } from './drawer-options';
+
+// A real branded RCTView node so no cast is needed (mirrors
+// core/engine/src/pan-responder/pan-responder.test.ts's own targetNode) — the gesture math here
+// never reads target/currentTarget, only nativeEvent.
+const fakeTarget = createElement('RCTView');
+
+function fakeEvent(nativeEvent: Record<string, unknown>): ISymbioteEvent {
+  return {
+    type: 'test',
+    target: fakeTarget,
+    currentTarget: fakeTarget,
+    nativeEvent,
+    stopPropagation: () => {},
+  };
+}
 
 function gestureState(overrides: Partial<IPanResponderGestureState>): IPanResponderGestureState {
   return {
@@ -246,5 +266,150 @@ describe('resolveSwipeIntent', () => {
       swipeMinVelocity: 5,
     };
     expect(resolveSwipeIntent(gestureState({ dx: 15, vx: 0 }), false, options)).toBe('open');
+  });
+});
+
+describe('clamp01', () => {
+  it('passes a value already inside [0, 1] through unchanged', () => {
+    expect(clamp01(0.5)).toBe(0.5);
+  });
+
+  it('clamps below zero up to zero', () => {
+    expect(clamp01(-0.3)).toBe(0);
+  });
+
+  it('clamps above one down to one', () => {
+    expect(clamp01(1.3)).toBe(1);
+  });
+});
+
+describe('startPageXOf', () => {
+  it('reads pageX directly off the event when present', () => {
+    expect(startPageXOf(fakeEvent({ pageX: 42 }))).toBe(42);
+  });
+
+  it('falls back to touches[0].pageX when the event carries no direct pageX', () => {
+    expect(startPageXOf(fakeEvent({ touches: [{ pageX: 7 }] }))).toBe(7);
+  });
+
+  it('returns undefined when neither shape carries a usable number', () => {
+    expect(startPageXOf(fakeEvent({}))).toBeUndefined();
+  });
+});
+
+describe('resolveDragProgress', () => {
+  const WIDTH = DRAWER_DEFAULT_WIDTH;
+
+  it('left position: a rightward drag adds toward open', () => {
+    const progress = resolveDragProgress(gestureState({ dx: WIDTH / 2 }), 0, {
+      drawerPosition: 'left',
+    });
+    expect(progress).toBeCloseTo(0.5);
+  });
+
+  it('right position: the same rightward drag subtracts (mirrored sign)', () => {
+    const progress = resolveDragProgress(gestureState({ dx: WIDTH / 2 }), 1, {
+      drawerPosition: 'right',
+    });
+    expect(progress).toBeCloseTo(0.5);
+  });
+
+  it('clamps the result to [0, 1] past either end', () => {
+    expect(
+      resolveDragProgress(gestureState({ dx: WIDTH * 2 }), 0, { drawerPosition: 'left' }),
+    ).toBe(1);
+    expect(
+      resolveDragProgress(gestureState({ dx: -WIDTH * 2 }), 1, { drawerPosition: 'left' }),
+    ).toBe(0);
+  });
+});
+
+describe('shouldClaimDrawerSwipe', () => {
+  const SCREEN_WIDTH = 375;
+
+  it('claims a start-phase edge swipe on a closed left drawer', () => {
+    const claimed = shouldClaimDrawerSwipe(
+      fakeEvent({ pageX: 20 }),
+      gestureState({}),
+      SCREEN_WIDTH,
+      false,
+      { drawerPosition: 'left' },
+      'start',
+    );
+    expect(claimed).toBe(true);
+  });
+
+  it('rejects a start-phase swipe that begins outside the edge zone', () => {
+    const claimed = shouldClaimDrawerSwipe(
+      fakeEvent({ pageX: 200 }),
+      gestureState({}),
+      SCREEN_WIDTH,
+      false,
+      { drawerPosition: 'left' },
+      'start',
+    );
+    expect(claimed).toBe(false);
+  });
+
+  it('rejects when swipeEnabled is false, regardless of edge/direction', () => {
+    const claimed = shouldClaimDrawerSwipe(
+      fakeEvent({ pageX: 20 }),
+      gestureState({}),
+      SCREEN_WIDTH,
+      false,
+      { drawerPosition: 'left', swipeEnabled: false },
+      'start',
+    );
+    expect(claimed).toBe(false);
+  });
+
+  it('rejects a permanent drawer (never animated, never swipeable)', () => {
+    const claimed = shouldClaimDrawerSwipe(
+      fakeEvent({ pageX: 20 }),
+      gestureState({}),
+      SCREEN_WIDTH,
+      false,
+      { drawerPosition: 'left', drawerType: 'permanent' },
+      'start',
+    );
+    expect(claimed).toBe(false);
+  });
+
+  it('move phase additionally requires a dominant horizontal drag', () => {
+    const verticalDrag = gestureState({ dx: 10, dy: 20 });
+    const claimed = shouldClaimDrawerSwipe(
+      fakeEvent({ pageX: 20 }),
+      verticalDrag,
+      SCREEN_WIDTH,
+      false,
+      { drawerPosition: 'left' },
+      'move',
+    );
+    expect(claimed).toBe(false);
+  });
+
+  it('move phase claims once the drag is dominantly horizontal, from an edge start', () => {
+    const horizontalDrag = gestureState({ dx: 10, dy: 2 });
+    const claimed = shouldClaimDrawerSwipe(
+      fakeEvent({ pageX: 20 }),
+      horizontalDrag,
+      SCREEN_WIDTH,
+      false,
+      { drawerPosition: 'left' },
+      'move',
+    );
+    expect(claimed).toBe(true);
+  });
+
+  it('an open drawer accepts a swipe-to-close start from anywhere, not just the edge', () => {
+    const claimed = shouldClaimDrawerSwipe(
+      fakeEvent({ pageX: 200 }),
+      gestureState({}),
+      SCREEN_WIDTH,
+      true,
+      { drawerPosition: 'left' },
+      'start',
+    );
+    expect(claimed).toBe(true);
   });
 });

@@ -29,39 +29,29 @@ function warnIfDetached(command: string, node: ISymbioteNode | null): node is IS
   return false;
 }
 
+// Every command is the same 3-line dance: get the (lazily-read) node, bail with a dlog'd warning
+// if it's detached, dispatch the native view command. Factored once so the six methods below
+// differ only in which command name they dispatch.
+function makeCommand(
+  getNode: () => ISymbioteNode | null,
+  command: string,
+): (...args: unknown[]) => void {
+  return (...args: unknown[]): void => {
+    const node = getNode();
+    if (!warnIfDetached(command, node)) return;
+    dispatchViewCommand(node, command, args);
+  };
+}
+
 // `getNode` is a LAZY getter, read on every call — see buildScrollViewHandle's comment for why
 // an eager capture would freeze `null`.
 export function buildSearchBarHandle(getNode: () => ISymbioteNode | null): ISearchBarCommands {
   return {
-    focus: (): void => {
-      const node = getNode();
-      if (!warnIfDetached('focus', node)) return;
-      dispatchViewCommand(node, 'focus', []);
-    },
-    blur: (): void => {
-      const node = getNode();
-      if (!warnIfDetached('blur', node)) return;
-      dispatchViewCommand(node, 'blur', []);
-    },
-    clearText: (): void => {
-      const node = getNode();
-      if (!warnIfDetached('clearText', node)) return;
-      dispatchViewCommand(node, 'clearText', []);
-    },
-    setText: (text): void => {
-      const node = getNode();
-      if (!warnIfDetached('setText', node)) return;
-      dispatchViewCommand(node, 'setText', [text]);
-    },
-    cancelSearch: (): void => {
-      const node = getNode();
-      if (!warnIfDetached('cancelSearch', node)) return;
-      dispatchViewCommand(node, 'cancelSearch', []);
-    },
-    toggleCancelButton: (show): void => {
-      const node = getNode();
-      if (!warnIfDetached('toggleCancelButton', node)) return;
-      dispatchViewCommand(node, 'toggleCancelButton', [show]);
-    },
+    focus: makeCommand(getNode, 'focus'),
+    blur: makeCommand(getNode, 'blur'),
+    clearText: makeCommand(getNode, 'clearText'),
+    setText: makeCommand(getNode, 'setText'),
+    cancelSearch: makeCommand(getNode, 'cancelSearch'),
+    toggleCancelButton: makeCommand(getNode, 'toggleCancelButton'),
   };
 }

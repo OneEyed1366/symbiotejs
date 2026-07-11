@@ -5,10 +5,7 @@
 
 import type { INavigatorState } from './navigator-state';
 import type { IRoute } from './navigator-state';
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null && !Array.isArray(value);
-}
+import { isRecord } from './guards';
 
 // No `'params' in value` check: a route pushed with no params serializes to `{key, name,
 // params: undefined}`, and JSON.stringify drops undefined-valued keys — a JSON round trip of a

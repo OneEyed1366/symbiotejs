@@ -5,6 +5,7 @@
 // reducer never invents identity itself, so it stays a pure (state, action) => state function.
 
 import { SCREEN_ACTIVITY_STATE_FOCUSED, SCREEN_ACTIVITY_STATE_INACTIVE } from './constants';
+import { mergeParams } from './guards';
 
 export type IRoute<TParams = undefined> = Readonly<{
   key: string;
@@ -26,10 +27,6 @@ export type INavigatorAction =
   | { type: 'replace'; route: IRouteEntry }
   | { type: 'setParams'; key?: string; params: unknown }
   | { type: 'reset'; state: INavigatorState };
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null && !Array.isArray(value);
-}
 
 export function createInitialNavigatorState(initialRoute: IRouteEntry): INavigatorState {
   return { routes: [initialRoute] };
@@ -76,11 +73,10 @@ export function navigatorReducer(
       const index = state.routes.findIndex(route => route.key === targetKey);
       if (index === -1) return state;
       const target = state.routes[index];
-      const mergedParams =
-        isRecord(target.params) && isRecord(action.params)
-          ? { ...target.params, ...action.params }
-          : action.params;
-      const nextRoute: IRouteEntry = { ...target, params: mergedParams };
+      const nextRoute: IRouteEntry = {
+        ...target,
+        params: mergeParams(target.params, action.params),
+      };
       return {
         routes: [...state.routes.slice(0, index), nextRoute, ...state.routes.slice(index + 1)],
       };

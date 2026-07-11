@@ -11,6 +11,7 @@
 
 import { el } from '@symbiote-native/components';
 import type { IDescriptor } from '@symbiote-native/components';
+import type { ISymbioteEvent } from '@symbiote-native/engine';
 import {
   HEADER_ON_PRESS_BAR_BUTTON_ITEM,
   HEADER_ON_PRESS_BAR_BUTTON_MENU_ITEM,
@@ -19,16 +20,28 @@ import {
   RNS_SCREEN_STACK_HEADER_SUBVIEW_VIEW_NAME,
   RNS_SCREEN_VIEW_NAME,
   RNS_SEARCH_BAR_VIEW_NAME,
+  SEARCH_BAR_ON_BLUR,
+  SEARCH_BAR_ON_CANCEL_BUTTON_PRESS,
+  SEARCH_BAR_ON_CHANGE_TEXT,
+  SEARCH_BAR_ON_CLOSE,
+  SEARCH_BAR_ON_FOCUS,
+  SEARCH_BAR_ON_OPEN,
+  SEARCH_BAR_ON_SEARCH_BUTTON_PRESS,
   STACK_DEFAULT_ANIMATION,
   STACK_DEFAULT_PRESENTATION,
 } from './constants';
+import { computeActivityState } from './navigator-state';
 import type {
   IHeaderConfigViewProps,
+  INavigatorPlatform,
+  IScreenOptions,
   IScreenViewProps,
+  ISearchBarOptions,
   ISearchBarViewProps,
   IStackPresentation,
   IStackViewProps,
 } from './navigator-props';
+import { resolveHeaderConfigView, resolveScreenView, resolveSearchBarView } from './screen-options';
 
 // Mirrors react-native-screens' ScreenStackItem.tsx (getPositioningStyle): a formSheet's content
 // wrapper does not get `flex: 1`. RNSScreen.mm's updateBounds pushes the sheet's live native size
@@ -264,5 +277,138 @@ export function resolveSearchBarProps(view: ISearchBarViewProps): Record<string,
     hintTextColor: view.hintTextColor,
     headerIconColor: view.headerIconColor,
     shouldShowHintSearchIcon: view.shouldShowHintSearchIcon,
+  };
+}
+
+// The 7 search-bar event keys -> option-callback passthrough: zero lifecycle dependency, so every
+// adapter built the identical map by hand. `log` is an optional per-event hook so an adapter can
+// still attach its own route-scoped dlog line (React/Vue do; Angular doesn't) without forking the
+// map itself.
+export function buildSearchBarPassthrough(
+  options: ISearchBarOptions,
+  log?: (message: string) => void,
+): Record<string, (event: ISymbioteEvent) => void> {
+  return {
+    [SEARCH_BAR_ON_FOCUS]: () => {
+      log?.('search bar focused');
+      options.onFocus?.();
+    },
+    [SEARCH_BAR_ON_BLUR]: () => {
+      log?.('search bar blurred');
+      options.onBlur?.();
+    },
+    [SEARCH_BAR_ON_CHANGE_TEXT]: (event: ISymbioteEvent) => {
+      const { text } = event.nativeEvent;
+      const changedText = typeof text === 'string' ? text : '';
+      log?.(`search text changed: ${changedText}`);
+      options.onChangeText?.(changedText);
+    },
+    [SEARCH_BAR_ON_SEARCH_BUTTON_PRESS]: (event: ISymbioteEvent) => {
+      const { text } = event.nativeEvent;
+      const pressedText = typeof text === 'string' ? text : '';
+      log?.(`search button pressed: ${pressedText}`);
+      options.onSearchButtonPress?.(pressedText);
+    },
+    [SEARCH_BAR_ON_CANCEL_BUTTON_PRESS]: () => {
+      log?.('search bar cancel pressed');
+      options.onCancelButtonPress?.();
+    },
+    [SEARCH_BAR_ON_CLOSE]: () => {
+      log?.('search bar closed');
+      options.onClose?.();
+    },
+    [SEARCH_BAR_ON_OPEN]: () => {
+      log?.('search bar opened');
+      options.onOpen?.();
+    },
+  };
+}
+
+// A screen's resolved render plan: the framework-agnostic half of one RNSScreen entry, threading
+// a route's merged options through the same ~14-call resolver sequence every adapter's render loop
+// used to repeat by hand (see the architecture review this facade answers). Lifecycle-bound event
+// wiring (SCREEN_ON_* -> dispatch/emit, the search bar's imperative ref) stays adapter-owned and
+// arrives here already built, via `screenPassthrough`/`searchBarPassthrough`; likewise the actual
+// element/component creation (createElement/h/the Angular template) stays adapter-owned and reads
+// off this plan's fields instead of re-deriving them.
+export type IScreenRenderPlanInput = {
+  screenId: string;
+  index: number;
+  routeCount: number;
+  options: IScreenOptions | undefined;
+  platform: INavigatorPlatform;
+  isAndroid: boolean;
+  screenPassthrough: Record<string, unknown>;
+  // Already includes the imperative ref key where an adapter wires one (React/Vue); Angular wires
+  // its ref via a directive instead, so its map never carries one. Omitted entirely when the
+  // screen has no search bar.
+  searchBarPassthrough?: Record<string, unknown>;
+};
+
+export type IScreenRenderPlan = {
+  activityState: number;
+  // The outer RNSScreen/RNSModalScreen Fabric component name (resolveScreenViewName).
+  screenViewName: string;
+  screenProps: Record<string, unknown>;
+  // Full Descriptor (react-native-screens' own react-native-renderer/src/ReactFiberConfigFabric.js
+  // style props + a nested RNSSearchBar child when the screen has one) for the adapters that
+  // bridge it verbatim via descriptorToReact/descriptorToVue; Angular reads only `.props` and
+  // renders the search bar itself through its own template (see isHeaderInModal's rationale below
+  // for why Angular's element assembly differs here).
+  headerConfig: IDescriptor;
+  // The RNSSearchBar leaf's own props, standalone from `headerConfig` for the adapters (Angular)
+  // that mount it as a separate host element rather than through `headerConfig`'s children.
+  // undefined when the screen has no search bar.
+  searchBarProps: Record<string, unknown> | undefined;
+  // Always includes `collapsable: false` (see RNS_SCREEN_CONTENT_WRAPPER_VIEW_NAME's rationale in
+  // core/constants.ts) — every adapter passed this exact pair together, never the style alone.
+  contentWrapperProps: Record<string, unknown>;
+  inModal: boolean;
+  innerStackStyle: Record<string, unknown>;
+  innerScreenStyle: Record<string, unknown>;
+};
+
+export function resolveScreenRenderPlan(input: IScreenRenderPlanInput): IScreenRenderPlan {
+  const { options, isAndroid } = input;
+  const headerHidden = options?.headerShown === false;
+  const activityState = computeActivityState(input.index, input.routeCount);
+
+  const screenProps = resolveScreenProps(
+    resolveScreenView(input.screenId, activityState, options, input.screenPassthrough),
+  );
+
+  const searchBarOptions = options?.headerSearchBarOptions;
+  const searchBarProps = searchBarOptions
+    ? resolveSearchBarProps(
+        resolveSearchBarView(searchBarOptions, input.searchBarPassthrough ?? {}),
+      )
+    : undefined;
+
+  // See renderHeaderConfig's own header comment for why `props` never reflects `searchBarProps` --
+  // only `children` does -- so passing it here unconditionally is safe even for Angular, which
+  // never reads `children` off the result.
+  const headerConfig = renderHeaderConfig(
+    resolveHeaderConfigView(options, input.platform),
+    searchBarProps,
+  );
+
+  return {
+    activityState,
+    screenViewName: resolveScreenViewName(options?.stackPresentation, isAndroid),
+    screenProps,
+    headerConfig,
+    searchBarProps,
+    contentWrapperProps: {
+      style: resolveScreenContentWrapperStyle(
+        options?.stackPresentation,
+        headerHidden,
+        options?.headerTranslucent,
+        isAndroid,
+      ),
+      collapsable: false,
+    },
+    inModal: isHeaderInModal(options?.stackPresentation, headerHidden, isAndroid),
+    innerStackStyle: resolveHeaderInModalStackStyle(),
+    innerScreenStyle: resolveHeaderInModalScreenStyle(),
   };
 }

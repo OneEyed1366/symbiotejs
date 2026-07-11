@@ -288,7 +288,7 @@ export type IHeaderConfigViewProps = {
   largeTitleBackgroundColor?: IColorValue;
   userInterfaceStyle?: IHeaderUserInterfaceStyle;
   // Already native-shaped (buttonId/menuId-tagged, colors run through processColor) — the fold
-  // that builds these lives in screen-options.ts, mirroring RNS's own prepareHeaderBarButtonItems.
+  // that builds these lives in header-bar-buttons.ts, mirroring RNS's own prepareHeaderBarButtonItems.
   headerLeftBarButtonItems?: unknown[];
   headerRightBarButtonItems?: unknown[];
   onPressHeaderBarButtonItem?: (event: ISymbioteEvent) => void;
@@ -301,25 +301,23 @@ export type IStackViewProps = {
 };
 
 // Pre-resolved inputs the RNSSearchBar native leaf paints from, mirroring IScreenViewProps'
-// shape: static config fields are resolved explicitly, event handlers (onSearchFocus,
-// onChangeText, …) ride in `passthrough`, adapter-supplied.
-export type ISearchBarViewProps = {
-  placeholder?: string;
-  autoCapitalize?: ISearchBarAutoCapitalize;
-  placement?: ISearchBarPlacement;
-  hideWhenScrolling?: boolean;
-  allowToolbarIntegration?: boolean;
+// shape: derived from ISearchBarOptions since every static config field is identical — only the
+// two boolean fields the native prop processor needs to see resolved (obscureBackground/
+// hideNavigationBar) and the event callbacks (which ride in `passthrough`, adapter-supplied,
+// instead of being called directly here) differ.
+export type ISearchBarViewProps = Omit<
+  ISearchBarOptions,
+  | 'obscureBackground'
+  | 'hideNavigationBar'
+  | 'onChangeText'
+  | 'onFocus'
+  | 'onBlur'
+  | 'onCancelButtonPress'
+  | 'onSearchButtonPress'
+  | 'onClose'
+  | 'onOpen'
+> & {
   obscureBackground?: IOptionalBooleanNativeProp;
   hideNavigationBar?: IOptionalBooleanNativeProp;
-  cancelButtonText?: string;
-  barTintColor?: IColorValue;
-  tintColor?: IColorValue;
-  textColor?: IColorValue;
-  autoFocus?: boolean;
-  disableBackButtonOverride?: boolean;
-  inputType?: string;
-  hintTextColor?: IColorValue;
-  headerIconColor?: IColorValue;
-  shouldShowHintSearchIcon?: boolean;
   passthrough: Record<string, unknown>;
 };

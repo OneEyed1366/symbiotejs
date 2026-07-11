@@ -7,7 +7,9 @@
 // PanResponder equivalent (see packages/navigation's README / the drawer feasibility note for the
 // full gap list).
 
-import type { IPanResponderGestureState } from '@symbiote-native/engine';
+import type { IPanResponderGestureState, ISymbioteEvent } from '@symbiote-native/engine';
+import { isRecord } from './guards';
+import type { IDrawerSlot } from './render-drawer';
 
 export type IDrawerType = 'front' | 'back' | 'slide' | 'permanent';
 export type IDrawerPosition = 'left' | 'right';
@@ -128,6 +130,88 @@ export function resolveDrawerGeometry(options: IDrawerOptions): IDrawerGeometry 
   }
 }
 
+export type IDrawerInterpolationRange = {
+  inputRange: readonly [number, number];
+  outputRange: readonly [number, number];
+};
+
+export type IDrawerContentSlotInterpolation = {
+  translateX: IDrawerInterpolationRange;
+};
+
+export type IDrawerOverlaySlotInterpolation = {
+  opacity: IDrawerInterpolationRange;
+  translateX: IDrawerInterpolationRange;
+};
+
+export type IDrawerPanelSlotInterpolation = {
+  translateX: IDrawerInterpolationRange;
+};
+
+const DRAWER_PROGRESS_INPUT_RANGE: readonly [number, number] = [0, 1];
+
+// The pure `{inputRange, outputRange}` half of each slot's `progress.interpolate(...)` call,
+// factored out of react/vue/angular drawer.ts (the same literal config recomputed inline in all
+// three, including three near-identical spots within angular/drawer.ts's own content/overlay/
+// panel style getters) — the adapter still owns the actual `Animated.Value.interpolate()` call
+// (the `Animated.Value` instance is adapter-lifecycle-held per CLAUDE.md
+// <adapters_stay_thin>), this only computes what to feed it.
+//
+// The three slots are NOT symmetric: content and panel each drive only their own translateX, but
+// overlay drives BOTH its own opacity AND a translateX that deliberately tracks CONTENT's delta,
+// not its own — see render-drawer.ts's `drawerChildOrder` header: for `slide`, content itself
+// slides away, and an overlay that didn't follow it would stay pinned full-screen instead of
+// dimming just the content it's meant to cover. The overload set below reflects that asymmetry in
+// the return type per slot, instead of forcing one shape that would leave 'content'/'panel'
+// carrying an unused `opacity` field or 'overlay' missing one it needs.
+export function resolveDrawerSlotInterpolation(
+  geometry: IDrawerGeometry,
+  slot: 'content',
+): IDrawerContentSlotInterpolation;
+export function resolveDrawerSlotInterpolation(
+  geometry: IDrawerGeometry,
+  slot: 'overlay',
+): IDrawerOverlaySlotInterpolation;
+export function resolveDrawerSlotInterpolation(
+  geometry: IDrawerGeometry,
+  slot: 'panel',
+): IDrawerPanelSlotInterpolation;
+export function resolveDrawerSlotInterpolation(
+  geometry: IDrawerGeometry,
+  slot: IDrawerSlot,
+):
+  | IDrawerContentSlotInterpolation
+  | IDrawerOverlaySlotInterpolation
+  | IDrawerPanelSlotInterpolation {
+  switch (slot) {
+    case 'content':
+      return {
+        translateX: {
+          inputRange: DRAWER_PROGRESS_INPUT_RANGE,
+          outputRange: [geometry.contentTranslateXClosed, geometry.contentTranslateXOpen],
+        },
+      };
+    case 'overlay':
+      return {
+        opacity: {
+          inputRange: DRAWER_PROGRESS_INPUT_RANGE,
+          outputRange: [geometry.overlayOpacityClosed, geometry.overlayOpacityOpen],
+        },
+        translateX: {
+          inputRange: DRAWER_PROGRESS_INPUT_RANGE,
+          outputRange: [geometry.contentTranslateXClosed, geometry.contentTranslateXOpen],
+        },
+      };
+    case 'panel':
+      return {
+        translateX: {
+          inputRange: DRAWER_PROGRESS_INPUT_RANGE,
+          outputRange: [geometry.panelTranslateXClosed, geometry.panelTranslateXOpen],
+        },
+      };
+  }
+}
+
 // onStartShouldSetPanResponder gate: while closed, a swipe must START within swipeEdgeWidth of
 // the drawer's position edge (mirrors react-navigation's swipeEdgeWidth). While open, the whole
 // content + overlay area is fair game to drag-close, matching the intuitive "swipe anywhere to
@@ -185,4 +269,63 @@ export function resolveSwipeIntent(
   // a short drag); otherwise the drag distance's sign decides.
   const towardOpen = pastVelocity ? signedVx > 0 : signedDx > 0;
   return towardOpen ? 'open' : 'close';
+}
+
+export function clamp01(value: number): number {
+  return Math.min(1, Math.max(0, value));
+}
+
+function toFiniteNumber(value: unknown): number | undefined {
+  return typeof value === 'number' && Number.isFinite(value) ? value : undefined;
+}
+
+// The touch's real starting page-X, read off the raw event rather than gestureState.x0: the
+// engine's capture phase (core/engine/src/pan-responder/index.ts's
+// onStartShouldSetResponderCapture/onMoveShouldSetResponderCapture) resets gestureState before
+// the bubble-phase onStartShouldSetPanResponder/onMoveShouldSetPanResponder gates run, so x0 is
+// only populated later, inside onResponderGrant. Shaped like core/engine/src/events/index.ts's
+// readTouchPoint but not the same function: that one requires both pageX AND pageY and returns
+// an {x, y} pair for touch-history bookkeeping; this only needs pageX and is private to the
+// SET-gate below, so it stays a separate, narrower helper rather than forcing a shared contract
+// onto two callers with different needs.
+export function startPageXOf(event: ISymbioteEvent): number | undefined {
+  const { nativeEvent } = event;
+  const direct = toFiniteNumber(nativeEvent.pageX);
+  if (direct !== undefined) return direct;
+  const touches = nativeEvent.touches;
+  if (Array.isArray(touches) && isRecord(touches[0])) return toFiniteNumber(touches[0].pageX);
+  return undefined;
+}
+
+// onPanResponderMove's drag-to-progress math: how far the touch has traveled, in progress units
+// (0..1), added to wherever the drag started from. Mirrors the SAME sign convention as
+// resolveSwipeIntent (left drawer: rightward drag is positive-toward-open).
+export function resolveDragProgress(
+  gestureState: IPanResponderGestureState,
+  dragStartProgress: number,
+  options: IDrawerOptions,
+): number {
+  const width = resolveDrawerWidth(options);
+  const sign = resolveDrawerPosition(options) === 'right' ? -1 : 1;
+  const delta = (sign * gestureState.dx) / width;
+  return clamp01(dragStartProgress + delta);
+}
+
+// The composed onStartShouldSetPanResponder/onMoveShouldSetPanResponder gate: swipeEnabled ->
+// isDrawerAnimated -> isSwipeStartInEdge, then (move only) isHorizontalDrag on top. The start
+// gate omits the dominant-axis check on purpose (react-navigation's own edge-swipe idiom: claim
+// on entering the edge, confirm direction only once movement exists to measure).
+export function shouldClaimDrawerSwipe(
+  event: ISymbioteEvent,
+  gestureState: IPanResponderGestureState,
+  screenWidth: number,
+  isOpen: boolean,
+  options: IDrawerOptions,
+  phase: 'start' | 'move',
+): boolean {
+  if ((options.swipeEnabled ?? DRAWER_DEFAULT_SWIPE_ENABLED) === false) return false;
+  if (!isDrawerAnimated(options)) return false;
+  const startX = startPageXOf(event) ?? gestureState.x0;
+  if (!isSwipeStartInEdge(startX, screenWidth, isOpen, options)) return false;
+  return phase === 'start' ? true : isHorizontalDrag(gestureState);
 }

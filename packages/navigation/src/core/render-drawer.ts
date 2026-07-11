@@ -69,20 +69,22 @@ const OVERLAY_BASE_STYLE: Readonly<IViewStyle> = {
   bottom: 0,
 };
 
+const DRAWER_PANEL_DEFAULT_BACKGROUND_COLOR = 'white';
+
 function panelBaseStyle(options: IDrawerOptions): IViewStyle {
   const type = resolveDrawerType(options);
   const width = resolveDrawerWidth(options);
   const side = resolveDrawerPosition(options);
   if (type === 'permanent') {
     // A sidebar: an ordinary flex child, no absolute positioning, no translate needed.
-    return { width, backgroundColor: 'white' };
+    return { width, backgroundColor: DRAWER_PANEL_DEFAULT_BACKGROUND_COLOR };
   }
   return {
     position: 'absolute',
     top: 0,
     bottom: 0,
     width,
-    backgroundColor: 'white',
+    backgroundColor: DRAWER_PANEL_DEFAULT_BACKGROUND_COLOR,
     [side]: 0,
   };
 }
