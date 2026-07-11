@@ -3,11 +3,17 @@ import {
   ColorSchemeService,
   DynamicColorIOS,
   PlatformColor,
+  registerComposedComponent,
   Text,
   View,
 } from '@symbiote-native/angular';
 // static look lives in the compiled stylesheet
 import './PlatformColorDemo.css';
+
+// Used as a plain <PlatformColorDemo> composed child in App.ts's template; self-register it as
+// an anchor host so its Angular host element doesn't paint a raw Fabric view (the adapter's
+// ANCHOR_HOST_COMPONENTS Set only knows adapter-owned selectors).
+registerComposedComponent('PlatformColorDemo');
 
 @Component({
   selector: 'PlatformColorDemo',

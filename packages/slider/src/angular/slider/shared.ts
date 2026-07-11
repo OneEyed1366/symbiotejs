@@ -33,7 +33,7 @@ import {
   Output,
   type OnChanges,
 } from '@angular/core';
-import { anchorHostStyle } from '@symbiote-native/angular';
+import { anchorHostStyle, registerComposedComponent } from '@symbiote-native/angular';
 import { resolveAccessibilityProps } from '@symbiote-native/components';
 import type {
   IAccessibilityProps,
@@ -68,6 +68,13 @@ import {
   type ISliderProps as ISliderBaseProps,
   type ISliderViewProps,
 } from '../../core';
+
+// Slider is a composed Angular component (its 'Slider' selector renders a real Fabric tree via
+// DescriptorOutlet, never a raw view of that name) — self-registers as an anchor host instead of
+// the adapter hardcoding a third-party package's selector. Both index.ios.ts and index.android.ts
+// import this module before declaring @Component({ selector: 'Slider' }), so this runs regardless
+// of which platform variant Metro picks.
+registerComposedComponent('Slider');
 
 export type ISliderProps = Omit<
   ISliderBaseProps,

@@ -6,6 +6,7 @@ import {
 } from '@angular/core';
 import {
   AccessibilityInfo,
+  registerComposedComponent,
   SymbioteHostPropsDirective,
   Text,
   View,
@@ -22,6 +23,11 @@ import './AccessibilityDemo.css';
 // The established fix (see adapters/angular/src/components/pressable/index.ts's `[symbioteHostProps]`
 // usage, and SymbioteHostPropsDirective's own docstring) is to bundle such props into one object and
 // bind it through `[symbioteHostProps]`, a REAL declared @Input the type-checker already knows about.
+// This component is used as a plain <AccessibilityDemo> composed child in App.ts's template;
+// self-register it as an anchor host so its Angular host element doesn't paint a raw Fabric
+// view (the adapter's ANCHOR_HOST_COMPONENTS Set only knows adapter-owned selectors).
+registerComposedComponent('AccessibilityDemo');
+
 @Component({
   selector: 'AccessibilityDemo',
   standalone: true,

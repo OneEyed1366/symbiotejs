@@ -13,7 +13,15 @@
 // external `Animated` namespace object — only a direct named import survives real AOT).
 
 import { Component, OnDestroy, OnInit } from '@angular/core';
-import { Animated, AnimatedView, Button, PanResponder, Text, View } from '@symbiote-native/angular';
+import {
+  Animated,
+  AnimatedView,
+  Button,
+  PanResponder,
+  registerComposedComponent,
+  Text,
+  View,
+} from '@symbiote-native/angular';
 
 // static look compiled at build time by @symbiote-native/css-parser
 import './AnimatedParityDemo.css';
@@ -24,6 +32,11 @@ const HEADER_COLLAPSE = 60;
 const DRAG_MAX = XY_SPAN - 12;
 const MOVE_DURATION_MS = 700;
 const SCROLL_DURATION_MS = 180;
+
+// Used as a plain <AnimatedParityDemo> composed child in App.ts's template; self-register it as
+// an anchor host so its Angular host element doesn't paint a raw Fabric view (the adapter's
+// ANCHOR_HOST_COMPONENTS Set only knows adapter-owned selectors).
+registerComposedComponent('AnimatedParityDemo');
 
 @Component({
   selector: 'AnimatedParityDemo',

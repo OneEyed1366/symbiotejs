@@ -5,7 +5,13 @@ import {
   ViewChild,
   inject,
 } from '@angular/core';
-import { Button, Text, View, findNodeHandle } from '@symbiote-native/angular';
+import {
+  Button,
+  findNodeHandle,
+  registerComposedComponent,
+  Text,
+  View,
+} from '@symbiote-native/angular';
 
 // Static look lives in RefApiDemo.css, compiled at build time by @symbiote-native/css-parser.
 import './RefApiDemo.css';
@@ -13,6 +19,11 @@ import './RefApiDemo.css';
 // @ViewChild gives back the real ViewHost component instance directly (no reactive-proxy
 // wrapping to worry about, unlike Vue's shallowRef requirement) — its `nativeElement`
 // getter (SymbiotePrimitiveHost) is the engine host node measure/setNativeProps run on.
+
+// Used as a plain <RefApiDemo> composed child in App.ts's template; self-register it as an
+// anchor host so its Angular host element doesn't paint a raw Fabric view (the adapter's
+// ANCHOR_HOST_COMPONENTS Set only knows adapter-owned selectors).
+registerComposedComponent('RefApiDemo');
 
 @Component({
   selector: 'RefApiDemo',

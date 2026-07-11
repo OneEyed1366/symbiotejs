@@ -3,6 +3,7 @@ import {
   Button,
   I18nManager,
   Image,
+  registerComposedComponent,
   Settings,
   Text,
   View,
@@ -19,6 +20,11 @@ const LOGO_URI = 'https://angular.io/assets/images/logos/angular/angular.png';
 // visibly warms it, unlike LOGO_URI, which getSize + the <Image> already pulled in.
 const PREFETCH_URI = LOGO_URI + '?warm=symbiote';
 const TAP_KEY = 'symbiote.tapCount';
+
+// Used as a plain <NativeModulesDemo> composed child in App.ts's template; self-register it as
+// an anchor host so its Angular host element doesn't paint a raw Fabric view (the adapter's
+// ANCHOR_HOST_COMPONENTS Set only knows adapter-owned selectors).
+registerComposedComponent('NativeModulesDemo');
 
 @Component({
   selector: 'NativeModulesDemo',

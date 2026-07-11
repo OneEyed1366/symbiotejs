@@ -1,5 +1,6 @@
 import { Component } from '@angular/core';
 import {
+  registerComposedComponent,
   SymbioteHostPropsDirective,
   Text,
   View,
@@ -30,6 +31,11 @@ interface IChipHandlers {
   index: number;
   hostProps: Record<string, unknown>;
 }
+
+// Used as a plain <ResponderDemo> composed child in App.ts's template; self-register it as an
+// anchor host so its Angular host element doesn't paint a raw Fabric view (the adapter's
+// ANCHOR_HOST_COMPONENTS Set only knows adapter-owned selectors).
+registerComposedComponent('ResponderDemo');
 
 // View's own primitive host only declares `style` as a real Angular @Input() (see
 // adapters/angular/src/primitives/shared.ts) — the responder-negotiation callbacks below are NOT

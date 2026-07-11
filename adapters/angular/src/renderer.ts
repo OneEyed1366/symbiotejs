@@ -87,23 +87,15 @@ const ANCHOR_HOST_COMPONENTS: Set<string> = new Set([
   // Composed Angular components render their real Fabric descriptor tree from the template;
   // their Angular host element is only a framework bookkeeping node and must not paint. This
   // is NOT limited to adapter-authored components — ANY custom composed @Component used as a
-  // plain <Tag> inside another template needs its selector listed here too, adapter or app
-  // code alike, or Angular's automatic host-element creation for it falls through to a raw
-  // Fabric createNode call with an unrecognized view name, which paints RN's own "Unimplemented
-  // component: <Tag>" fallback view instead (a real device-visible bug, not a silent no-op —
-  // discovered when examples/angular's own new demo components hit this).
-  'AccessibilityDemo',
+  // plain <Tag> inside another template needs its selector listed here too, or Angular's
+  // automatic host-element creation for it falls through to a raw Fabric createNode call with
+  // an unrecognized view name, which paints RN's own "Unimplemented component: <Tag>" fallback
+  // view instead (a real device-visible bug, not a silent no-op). This Set holds only
+  // adapter/engine-owned selectors; app code and third-party packages self-register their own
+  // composed components through registerComposedComponent instead of being hardcoded here.
   'ActivityIndicator',
-  'AnimatedDemo',
-  'AnimatedParityDemo',
   'Button',
   'FlatList',
-  'NativeModulesDemo',
-  'ParityDemo',
-  'PlatformColorDemo',
-  'RefApiDemo',
-  'ResponderDemo',
-  'Slider',
   'AnimatedView',
   'symbiote-animated-view',
   'AnimatedText',

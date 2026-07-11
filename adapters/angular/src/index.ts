@@ -135,7 +135,7 @@ export { DescriptorOutlet } from './descriptor-to-angular';
 // call.
 export { PortalDirective, PortalOutletDirective } from './create-portal';
 export { createTunnel, TunnelInDirective, TunnelOut, type ITunnelStore } from './create-tunnel';
-export { SymbioteRenderer, SymbioteRendererFactory } from './renderer';
+export { registerComposedComponent, SymbioteRenderer, SymbioteRendererFactory } from './renderer';
 export { findNodeHandle } from './host-instance';
 export type { IHostInstance } from './host-instance';
 export { StatusBar } from './modules/status-bar';
