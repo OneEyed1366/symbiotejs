@@ -21,6 +21,7 @@ import {
   createComponent,
   createEnvironmentInjector,
   DOCUMENT,
+  ErrorHandler,
   RendererFactory2,
   ɵINJECTOR_SCOPE as INJECTOR_SCOPE,
   ɵprovideZonelessChangeDetectionInternal as provideZonelessChangeDetectionInternal,
@@ -145,6 +146,17 @@ export function mount(
       // `@Component` boundary — SignalView-compiled children are skip-eligible regardless of
       // this scheduler.
       ...provideZonelessChangeDetectionInternal(),
+      // Angular's own INTERNAL_APPLICATION_ERROR_HANDLER (core.mjs) reports a tick()
+      // exception by calling `injector.get(ErrorHandler)` — a normal `bootstrapApplication`
+      // registers this token by default (platform-browser's BROWSER_MODULE_PROVIDERS), but
+      // our from-scratch environment injector never did, so that lookup itself threw
+      // NG0201 and REPLACED whatever the real error was with an unrelated "No provider
+      // found for ErrorHandler" — the real exception never got logged, and the NG0201 itself
+      // propagated out of a bare Timeout callback uncaught (nothing above it in the stack to
+      // catch it), i.e. any async tick() exception, anywhere in the app, crashed hard instead
+      // of being reported. Providing the default `ErrorHandler` (same one bootstrapApplication
+      // ships) restores the intended behavior: `console.error('ERROR', e)` and keep running.
+      { provide: ErrorHandler, useClass: ErrorHandler },
       ColorSchemeService,
       WindowDimensionsService,
     ],
