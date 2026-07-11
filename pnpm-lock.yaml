@@ -99,6 +99,9 @@ catalogs:
     '@symbiote-native/vue':
       specifier: latest
       version: 0.3.4
+    '@types/babel__core':
+      specifier: ^7.20.5
+      version: 7.20.5
     '@types/jest':
       specifier: ^29.5.12
       version: 29.5.14
@@ -577,9 +580,15 @@ importers:
       '@angular/core':
         specifier: 'catalog:'
         version: 22.0.5(@angular/compiler@22.0.5)(rxjs@7.8.2)
+      '@babel/core':
+        specifier: 'catalog:'
+        version: 7.29.7
       '@symbiote-native/test-utils':
         specifier: workspace:*
         version: link:../../core/test-utils
+      '@types/babel__core':
+        specifier: 'catalog:'
+        version: 7.20.5
       '@types/node':
         specifier: 'catalog:'
         version: 26.1.0
