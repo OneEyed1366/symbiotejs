@@ -4,30 +4,15 @@
 // module, which RN keys its keyboard events off of. Mirrors RN's
 // Libraries/Components/Keyboard/Keyboard.js, slimmed to the parts we need.
 
-import { getNativeModule } from '../native-modules';
+import { createDeviceEventModule } from '../native-modules';
 import {
-  installDeviceEventHub,
-  NativeEventEmitter,
   type IEventEmitterModule,
   type IEventSubscription,
   type INativeEventListener,
 } from '../native-events';
 import { dlog } from '../debug';
 import { blurTextInput, currentlyFocusedInput } from '../text-input-state';
-import { LayoutAnimation, type ILayoutAnimationType } from '../layout-animation';
-
-// RN's scheduleLayoutAnimation falls back to the 'keyboard' animation type when the
-// event's easing string isn't a known LayoutAnimation type (Keyboard.js:200).
-const KEYBOARD_ANIMATION_TYPE = 'keyboard';
-
-// Map a raw easing string onto a ILayoutAnimationType without a cast: RN does
-// `LayoutAnimation.Types[easing] || 'keyboard'`, which only yields a real type when
-// the string is a key of the Types table. We mirror that by checking membership in
-// the frozen table before trusting the value.
-function easingToAnimationType(easing: string): ILayoutAnimationType {
-  const types: Readonly<Record<string, ILayoutAnimationType>> = LayoutAnimation.Types;
-  return types[easing] ?? KEYBOARD_ANIMATION_TYPE;
-}
+import { LayoutAnimation } from '../layout-animation';
 
 // The native module name RN registers the keyboard observer under, confirmed
 // from its spec (specs_DEPRECATED/modules/INativeKeyboardObserver.js:20,
@@ -85,12 +70,6 @@ interface INativeKeyboardObserver extends IEventEmitterModule {
   removeListeners(count: number): void;
 }
 
-// Lazily resolved so importing this module has no native side effect: a headless
-// run without a fake __turboModuleProxy still loads it; resolution happens on the
-// first addListener. Null when the module isn't linked.
-let observer: INativeKeyboardObserver | null | undefined;
-let emitter: NativeEventEmitter | undefined;
-
 // The latest keyboardDidShow event, or null when the keyboard is hidden. RN's
 // `_currentlyShowing`. Kept fresh by an internal self-subscription (see getEmitter):
 // Keyboard listens to its OWN show/hide events and caches the event so the synchronous
@@ -121,27 +100,29 @@ function trackSubscription(
   };
 }
 
-function getEmitter(): NativeEventEmitter {
-  if (emitter === undefined) {
-    if (observer === undefined) {
-      observer = getNativeModule<INativeKeyboardObserver>(KEYBOARD_OBSERVER_MODULE);
-      dlog(`Keyboard: KeyboardObserver module ${observer ? 'resolved' : 'NOT resolved (null)'}`);
-    }
-    // WHY lazy: install on the first subscribe rather than at module load, so the
-    // hub exists before native emits without a hard bootstrap-order dependency for
-    // this first cut. Idempotent, so repeated subscribes cost one boolean check.
-    installDeviceEventHub();
-    emitter = new NativeEventEmitter(observer ?? undefined);
-    // Self-subscription: cache the latest show event, clear on hide (RN's constructor).
-    // Bypasses trackSubscription so removeAllListeners never tears down the cache feed.
+// Lazily resolved so importing this module has no native side effect: a headless
+// run without a fake __turboModuleProxy still loads it; resolution happens on the
+// first addListener. Null when the module isn't linked.
+//
+// The self-subscription policy that diverges from a plain lazy-resolve+emitter:
+// Keyboard caches the latest show event, clearing on hide (RN's constructor), so
+// isVisible()/metrics() read synchronously with no native round-trip. Bypasses
+// trackSubscription so removeAllListeners never tears down the cache feed.
+const deviceEventModule = createDeviceEventModule<INativeKeyboardObserver>({
+  moduleName: KEYBOARD_OBSERVER_MODULE,
+  moduleLogPrefix: 'Keyboard: KeyboardObserver module',
+  onEmitterCreated: emitter => {
     emitter.addListener(KEYBOARD_EVENT.didShow, payload => {
       if (isKeyboardEvent(payload)) currentlyShowing = payload;
     });
     emitter.addListener(KEYBOARD_EVENT.didHide, () => {
       currentlyShowing = null;
     });
-  }
-  return emitter;
+  },
+});
+
+function getEmitter() {
+  return deviceEventModule.getEmitter();
 }
 
 export const Keyboard = {
@@ -182,7 +163,7 @@ export const Keyboard = {
     dlog(`Keyboard.scheduleLayoutAnimation -> duration ${duration}, easing ${easing}`);
     LayoutAnimation.configureNext({
       duration,
-      update: { duration, type: easingToAnimationType(easing) },
+      update: { duration, type: LayoutAnimation.coerceType(easing) },
     });
   },
 

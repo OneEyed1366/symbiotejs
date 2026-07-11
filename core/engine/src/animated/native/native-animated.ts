@@ -13,6 +13,7 @@
 import { dlog } from '../../debug';
 import { getNativeModule } from '../../native-modules';
 import { NativeEventEmitter, type IEventSubscription } from '../../native-events';
+import { isRecord } from '../../type-guards';
 
 // Opaque per-platform tuning bag forwarded into a native node/animation config,
 // mirroring RN's AnimatedPlatformConfig.js (`export type PlatformConfig = {}`).
@@ -119,10 +120,6 @@ export function generateNativeAnimationId(): number {
 const VALUE_UPDATE_EVENT = 'onAnimatedValueUpdate';
 const valueListeners = new Map<number, (value: number) => void>();
 let valueUpdateSubscription: IEventSubscription | undefined;
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null;
-}
 
 function ensureValueUpdateSubscription(): void {
   if (valueUpdateSubscription !== undefined) return;

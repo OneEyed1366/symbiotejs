@@ -14,9 +14,12 @@ import {
   createPressHandlers,
   createPressRuntime,
   DEFAULT_DELAY_LONG_PRESS_MS,
+  isTerminationAllowed,
   resolveAccessibilityProps,
   resolveDisabledAccessibilityState,
   rippleProps,
+  shouldClaimResponder,
+  shouldSuppressPress,
   type IAccessibilityProps,
   type IAccessibilityStateValue,
   type IAriaProps,
@@ -298,34 +301,34 @@ export class Pressable implements IAngularPressableInputs {
 
   handlePressIn(event: unknown): void {
     const symbioteEvent = asSymbioteEvent(event);
-    if (this.disabled === true || symbioteEvent === undefined) return;
+    if (shouldSuppressPress(this.disabled) || symbioteEvent === undefined) return;
     this.handlers.handlePressIn(symbioteEvent);
   }
 
   handlePressOut(event: unknown): void {
     const symbioteEvent = asSymbioteEvent(event);
-    if (this.disabled === true || symbioteEvent === undefined) return;
+    if (shouldSuppressPress(this.disabled) || symbioteEvent === undefined) return;
     this.handlers.handlePressOut(symbioteEvent);
   }
 
   handlePress(event: unknown): void {
     const symbioteEvent = asSymbioteEvent(event);
-    if (this.disabled === true || symbioteEvent === undefined) return;
+    if (shouldSuppressPress(this.disabled) || symbioteEvent === undefined) return;
     this.handlers.handlePress(symbioteEvent);
   }
 
   handleResponderMove(event: unknown): void {
     const symbioteEvent = asSymbioteEvent(event);
-    if (this.disabled === true || symbioteEvent === undefined) return;
+    if (shouldSuppressPress(this.disabled) || symbioteEvent === undefined) return;
     this.handlers.handleResponderMove(symbioteEvent);
   }
 
   claimResponder(): boolean {
-    return this.disabled !== true;
+    return shouldClaimResponder(this.disabled);
   }
 
   allowTermination(): boolean {
-    return this.cancelable !== false;
+    return isTerminationAllowed(this.cancelable);
   }
 
   emit(emitter: EventEmitter<ISymbioteEvent>, event: unknown): void {

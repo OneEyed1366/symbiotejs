@@ -20,6 +20,7 @@
 
 import { getNativeModule } from '../native-modules';
 import { dlog } from '../debug';
+import { isBoolean } from '../type-guards';
 
 // The native module name RN registers this TurboModule under
 // (`TurboModuleRegistry.get<Spec>('PermissionsAndroid')`). NOTE: a module name is
@@ -112,10 +113,6 @@ interface INativePermissionsAndroid {
 // minimally: symbiote uses only showAlert, and only opportunistically.
 interface INativeDialogManagerAndroid {
   showAlert(options: IRationale, onError: () => void, onAction: () => void): void;
-}
-
-function isBoolean(value: unknown): value is boolean {
-  return typeof value === 'boolean';
 }
 
 // Narrow the native string result into a known RESULTS value. Any unrecognized

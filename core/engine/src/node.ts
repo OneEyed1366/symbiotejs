@@ -33,6 +33,15 @@ export interface ISymbioteEvent {
 // dispatch ignore the return; only the responder path consults it.
 export type IListener = (event: ISymbioteEvent) => unknown;
 
+// Runtime guard narrowing `unknown` to ISymbioteEvent (no `as` cast) — an object carrying a
+// `nativeEvent` payload. Lives with the interface it tests so every adapter reaching for "is this
+// a Symbiote synthetic event" finds one shared guard instead of writing its own copy.
+export function isSymbioteEvent(value: unknown): value is ISymbioteEvent {
+  if (typeof value !== 'object' || value === null) return false;
+  const nativeEvent = Reflect.get(value, 'nativeEvent');
+  return typeof nativeEvent === 'object' && nativeEvent !== null;
+}
+
 export interface ISymbioteNode {
   readonly [BRAND]: true;
   // Fabric view name passed to createNode (RCTView, RCTImageView, RCTText, ...).

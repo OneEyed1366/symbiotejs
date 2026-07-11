@@ -9,6 +9,7 @@ import {
   dispatchViewCommand,
   dlog,
   flattenStyle,
+  isSymbioteEvent,
   type AnimatedValue,
   type IStyleProp,
   type ISymbioteEvent,
@@ -89,11 +90,10 @@ export function splitLayoutProps(style: IStyleProp<IViewStyle> | undefined): {
   return { outer, inner };
 }
 
-export function isSymbioteEvent(value: unknown): value is ISymbioteEvent {
-  if (typeof value !== 'object' || value === null) return false;
-  const nativeEvent = Reflect.get(value, 'nativeEvent');
-  return typeof nativeEvent === 'object' && nativeEvent !== null;
-}
+// Re-exported (not just used internally): the package barrel (index.ts) re-exports this guard
+// from this module, so external callers importing it from '@symbiote-native/components' keep
+// working even though the guard itself now lives in the engine, next to ISymbioteEvent.
+export { isSymbioteEvent };
 
 // Forward a wrapped scroll event to the user's ScrollHandler. The Animated.event listener
 // hands raw args; the first is the original SymbioteEvent, which we narrow with a runtime

@@ -7,18 +7,12 @@
 // the bare accessibility-info.ts re-exports it as the default for tsc / tsx / headless.
 // Mirrors RN's AccessibilityInfo.js iOS branches.
 
-import { getNativeModule } from '../native-modules';
-import {
-  installDeviceEventHub,
-  NativeEventEmitter,
-  type IEventEmitterModule,
-  type IEventSubscription,
-} from '../native-events';
-import { isSymbioteNode } from '../node';
-import { sendAccessibilityEvent as sharedSendAccessibilityEvent } from '../commit';
+import { createDeviceEventModule } from '../native-modules';
+import { type IEventEmitterModule, type IEventSubscription } from '../native-events';
 import { dlog } from '../debug';
 import {
   isBoolean,
+  routeSendAccessibilityEvent,
   type IAccessibilityAnnouncementFinishedEvent,
   type IAccessibilityChangeEventName,
   type IAccessibilityChangeEventHandler,
@@ -86,28 +80,20 @@ interface INativeAccessibilityManagerIOS extends IEventEmitterModule {
 
 // Lazily resolved so importing this module has no native side effect: a headless run
 // without a fake __turboModuleProxy still loads it; resolution happens on first use.
-// `null` when the module isn't linked.
-let accessibilityModule: INativeAccessibilityManagerIOS | null | undefined;
-let emitter: NativeEventEmitter | undefined;
+// `null` when the module isn't linked. The lazy-resolve + lazy-emitter shape itself
+// lives in `createDeviceEventModule` (native-modules.ts); iOS adds no self-subscription
+// on top of it, unlike app-state/appearance/back-handler/keyboard.
+const deviceEventModule = createDeviceEventModule<INativeAccessibilityManagerIOS>({
+  moduleName: ACCESSIBILITY_MODULE,
+  moduleLogPrefix: 'AccessibilityInfo(ios): module',
+});
 
 function getModule(): INativeAccessibilityManagerIOS | null {
-  if (accessibilityModule === undefined) {
-    accessibilityModule = getNativeModule<INativeAccessibilityManagerIOS>(ACCESSIBILITY_MODULE);
-    dlog(
-      `AccessibilityInfo(ios): module ${accessibilityModule ? 'resolved' : 'NOT resolved (null)'}`,
-    );
-  }
-  return accessibilityModule;
+  return deviceEventModule.getModule();
 }
 
-function getEmitter(): NativeEventEmitter {
-  if (emitter === undefined) {
-    // WHY lazy: install on first subscribe so the hub exists before native emits,
-    // without a hard bootstrap-order dependency. Idempotent.
-    installDeviceEventHub();
-    emitter = new NativeEventEmitter(getModule() ?? undefined);
-  }
-  return emitter;
+function getEmitter() {
+  return deviceEventModule.getEmitter();
 }
 
 // Run a callback-based native getter as a Promise; resolves false when the module is
@@ -261,26 +247,17 @@ class AccessibilityInfoIOS implements IAccessibilityInfoStatic {
     return Promise.resolve(originalTimeout);
   }
 
-  // Emit an accessibility event at a view through the Fabric slot. RN's Fabric
-  // sendAccessibilityEvent hands the public-instance handle straight to
-  // nativeFabricUIManager.sendAccessibilityEvent with the STRING eventType, and the C++
-  // side maps it. The handle here IS the SymbioteNode (symbiote augments the node in place
-  // as its public instance), so resolve it with the runtime guard and route through shared.
-  // RN early-returns 'click' on iOS only (AccessibilityInfo.js) because VoiceOver has no click
-  // producer, so preserve that one no-op; every other event reaches the slot.
+  // Emit an accessibility event at a view through the Fabric slot. The shared routing
+  // (isSymbioteNode guard + dispatch) lives in shared.ts, identical on both platforms;
+  // the ONE thing iOS adds is its own early return on 'click' (VoiceOver has no click
+  // producer, AccessibilityInfo.js), passed as the shouldSkip hook so it keeps its
+  // exact log text.
   sendAccessibilityEvent(handle: IAccessibilityHandle, eventType: IAccessibilityEventType): void {
-    if (eventType === 'click') {
+    routeSendAccessibilityEvent('ios', handle, eventType, () => {
+      if (eventType !== 'click') return false;
       dlog('AccessibilityInfo(ios).sendAccessibilityEvent("click") -> iOS no-op (RN parity)');
-      return;
-    }
-    if (!isSymbioteNode(handle)) {
-      dlog(
-        `AccessibilityInfo(ios).sendAccessibilityEvent("${eventType}") -> handle is not a node (no-op)`,
-      );
-      return;
-    }
-    dlog(`AccessibilityInfo(ios).sendAccessibilityEvent("${eventType}") -> slot`);
-    sharedSendAccessibilityEvent(handle, eventType);
+      return true;
+    });
   }
 
   // Subscribe to an accessibility-state change. A handler for a boolean event receives a

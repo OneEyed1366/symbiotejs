@@ -19,6 +19,8 @@
 // NOT in that set derives. The list never grows with the community; it grows only
 // when we add a core primitive of our own.
 
+import { isRecord } from './type-guards';
+
 export type IPropProcessor = (value: unknown) => unknown;
 
 // A native event the component emits. `raw` is the Fabric topLevelType
@@ -107,10 +109,6 @@ export function registerComponent(name: string, registration: IComponentRegistra
   if (list === undefined) overrides.set(name, [registration]);
   else list.push(registration);
   resolvedCache.delete(name);
-}
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null;
 }
 
 // onChange -> change (mirrors node.ts listenerName; the split of the handler prop).

@@ -19,6 +19,7 @@ import { getNativeTag, whenCommitted } from '../commit';
 import { isSymbioteNode, type ISymbioteNode } from '../node';
 import { AnimatedNode, flushValue } from './graph';
 import { isNativeAnimatedAvailable, nativeAnimated } from './native/native-animated';
+import { isRecord } from '../type-guards';
 
 // A leaf in the mapping is an AnimatedNode; every interior position is a nested
 // record of further mappings. We never name AnimatedValueXY here (deferred).
@@ -40,10 +41,6 @@ export interface IEventConfig {
 interface IMappedValue {
   readonly path: readonly string[];
   readonly node: AnimatedNode;
-}
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null;
 }
 
 // A value node settable from an event field. AnimatedValue carries setValue; we

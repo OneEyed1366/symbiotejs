@@ -65,6 +65,7 @@ import {
   blurTextInput,
   dispatchViewCommand,
   dlog,
+  isSymbioteEvent,
   isSymbioteNode,
   setInputBlurred,
   setInputFocused,
@@ -82,12 +83,6 @@ import {
 } from '../primitives';
 
 export type { ITextInputHandle, ITextInputSelection, IInputMode, IEnterKeyHint, ISubmitBehavior };
-
-// Angular infers an (event) binding's $event as the DOM Event for a custom-schema element, so
-// each handler enters as `unknown` and is narrowed here before reaching a typed callback.
-function isSymbioteEvent(value: unknown): value is ISymbioteEvent {
-  return typeof value === 'object' && value !== null && 'nativeEvent' in value;
-}
 
 // Mirrors React's ITextInputProps minus nothing (TextInput has no children) — declared
 // per-adapter over the shared accessibility base because Angular's input surface aliases the

@@ -5,8 +5,7 @@
 // is pure transform — every adapter reuses it; the adapter supplies only the per-entry
 // element creation (renderSectionHeader / renderItem / …) and the ref wiring.
 
-import type { ISymbioteNode } from '@symbiote-native/engine';
-import type { IScrollViewHandle } from '../scroll-view-commands';
+import type { IScrollRoutingHandle } from './scroll-routing-handle';
 
 export interface ISection<ItemT> {
   title: string;
@@ -28,11 +27,13 @@ export type ISectionEntry<ItemT> =
   | { kind: 'footer'; section: ISection<ItemT>; sectionIndex: number }
   | { kind: 'section-separator'; sectionIndex: number };
 
-// The imperative API RN exposes on a SectionList ref. scrollToLocation resolves a
-// (sectionIndex, itemIndex) coordinate to the flattened entry index and forwards to the
-// inner VirtualizedList's scrollToIndex. The flash/scroll-ref/interaction surface routes
-// to the inner VirtualizedList. Shared by both adapters so the surface CANNOT drift.
-export interface IVirtualizedSectionListHandle {
+// The imperative API RN exposes on a SectionList ref. scrollToLocation is this handle's
+// own primary member: it resolves a (sectionIndex, itemIndex) coordinate to the flattened
+// entry index and forwards to the inner VirtualizedList's scrollToIndex. The
+// flash/scroll-ref/interaction tail is the inner-scroll routing shared with
+// VirtualizedList (see IScrollRoutingHandle) — extending it, rather than re-declaring it,
+// is what keeps the two handle types from drifting from each other.
+export interface IVirtualizedSectionListHandle extends IScrollRoutingHandle {
   scrollToLocation(params: {
     sectionIndex: number;
     itemIndex: number;
@@ -40,12 +41,6 @@ export interface IVirtualizedSectionListHandle {
     viewPosition?: number;
     animated?: boolean;
   }): void;
-  flashScrollIndicators(): void;
-  getNativeScrollRef(): IScrollViewHandle | null;
-  getScrollableNode(): IScrollViewHandle | null;
-  getScrollResponder(): IScrollViewHandle | null;
-  getScrollNode(): ISymbioteNode | null;
-  recordInteraction(): void;
 }
 
 // Flatten sections into entries AND record where each section header lands in the flat

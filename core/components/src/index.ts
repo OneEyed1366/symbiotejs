@@ -95,15 +95,18 @@ export type { IStickyHeaderProps, IStickyInterpolationParams } from './view/rend
 
 export type {
   IImageSource,
-  IImageStatics,
   IImageSourceProp,
   IResizeMode,
-  IImageSize,
-  IImageCacheStatus,
   IImageProps,
   IImageViewProps,
 } from './view/render-image';
-export { renderImage, imageStatics, setImageSourceResolver } from './view/render-image';
+export { renderImage } from './view/render-image';
+// Image statics (getSize/prefetch/queryCache/…) and the source-resolver registration now live in
+// @symbiote-native/engine (image-loader.ts / image-source-resolver.ts) — same imperative,
+// native-bridge-touching shape as Alert/Share, out of the pure view layer. Re-exported here so
+// the public `Image.*` surface is unchanged.
+export type { IImageStatics, IImageSize, IImageCacheStatus } from '@symbiote-native/engine';
+export { imageStatics, setImageSourceResolver } from '@symbiote-native/engine';
 
 // ImageBackground: render-only composition (absolute-fill image behind, children on top).
 export { renderImageBackground } from './view/render-image-background';
@@ -175,6 +178,9 @@ export {
   buildPressableListeners,
   resolveDisabledAccessibilityState,
   noteHoverNoop,
+  shouldSuppressPress,
+  shouldClaimResponder,
+  isTerminationAllowed,
 } from './view/render-pressable';
 
 // Touchable*: shared press-timing constants + the deactivation-floor math (the Animated feedback

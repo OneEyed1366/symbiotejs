@@ -9,13 +9,13 @@ import { processColor, DeviceEventEmitter, Image, type ImageSourcePropType } fro
 import {
   setColorProcessor,
   setDeviceEventSource,
+  setImageSourceResolver,
   setNativeViewConfigSource,
   type IColorValue,
   type IDeviceEventSource,
   type INativeViewConfig,
   type INativeViewConfigSource,
 } from '@symbiote-native/engine';
-import { setImageSourceResolver } from './view/render-image';
 // @ts-expect-error react-native ships no types for this internal path (plain .js) — the
 // try/catch below is what actually proves the shape, not TS.
 import * as ReactNativeViewConfigRegistry from 'react-native/Libraries/Renderer/shims/ReactNativeViewConfigRegistry';

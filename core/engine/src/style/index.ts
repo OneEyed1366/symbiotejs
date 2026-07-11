@@ -8,9 +8,7 @@
 // array-valued prop and `shadowOffset: {width, height}` an object-valued prop; both
 // are copied through untouched. Only the top-level style slot is flattened.
 
-function isPlainObject(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null && !Array.isArray(value);
-}
+import { isRecord } from '../type-guards';
 
 export function flattenStyle(style: unknown): Record<string, unknown> {
   if (Array.isArray(style)) {
@@ -25,7 +23,7 @@ export function flattenStyle(style: unknown): Record<string, unknown> {
     return result;
   }
 
-  if (isPlainObject(style)) {
+  if (isRecord(style)) {
     // Shallow copy of own enumerable keys: values (arrays, nested objects) pass through.
     return { ...style };
   }

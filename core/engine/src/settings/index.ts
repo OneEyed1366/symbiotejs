@@ -13,6 +13,7 @@ import {
 } from '../native-events';
 import { getNativeModule } from '../native-modules';
 import { dlog } from '../debug';
+import { isRecord } from '../type-guards';
 
 // The iOS native module name RN registers this under. NOTE: this is the name the
 // iOS JS wrapper resolves via `TurboModuleRegistry.getEnforcing('SettingsManager')`.
@@ -40,10 +41,6 @@ interface INativeSettingsManager extends IEventEmitterModule {
 interface ISubscription {
   keys: string[];
   callback: (() => void) | null;
-}
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null;
 }
 
 // Lazily resolved so importing this module has no native side effect. `null` when

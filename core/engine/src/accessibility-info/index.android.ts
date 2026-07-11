@@ -7,18 +7,12 @@
 // reduce-motion is `reduceMotionDidChange`). Metro picks this on an Android host. Mirrors
 // RN's AccessibilityInfo.js Android branches.
 
-import { getNativeModule } from '../native-modules';
-import {
-  installDeviceEventHub,
-  NativeEventEmitter,
-  type IEventEmitterModule,
-  type IEventSubscription,
-} from '../native-events';
-import { isSymbioteNode } from '../node';
-import { sendAccessibilityEvent as sharedSendAccessibilityEvent } from '../commit';
+import { createDeviceEventModule } from '../native-modules';
+import { type IEventEmitterModule, type IEventSubscription } from '../native-events';
 import { dlog } from '../debug';
 import {
   isBoolean,
+  routeSendAccessibilityEvent,
   type IAccessibilityChangeEventName,
   type IAccessibilityChangeEventHandler,
   type IAccessibilityInfoStatic,
@@ -72,26 +66,20 @@ interface INativeAccessibilityInfoAndroid extends IEventEmitterModule {
   removeListeners(count: number): void;
 }
 
-// Lazily resolved so importing this module has no native side effect. `null` when unlinked.
-let accessibilityModule: INativeAccessibilityInfoAndroid | null | undefined;
-let emitter: NativeEventEmitter | undefined;
+// Lazily resolved so importing this module has no native side effect. `null` when
+// unlinked. The lazy-resolve + lazy-emitter shape lives in `createDeviceEventModule`
+// (native-modules.ts); Android adds no self-subscription on top of it.
+const deviceEventModule = createDeviceEventModule<INativeAccessibilityInfoAndroid>({
+  moduleName: ACCESSIBILITY_MODULE,
+  moduleLogPrefix: 'AccessibilityInfo(android): module',
+});
 
 function getModule(): INativeAccessibilityInfoAndroid | null {
-  if (accessibilityModule === undefined) {
-    accessibilityModule = getNativeModule<INativeAccessibilityInfoAndroid>(ACCESSIBILITY_MODULE);
-    dlog(
-      `AccessibilityInfo(android): module ${accessibilityModule ? 'resolved' : 'NOT resolved (null)'}`,
-    );
-  }
-  return accessibilityModule;
+  return deviceEventModule.getModule();
 }
 
-function getEmitter(): NativeEventEmitter {
-  if (emitter === undefined) {
-    installDeviceEventHub();
-    emitter = new NativeEventEmitter(getModule() ?? undefined);
-  }
-  return emitter;
+function getEmitter() {
+  return deviceEventModule.getEmitter();
 }
 
 // Run a single-callback Android getter as a Promise. Resolves false when the module is
@@ -204,20 +192,12 @@ class AccessibilityInfoAndroid implements IAccessibilityInfoStatic {
     });
   }
 
-  // Emit a named accessibility event at a view through the Fabric slot. RN's Fabric path
-  // hands the public-instance handle to nativeFabricUIManager.sendAccessibilityEvent with the
-  // STRING eventType; the C++ side maps it to the platform's AccessibilityEvent kind. The
-  // handle here IS the SymbioteNode (symbiote augments the node in place as its public
-  // instance), so resolve it with the runtime guard and route through shared.
+  // Emit a named accessibility event at a view through the Fabric slot. The shared
+  // routing (isSymbioteNode guard + dispatch) lives in shared.ts, identical on both
+  // platforms; Android has no early-return special case, so it passes no shouldSkip
+  // hook — every event reaches the slot.
   sendAccessibilityEvent(handle: IAccessibilityHandle, eventType: IAccessibilityEventType): void {
-    if (!isSymbioteNode(handle)) {
-      dlog(
-        `AccessibilityInfo(android).sendAccessibilityEvent("${eventType}") -> handle is not a node (no-op)`,
-      );
-      return;
-    }
-    dlog(`AccessibilityInfo(android).sendAccessibilityEvent("${eventType}") -> slot`);
-    sharedSendAccessibilityEvent(handle, eventType);
+    routeSendAccessibilityEvent('android', handle, eventType);
   }
 
   // Subscribe to an accessibility-state change. Android events all carry a bare boolean.

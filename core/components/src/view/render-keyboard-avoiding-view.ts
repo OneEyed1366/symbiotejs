@@ -10,6 +10,7 @@
 // and the adapter builds its own element tree with its children. Mirrors RN's
 // Libraries/Components/Keyboard/KeyboardAvoidingView.js inset/behavior logic.
 
+import { isRecord } from '@symbiote-native/engine';
 import type { IStyleProp, IViewStyle } from '@symbiote-native/engine';
 
 export type IKeyboardAvoidingBehavior = 'height' | 'position' | 'padding';
@@ -30,10 +31,6 @@ export interface IMeasuredFrame {
 export interface IKeyboardFrame {
   screenY: number;
   height: number;
-}
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null;
 }
 
 // Pull the keyboard's top edge (screenY) and height off the raw native payload. The shape is
