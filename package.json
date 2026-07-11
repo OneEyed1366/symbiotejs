@@ -10,7 +10,7 @@
   "scripts": {
     "typecheck": "tsc --build",
     "typecheck:watch": "tsc --build --watch",
-    "prepublish-build": "pnpm run typecheck && pnpm run fix-esm-extensions && pnpm --filter @symbiote-native/angular --filter @symbiote-native/slider run ng:build",
+    "prepublish-build": "pnpm run typecheck && pnpm run fix-esm-extensions && pnpm --filter './{core,adapters,packages}/*' --if-present run ng:build",
     "build": "pnpm run prepublish-build && pnpm run docs:build",
     "fix-esm-extensions": "node scripts/fix-esm-extensions.mjs adapters/react/build adapters/vue/build core/engine/build core/components/build core/test-utils/build",
     "test": "vitest run",
