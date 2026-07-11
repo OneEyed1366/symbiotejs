@@ -4,17 +4,12 @@
 // RNSScreen's native onAppear actually lands (stack.ts), so a screen genuinely isn't focused yet
 // at the instant it mounts — same async gap real native transitions have.
 
-import { useContext, useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { NAVIGATION_EVENT_BLUR, NAVIGATION_EVENT_FOCUS } from '../../core';
-import { NavigationContext } from '../navigation-context';
+import { useRequiredNavigationContext } from '../navigation-context';
 
 export function useIsFocused(): boolean {
-  const context = useContext(NavigationContext);
-  if (!context) {
-    throw new Error(
-      'useIsFocused must be used within a screen rendered by <Stack>, <Tab>, or <Drawer>',
-    );
-  }
+  const context = useRequiredNavigationContext('useIsFocused');
   const { emitter } = context;
   const [isFocused, setIsFocused] = useState(false);
 

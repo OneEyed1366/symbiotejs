@@ -6,7 +6,7 @@
 import type { FC, ReactElement, RefObject } from 'react';
 import type { IRoute } from '../core';
 import type { ISearchBarCommands, ISearchBarOptions, IScreenOptions } from '../core';
-import type { INavigatorHandle } from './stack';
+import type { INavigatorHandle } from '../core';
 
 export type IScreenComponentProps = {
   route: IRoute<unknown>;

@@ -4,18 +4,13 @@
 // `effect` (React.useCallback), same requirement the upstream hook documents, since a new
 // `effect` identity re-subscribes here like any other useEffect dependency change.
 
-import { useContext, useEffect } from 'react';
+import { useEffect } from 'react';
 import type { EffectCallback } from 'react';
 import { NAVIGATION_EVENT_BLUR, NAVIGATION_EVENT_FOCUS } from '../../core';
-import { NavigationContext } from '../navigation-context';
+import { useRequiredNavigationContext } from '../navigation-context';
 
 export function useFocusEffect(effect: EffectCallback): void {
-  const context = useContext(NavigationContext);
-  if (!context) {
-    throw new Error(
-      'useFocusEffect must be used within a screen rendered by <Stack>, <Tab>, or <Drawer>',
-    );
-  }
+  const context = useRequiredNavigationContext('useFocusEffect');
   const { emitter } = context;
 
   useEffect(() => {

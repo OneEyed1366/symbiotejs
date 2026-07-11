@@ -5,8 +5,7 @@
 // <third_party_rn_packages_are_react_only> — this and Drawer import nothing from react-native.
 
 import type { FC, ReactElement } from 'react';
-import type { IDrawerScreenOptions, IRoute } from '../core';
-import type { IDrawerNavigatorHandle } from './drawer';
+import type { IDrawerNavigatorHandle, IDrawerScreenOptions, IRoute } from '../core';
 
 export type IDrawerScreenComponentProps = {
   route: IRoute<unknown>;

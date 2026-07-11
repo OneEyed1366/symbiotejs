@@ -9,19 +9,15 @@
 // lets a screen nested inside e.g. a Stack-screen-renders-a-Tab composition reach the enclosing
 // Stack via useNavigation().getParent().
 
-import { createContext } from 'react';
-import type { INavigationEmitter, IRoute } from '../core';
-import type { INavigatorHandle } from './stack';
-import type { ITabNavigatorHandle } from './tabs';
-import type { IDrawerNavigatorHandle } from './drawer';
+import { createContext, useContext } from 'react';
+import type { INavigationEmitter, IRoute, IAnyNavigatorHandle } from '../core';
+export type { IAnyNavigatorHandle } from '../core';
 
-// Every navigator kind a screen might be rendered under. A nested navigator (e.g. a Tab rendered
-// as a Stack screen's content) means a screen's OWN navigation prop and its PARENT's handle can be
-// different navigator kinds, so the Context value's `navigation` field can't stay Stack-specific
-// like it was before Tab/Drawer also started providing this Context. Consumers narrow the union
-// themselves (e.g. `'push' in handle` picks out a Stack handle) — no `as` casts.
-export type IAnyNavigatorHandle = INavigatorHandle | ITabNavigatorHandle | IDrawerNavigatorHandle;
-
+// A nested navigator (e.g. a Tab rendered as a Stack screen's content) means a screen's OWN
+// navigation prop and its PARENT's handle can be different navigator kinds, so the Context
+// value's `navigation` field can't stay Stack-specific like it was before Tab/Drawer also started
+// providing this Context. Consumers narrow the union themselves (e.g. `'push' in handle` picks
+// out a Stack handle) — no `as` casts.
 export type INavigationContextValue = {
   route: IRoute<unknown>;
   navigation: IAnyNavigatorHandle;
@@ -30,3 +26,16 @@ export type INavigationContextValue = {
 };
 
 export const NavigationContext = createContext<INavigationContextValue | undefined>(undefined);
+
+// Every hook in ./hooks opened with the same `useContext(NavigationContext)` + missing-provider
+// throw; co-located here since this is the Context they all read. `hookName` keeps each hook's
+// own name in the thrown message, same as when each hook wrote the throw inline.
+export function useRequiredNavigationContext(hookName: string): INavigationContextValue {
+  const context = useContext(NavigationContext);
+  if (!context) {
+    throw new Error(
+      `${hookName} must be used within a screen rendered by <Stack>, <Tab>, or <Drawer>`,
+    );
+  }
+  return context;
+}

@@ -416,6 +416,30 @@ describe('React Drawer navigator', () => {
     expect(profileIsFocused).toBe(true);
   });
 
+  it('merges navigator-level screenOptions under a screen that does not override them', () => {
+    let capturedDrawerLabel: string | undefined;
+    mount(
+      ROOT_TAG,
+      createElement(
+        Drawer,
+        {
+          initialRouteName: 'Home',
+          screenOptions: { drawerLabel: 'Shared Label' },
+          renderDrawerContent: ({ state, descriptors }) => {
+            const homeRoute = state.routes.find(route => route.name === 'Home');
+            capturedDrawerLabel = homeRoute
+              ? descriptors[homeRoute.key]?.options.drawerLabel
+              : undefined;
+            return null;
+          },
+        },
+        createElement(Drawer.Screen, { name: 'Home', component: HomeScreen }),
+        createElement(Drawer.Screen, { name: 'Profile', component: ProfileScreen }),
+      ),
+    );
+    expect(capturedDrawerLabel).toBe('Shared Label');
+  });
+
   it('useFocusEffect runs on Drawer focus and its cleanup once jumpTo moves focus away', () => {
     const events: string[] = [];
     function TrackedHomeScreen(): ReturnType<typeof createElement> {

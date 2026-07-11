@@ -4,9 +4,9 @@
 // `navigation.addListener('focus', cb)` surface. All pub/sub logic lives in
 // ../../core/navigation-events; this hook only reads NavigationContext and binds identity.
 
-import { useContext, useMemo } from 'react';
+import { useMemo } from 'react';
 import type { INavigationEventListener, INavigationEventName } from '../../core';
-import { NavigationContext } from '../navigation-context';
+import { useRequiredNavigationContext } from '../navigation-context';
 import type { IAnyNavigatorHandle } from '../navigation-context';
 
 export type INavigationHandle = IAnyNavigatorHandle & {
@@ -22,12 +22,7 @@ export type INavigationHandle = IAnyNavigatorHandle & {
 };
 
 export function useNavigation(): INavigationHandle {
-  const context = useContext(NavigationContext);
-  if (!context) {
-    throw new Error(
-      'useNavigation must be used within a screen rendered by <Stack>, <Tab>, or <Drawer>',
-    );
-  }
+  const context = useRequiredNavigationContext('useNavigation');
   const { navigation, emitter, parent } = context;
 
   return useMemo(

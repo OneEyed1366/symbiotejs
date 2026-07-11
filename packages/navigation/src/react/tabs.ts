@@ -8,7 +8,6 @@
 // react-native-screens ViewConfig to register here — Tab needs no `../register` import.
 
 import {
-  Children,
   createElement,
   forwardRef,
   isValidElement,
@@ -20,7 +19,7 @@ import {
   useMemo,
   useReducer,
 } from 'react';
-import type { ReactNode } from 'react';
+import type { ReactElement, ReactNode } from 'react';
 import { descriptorToReact } from '@symbiote-native/react';
 import { dlog } from '@symbiote-native/engine';
 import {
@@ -32,15 +31,13 @@ import {
   renderTabBar,
   tabRouterReducer,
 } from '../core';
-import type { IRoute, ITabBarItemView, ITabOptions } from '../core';
+import type { IRoute, ITabBarItemView, ITabNavigatorHandle, ITabOptions } from '../core';
+import { collectRegistry } from './collect-registry';
 import { NavigationContext } from './navigation-context';
 import { TabScreen } from './tab-screen';
 import type { ITabScreenComponentProps, ITabScreenProps } from './tab-screen';
 
-export type ITabNavigatorHandle = {
-  jumpTo: (name: string, params?: unknown) => void;
-  setParams: (key: string, params: unknown) => void;
-};
+export type { ITabNavigatorHandle } from '../core';
 
 export type ITabProps = {
   initialRouteName?: string;
@@ -48,29 +45,10 @@ export type ITabProps = {
   children?: ReactNode;
 };
 
-type ITabRegistryEntry = {
-  component: ITabScreenProps['component'];
-  options: ITabScreenProps['options'];
-  initialParams: unknown;
-};
+type ITabRegistryEntry = Omit<ITabScreenProps, 'name'>;
 
-function isTabScreenElement(
-  child: ReactNode,
-): child is ReturnType<typeof TabScreen> & { props: ITabScreenProps } {
+function isTabScreenElement(child: ReactNode): child is ReactElement<ITabScreenProps> {
   return isValidElement(child) && child.type === TabScreen;
-}
-
-function collectRegistry(children: ReactNode): Map<string, ITabRegistryEntry> {
-  const registry = new Map<string, ITabRegistryEntry>();
-  Children.forEach(children, child => {
-    if (!isTabScreenElement(child)) return;
-    registry.set(child.props.name, {
-      component: child.props.component,
-      options: child.props.options,
-      initialParams: child.props.initialParams,
-    });
-  });
-  return registry;
 }
 
 function resolveTabOptions(
@@ -91,7 +69,10 @@ const TabImpl = forwardRef<ITabNavigatorHandle, ITabProps>((props, forwardedRef)
   // nested screen's useNavigation().getParent() walks (e.g. this Tab rendered as a Stack screen's
   // content reaches that Stack via this value). undefined when this Tab is the nesting root.
   const ambientContext = useContext(NavigationContext);
-  const registry = useMemo(() => collectRegistry(props.children), [props.children]);
+  const registry = useMemo(
+    () => collectRegistry(props.children, isTabScreenElement),
+    [props.children],
+  );
   const routeIdPrefix = useId();
 
   const routes = useMemo<IRoute<unknown>[]>(
@@ -115,7 +96,7 @@ const TabImpl = forwardRef<ITabNavigatorHandle, ITabProps>((props, forwardedRef)
     [],
   );
   const setParams = useCallback(
-    (key: string, params: unknown) => dispatch({ type: 'setParams', key, params }),
+    (params: unknown, key: string) => dispatch({ type: 'setParams', key, params }),
     [],
   );
 
@@ -180,8 +161,10 @@ const TabImpl = forwardRef<ITabNavigatorHandle, ITabProps>((props, forwardedRef)
   const routeEmitter = useMemo(() => createNavigationEmitter(), [focusedRouteKey]);
 
   // Tab paints its own bar in pure JS — there is no native onAppear/onDisappear to hook (unlike
-  // Stack's RNSScreen), so focus/blur is synthesized here: emit 'focus' once the newly-focused
-  // route's content has mounted, 'blur' when it's about to be replaced or the Tab itself unmounts.
+  // Stack's RNSScreen), so focus/blur is synthesized here: mount = focus, cleanup = blur, exactly
+  // what an effect keyed on focusedRouteKey already encodes — no diffFocusedRoute indirection
+  // needed (unlike Vue/Angular, which diff real prev/next keys inside an imperative watch/CD
+  // callback that has no mount/cleanup pairing of its own).
   useEffect(() => {
     if (focusedRouteKey === undefined) return undefined;
     dlog(`Tab: route "${focusedRoute?.name}" focused`);

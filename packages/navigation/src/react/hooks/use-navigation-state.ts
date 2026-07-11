@@ -8,36 +8,38 @@
 // broadcast lands a tick later (post-commit useEffect), so a selector reading e.g.
 // `state.routes.at(-1)?.name` still resolves correctly on first paint for the common single-route
 // case, closing the same async gap useIsFocused documents.
+//
+// Live updates currently only arrive under <Stack> — it's the only navigator that emits
+// NAVIGATION_EVENT_STATE (its post-commit useEffect in stack.ts); <Tab>/<Drawer> don't broadcast
+// it, so under those this hook silently stays on its initial snapshot.
 
-import { useContext, useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import type { INavigatorState } from '../../core';
-import { NAVIGATION_EVENT_STATE } from '../../core';
-import { NavigationContext } from '../navigation-context';
+import { NAVIGATION_EVENT_STATE, isRecord } from '../../core';
+import { useRequiredNavigationContext } from '../navigation-context';
 
 export function useNavigationState<TResult>(
   selector: (state: INavigatorState) => TResult,
 ): TResult {
-  const context = useContext(NavigationContext);
-  if (!context) {
-    throw new Error(
-      'useNavigationState must be used within a screen rendered by <Stack>, <Tab>, or <Drawer>',
-    );
-  }
+  const context = useRequiredNavigationContext('useNavigationState');
   const { route, emitter } = context;
   const [result, setResult] = useState(() => selector({ routes: [route] }));
+
+  // selector is typically an inline arrow at the call site (`useNavigationState(s => ...)`), a
+  // fresh identity every render — read through a ref so the effect below doesn't need `selector`
+  // in its deps, and doesn't unsubscribe/resubscribe on every render because of it (the same trap
+  // useFocusEffect's own comment documents for its `effect` argument).
+  const selectorRef = useRef(selector);
+  selectorRef.current = selector;
 
   useEffect(() => {
     return emitter.addListener(NAVIGATION_EVENT_STATE, (state: unknown) => {
       if (!isNavigatorState(state)) return;
-      setResult(selector(state));
+      setResult(selectorRef.current(state));
     });
-  }, [emitter, selector]);
+  }, [emitter]);
 
   return result;
-}
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null;
 }
 
 function isNavigatorState(value: unknown): value is INavigatorState {

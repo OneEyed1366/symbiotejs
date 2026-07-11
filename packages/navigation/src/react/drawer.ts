@@ -16,10 +16,10 @@
 // see the explicit gap list at the bottom of this file.
 
 import {
-  Children,
   createElement,
   forwardRef,
   isValidElement,
+  useCallback,
   useContext,
   useEffect,
   useId,
@@ -35,7 +35,6 @@ import type { IDescriptor } from '@symbiote-native/components';
 import { dlog, type IStyleProp, type IViewStyle } from '@symbiote-native/engine';
 import {
   DRAWER_DEFAULT_OVERLAY_COLOR,
-  DRAWER_DEFAULT_SWIPE_ENABLED,
   NAVIGATION_EVENT_BLUR,
   NAVIGATION_EVENT_FOCUS,
   createInitialDrawerRouterState,
@@ -43,43 +42,32 @@ import {
   drawerChildOrder,
   drawerRouterReducer,
   isDrawerAnimated,
-  isHorizontalDrag,
-  isSwipeStartInEdge,
   renderDrawer,
+  resolveDragProgress,
   resolveDrawerGeometry,
-  resolveDrawerPosition,
-  resolveDrawerWidth,
+  resolveDrawerSlotInterpolation,
   resolveSwipeIntent,
+  shouldClaimDrawerSwipe,
 } from '../core';
 import type {
+  IDrawerDescriptorMap,
+  IDrawerNavigatorHandle,
   IDrawerOptions,
   IDrawerRouterState,
   IDrawerScreenOptions,
   IDrawerSlot,
   IRoute,
 } from '../core';
+import { collectRegistry } from './collect-registry';
 import { NavigationContext } from './navigation-context';
 import { DrawerScreen } from './drawer-screen';
 import type { IDrawerScreenComponentProps, IDrawerScreenProps } from './drawer-screen';
 
-export type IDrawerNavigatorHandle = {
-  openDrawer: () => void;
-  closeDrawer: () => void;
-  toggleDrawer: () => void;
-  jumpTo: (name: string) => void;
-};
-
-// Keyed by route.key, mirroring @react-navigation/drawer's own `descriptors` prop shape — the
-// options a caller's renderDrawerContent reads to label its menu entries (Drawer ships no
-// built-in menu UI, matching react-native-drawer-layout's Drawer primitive; see this file's
-// header).
-export type IDrawerDescriptorMap = Record<
-  string,
-  { options: IDrawerScreenOptions; navigation: IDrawerNavigatorHandle }
->;
+export type { IDrawerNavigatorHandle, IDrawerDescriptorMap } from '../core';
 
 export type IDrawerProps = IDrawerOptions & {
   initialRouteName?: string;
+  screenOptions?: IDrawerScreenOptions;
   drawerStyle?: IStyleProp<IViewStyle>;
   renderDrawerContent?: (props: {
     state: IDrawerRouterState;
@@ -89,65 +77,20 @@ export type IDrawerProps = IDrawerOptions & {
   children?: ReactNode;
 };
 
-type IDrawerRegistryEntry = {
-  component: IDrawerScreenProps['component'];
-  options: IDrawerScreenProps['options'];
-  initialParams: unknown;
-};
+type IDrawerRegistryEntry = Omit<IDrawerScreenProps, 'name'>;
 
-function isDrawerScreenElement(
-  child: ReactNode,
-): child is ReturnType<typeof DrawerScreen> & { props: IDrawerScreenProps } {
+function isDrawerScreenElement(child: ReactNode): child is ReactElement<IDrawerScreenProps> {
   return isValidElement(child) && child.type === DrawerScreen;
-}
-
-function collectRegistry(children: ReactNode): Map<string, IDrawerRegistryEntry> {
-  const registry = new Map<string, IDrawerRegistryEntry>();
-  Children.forEach(children, child => {
-    if (!isDrawerScreenElement(child)) return;
-    registry.set(child.props.name, {
-      component: child.props.component,
-      options: child.props.options,
-      initialParams: child.props.initialParams,
-    });
-  });
-  return registry;
 }
 
 function resolveDrawerScreenOptions(
   entry: IDrawerRegistryEntry,
   screenComponentProps: IDrawerScreenComponentProps,
+  screenOptions: IDrawerScreenOptions | undefined,
 ): IDrawerScreenOptions {
-  if (typeof entry.options === 'function') return entry.options(screenComponentProps);
-  return entry.options ?? {};
-}
-
-function clamp01(value: number): number {
-  return Math.min(1, Math.max(0, value));
-}
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null;
-}
-
-function toFiniteNumber(value: unknown): number | undefined {
-  return typeof value === 'number' && Number.isFinite(value) ? value : undefined;
-}
-
-// The touch's real starting page-X, read off the raw event rather than gestureState.x0:
-// the engine's capture phase (core/engine/src/pan-responder/index.ts's
-// onStartShouldSetResponderCapture/onMoveShouldSetResponderCapture) resets gestureState
-// before the bubble-phase onStartShouldSetPanResponder/onMoveShouldSetPanResponder callbacks
-// below run, so x0 is only populated later, inside onResponderGrant. Mirrors
-// core/engine/src/events/index.ts's readTouchPoint: RN puts pageX on the event directly for
-// a single touch, or on touches[0] for multi-touch.
-function startPageXOf(event: ISymbioteEvent): number | undefined {
-  const { nativeEvent } = event;
-  const direct = toFiniteNumber(nativeEvent.pageX);
-  if (direct !== undefined) return direct;
-  const touches = nativeEvent.touches;
-  if (Array.isArray(touches) && isRecord(touches[0])) return toFiniteNumber(touches[0].pageX);
-  return undefined;
+  const own =
+    typeof entry.options === 'function' ? entry.options(screenComponentProps) : entry.options;
+  return { ...screenOptions, ...own };
 }
 
 const DRAWER_SNAP_DURATION = 250;
@@ -160,6 +103,7 @@ const DrawerImpl = forwardRef<IDrawerNavigatorHandle, IDrawerProps>((props, forw
   const ambientContext = useContext(NavigationContext);
   const {
     initialRouteName,
+    screenOptions,
     renderDrawerContent,
     children,
     drawerStyle,
@@ -184,7 +128,7 @@ const DrawerImpl = forwardRef<IDrawerNavigatorHandle, IDrawerProps>((props, forw
     swipeMinVelocity,
   };
 
-  const registry = useMemo(() => collectRegistry(children), [children]);
+  const registry = useMemo(() => collectRegistry(children, isDrawerScreenElement), [children]);
   const routeIdPrefix = useId();
 
   const routes = useMemo<IRoute<unknown>[]>(
@@ -223,83 +167,80 @@ const DrawerImpl = forwardRef<IDrawerNavigatorHandle, IDrawerProps>((props, forw
   const isOpenRef = useRef(state.isOpen);
   isOpenRef.current = state.isOpen;
 
-  function animateProgressTo(open: boolean): void {
-    // Investigation instrumentation (Drawer openDrawer-no-op / toggleDrawer-no-animation bug):
-    // every imperative caller (openDrawer/closeDrawer/toggleDrawer/jumpTo) funnels through here,
-    // so this single seam proves whether Animated.timing is actually being started at all, and
-    // with what toValue — a live-only failure (e.g. a stale progress ref, or Animated.timing
-    // silently short-circuiting) would show up as this log firing with no visible motion. Kept
-    // behind DEBUG per <keep_logs_gate_behind_DEBUG>, never removed.
-    dlog(`Drawer: animateProgressTo(open=${open}) starting at t=${Date.now()}`);
-    Animated.timing(progress, {
-      toValue: open ? 1 : 0,
-      duration: DRAWER_SNAP_DURATION,
-      // Native-driver wiring (the AnimatedComponent passthrough opt-in ADR 0017 defines) is
-      // deferred for v1 — see this file's header feasibility note. The JS timing loop still
-      // drives every frame, same as any other non-native-driven Animated.timing in this codebase.
-      useNativeDriver: false,
-    }).start();
-  }
+  const animateProgressTo = useCallback(
+    (open: boolean): void => {
+      // Investigation instrumentation (Drawer openDrawer-no-op / toggleDrawer-no-animation bug):
+      // every imperative caller (openDrawer/closeDrawer/toggleDrawer/jumpTo) funnels through here,
+      // so this single seam proves whether Animated.timing is actually being started at all, and
+      // with what toValue — a live-only failure (e.g. a stale progress ref, or Animated.timing
+      // silently short-circuiting) would show up as this log firing with no visible motion. Kept
+      // behind DEBUG per <keep_logs_gate_behind_DEBUG>, never removed.
+      dlog(`Drawer: animateProgressTo(open=${open}) starting at t=${Date.now()}`);
+      Animated.timing(progress, {
+        toValue: open ? 1 : 0,
+        duration: DRAWER_SNAP_DURATION,
+        // Native-driver wiring (the AnimatedComponent passthrough opt-in ADR 0017 defines) is
+        // deferred for v1 — see this file's header feasibility note. The JS timing loop still
+        // drives every frame, same as any other non-native-driven Animated.timing in this codebase.
+        useNativeDriver: false,
+      }).start();
+    },
+    [progress],
+  );
 
-  const handle: IDrawerNavigatorHandle = {
-    openDrawer: () => {
-      dlog(`Drawer: openDrawer() called, isOpen=${isOpenRef.current} at t=${Date.now()}`);
-      animateProgressTo(true);
-      dispatch({ type: 'openDrawer' });
-    },
-    closeDrawer: () => {
-      dlog(`Drawer: closeDrawer() called, isOpen=${isOpenRef.current} at t=${Date.now()}`);
-      animateProgressTo(false);
-      dispatch({ type: 'closeDrawer' });
-    },
-    toggleDrawer: () => {
-      dlog(`Drawer: toggleDrawer() called, isOpen=${isOpenRef.current} at t=${Date.now()}`);
-      animateProgressTo(!isOpenRef.current);
-      dispatch({ type: 'toggleDrawer' });
-    },
-    jumpTo: (name: string) => {
-      dispatch({ type: 'jumpTo', name });
-      if (isOpenRef.current) animateProgressTo(false);
-    },
-  };
+  const handle = useMemo<IDrawerNavigatorHandle>(
+    () => ({
+      openDrawer: () => {
+        dlog(`Drawer: openDrawer() called, isOpen=${isOpenRef.current} at t=${Date.now()}`);
+        animateProgressTo(true);
+        dispatch({ type: 'openDrawer' });
+      },
+      closeDrawer: () => {
+        dlog(`Drawer: closeDrawer() called, isOpen=${isOpenRef.current} at t=${Date.now()}`);
+        animateProgressTo(false);
+        dispatch({ type: 'closeDrawer' });
+      },
+      toggleDrawer: () => {
+        dlog(`Drawer: toggleDrawer() called, isOpen=${isOpenRef.current} at t=${Date.now()}`);
+        animateProgressTo(!isOpenRef.current);
+        dispatch({ type: 'toggleDrawer' });
+      },
+      jumpTo: (name: string) => {
+        dispatch({ type: 'jumpTo', name });
+        if (isOpenRef.current) animateProgressTo(false);
+      },
+    }),
+    [animateProgressTo],
+  );
 
-  useImperativeHandle(forwardedRef, () => handle);
+  useImperativeHandle(forwardedRef, () => handle, [handle]);
 
   const panResponder = useRef(
     PanResponder.create({
       onStartShouldSetPanResponder: (
         event: ISymbioteEvent,
         gestureState: IPanResponderGestureState,
-      ): boolean => {
-        const currentOptions = optionsRef.current;
-        if ((currentOptions.swipeEnabled ?? DRAWER_DEFAULT_SWIPE_ENABLED) === false) return false;
-        if (!isDrawerAnimated(currentOptions)) return false;
-        return isSwipeStartInEdge(
-          startPageXOf(event) ?? gestureState.x0,
+      ): boolean =>
+        shouldClaimDrawerSwipe(
+          event,
+          gestureState,
           screenWidthRef.current,
           isOpenRef.current,
-          currentOptions,
-        );
-      },
+          optionsRef.current,
+          'start',
+        ),
       onMoveShouldSetPanResponder: (
         event: ISymbioteEvent,
         gestureState: IPanResponderGestureState,
-      ): boolean => {
-        const currentOptions = optionsRef.current;
-        if ((currentOptions.swipeEnabled ?? DRAWER_DEFAULT_SWIPE_ENABLED) === false) return false;
-        if (!isDrawerAnimated(currentOptions)) return false;
-        if (
-          !isSwipeStartInEdge(
-            startPageXOf(event) ?? gestureState.x0,
-            screenWidthRef.current,
-            isOpenRef.current,
-            currentOptions,
-          )
-        ) {
-          return false;
-        }
-        return isHorizontalDrag(gestureState);
-      },
+      ): boolean =>
+        shouldClaimDrawerSwipe(
+          event,
+          gestureState,
+          screenWidthRef.current,
+          isOpenRef.current,
+          optionsRef.current,
+          'move',
+        ),
       onPanResponderGrant: (): void => {
         dlog('Drawer: gesture grant');
         dragStartProgress.current = isOpenRef.current ? 1 : 0;
@@ -308,11 +249,12 @@ const DrawerImpl = forwardRef<IDrawerNavigatorHandle, IDrawerProps>((props, forw
         _event: ISymbioteEvent,
         gestureState: IPanResponderGestureState,
       ): void => {
-        const currentOptions = optionsRef.current;
-        const width = resolveDrawerWidth(currentOptions);
-        const sign = resolveDrawerPosition(currentOptions) === 'right' ? -1 : 1;
-        const delta = (sign * gestureState.dx) / width;
-        progress.setValue(clamp01(dragStartProgress.current + delta));
+        const nextProgress = resolveDragProgress(
+          gestureState,
+          dragStartProgress.current,
+          optionsRef.current,
+        );
+        progress.setValue(nextProgress);
       },
       onPanResponderRelease: (
         _event: ISymbioteEvent,
@@ -337,36 +279,21 @@ const DrawerImpl = forwardRef<IDrawerNavigatorHandle, IDrawerProps>((props, forw
     [options.drawerType, options.drawerPosition, options.drawerWidth],
   );
 
-  const panelTranslateX = animated
-    ? progress.interpolate({
-        inputRange: [0, 1],
-        outputRange: [geometry.panelTranslateXClosed, geometry.panelTranslateXOpen],
-      })
-    : undefined;
-  const contentTranslateX = animated
-    ? progress.interpolate({
-        inputRange: [0, 1],
-        outputRange: [geometry.contentTranslateXClosed, geometry.contentTranslateXOpen],
-      })
-    : undefined;
-  const overlayOpacity = animated
-    ? progress.interpolate({
-        inputRange: [0, 1],
-        outputRange: [geometry.overlayOpacityClosed, geometry.overlayOpacityOpen],
-      })
-    : undefined;
+  const panelSlot = animated ? resolveDrawerSlotInterpolation(geometry, 'panel') : undefined;
+  const contentSlot = animated ? resolveDrawerSlotInterpolation(geometry, 'content') : undefined;
+  const overlaySlot = animated ? resolveDrawerSlotInterpolation(geometry, 'overlay') : undefined;
+
+  const panelTranslateX = panelSlot ? progress.interpolate(panelSlot.translateX) : undefined;
+  const contentTranslateX = contentSlot ? progress.interpolate(contentSlot.translateX) : undefined;
+  const overlayOpacity = overlaySlot ? progress.interpolate(overlaySlot.opacity) : undefined;
   // The overlay is a full-screen absolutely-positioned sibling BELOW content in paint order
   // (see render-drawer.ts's drawerChildOrder) — for 'front' that's fine since content never moves,
   // but for 'slide' content itself translates away by contentTranslateX, and without following it
   // the overlay stays pinned full-screen, dimming (and touch-capturing) the now-revealed panel
   // underneath instead of just the content sliver it's meant to dim. Tying overlay to the SAME
-  // translateX as content keeps it registered exactly under content, wherever content actually is.
-  const overlayTranslateX = animated
-    ? progress.interpolate({
-        inputRange: [0, 1],
-        outputRange: [geometry.contentTranslateXClosed, geometry.contentTranslateXOpen],
-      })
-    : undefined;
+  // translateX as content keeps it registered exactly under content, wherever content actually is
+  // (resolveDrawerSlotInterpolation's 'overlay' overload returns that same content delta).
+  const overlayTranslateX = overlaySlot ? progress.interpolate(overlaySlot.translateX) : undefined;
 
   const focusedRoute = state.routes[state.index];
   const focusedEntry = focusedRoute ? registry.get(focusedRoute.name) : undefined;
@@ -383,9 +310,10 @@ const DrawerImpl = forwardRef<IDrawerNavigatorHandle, IDrawerProps>((props, forw
   const routeEmitter = useMemo(() => createNavigationEmitter(), [focusedRouteKey]);
 
   // Drawer paints its own panel in pure JS — there is no native onAppear/onDisappear to hook
-  // (unlike Stack's RNSScreen), so focus/blur is synthesized here: emit 'focus' once the
-  // newly-focused route's content has mounted, 'blur' when it's about to be replaced or the
-  // Drawer itself unmounts.
+  // (unlike Stack's RNSScreen), so focus/blur is synthesized here: mount = focus, cleanup = blur,
+  // exactly what an effect keyed on focusedRouteKey already encodes — no diffFocusedRoute
+  // indirection needed (unlike Vue/Angular, which diff real prev/next keys inside an imperative
+  // watch/CD callback that has no mount/cleanup pairing of its own).
   useEffect(() => {
     if (focusedRouteKey === undefined) return undefined;
     dlog(`Drawer: route "${focusedRoute?.name}" focused`);
@@ -420,7 +348,7 @@ const DrawerImpl = forwardRef<IDrawerNavigatorHandle, IDrawerProps>((props, forw
     const entry = registry.get(route.name);
     if (entry === undefined) continue;
     descriptors[route.key] = {
-      options: resolveDrawerScreenOptions(entry, { route, navigation: handle }),
+      options: resolveDrawerScreenOptions(entry, { route, navigation: handle }, screenOptions),
       navigation: handle,
     };
   }
