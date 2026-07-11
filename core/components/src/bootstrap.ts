@@ -1,6 +1,6 @@
 // Zero-config host bootstrap for @symbiote-native/components' four RN-backed seams
 // (colorProcessor, imageSourceResolver, deviceEventSource, nativeViewConfigSource), wired from
-// real react-native in one call — collapses what every canary example currently hand-wires at
+// real react-native in one call - collapses what every canary example currently hand-wires at
 // startup. Lives OUTSIDE the package's main barrel (see package.json's separate "./bootstrap"
 // export): react-native's own source is Flow syntax Vitest's transform can't parse, so anything
 // importing it directly must stay unreachable from the tested main index.ts.
@@ -9,14 +9,14 @@ import { processColor, DeviceEventEmitter, Image, type ImageSourcePropType } fro
 import {
   setColorProcessor,
   setDeviceEventSource,
+  setImageSourceResolver,
   setNativeViewConfigSource,
   type IColorValue,
   type IDeviceEventSource,
   type INativeViewConfig,
   type INativeViewConfigSource,
 } from '@symbiote-native/engine';
-import { setImageSourceResolver } from './view/render-image';
-// @ts-expect-error react-native ships no types for this internal path (plain .js) — the
+// @ts-expect-error react-native ships no types for this internal path (plain .js) - the
 // try/catch below is what actually proves the shape, not TS.
 import * as ReactNativeViewConfigRegistry from 'react-native/Libraries/Renderer/shims/ReactNativeViewConfigRegistry';
 
@@ -41,7 +41,7 @@ function defaultNativeViewConfigSource(name: string): INativeViewConfig | undefi
 
 // require('./x.png') asset ids and {uri} sources are resolved by RN's own resolver before they
 // reach the shared render fns. `source` is untyped at the setImageSourceResolver seam by design
-// (any component's resolved shape flows through it) — this is the I/O edge where it crosses
+// (any component's resolved shape flows through it) - this is the I/O edge where it crosses
 // into RN's own typed Image API.
 function defaultImageSourceResolver(source: unknown): unknown {
   return Image.resolveAssetSource(source as ImageSourcePropType);

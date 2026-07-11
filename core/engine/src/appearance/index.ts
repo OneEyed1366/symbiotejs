@@ -5,13 +5,8 @@
 // JS listeners as a plain `{ colorScheme }` payload. Mirrors RN's
 // Libraries/Utilities/Appearance.js, slimmed to the parts we need.
 
-import { getNativeModule } from '../native-modules';
-import {
-  installDeviceEventHub,
-  NativeEventEmitter,
-  type IEventEmitterModule,
-  type IEventSubscription,
-} from '../native-events';
+import { createDeviceEventModule } from '../native-modules';
+import { type IEventEmitterModule, type IEventSubscription } from '../native-events';
 import { dlog } from '../debug';
 
 // The native module name RN registers the appearance module under, confirmed from
@@ -45,38 +40,31 @@ function isAppearancePreferences(value: unknown): value is IAppearancePreference
   return typeof value === 'object' && value !== null && 'colorScheme' in value;
 }
 
-// Lazily resolved so importing this module has no native side effect: a headless
-// run without a fake __turboModuleProxy still loads it; resolution happens on the
-// first use. `null` when the module isn't linked.
-let appearanceModule: INativeAppearance | null | undefined;
-let emitter: NativeEventEmitter | undefined;
 // Cached scheme, kept fresh by the change listener; mirrors RN's `state.appearance`.
 let cachedScheme: IColorSchemeName | null | undefined;
 
-function getModule(): INativeAppearance | null {
-  if (appearanceModule === undefined) {
-    appearanceModule = getNativeModule<INativeAppearance>(APPEARANCE_MODULE);
-    dlog(`Appearance: module ${appearanceModule ? 'resolved' : 'NOT resolved (null)'}`);
-  }
-  return appearanceModule;
-}
-
-function getEmitter(): NativeEventEmitter {
-  if (emitter === undefined) {
-    // WHY lazy: install on first subscribe so the hub exists before native emits,
-    // without a hard bootstrap-order dependency. Idempotent.
-    installDeviceEventHub();
-    const module = getModule();
-    emitter = new NativeEventEmitter(module ?? undefined);
-    // Keep the cached scheme fresh even when nobody is listening, so a later
-    // getColorScheme() after a system change reads the new value. RN does the same.
+// The self-subscription policy that diverges from a plain lazy-resolve+emitter:
+// Appearance keeps `cachedScheme` fresh forever via a permanent change listener, so a
+// later getColorScheme() after a system change reads the new value even with nobody
+// else listening. RN does the same.
+const deviceEventModule = createDeviceEventModule<INativeAppearance>({
+  moduleName: APPEARANCE_MODULE,
+  moduleLogPrefix: 'Appearance: module',
+  onEmitterCreated: emitter => {
     emitter.addListener(APPEARANCE_CHANGED_EVENT, payload => {
       if (!isAppearancePreferences(payload)) return;
       dlog(`Appearance: ${APPEARANCE_CHANGED_EVENT} -> ${String(payload.colorScheme)}`);
       cachedScheme = payload.colorScheme;
     });
-  }
-  return emitter;
+  },
+});
+
+function getModule(): INativeAppearance | null {
+  return deviceEventModule.getModule();
+}
+
+function getEmitter() {
+  return deviceEventModule.getEmitter();
 }
 
 export const Appearance = {

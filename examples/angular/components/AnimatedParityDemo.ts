@@ -13,7 +13,14 @@
 // external `Animated` namespace object — only a direct named import survives real AOT).
 
 import { Component, OnDestroy, OnInit } from '@angular/core';
-import { Animated, AnimatedView, Button, PanResponder, Text, View } from '@symbiote-native/angular';
+import {
+  Animated,
+  AnimatedView,
+  Button,
+  PanResponder,
+  Text,
+  View,
+} from '@symbiote-native/angular';
 
 // static look compiled at build time by @symbiote-native/css-parser
 import './AnimatedParityDemo.css';

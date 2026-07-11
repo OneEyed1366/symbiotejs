@@ -13,7 +13,11 @@ import {
   modulo,
   diffClamp,
   AnimatedAddition,
+  AnimatedSubtraction,
+  AnimatedMultiplication,
+  AnimatedDivision,
   AnimatedDiffClamp,
+  AnimatedNode,
   AnimatedValue,
 } from '@symbiote-native/engine';
 
@@ -57,6 +61,76 @@ describe('Animated operators — JS path', () => {
     }
     expect(observed).toEqual([5, 2, 10]);
   });
+});
+
+// Every binary operator (add/subtract/multiply/divide) shares the same
+// __attach/__detach/__makeNative boilerplate around its own arithmetic; this is
+// the regression net for extracting that boilerplate into a common base.
+describe('Animated binary operators — shared attach/detach/makeNative boilerplate', () => {
+  const operators: ReadonlyArray<{
+    name: string;
+    create: (a: AnimatedNode, b: AnimatedNode) => AnimatedNode;
+  }> = [
+    { name: 'AnimatedAddition', create: (a, b) => new AnimatedAddition(a, b) },
+    { name: 'AnimatedSubtraction', create: (a, b) => new AnimatedSubtraction(a, b) },
+    { name: 'AnimatedMultiplication', create: (a, b) => new AnimatedMultiplication(a, b) },
+    { name: 'AnimatedDivision', create: (a, b) => new AnimatedDivision(a, b) },
+  ];
+
+  it.each(operators)(
+    'attaching the first downstream child on $name registers it as a child of BOTH operands, detaching the last removes it from both',
+    ({ create }) => {
+      const a = new AnimatedValue(1);
+      const b = new AnimatedValue(2);
+      const operator = create(a, b);
+      const consumer = new AnimatedValue(0);
+
+      expect(a.__getChildren()).not.toContain(operator);
+      expect(b.__getChildren()).not.toContain(operator);
+
+      // Operators attach lazily: only once something downstream starts listening
+      // (its own first child) does it register itself as a child of its operands.
+      operator.__addChild(consumer);
+      expect(a.__getChildren()).toContain(operator);
+      expect(b.__getChildren()).toContain(operator);
+
+      operator.__removeChild(consumer);
+      expect(a.__getChildren()).not.toContain(operator);
+      expect(b.__getChildren()).not.toContain(operator);
+    },
+  );
+
+  it.each(operators)('makeNative on $name marks BOTH operands native too', ({ create }) => {
+    const a = new AnimatedValue(1);
+    const b = new AnimatedValue(2);
+    const operator = create(a, b);
+
+    expect(a.__isNative()).toBe(false);
+    expect(b.__isNative()).toBe(false);
+
+    operator.__makeNative();
+
+    expect(a.__isNative()).toBe(true);
+    expect(b.__isNative()).toBe(true);
+  });
+
+  it.each(operators)(
+    '$name.__getValue recomputes from the CURRENT operand values',
+    ({ create }) => {
+      const a = new AnimatedValue(1);
+      const b = new AnimatedValue(2);
+      const operator = create(a, b);
+      const firstValue = operator.__getValue();
+
+      // Not proportional to the starting values, so every operator (incl. divide)
+      // is guaranteed a different result: a scaled pair would coincidentally
+      // reproduce the same quotient.
+      a.setValue(10);
+      b.setValue(3);
+
+      expect(operator.__getValue()).not.toBe(firstValue);
+    },
+  );
 });
 
 interface INativeCall {

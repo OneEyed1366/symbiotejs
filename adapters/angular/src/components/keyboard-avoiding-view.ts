@@ -42,6 +42,7 @@ import {
   Keyboard,
   KEYBOARD_EVENT,
   dlog,
+  isSymbioteEvent,
   type IEventSubscription,
   type IStyleProp,
   type ISymbioteEvent,
@@ -50,12 +51,6 @@ import {
 import { anchorHostStyle, SymbioteHostPropsDirective, ViewHost } from '../primitives';
 
 export type { IKeyboardAvoidingBehavior } from '@symbiote-native/components';
-
-// Angular infers an `(event)` binding's $event as the DOM Event for a custom-schema element,
-// so each handler enters as `unknown` and is narrowed here before reaching a typed callback.
-function isSymbioteEvent(value: unknown): value is ISymbioteEvent {
-  return typeof value === 'object' && value !== null && 'nativeEvent' in value;
-}
 
 // Mirrors React's IKeyboardAvoidingViewProps minus children (Angular takes children via
 // <ng-content>), declared per-adapter over the shared accessibility base since a framework-specific

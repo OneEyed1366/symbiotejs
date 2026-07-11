@@ -1,17 +1,16 @@
 // Runtime style registry. Side-effect CSS imports (compiled by the sibling CSS-to-style
 // build package, not this module) call registerStyles() with camelCase keys; components
-// look them up by resolveClassName(). No CSS parsing happens here — this is a
-// Map<string, ...> lookup, nothing more.
+// look them up via resolveClassName(). No CSS parsing here - just a Map<string, ...> lookup.
 //
-// This registry has no Tailwind-utility detection layer — this repo's style surface has
-// no Tailwind layer, so the compound lookup below always runs for 2-4-part class strings
-// instead of being gated behind "no part looks like a utility class".
+// No Tailwind-utility detection layer: this repo's style surface has no Tailwind layer,
+// so the compound lookup below always runs for 2-4-part class strings instead of being
+// gated behind "no part looks like a utility class".
 //
 // kebab-case authoring: a CSS selector `.section-label` always registers under the
 // camelCase key `sectionLabel` (@symbiote-native/css-parser's extractClassName), so a template
-// can write EITHER `class="sectionLabel"` OR `class="section-label"` — resolveOne below
-// falls back to the kebab->camel form on a miss. The fallback matters because assuming
-// authors would always match the camelCase key exactly proved wrong in practice.
+// can write EITHER `class="sectionLabel"` OR `class="section-label"` - resolveOne below
+// falls back to the kebab->camel form on a miss, since authors don't reliably write the
+// exact camelCase key.
 
 import type { IViewStyle, ITextStyle } from '../styles';
 
@@ -36,7 +35,7 @@ export function registerStyles(styles: Record<string, IResolvedStyle>): void {
   }
 }
 
-// Clears every registration; used between tests for isolation.
+// Used between tests to reset registry state.
 export function clearGlobalStyles(): void {
   globalStyles.clear();
 }
@@ -44,7 +43,7 @@ export function clearGlobalStyles(): void {
 // A `class`/`className` prop arrives as `unknown` at the routeProp boundary (any adapter can
 // hand over anything); this narrows before resolveClassName without an `as` cast. Shared with
 // adapters/vue/src/components/scroll-view/shared.ts's identical need, rather than each keeping
-// its own copy — that file imports this one instead of redeclaring it.
+// its own copy - that file imports this one instead of redeclaring it.
 export function isClassNameValue(value: unknown): value is IClassNameValue {
   return typeof value === 'string' || (typeof value === 'object' && value !== null);
 }
@@ -127,10 +126,14 @@ function capitalize(value: string): string {
 
 // Duplicated from @symbiote-native/css-parser's identical helper rather than imported: css-parser
 // pulls in postcss and is build-time only (never shipped in the app bundle), and this registry
-// is the opposite — pure runtime, in every app bundle — so importing it here would leak a
+// is the opposite - pure runtime, in every app bundle - so importing it here would leak a
 // build-time dependency into the shipped app. The conversion itself is two lines; keeping both
 // copies in sync is a smaller cost than the alternative.
-function kebabToCamel(value: string): string {
+//
+// Exported (not just local to this file) because ./scope.ts's Vue `<style scoped>` name
+// rewriter needs the same kebab->camel normalization and is a different responsibility living
+// in a sibling module - see that file's own doc comment for why it's split out of this one.
+export function kebabToCamel(value: string): string {
   return value.replace(/-([a-z])/g, (_, letter: string) => letter.toUpperCase());
 }
 
@@ -149,58 +152,4 @@ function resolveOne(name: string): IResolvedStyle {
   const trimmed = name.trim();
   if (!trimmed) return {};
   return globalStyles.get(trimmed) ?? globalStyles.get(kebabToCamel(trimmed)) ?? {};
-}
-
-export type IClassToggleMap = Record<string, boolean | undefined>;
-
-export type IScopableClassValue =
-  string | IClassToggleMap | Array<string | IClassToggleMap> | undefined | null;
-
-// Pure NAME rewriter for Vue `<style scoped>`: suffixes every class token that this
-// file's scoped block locally defines with `__${scopeId}`, leaving unrecognized tokens
-// (globals, external classes) untouched. Runs at the compiled call site BEFORE Vue's own
-// normalizeClass() collapses string/object/array `class` values to a final string, so it
-// must pre-process all three shapes normalizeClass understands. No registry lookup here —
-// resolveClassName still does the actual style lookup, unchanged, against the rewritten name.
-export function scopeClassName(
-  value: IScopableClassValue,
-  localNames: ReadonlySet<string>,
-  scopeId: string,
-): IScopableClassValue {
-  if (value === undefined || value === null) return value;
-
-  if (Array.isArray(value)) {
-    return value.map(item => scopeClassEntry(item, localNames, scopeId));
-  }
-
-  return scopeClassEntry(value, localNames, scopeId);
-}
-
-// A token arrives as either the camelCase registry key (`sectionLabel`) or its kebab-case
-// authoring form (`section-label`) — normalize to camelCase FIRST, then decide scoping, so
-// `localNames` (always camelCase, built from the css-parser's registered keys) recognizes a
-// kebab-written token. The emitted (possibly suffixed) name is always the camelCase form.
-function scopeToken(token: string, localNames: ReadonlySet<string>, scopeId: string): string {
-  const camelToken = kebabToCamel(token);
-  return localNames.has(camelToken) ? `${camelToken}__${scopeId}` : camelToken;
-}
-
-function scopeClassEntry(
-  value: string | IClassToggleMap,
-  localNames: ReadonlySet<string>,
-  scopeId: string,
-): string | IClassToggleMap {
-  if (typeof value === 'object') {
-    const scoped: IClassToggleMap = {};
-    for (const [name, enabled] of Object.entries(value)) {
-      scoped[scopeToken(name, localNames, scopeId)] = enabled;
-    }
-    return scoped;
-  }
-
-  return value
-    .split(/\s+/)
-    .filter(Boolean)
-    .map(token => scopeToken(token, localNames, scopeId))
-    .join(' ');
 }

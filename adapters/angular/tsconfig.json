@@ -6,7 +6,7 @@
     "lib": ["ES2022", "DOM"],
     "types": ["node"]
   },
-  "include": ["src"],
-  "exclude": ["src/**/*.test.ts", "src/**/*.test.tsx"],
+  "include": ["src", "*.test.ts"],
+  "exclude": ["src/**/*.test.ts", "src/**/*.test.tsx", "*.test.ts"],
   "references": [{ "path": "../../core/engine" }, { "path": "../../core/components" }]
 }

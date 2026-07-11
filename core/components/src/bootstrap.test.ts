@@ -19,9 +19,9 @@ vi.mock('react-native/Libraries/Renderer/shims/ReactNativeViewConfigRegistry', (
 vi.mock('@symbiote-native/engine', () => ({
   setColorProcessor,
   setDeviceEventSource,
+  setImageSourceResolver,
   setNativeViewConfigSource,
 }));
-vi.mock('./view/render-image', () => ({ setImageSourceResolver }));
 
 const { bootstrapHost } = await import('./bootstrap');
 

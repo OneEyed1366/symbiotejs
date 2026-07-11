@@ -1,6 +1,6 @@
 {
   "name": "@symbiote-native/angular",
-  "version": "0.3.3",
+  "version": "0.4.0",
   "description": "SymbioteNative's Angular adapter — a Renderer2/RendererFactory2 with DOM-less bootstrap driving real native iOS/Android views through the same engine as the other adapters.",
   "repository": {
     "type": "git",
@@ -30,6 +30,7 @@
     "./metro-css-parser": "./metro-css-parser.cjs",
     "./metro-config": "./metro-config.cjs",
     "./babel-linker": "./babel-linker.cjs",
+    "./babel-register-composed": "./babel-register-composed.cjs",
     "./tsconfig.angular.base.json": "./tsconfig.angular.base.json"
   },
   "files": [
@@ -39,6 +40,7 @@
     "metro-css-parser.cjs",
     "metro-config.cjs",
     "babel-linker.cjs",
+    "babel-register-composed.cjs",
     "tsconfig.angular.base.json"
   ],
   "bin": {
@@ -67,7 +69,9 @@
   "devDependencies": {
     "@angular/compiler": "catalog:",
     "@angular/core": "catalog:",
+    "@babel/core": "catalog:",
     "@symbiote-native/test-utils": "workspace:*",
+    "@types/babel__core": "catalog:",
     "@types/node": "catalog:",
     "typescript": "catalog:"
   }

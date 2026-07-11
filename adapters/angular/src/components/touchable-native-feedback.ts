@@ -44,7 +44,7 @@ import {
   type IPressableAndroidRippleConfig,
   type IRectOffset,
 } from '@symbiote-native/components';
-import { dlog, type ISymbioteEvent } from '@symbiote-native/engine';
+import { dlog, isSymbioteEvent, type ISymbioteEvent } from '@symbiote-native/engine';
 import { anchorHostStyle, SymbioteHostPropsDirective, ViewHost } from '../primitives';
 import { Pressable, type IAngularPressableInputs } from './pressable';
 
@@ -62,12 +62,6 @@ export type IAngularTouchableNativeFeedbackProps = Omit<IAngularPressableInputs,
   background?: INativeFeedbackBackground;
   useForeground?: boolean;
 };
-
-// Angular infers an `(event)` binding's $event as the DOM Event for a custom-schema element,
-// so each handler enters as `unknown` and is narrowed here before reaching a typed callback.
-function isSymbioteEvent(value: unknown): value is ISymbioteEvent {
-  return typeof value === 'object' && value !== null && 'nativeEvent' in value;
-}
 
 @Component({
   selector: 'TouchableNativeFeedback',

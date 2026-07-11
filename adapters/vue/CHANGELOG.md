@@ -1,5 +1,17 @@
 # @symbiote-native/vue
 
+## 0.3.5
+
+### Patch Changes
+
+- Updated dependencies [1791d13]
+- Updated dependencies [1791d13]
+- Updated dependencies [1791d13]
+- Updated dependencies [1791d13]
+- Updated dependencies [1791d13]
+  - @symbiote-native/engine@0.1.5
+  - @symbiote-native/components@0.2.4
+
 ## 0.3.4
 
 ### Patch Changes

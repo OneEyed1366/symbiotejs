@@ -11,12 +11,16 @@ import { runWrapped } from '../dispatch';
 import { getSlot } from '../fabric';
 import { isAnchor, isSymbioteNode, type ISymbioteEvent, type ISymbioteNode } from '../node';
 import { registeredNativeEvent } from '../registry';
+import {
+  attachTouchHistory,
+  recordTouchTrack,
+  resetTouchHistory,
+  touchHistory,
+} from '../touch-history';
+import { isRecord } from '../type-guards';
 
-// Raw Fabric event name -> listener name. Generic bubbling events live here; press
-// is synthesized from a touch sequence and layout is direct, so both are handled
-// outside this table.
 // Raw Fabric event -> listener name, split by dispatch phase. Press is synthesized
-// from a touch sequence (handled separately below); everything else is table-driven.
+// from a touch sequence and layout is direct, so neither lives in this table.
 // Bubbling events walk target -> root; direct events fire only on the target.
 const BUBBLING_EVENTS: Readonly<Record<string, string>> = {
   topFocus: 'focus',
@@ -97,194 +101,6 @@ const DEFAULT_LONG_PRESS_MS = 500;
 // points from where it started (Pressability.DEFAULT_LONG_PRESS_DEACTIVATION_DISTANCE).
 const LONG_PRESS_DEACTIVATION_DISTANCE = 10;
 
-// #region responder touch-history store
-// Per-touch position/time tracking, ported from RN's
-// react-native-renderer/.../legacy-events/ResponderTouchHistoryStore.js. PanResponder's
-// multitouch dx/vx math needs each touch's own previous->current delta (RN counts only
-// touches that moved since `_accountsForMovesUpTo`), which a grant-relative centroid of
-// ALL live touches cannot reconstruct. We maintain the bank as touches flow and ATTACH
-// `touchHistory` onto the nativeEvent reaching responder handlers, exactly how
-// ResponderEventPlugin.js sets `*.touchHistory`.
-
-// One slot per active touch identifier. Mirrors RN's TouchRecord field-for-field.
-interface ITouchRecord {
-  touchActive: boolean;
-  startPageX: number;
-  startPageY: number;
-  startTimeStamp: number;
-  currentPageX: number;
-  currentPageY: number;
-  currentTimeStamp: number;
-  previousPageX: number;
-  previousPageY: number;
-  previousTimeStamp: number;
-}
-
-interface ITouchHistory {
-  touchBank: ITouchRecord[];
-  numberActiveTouches: number;
-  // The single active touch's identifier, so TouchHistoryMath skips the bank scan in
-  // the common one-finger case (-1 when not exactly one touch is down).
-  indexOfSingleActiveTouch: number;
-  mostRecentTimeStamp: number;
-}
-
-// RN's bank is indexed by touch identifier and warns above 20; we never warn (headless
-// events may carry larger or absent ids), we just skip anything out of a sane range.
-const MAX_TOUCH_BANK = 20;
-
-const touchBank: ITouchRecord[] = [];
-const touchHistory: ITouchHistory = {
-  touchBank,
-  numberActiveTouches: 0,
-  indexOfSingleActiveTouch: -1,
-  mostRecentTimeStamp: 0,
-};
-
-// A raw touch as it arrives inside the untyped nativeEvent. RN reads pageX/pageY/
-// identifier/timestamp; we narrow each defensively so a malformed or coordinate-less
-// touch (e.g. the negotiation smoke's `{ target }`-only touches) is skipped, never
-// throwing; recording must not perturb the responder negotiation.
-interface INormalizedTouch {
-  identifier: number;
-  pageX: number;
-  pageY: number;
-  timestamp: number;
-}
-
-function toFiniteNumber(value: unknown): number | undefined {
-  return typeof value === 'number' && Number.isFinite(value) ? value : undefined;
-}
-
-// Pull a recordable touch out of an untyped entry, or undefined when it lacks a usable
-// identifier or coordinates. RN's getTouchIdentifier throws on a null id; we skip
-// instead, so events without touch geometry leave the bank untouched.
-function normalizeTouch(raw: unknown): INormalizedTouch | undefined {
-  if (!isRecord(raw)) return undefined;
-  const identifier = toFiniteNumber(raw.identifier);
-  const pageX = toFiniteNumber(raw.pageX);
-  const pageY = toFiniteNumber(raw.pageY);
-  if (identifier === undefined || pageX === undefined || pageY === undefined) return undefined;
-  if (identifier < 0 || identifier > MAX_TOUCH_BANK) return undefined;
-  return { identifier, pageX, pageY, timestamp: toFiniteNumber(raw.timestamp) ?? 0 };
-}
-
-// The changed touches for this frame (start/move/end), defensively read.
-function changedTouchesOf(nativeEvent: Record<string, unknown>): INormalizedTouch[] {
-  const raw = nativeEvent.changedTouches;
-  if (!Array.isArray(raw)) return [];
-  const out: INormalizedTouch[] = [];
-  for (const entry of raw) {
-    const touch = normalizeTouch(entry);
-    if (touch !== undefined) out.push(touch);
-  }
-  return out;
-}
-
-// Count of all touches still down (RN reads nativeEvent.touches.length directly).
-function activeTouchCount(nativeEvent: Record<string, unknown>): number {
-  const raw = nativeEvent.touches;
-  return Array.isArray(raw) ? raw.length : 0;
-}
-
-function recordTouchStart(touch: INormalizedTouch): void {
-  const record = touchBank[touch.identifier];
-  if (record) {
-    record.touchActive = true;
-    record.startPageX = touch.pageX;
-    record.startPageY = touch.pageY;
-    record.startTimeStamp = touch.timestamp;
-    record.currentPageX = touch.pageX;
-    record.currentPageY = touch.pageY;
-    record.currentTimeStamp = touch.timestamp;
-    record.previousPageX = touch.pageX;
-    record.previousPageY = touch.pageY;
-    record.previousTimeStamp = touch.timestamp;
-  } else {
-    touchBank[touch.identifier] = {
-      touchActive: true,
-      startPageX: touch.pageX,
-      startPageY: touch.pageY,
-      startTimeStamp: touch.timestamp,
-      currentPageX: touch.pageX,
-      currentPageY: touch.pageY,
-      currentTimeStamp: touch.timestamp,
-      previousPageX: touch.pageX,
-      previousPageY: touch.pageY,
-      previousTimeStamp: touch.timestamp,
-    };
-  }
-  touchHistory.mostRecentTimeStamp = touch.timestamp;
-}
-
-// Move and end share the previous<-current shift; only `touchActive` differs.
-function shiftTouchRecord(touch: INormalizedTouch, active: boolean): void {
-  const record = touchBank[touch.identifier];
-  if (!record) return;
-  record.touchActive = active;
-  record.previousPageX = record.currentPageX;
-  record.previousPageY = record.currentPageY;
-  record.previousTimeStamp = record.currentTimeStamp;
-  record.currentPageX = touch.pageX;
-  record.currentPageY = touch.pageY;
-  record.currentTimeStamp = touch.timestamp;
-  touchHistory.mostRecentTimeStamp = touch.timestamp;
-}
-
-// Maintain the bank as a touch frame flows. Mirrors RN's recordTouchTrack: moveish
-// shifts records, startish records + recomputes numberActiveTouches, endish marks the
-// record inactive + rescans for the single remaining touch. `kind` is the touch phase.
-function recordTouchTrack(
-  kind: 'start' | 'move' | 'end',
-  nativeEvent: Record<string, unknown>,
-): void {
-  if (kind === 'move') {
-    for (const touch of changedTouchesOf(nativeEvent)) shiftTouchRecord(touch, true);
-    return;
-  }
-  if (kind === 'start') {
-    for (const touch of changedTouchesOf(nativeEvent)) recordTouchStart(touch);
-    touchHistory.numberActiveTouches = activeTouchCount(nativeEvent);
-    if (touchHistory.numberActiveTouches === 1) {
-      const first = normalizeTouch(arrayFirst(nativeEvent.touches));
-      touchHistory.indexOfSingleActiveTouch = first?.identifier ?? -1;
-    }
-    return;
-  }
-  for (const touch of changedTouchesOf(nativeEvent)) shiftTouchRecord(touch, false);
-  touchHistory.numberActiveTouches = activeTouchCount(nativeEvent);
-  if (touchHistory.numberActiveTouches === 1) {
-    for (let i = 0; i < touchBank.length; i++) {
-      const record = touchBank[i];
-      if (record !== undefined && record.touchActive) {
-        touchHistory.indexOfSingleActiveTouch = i;
-        break;
-      }
-    }
-  }
-}
-
-function arrayFirst(value: unknown): unknown {
-  return Array.isArray(value) ? value[0] : undefined;
-}
-
-// Drop all touch state. Called on a fully-released / cancelled gesture so a stale bank
-// never leaks geometry into the next gesture's first frame.
-function resetTouchHistory(): void {
-  touchBank.length = 0;
-  touchHistory.numberActiveTouches = 0;
-  touchHistory.indexOfSingleActiveTouch = -1;
-  touchHistory.mostRecentTimeStamp = 0;
-}
-
-// Attach the live touch history onto the event the responder handlers receive, matching
-// ResponderEventPlugin.js (`grantEvent.touchHistory = ...`, etc.). PanResponder reads
-// it for the per-touch dx/vx math; handlers that ignore it are unaffected.
-function attachTouchHistory(nativeEvent: Record<string, unknown>): void {
-  nativeEvent.touchHistory = touchHistory;
-}
-// #endregion
-
 let installed = false;
 
 // Target of the in-flight touch, remembered at topTouchStart and consumed (or
@@ -338,15 +154,10 @@ function readTouchPoint(
   return undefined;
 }
 
-// Narrow an unknown to a plain object so its properties can be read without a cast.
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null;
-}
-
 // Whether any touch still down started inside the responder (its target IS the
 // responder or a descendant). RN's noResponderTouches walks nativeEvent.touches and
 // returns false the moment one is found; a release fires only when none remain. The
-// headless smokes fire with an empty `{}` event (no `touches`) → no remaining touch →
+// headless smokes fire with an empty `{}` event (no `touches`) -> no remaining touch ->
 // release fires, preserving single-touch behavior. (ResponderEventPlugin.noResponder-
 // Touches + isAncestor.)
 function hasRemainingResponderTouch(
@@ -719,7 +530,7 @@ function bubble(
   const path = pathToRoot(target);
   for (let i = path.length - 1; i >= 0; i--) {
     const node = path[i];
-    // Anchors (Angular's #anchor component hosts) never paint and have no native view — a
+    // Anchors (Angular's #anchor component hosts) never paint and have no native view. A
     // listener registered on one only exists because a framework's own output-binding
     // machinery (already delivered directly, e.g. Angular's EventEmitter.subscribe) also
     // registered it through Renderer2.listen. Bubbling into it would refire that same
@@ -739,7 +550,7 @@ function bubble(
   }
 
   // Bubble phase: target -> root, invoking each ancestor's plain listener. Anchors are
-  // transparent here too (see the capture-phase comment above) — same event, same reason.
+  // transparent here too, same reason (see the capture-phase comment above).
   let node: ISymbioteNode | undefined = target;
   while (node) {
     const listener = isAnchor(node) ? undefined : node.listeners?.get(listenerName);

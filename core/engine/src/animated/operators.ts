@@ -11,8 +11,6 @@
 
 import { AnimatedNode, AnimatedWithChildren } from './graph';
 import { AnimatedValue } from './value';
-import { AnimatedInterpolation } from './interpolation-node';
-import type { IInterpolationConfig } from './interpolation';
 import { dlog } from '../debug';
 import type { INativeNodeConfig, IPlatformConfig } from './native/native-animated';
 
@@ -29,9 +27,12 @@ function numericValue(node: AnimatedNode): number {
   return value;
 }
 
-export class AnimatedAddition extends AnimatedWithChildren {
-  private readonly a: AnimatedNode;
-  private readonly b: AnimatedNode;
+// Shared shape of add/subtract/multiply/divide: two operand nodes, wired into the
+// graph identically (attach/detach both as children, makeNative both natively).
+// Each subclass supplies only its arithmetic (`compute`) and its native config type.
+abstract class AnimatedBinaryOp extends AnimatedWithChildren {
+  protected readonly a: AnimatedNode;
+  protected readonly b: AnimatedNode;
 
   constructor(a: AnimatedNode | number, b: AnimatedNode | number) {
     super();
@@ -39,12 +40,10 @@ export class AnimatedAddition extends AnimatedWithChildren {
     this.b = toNode(b);
   }
 
-  override __getValue(): number {
-    return numericValue(this.a) + numericValue(this.b);
-  }
+  protected abstract compute(a: number, b: number): number;
 
-  interpolate(config: IInterpolationConfig): AnimatedInterpolation {
-    return new AnimatedInterpolation(this, config);
+  override __getValue(): number {
+    return this.compute(numericValue(this.a), numericValue(this.b));
   }
 
   override __attach(): void {
@@ -63,6 +62,12 @@ export class AnimatedAddition extends AnimatedWithChildren {
     this.a.__makeNative(platformConfig);
     this.b.__makeNative(platformConfig);
     super.__makeNative(platformConfig);
+  }
+}
+
+export class AnimatedAddition extends AnimatedBinaryOp {
+  protected override compute(a: number, b: number): number {
+    return a + b;
   }
 
   override __getNativeConfig(): INativeNodeConfig {
@@ -70,40 +75,9 @@ export class AnimatedAddition extends AnimatedWithChildren {
   }
 }
 
-export class AnimatedSubtraction extends AnimatedWithChildren {
-  private readonly a: AnimatedNode;
-  private readonly b: AnimatedNode;
-
-  constructor(a: AnimatedNode | number, b: AnimatedNode | number) {
-    super();
-    this.a = toNode(a);
-    this.b = toNode(b);
-  }
-
-  override __getValue(): number {
-    return numericValue(this.a) - numericValue(this.b);
-  }
-
-  interpolate(config: IInterpolationConfig): AnimatedInterpolation {
-    return new AnimatedInterpolation(this, config);
-  }
-
-  override __attach(): void {
-    this.a.__addChild(this);
-    this.b.__addChild(this);
-    super.__attach();
-  }
-
-  override __detach(): void {
-    this.a.__removeChild(this);
-    this.b.__removeChild(this);
-    super.__detach();
-  }
-
-  override __makeNative(platformConfig?: IPlatformConfig): void {
-    this.a.__makeNative(platformConfig);
-    this.b.__makeNative(platformConfig);
-    super.__makeNative(platformConfig);
+export class AnimatedSubtraction extends AnimatedBinaryOp {
+  protected override compute(a: number, b: number): number {
+    return a - b;
   }
 
   override __getNativeConfig(): INativeNodeConfig {
@@ -111,40 +85,9 @@ export class AnimatedSubtraction extends AnimatedWithChildren {
   }
 }
 
-export class AnimatedMultiplication extends AnimatedWithChildren {
-  private readonly a: AnimatedNode;
-  private readonly b: AnimatedNode;
-
-  constructor(a: AnimatedNode | number, b: AnimatedNode | number) {
-    super();
-    this.a = toNode(a);
-    this.b = toNode(b);
-  }
-
-  override __getValue(): number {
-    return numericValue(this.a) * numericValue(this.b);
-  }
-
-  interpolate(config: IInterpolationConfig): AnimatedInterpolation {
-    return new AnimatedInterpolation(this, config);
-  }
-
-  override __attach(): void {
-    this.a.__addChild(this);
-    this.b.__addChild(this);
-    super.__attach();
-  }
-
-  override __detach(): void {
-    this.a.__removeChild(this);
-    this.b.__removeChild(this);
-    super.__detach();
-  }
-
-  override __makeNative(platformConfig?: IPlatformConfig): void {
-    this.a.__makeNative(platformConfig);
-    this.b.__makeNative(platformConfig);
-    super.__makeNative(platformConfig);
+export class AnimatedMultiplication extends AnimatedBinaryOp {
+  protected override compute(a: number, b: number): number {
+    return a * b;
   }
 
   override __getNativeConfig(): INativeNodeConfig {
@@ -152,23 +95,17 @@ export class AnimatedMultiplication extends AnimatedWithChildren {
   }
 }
 
-export class AnimatedDivision extends AnimatedWithChildren {
-  private readonly a: AnimatedNode;
-  private readonly b: AnimatedNode;
+export class AnimatedDivision extends AnimatedBinaryOp {
   private warnedAboutDivideByZero = false;
 
   constructor(a: AnimatedNode | number, b: AnimatedNode | number) {
-    super();
+    super(a, b);
     if (b === 0 || (b instanceof AnimatedNode && b.__getValue() === 0)) {
       dlog('AnimatedDivision: detected potential division by zero');
     }
-    this.a = toNode(a);
-    this.b = toNode(b);
   }
 
-  override __getValue(): number {
-    const a = numericValue(this.a);
-    const b = numericValue(this.b);
+  protected override compute(a: number, b: number): number {
     if (b === 0) {
       // A divide-by-zero yields Infinity/NaN, which crashes Fabric, so clamp to 0.
       if (!this.warnedAboutDivideByZero) {
@@ -179,28 +116,6 @@ export class AnimatedDivision extends AnimatedWithChildren {
     }
     this.warnedAboutDivideByZero = false;
     return a / b;
-  }
-
-  interpolate(config: IInterpolationConfig): AnimatedInterpolation {
-    return new AnimatedInterpolation(this, config);
-  }
-
-  override __attach(): void {
-    this.a.__addChild(this);
-    this.b.__addChild(this);
-    super.__attach();
-  }
-
-  override __detach(): void {
-    this.a.__removeChild(this);
-    this.b.__removeChild(this);
-    super.__detach();
-  }
-
-  override __makeNative(platformConfig?: IPlatformConfig): void {
-    this.a.__makeNative(platformConfig);
-    this.b.__makeNative(platformConfig);
-    super.__makeNative(platformConfig);
   }
 
   override __getNativeConfig(): INativeNodeConfig {
@@ -223,10 +138,6 @@ export class AnimatedModulo extends AnimatedWithChildren {
   override __getValue(): number {
     const a = numericValue(this.a);
     return ((a % this.modulus) + this.modulus) % this.modulus;
-  }
-
-  interpolate(config: IInterpolationConfig): AnimatedInterpolation {
-    return new AnimatedInterpolation(this, config);
   }
 
   override __attach(): void {
@@ -274,10 +185,6 @@ export class AnimatedDiffClamp extends AnimatedWithChildren {
     this.lastValue = value;
     this.value = Math.min(Math.max(this.value + diff, this.min), this.max);
     return this.value;
-  }
-
-  interpolate(config: IInterpolationConfig): AnimatedInterpolation {
-    return new AnimatedInterpolation(this, config);
   }
 
   override __attach(): void {

@@ -14,9 +14,12 @@ import {
   createPressHandlers,
   createPressRuntime,
   DEFAULT_DELAY_LONG_PRESS_MS,
+  isTerminationAllowed,
   resolveAccessibilityProps,
   resolveDisabledAccessibilityState,
   rippleProps,
+  shouldClaimResponder,
+  shouldSuppressPress,
   type IAccessibilityProps,
   type IAccessibilityStateValue,
   type IAriaProps,
@@ -43,7 +46,7 @@ export type { IPressState, IPressableAndroidRippleConfig } from '@symbiote-nativ
 
 // The full logical Pressable surface, callback-shaped press/hover events included. Touchable* and
 // TouchableNativeFeedback still take their OWN onPress/onPressIn/... as @Input() callbacks (that is
-// a separate, not-yet-converted decision) and derive their public prop types from this — so it keeps
+// a separate, not-yet-converted decision) and derive their public prop types from this - so it keeps
 // the callback fields even though the Pressable component below no longer implements them directly.
 export interface IAngularPressableProps extends IAccessibilityProps, IAriaProps {
   onPress?: IPressHandler;
@@ -76,7 +79,7 @@ export interface IAngularPressableProps extends IAccessibilityProps, IAriaProps 
 
 // What the Pressable component itself takes as plain @Input()s: the full surface minus the press/
 // hover events and the four accessibility callbacks, all of which it exposes as real @Output()
-// EventEmitters instead (see the class below) — the one place in the family where the
+// EventEmitters instead (see the class below) - the one place in the family where the
 // callback-vs-EventEmitter tradeoff is actually fixed.
 export type IAngularPressableInputs = Omit<
   IAngularPressableProps,
@@ -131,7 +134,7 @@ function asSymbioteEvent(event: unknown): ISymbioteEvent | undefined {
 export class Pressable implements IAngularPressableInputs {
   // The press/hover lifecycle as real Angular events: `(press)="onTap($event)"`, not
   // `[onPress]="onTap"`. createPressHandlers still wants plain IPressHandler callbacks, so
-  // emitterHandler() below adapts each EventEmitter into one — only while something is actually
+  // emitterHandler() below adapts each EventEmitter into one - only while something is actually
   // subscribed (`.observed`), so an unbound onLongPress still skips arming the timer, exactly as
   // the old @Input()-absent case did.
   @Output() readonly press = new EventEmitter<ISymbioteEvent>();
@@ -223,8 +226,8 @@ export class Pressable implements IAngularPressableInputs {
   };
 
   private readonly changeDetector = inject(ChangeDetectorRef);
-  // This component's OWN host — the non-painting anchor `class="..."` at the use site resolves
-  // onto (see anchorHostStyle's doc comment) — NOT `hostElement` above, which targets the real
+  // This component's OWN host - the non-painting anchor `class="..."` at the use site resolves
+  // onto (see anchorHostStyle's doc comment) - NOT `hostElement` above, which targets the real
   // inner `symbiote-view` one level down.
   private readonly elementRef = inject(ElementRef);
 
@@ -275,8 +278,7 @@ export class Pressable implements IAngularPressableInputs {
     return this.android_ripple === undefined ? undefined : rippleProps(this.android_ripple);
   }
 
-  // Assembles the SAME resolved values the template used to bind one-by-one into a single
-  // flat bag for `[symbioteHostProps]` (Renderer2.setProperty per key) — see primitives/shared.ts.
+  // Flat bag for `[symbioteHostProps]` (Renderer2.setProperty per key) - see primitives/shared.ts.
   get hostProps(): Record<string, unknown> {
     return {
       testID: this.testID,
@@ -298,34 +300,34 @@ export class Pressable implements IAngularPressableInputs {
 
   handlePressIn(event: unknown): void {
     const symbioteEvent = asSymbioteEvent(event);
-    if (this.disabled === true || symbioteEvent === undefined) return;
+    if (shouldSuppressPress(this.disabled) || symbioteEvent === undefined) return;
     this.handlers.handlePressIn(symbioteEvent);
   }
 
   handlePressOut(event: unknown): void {
     const symbioteEvent = asSymbioteEvent(event);
-    if (this.disabled === true || symbioteEvent === undefined) return;
+    if (shouldSuppressPress(this.disabled) || symbioteEvent === undefined) return;
     this.handlers.handlePressOut(symbioteEvent);
   }
 
   handlePress(event: unknown): void {
     const symbioteEvent = asSymbioteEvent(event);
-    if (this.disabled === true || symbioteEvent === undefined) return;
+    if (shouldSuppressPress(this.disabled) || symbioteEvent === undefined) return;
     this.handlers.handlePress(symbioteEvent);
   }
 
   handleResponderMove(event: unknown): void {
     const symbioteEvent = asSymbioteEvent(event);
-    if (this.disabled === true || symbioteEvent === undefined) return;
+    if (shouldSuppressPress(this.disabled) || symbioteEvent === undefined) return;
     this.handlers.handleResponderMove(symbioteEvent);
   }
 
   claimResponder(): boolean {
-    return this.disabled !== true;
+    return shouldClaimResponder(this.disabled);
   }
 
   allowTermination(): boolean {
-    return this.cancelable !== false;
+    return isTerminationAllowed(this.cancelable);
   }
 
   emit(emitter: EventEmitter<ISymbioteEvent>, event: unknown): void {
@@ -342,8 +344,8 @@ export class Pressable implements IAngularPressableInputs {
   }
 
   // Wraps an @Output() as an IPressHandler only while it has a subscriber, so an unbound
-  // (longPress) still skips arming the timer — the same "undefined means nobody cares" contract
-  // createPressHandlers had with the old @Input() callbacks.
+  // (longPress) still skips arming the timer, matching createPressHandlers' "undefined means
+  // nobody cares" contract.
   private emitterHandler(emitter: EventEmitter<ISymbioteEvent>): IPressHandler | undefined {
     return emitter.observed ? event => emitter.emit(event) : undefined;
   }

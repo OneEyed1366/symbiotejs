@@ -10,22 +10,19 @@
 
 import { getNativeModule } from '../native-modules';
 import { dlog } from '../debug';
+import { isRecord } from '../type-guards';
 
 // ---- native module routing ----------------------------------------------
 
-// DEVICE-VERIFY-PENDING: on bridgeless Fabric the layout-animation configure call
-// is exposed by RN through the UIManager surface (RN's non-Fabric path calls
-// `UIManager.configureNextLayoutAnimation`; the Fabric path routes the same args
-// onto `global.nativeFabricUIManager.configureNextLayoutAnimation`). The native
-// MODULE NAME is platform-specific and a headless fake answers to ANY name, so
-// the name below is the most plausible bridgeless candidate, NOT proven. Only the
-// simulator/device resolution log can confirm it; the fallback list is tried in
-// order so a wrong primary still resolves on a real host. Verify on-device before
-// trusting either name. See the `dlog` at the resolution seam below.
-const NATIVE_UI_MANAGER_NAME = {
-  primary: 'UIManager',
-  fallback: 'FabricUIManager',
-} as const;
+// RN's actual dual-path (LayoutAnimation.js): the Fabric global slot
+// (`global.nativeFabricUIManager`, a JSI slot read directly, not a TurboModule
+// lookup) is tried FIRST; only when it lacks `configureNextLayoutAnimation` does
+// RN fall back to the TurboModule `UIManager.configureNextLayoutAnimation`
+// (`TurboModuleRegistry.getEnforcing('UIManager')` in NativeUIManager.js; iOS's
+// RCTUIManager.mm registers under the same bare "UIManager" name via
+// RCT_EXPORT_MODULE()). There is only ONE correct TurboModule name; RN never
+// registers a module under "FabricUIManager".
+const NATIVE_UI_MANAGER_MODULE_NAME = 'UIManager';
 
 // ---- public type surface (ported from RN's ReactNativeTypes) -------------
 
@@ -72,10 +69,9 @@ export interface ILayoutAnimationConfig {
 type IOnAnimationDidEndCallback = () => void;
 type IOnAnimationDidFailCallback = () => void;
 
-// The native UIManager surface this module talks to. The caller vouches for the
-// shape via `getNativeModule<T>` (the single trust-boundary narrowing, no
-// per-call `as`). The method is optional because an older/partial host may not
-// expose it; we feature-detect before calling.
+// The caller vouches for this shape via `getNativeModule<T>` (the single
+// trust-boundary narrowing, no per-call `as`). The method is optional because an
+// older/partial host may not expose it; we feature-detect before calling.
 interface INativeLayoutAnimationUIManager {
   configureNextLayoutAnimation?(
     config: ILayoutAnimationConfig,
@@ -84,30 +80,43 @@ interface INativeLayoutAnimationUIManager {
   ): void;
 }
 
-// Resolved FRESH on every configureNext, deliberately NOT memoized. The native module can
-// be absent at one moment and linked later, and a cached answer would pin the first result;
-// getNativeModule is a cheap proxy lookup, so per-call resolution costs nothing and stays
-// correct. (Memoizing here also broke the headless smoke, which flips a fake module on/off
-// in one process: a cached module survived the flip-off, so configureNext kept calling native
-// when the module was meant to be absent.)
+// Narrows the Fabric global slot down to whether it ALSO carries the
+// layout-animation hook. `fabric.ts`'s `IFabricSlot` deliberately omits this
+// method (out of scope for the engine's own mutation API), so the slot's static
+// type never has it either; this is the runtime feature-detect RN itself does
+// (`FabricUIManager?.configureNextLayoutAnimation` in LayoutAnimation.js) before
+// calling it, no `as` cast needed.
+function hasConfigureNextLayoutAnimation(value: unknown): value is INativeLayoutAnimationUIManager {
+  return isRecord(value) && typeof value.configureNextLayoutAnimation === 'function';
+}
+
+// Resolved FRESH on every configureNext, deliberately NOT memoized. Either mechanism can
+// come and go at runtime (the Fabric global installs during bootstrap; a TurboModule can be
+// absent at one moment and linked later), and a cached answer would pin the first result;
+// both lookups are cheap, so per-call resolution costs nothing and stays correct.
+// (Memoizing here also broke the headless smoke, which flips a fake module on/off in one
+// process: a cached module survived the flip-off, so configureNext kept calling native when
+// the module was meant to be absent.)
 function resolveUIManager(): INativeLayoutAnimationUIManager | null {
-  // Try the most plausible bridgeless name first, then fall back. A wrong primary
-  // resolves null on a real host (the bridgeless proxy returns null for an
-  // unlinked name), so the fallback covers a misnamed primary.
-  const candidates = [NATIVE_UI_MANAGER_NAME.primary, NATIVE_UI_MANAGER_NAME.fallback];
-  for (const name of candidates) {
-    const module = getNativeModule<INativeLayoutAnimationUIManager>(name);
-    if (module !== null) {
-      // DEVICE-VERIFY-PENDING seam: this line on the simulator/device is the only
-      // proof the chosen name is the real one. Keep it permanently (P0 logging gate).
-      dlog(`LayoutAnimation: resolved native UIManager via "${name}"`);
-      return module;
-    }
+  // Mechanism 1: the Fabric global slot, read directly: a JSI global, not a
+  // TurboModule lookup.
+  const fabricUIManager = globalThis.nativeFabricUIManager;
+  if (hasConfigureNextLayoutAnimation(fabricUIManager)) {
+    dlog('LayoutAnimation: resolved native UIManager via the Fabric global slot');
+    return fabricUIManager;
+  }
+
+  // Mechanism 2: the TurboModule fallback (RN's non-Fabric path).
+  const module = getNativeModule<INativeLayoutAnimationUIManager>(NATIVE_UI_MANAGER_MODULE_NAME);
+  if (module !== null) {
+    dlog(`LayoutAnimation: resolved native UIManager via "${NATIVE_UI_MANAGER_MODULE_NAME}"`);
+    return module;
   }
 
   dlog(
-    `LayoutAnimation: no native UIManager resolved (tried ${candidates.join(', ')}); ` +
-      `configureNext is a no-op (headless or module not linked)`,
+    'LayoutAnimation: no native UIManager resolved (no Fabric global slot, ' +
+      `"${NATIVE_UI_MANAGER_MODULE_NAME}" module not linked); configureNext is a no-op ` +
+      '(headless or module not linked)',
   );
   return null;
 }
@@ -178,7 +187,7 @@ function setLayoutAnimationEnabled(value: boolean): void {
 
 // Configures the next commit to be animated. NATIVE drives completion:
 // `onAnimationDidEnd` is passed straight through as the native success callback,
-// so it fires exactly when the native animation actually finishes, including
+// so it fires exactly when the native animation finishes, including
 // when native extends it past `duration` (spring overshoot, OS slowdown,
 // reduce-motion). `onAnimationDidFail` fires only if native config parsing fails.
 // When no native module is linked (headless), this is a logged no-op; an app
@@ -218,7 +227,7 @@ function configureNext(
   };
 
   dlog(`LayoutAnimation.configureNext: dispatching config (duration=${config.duration})`);
-  // onError only fires if native config parsing fails; default to a no-op.
+  // Default to a no-op when the caller doesn't supply one.
   manager.configureNextLayoutAnimation(config, onComplete, onAnimationDidFail ?? (() => {}));
 }
 
@@ -272,6 +281,17 @@ class LayoutAnimationImpl {
   // we mirror that and keep the call a no-op rather than re-add dead validation.
   checkConfig(..._args: unknown[]): void {
     dlog('LayoutAnimation.checkConfig(...) has been disabled.');
+  }
+
+  // Coerce an arbitrary string (e.g. a keyboard event's `easing` field) onto a known
+  // ILayoutAnimationType, falling back to 'keyboard' when it isn't a key of `Types`.
+  // Owned here, not by a caller: `Types` is this class's own frozen table, so by
+  // Information Expert the coercion belongs on the type it reads (Keyboard's
+  // scheduleLayoutAnimation is the first caller; RN's own
+  // `LayoutAnimation.Types[easing] || 'keyboard'` is the same rule).
+  coerceType(easing: string): ILayoutAnimationType {
+    const types: Readonly<Record<string, ILayoutAnimationType>> = this.Types;
+    return types[easing] ?? ANIMATION_TYPE.keyboard;
   }
 }
 

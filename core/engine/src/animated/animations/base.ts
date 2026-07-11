@@ -11,7 +11,6 @@
 
 import type { IAnimation, IEndCallback, IEndResult } from '../animation';
 import type { AnimatedValue } from '../value';
-import { flushValue } from '../graph';
 import { dlog, isDebug } from '../../debug';
 import {
   generateNativeAnimationId,
@@ -78,7 +77,7 @@ export abstract class BaseAnimation implements IAnimation {
     this.__active = true;
   }
 
-  // A native driver overrides this with its curve config (`{type:'frames'|'spring'|'decay', …}`).
+  // A native driver overrides this with its curve config (`{type:'frames'|'spring'|'decay', ...}`).
   protected getNativeAnimationConfig(): INativeAnimationConfig {
     throw new Error('This animation type cannot be offloaded to the native driver');
   }
@@ -94,23 +93,15 @@ export abstract class BaseAnimation implements IAnimation {
       dlog('useNativeDriver requested but native animated module is missing; using JS driver');
       return false;
     }
-    const config = this.getNativeAnimationConfig();
-    // RN hands the curve's platform bag down to the value node (Animation.js:137)
-    // so the node's create config carries it too.
-    animatedValue.__makeNative(this.__platformConfig);
     this.nativeId = generateNativeAnimationId();
-    nativeAnimated.startAnimatingNode(
+    // The value owns the native handshake (make native, mint tag, sync back on
+    // completion); we hand over only what THIS driver owns: the curve, RN's
+    // Animation.js:137 platform bag, this animation's id, and its own end callback.
+    animatedValue.__startNativeAnimation(
+      this.getNativeAnimationConfig(),
       this.nativeId,
-      animatedValue.__getNativeTag(),
-      config,
-      result => {
-        this.__notifyAnimationEnd({ finished: result.finished });
-        // Sync the JS value to native's final value, then run leaf callbacks once.
-        if (result.value !== undefined) {
-          animatedValue.__onNativeUpdate(result.value, result.offset);
-          flushValue(animatedValue);
-        }
-      },
+      finished => this.__notifyAnimationEnd({ finished }),
+      this.__platformConfig,
     );
     return true;
   }

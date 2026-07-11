@@ -2,7 +2,7 @@
 // (React hooks, Vue reactivity) drives the SAME math from here, so a windowing /
 // viewability / edge-reached bug is fixed once for all adapters. The adapter
 // supplies only its lifecycle (refs/state/effects), the imperative handle
-// wiring, and the per-cell element creation (createElement / h) — never the
+// wiring, and the per-cell element creation (createElement / h) - never the
 // geometry.
 //
 // What lives here:
@@ -17,12 +17,12 @@
 //
 // What stays in the adapter (genuinely framework-bound): the cell CONTENT is the
 // framework's own children (renderItem -> ReactNode / VNode), so there is no
-// Descriptor render fn for a list — the shared layer for lists is this STATE/logic
+// Descriptor render fn for a list - the shared layer for lists is this STATE/logic
 // module, not a view/render-*.ts.
 
 import type { IViewStyle } from '@symbiote-native/engine';
-import type { ISymbioteEvent, ISymbioteNode } from '@symbiote-native/engine';
-import type { IScrollViewHandle } from '../scroll-view-commands';
+import type { ISymbioteEvent } from '@symbiote-native/engine';
+import type { IScrollRoutingHandle } from './scroll-routing-handle';
 
 // Defaults match RN. windowSize is measured in viewport-lengths (21 => ten screens
 // of buffer on each side of the visible region). onEndReachedThreshold is a multiple
@@ -110,11 +110,11 @@ export interface IViewabilityConfigCallbackPair<ItemT> {
 }
 
 // The imperative API RN exposes on a VirtualizedList/FlatList ref. Every scroll
-// resolves to an offset. The flash/get*/record methods mirror RN: flashScrollIndicators
-// and the scroll-ref getters route to the inner ScrollView handle; recordInteraction
-// flips the interaction flag that ungates waitForInteraction. Shared by both adapters so
-// the handle surface CANNOT drift between them.
-export interface IVirtualizedListHandle {
+// resolves to an offset. The scrollTo* family is this handle's own primary surface; the
+// flash/get*/record tail is the inner-scroll routing shared with VirtualizedSectionList
+// (see IScrollRoutingHandle) - extending it, rather than re-declaring it, is what keeps
+// the two handle types from drifting from each other.
+export interface IVirtualizedListHandle extends IScrollRoutingHandle {
   scrollToOffset(params: { offset: number; animated?: boolean }): void;
   scrollToIndex(params: {
     index: number;
@@ -124,12 +124,6 @@ export interface IVirtualizedListHandle {
   }): void;
   scrollToItem(params: { item: unknown; animated?: boolean; viewPosition?: number }): void;
   scrollToEnd(params?: { animated?: boolean }): void;
-  flashScrollIndicators(): void;
-  getNativeScrollRef(): IScrollViewHandle | null;
-  getScrollableNode(): IScrollViewHandle | null;
-  getScrollResponder(): IScrollViewHandle | null;
-  getScrollNode(): ISymbioteNode | null;
-  recordInteraction(): void;
 }
 
 // nativeEvent payload guards. The payloads arrive as `unknown` off the wire, so they

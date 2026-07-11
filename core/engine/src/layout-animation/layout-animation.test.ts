@@ -7,10 +7,11 @@
 // headless fake answers to any name).
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { installFabric } from '@symbiote-native/test-utils';
 import type { ILayoutAnimationConfig } from './index';
 
-// The module name the impl resolves first. Kept in sync with layout-animation.ts's
-// NATIVE_UI_MANAGER_NAME.primary (DEVICE-VERIFY-PENDING on a real host).
+// The single correct TurboModule name. Kept in sync with index.ts's
+// NATIVE_UI_MANAGER_MODULE_NAME.
 const NATIVE_MODULE_NAME = 'UIManager';
 
 interface ICapturedCall {
@@ -45,6 +46,7 @@ beforeEach(async () => {
 
 afterEach(() => {
   globalThis.__turboModuleProxy = undefined;
+  globalThis.nativeFabricUIManager = undefined;
   vi.useRealTimers();
 });
 
@@ -79,6 +81,18 @@ describe('LayoutAnimation JS surface', () => {
   });
 });
 
+describe('LayoutAnimation.coerceType', () => {
+  it('resolves a known easing string to its matching type', () => {
+    expect(LayoutAnimation.coerceType('linear')).toBe('linear');
+    expect(LayoutAnimation.coerceType('spring')).toBe('spring');
+  });
+
+  it("falls back to 'keyboard' for an easing string that isn't a known type", () => {
+    expect(LayoutAnimation.coerceType('easeOutCubic')).toBe('keyboard');
+    expect(LayoutAnimation.coerceType('')).toBe('keyboard');
+  });
+});
+
 describe('LayoutAnimation.configureNext dispatch', () => {
   it('dispatches the config to native and drives onAnimationDidEnd ONLY from native success', () => {
     vi.useFakeTimers();
@@ -105,6 +119,66 @@ describe('LayoutAnimation.configureNext dispatch', () => {
     captured?.onSuccess();
     captured?.onError();
     expect(didEndCount).toBe(1);
+  });
+});
+
+describe('LayoutAnimation native resolution mechanism', () => {
+  it('prefers the Fabric global slot when it exposes configureNextLayoutAnimation', () => {
+    installFabric();
+    const slot: unknown = Reflect.get(globalThis, 'nativeFabricUIManager');
+    if (typeof slot !== 'object' || slot === null) {
+      throw new Error('installFabric did not install a slot');
+    }
+    let fabricCalls = 0;
+    Object.assign(slot, {
+      configureNextLayoutAnimation(
+        _config: ILayoutAnimationConfig,
+        onSuccess: () => void,
+        _onError: () => void,
+      ): void {
+        fabricCalls += 1;
+        onSuccess();
+      },
+    });
+
+    let didEndCount = 0;
+    LayoutAnimation.configureNext(LayoutAnimation.Presets.linear, () => {
+      didEndCount += 1;
+    });
+
+    expect(fabricCalls).toBe(1);
+    expect(didEndCount).toBe(1);
+    // The TurboModule fallback (registered under NATIVE_MODULE_NAME in beforeEach)
+    // must NOT have been consulted once the Fabric global slot handled it.
+    expect(captured).toBeNull();
+  });
+
+  it('falls back to the "UIManager" TurboModule when the Fabric global slot is absent', () => {
+    expect(globalThis.nativeFabricUIManager).toBeUndefined();
+
+    LayoutAnimation.configureNext(LayoutAnimation.Presets.linear);
+
+    expect(captured).not.toBeNull();
+  });
+
+  it('does not resolve a module registered only under the phantom "FabricUIManager" name', () => {
+    const fakeUIManagerUnderWrongName = {
+      configureNextLayoutAnimation(
+        config: ILayoutAnimationConfig,
+        onSuccess: () => void,
+        onError: () => void,
+      ): void {
+        captured = { config, onSuccess, onError };
+      },
+    };
+    globalThis.__turboModuleProxy = <T>(name: string): T | null =>
+      name === 'FabricUIManager' && isPresent<T>(fakeUIManagerUnderWrongName)
+        ? fakeUIManagerUnderWrongName
+        : null;
+
+    LayoutAnimation.configureNext(LayoutAnimation.Presets.linear);
+
+    expect(captured).toBeNull();
   });
 });
 

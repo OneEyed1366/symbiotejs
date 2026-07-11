@@ -17,10 +17,14 @@ export {
   getExplicitStyle,
   setText,
   isSymbioteNode,
+  isSymbioteEvent,
   RAW_TEXT_COMPONENT,
 } from './node';
 export { isEventFor } from './view-config';
 export { registerComponent, setNativeViewConfigSource } from './registry';
+// Real cross-package consumer: core/components' KeyboardAvoidingView render narrows
+// raw native payloads with this same guard, so it needs it off the package root.
+export { isRecord } from './type-guards';
 // InteractionManager: pure JS (timers + emitter), framework-agnostic, so it lives
 // here; every adapter re-exports it.
 export { InteractionManager, Events as InteractionManagerEvents } from './interaction-manager';
@@ -113,10 +117,11 @@ export {
   registerStyles,
   resolveClassName,
   clearGlobalStyles,
-  scopeClassName,
   isClassNameValue,
 } from './style-registry';
-export type { IClassNameValue, IClassToggleMap, IScopableClassValue } from './style-registry';
+export type { IClassNameValue } from './style-registry';
+export { scopeClassName } from './style-registry/scope';
+export type { IClassToggleMap, IScopableClassValue } from './style-registry/scope';
 export { Platform } from './platform';
 export type { IPlatformStatic, IPlatformOSType, IPlatformSelectSpec } from './platform';
 // The per-platform constants types come from their own files, not the host-selected
@@ -242,6 +247,13 @@ export type {
 } from './alert';
 export { Share } from './share';
 export type { IShareContent, IShareOptions, IShareAction } from './share';
+// Image statics (getSize/prefetch/queryCache/...): a stateful, native-bridge-touching module with
+// no view of its own, same shape as Alert/Share. The source-resolution seam it shares with
+// @symbiote-native/components' renderImage lives alongside it in image-source-resolver.
+export { imageStatics } from './image-loader';
+export type { IImageStatics, IImageSize, IImageCacheStatus } from './image-loader';
+export { setImageSourceResolver, resolveImageSource } from './image-source-resolver';
+export type { IImageSource, IImageSourceProp } from './image-source-resolver';
 export { ActionSheetIOS } from './action-sheet-ios';
 export type {
   IActionSheetIOSOptions,
