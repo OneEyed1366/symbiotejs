@@ -75,6 +75,23 @@ describe('AnimatedScrollView', () => {
     expect(content?.children.map(child => child.props.testID)).toEqual(['a', 'b']);
   });
 
+  // Regression test for a THIRD bug in this same bespoke-template class, this one iOS-only (the
+  // inverse of the two Android bugs above): AnimatedScrollView never applied
+  // selectScrollIntrinsics' scrollViewBaseStyle (overflow: 'scroll') to its host node, unlike the
+  // real ScrollView component. On iOS Fabric a scroll view only clips its content to its own
+  // frame when `overflow: 'scroll'` is set; without it, content taller than the frame bleeds out
+  // over sibling views instead of scrolling clipped (Android's native ViewGroup clips regardless
+  // of the style prop, which is why this was invisible there). See
+  // core/components/src/view/render-scroll-view.ts's SCROLL_VIEW_BASE_VERTICAL comment.
+  it('applies the scroll-view base style (overflow: scroll) so content clips to the frame', async () => {
+    mount(ROOT_TAG, AnimatedScrollViewApp);
+    await tick();
+
+    const scrollView = fabric.find(node => node.viewName === 'RCTScrollView');
+    expect(scrollView?.props.overflow).toBe('scroll');
+    expect(scrollView?.props.flexDirection).toBe('column');
+  });
+
   it('lets an explicit nestedScrollEnabled in animatedProps override the default', async () => {
     mount(OVERRIDE_ROOT_TAG, AnimatedScrollViewOverrideApp);
     await tick();

@@ -43,6 +43,7 @@ import {
   whenCommitted,
   type ISymbioteNode,
 } from '@symbiote-native/engine';
+import { selectScrollIntrinsics } from '@symbiote-native/components';
 import { Image, ScrollView, Text, View } from '../../components';
 import {
   anchorHostStyle,
@@ -389,7 +390,7 @@ export class AnimatedImage extends ImageBase implements AfterViewInit, OnChanges
   inputs: ANIMATED_INPUTS,
   template: `
     <symbiote-scroll-view [symbioteHostProps]="reducedProps">
-      <symbiote-scroll-content [collapsable]="false">
+      <symbiote-scroll-content [symbioteHostProps]="contentProps">
         <ng-content></ng-content>
       </symbiote-scroll-content>
     </symbiote-scroll-view>
@@ -402,11 +403,34 @@ export class AnimatedScrollView extends AnimatedComponentBase {
   // receives touch (swallowed by the outer scroll view; iOS doesn't gate on this). The real
   // ScrollView component already defaults this (scroll-view/shared.ts), but AnimatedScrollView
   // talks to the raw primitive directly and has no such defaulting, so it must apply it too.
+  //
+  // scrollViewBaseStyle (overflow: 'scroll' + the per-axis flexDirection) is the OTHER thing
+  // the real ScrollView applies that this bespoke template used to skip entirely — without it,
+  // iOS Fabric never clips the scroll view's content to its own frame (Android's native
+  // ViewGroup clips regardless of the style prop, which is why this was invisible there). This
+  // wrapper has no dedicated `horizontal` input (only the generic `animatedProps`/`style`
+  // surface), and its template is hardcoded to the vertical intrinsics
+  // (symbiote-scroll-view/symbiote-scroll-content, not the horizontal variants), so
+  // selectScrollIntrinsics is always called with isHorizontal=false here — matching what the
+  // template can actually render.
   override get reducedProps(): Record<string, unknown> {
     const reduced = super.reducedProps;
-    return reduced.nestedScrollEnabled === undefined
-      ? { ...reduced, nestedScrollEnabled: true }
-      : reduced;
+    const { scrollViewBaseStyle } = selectScrollIntrinsics(false, undefined);
+    const withScrollBase: Record<string, unknown> = {
+      ...reduced,
+      style: [scrollViewBaseStyle, reduced.style],
+    };
+    return withScrollBase.nestedScrollEnabled === undefined
+      ? { ...withScrollBase, nestedScrollEnabled: true }
+      : withScrollBase;
+  }
+
+  // The content (inner) view's props: contentStyle from the same intrinsics selection, plus
+  // `collapsable: false` (the Android multi-child fix this file's tests already cover) — mirrors
+  // the real ScrollView's own `contentProps` getter (scroll-view/shared.ts).
+  get contentProps(): Record<string, unknown> {
+    const { contentStyle } = selectScrollIntrinsics(false, undefined);
+    return { style: contentStyle, collapsable: false };
   }
 }
 
