@@ -4,11 +4,32 @@
 // slot records the committed tree; a fake __turboModuleProxy returns the Android
 // StatusBarManager; a real color processor (setColorProcessor) proves setBackgroundColor
 // hands native a PROCESSED int, not the raw CSS string.
+//
+// index.android.ts now imports applyStatusBarProps/statusBarImperative/statusBarCurrentHeight
+// from the bare '@symbiote-native/engine' specifier (Metro-correct: it resolves engine's own
+// relative './status-bar' import to index.android.ts on a real Android host). Outside Metro,
+// that bare specifier always resolves engine's iOS build (see status-bar/index.ts's header), so
+// this test mocks it to the real Android implementation — the same fix
+// accessibility-info-android.test.tsx applies via a deep import, done here through vi.mock so
+// index.android.ts's own import stays the clean, production-correct one.
 
 import { type ReactElement } from 'react';
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+
+vi.mock('@symbiote-native/engine', async () => {
+  const actual =
+    await vi.importActual<typeof import('@symbiote-native/engine')>('@symbiote-native/engine');
+  const android = await import('../../../../../core/engine/src/status-bar/index.android');
+  return {
+    ...actual,
+    applyStatusBarProps: android.applyStatusBarProps,
+    statusBarImperative: android.statusBarImperative,
+    statusBarCurrentHeight: android.statusBarCurrentHeight,
+  };
+});
+
 import { View, mount, unmount } from '@symbiote-native/react';
-import { setColorProcessor } from '@symbiote-native/engine';
+import { setColorProcessor, statusBarImperative } from '@symbiote-native/engine';
 import { installFabric } from '@symbiote-native/test-utils';
 import { StatusBar } from './index.android';
 
@@ -122,5 +143,19 @@ describe('StatusBar (Android)', () => {
     // setStyle fires for barStyle, exactly once per effect run.
     expect(findAll('setStyle')).toHaveLength(1);
     expect(find('setStyle')!.args[0]).toBe(BAR_STYLE);
+  });
+
+  // Proves delegation, not just matching behavior: the statics must be the SAME function
+  // objects the engine's Android module exports, not a local reimplementation that happens
+  // to produce identical native calls. A duplicated-but-equivalent body would pass every
+  // test above while still being the bug this fix removes.
+  it('attaches the engine statusBarImperative statics verbatim, not a local reimplementation', () => {
+    expect(StatusBar.setBarStyle).toBe(statusBarImperative.setBarStyle);
+    expect(StatusBar.setHidden).toBe(statusBarImperative.setHidden);
+    expect(StatusBar.setNetworkActivityIndicatorVisible).toBe(
+      statusBarImperative.setNetworkActivityIndicatorVisible,
+    );
+    expect(StatusBar.setBackgroundColor).toBe(statusBarImperative.setBackgroundColor);
+    expect(StatusBar.setTranslucent).toBe(statusBarImperative.setTranslucent);
   });
 });
