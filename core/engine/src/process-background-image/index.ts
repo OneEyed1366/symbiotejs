@@ -1,7 +1,7 @@
 // JS-side port of RN's processBackgroundImage (Libraries/StyleSheet/processBackgroundImage.js).
 // Same root cause as boxShadow/filter/transform: `experimental_backgroundImage` registers with
 // enableNativeCSSParsing(), which DEFAULTS TO FALSE, so RN's stock path parses the CSS gradient
-// string / structured array in JS and sends only the processed array to native — Fabric's C++
+// string / structured array in JS and sends only the processed array to native - Fabric's C++
 // never sees the raw string. This restores that missing JS parse.
 
 import { isOpaqueColorValue, processColor } from '../platform-color';
@@ -51,7 +51,7 @@ export type IParsedBackgroundImage = IParsedLinearGradient | IParsedRadialGradie
 
 // The structured input shape: mirrors react's BackgroundImageValue but declared locally to avoid
 // a cross-package import cycle (shared must not depend on @symbiote-native/react). Read loosely: callers
-// pass plain records, so each field is narrowed at the point of use — same idiom as
+// pass plain records, so each field is narrowed at the point of use - same idiom as
 // process-box-shadow's IRawBoxShadow.
 type IRawBackgroundImage = Record<string, unknown>;
 
@@ -267,7 +267,7 @@ function processBackgroundImageArray(
 
 // Split a `background-image` value on its TOP-LEVEL commas only (multiple gradients, or a
 // color function's internal commas like `rgba(0, 0, 0, .3)`, must not be confused for one
-// another) — depth-tracking instead of a lookahead regex because a gradient's own arg list can
+// another) - depth-tracking instead of a lookahead regex because a gradient's own arg list can
 // itself contain nested parens (`linear-gradient(to right, rgba(0,0,0,.5), blue)`).
 function splitGradients(input: string): string[] {
   const result: string[] = [];
@@ -363,7 +363,7 @@ function parseLinearGradientCSSString(gradientContent: string): IParsedLinearGra
 
 // The `at <position>` clause of `radial-gradient(... at <position>, <color-stops>)`. Drains
 // `tokens` (the SAME queue the caller is walking) via `shift()`, mirroring RN's in-place mutation
-// of `firstPartTokens` — not a copy, so the caller sees it emptied after this returns.
+// of `firstPartTokens` - not a copy, so the caller sees it emptied after this returns.
 function parseRadialGradientPositionTokens(tokens: string[]): IRadialGradientPosition | null {
   if (tokens.length === 0) return null;
 
@@ -527,7 +527,7 @@ function parseRadialGradientCSSString(gradientContent: string): IParsedRadialGra
       break;
     }
 
-    // No shape/size/position token found in this iteration — the rest of the first part is a
+    // No shape/size/position token found in this iteration - the rest of the first part is a
     // color stop, not gradient config.
     if (!hasShapeSizeOrPositionString) break;
   }
@@ -565,7 +565,7 @@ function parseBackgroundImageCSSString(cssString: string): IParsedBackgroundImag
 
 //#endregion CSS string form
 
-// RN processBackgroundImage.js's default export. Returns [] on any invalid gradient — web
+// RN processBackgroundImage.js's default export. Returns [] on any invalid gradient - web
 // semantics: an invalid `background-image` paints none of it rather than a partial gradient.
 export function processBackgroundImage(
   backgroundImage: ReadonlyArray<IRawBackgroundImage> | string | undefined,

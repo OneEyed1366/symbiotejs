@@ -62,9 +62,8 @@ function toFiniteNumber(value: unknown): number | undefined {
   return typeof value === 'number' && Number.isFinite(value) ? value : undefined;
 }
 
-// Pull a recordable touch out of an untyped entry, or undefined when it lacks a usable
-// identifier or coordinates. RN's getTouchIdentifier throws on a null id; we skip
-// instead, so events without touch geometry leave the bank untouched.
+// Pull a recordable touch out of an untyped entry. RN's getTouchIdentifier throws on
+// a null id; we skip instead, so events without touch geometry leave the bank untouched.
 function normalizeTouch(raw: unknown): INormalizedTouch | undefined {
   if (!isRecord(raw)) return undefined;
   const identifier = toFiniteNumber(raw.identifier);

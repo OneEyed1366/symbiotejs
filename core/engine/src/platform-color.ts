@@ -56,7 +56,7 @@ export function isOpaqueColorValue(value: unknown): value is IOpaqueColorValue {
 // parser silently drops strings. The actual conversion (processColor) is RN-platform-specific,
 // so it is injected here rather than imported, keeping shared free of a react-native dependency
 // (and the headless harness working). This module is the sole owner of "run a value through the
-// platform color processor" — every color-touching consumer (commit's fabricProps,
+// platform color processor" - every color-touching consumer (commit's fabricProps,
 // process-box-shadow, process-filter, process-background-image, StatusBar android) imports
 // processColor/isProcessableColor from here, never from commit.ts.
 let colorProcessor: (value: IColorValue) => unknown = value => value;

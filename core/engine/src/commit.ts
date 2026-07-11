@@ -356,7 +356,7 @@ function rootContainerFor(rootTag: IRootTag): ISymbioteNode {
 // from scratch (fresh tags, fresh mirror) instead of cloning handles that belonged to a
 // now-stopped surface. Called from unmount (the bridgeless surface-stop path): the host stops then restarts a
 // surface (Fast Refresh, focus/lifecycle) reusing the same rootTag, and a stale root
-// container would re-clone dead handles into the new surface → a blank screen. The old
+// container would re-clone dead handles into the new surface -> a blank screen. The old
 // container's descendants fall out of every reference and their mirror entries GC.
 export function disposeRoot(rootTag: IRootTag): void {
   if (rootContainers.delete(rootTag)) dlog(`root container disposed root=${rootTag}`);
@@ -371,7 +371,7 @@ export function commitChildren(rootTag: IRootTag, children: readonly ISymbioteNo
 
 // Re-run the scoped commit for a surface from its synthetic root container, reusing
 // whatever top-level children it currently holds. The shared half of the engine: both
-// a full mutation→commit and a single-node Animated frame (setNativeProps) funnel here.
+// a full mutation->commit and a single-node Animated frame (setNativeProps) funnel here.
 function commitContainer(rootTag: IRootTag): void {
   const slot = getSlot();
   const container = rootContainerFor(rootTag);
@@ -464,7 +464,7 @@ registerPostCommit(() => {
   }
 });
 
-// Run `action` once `node` has a committed Fabric tag — immediately if it already does, else after
+// Run `action` once `node` has a committed Fabric tag - immediately if it already does, else after
 // the commit that assigns it. The canonical fix for the Vue async-commit race: defer instead of
 // silently no-opping. Returns a cancel fn (drop the pending retry, e.g. on unmount).
 export function whenCommitted(node: ISymbioteNode, action: () => void): () => void {

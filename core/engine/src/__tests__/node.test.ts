@@ -1,6 +1,5 @@
-// Co-located unit test: isSymbioteEvent narrows `unknown` to ISymbioteEvent. It lives next to
-// the interface it tests (Information Expert) rather than under the scroll-view-specific module
-// that used to own a private copy of this exact guard.
+// Co-located next to the interface it tests (Information Expert), replacing the private copy
+// scroll-view-commands.ts used to own.
 
 import { describe, expect, it } from 'vitest';
 import { createElement, isSymbioteEvent, type ISymbioteEvent } from '../node';

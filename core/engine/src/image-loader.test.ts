@@ -1,7 +1,7 @@
 // Unit test for the Image statics imperative module (getSize / getSizeWithHeaders / prefetch /
 // abortPrefetch / queryCache / resolveAssetSource), extracted out of the VIEW layer's
 // render-image.ts into this native-bridge-touching module (same shape as alert.test.ts / the
-// Share test — a fake ImageLoader installed via __turboModuleProxy, the same global
+// Share test - a fake ImageLoader installed via __turboModuleProxy, the same global
 // getNativeModule reads). Platform is mocked directly to control the iOS/Android prefetch-call
 // branch without depending on a real PlatformConstants native module.
 

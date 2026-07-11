@@ -103,7 +103,7 @@ describe('Share (iOS build -> ActionSheetManager)', () => {
 
   // Regression net for the action-sheet-ios/share contract merge: Share must keep resolving
   // through the exact SAME native module name that action-sheet-ios owns, and must still
-  // invoke showShareActionSheetWithOptions with the options Share builds — proving the merged
+  // invoke showShareActionSheetWithOptions with the options Share builds - proving the merged
   // INativeActionSheetManager type (imported from ../action-sheet-ios) didn't change behavior.
   it('resolves through the ActionSheetManager module and invokes showShareActionSheetWithOptions with the built options', async () => {
     await iosShare.share({ message: 'hi', url: 'https://x' }, { subject: 'subj' });

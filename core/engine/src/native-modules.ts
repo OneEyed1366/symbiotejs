@@ -5,7 +5,7 @@
 // one more client of the same global, exactly as `getSlot` is for the view tree.
 //
 // This is first-party access, for symbiote's own modules (StatusBarManager,
-// KeyboardObserver, …). Third-party RN packages import `TurboModuleRegistry` from
+// KeyboardObserver, ...). Third-party RN packages import `TurboModuleRegistry` from
 // `'react-native'` and read the same global themselves; they do not go through
 // here.
 
@@ -91,26 +91,26 @@ export function getEnforcingNativeModule<T>(name: string): T {
 // module, lazily build a NativeEventEmitter bound to it, install the device-event
 // hub on first subscribe. `createLinking` (linking/shared.ts) proved this factors
 // out safely for Linking's iOS/Android split; this is the general form for every
-// OTHER lazy-module + emitter pair in the runtime-module layer.
+// other lazy-module + emitter pair in the runtime-module layer.
 //
-// Each caller's DEGRADE POLICY stays its own, via config — the factory owns only
-// the repeated plumbing, never the policy:
+// Each caller's DEGRADE POLICY stays its own, via config - the factory owns only
+// the plumbing:
 //   - `bindModuleToEmitter` (default true): whether the resolved module is wired
 //     into the emitter so its addListener/removeListeners observe-counters get
 //     pinged. Dimensions' DeviceInfo module has no observe-counters, so it opts out
 //     (matching its original `new NativeEventEmitter(undefined)`).
-//   - `onEmitterCreated`: runs exactly once, right after the emitter is built —
+//   - `onEmitterCreated`: runs exactly once, right after the emitter is built -
 //     the hook for a caller's own permanent self-subscription (AppState/Appearance/
 //     BackHandler/Keyboard each keep a cache fresh or dispatch a chain this way) or
 //     one-time hydration from the module's constants (AppState's initial state,
-//     Dimensions' initial metrics — the latter also relies on this hook running
+//     Dimensions' initial metrics - the latter also relies on this hook running
 //     `addListener` BEFORE the constants read, preserving the original
 //     subscribe-before-resolve ordering that guards against missing an update).
 
 // A structural check, not a cast: narrows an arbitrary resolved module down to
 // IEventEmitterModule only when it actually carries both observe-counter methods.
 // Needed because `TModule` is unconstrained (Dimensions' INativeDeviceInfo doesn't
-// extend IEventEmitterModule at all) — NativeEventEmitter itself re-checks the same
+// extend IEventEmitterModule at all) - NativeEventEmitter itself re-checks the same
 // shape internally, so this exists to satisfy the type system, not to change
 // behavior.
 function hasEventEmitterShape(value: unknown): value is IEventEmitterModule {
@@ -125,7 +125,7 @@ export interface IDeviceEventModuleConfig<TModule> {
   // The native module name, resolved via getNativeModule.
   moduleName: string;
   // Exact dlog prefix for the module-resolution log (e.g. 'AppState: module' or
-  // 'Keyboard: KeyboardObserver module') — caller-specified so each module's
+  // 'Keyboard: KeyboardObserver module') - caller-specified so each module's
   // existing dlog text doesn't drift.
   moduleLogPrefix: string;
   bindModuleToEmitter?: boolean;
@@ -139,7 +139,7 @@ export interface IDeviceEventModule<TModule> {
 
 // Build one module's lazy-resolve + lazy-emitter pair. Each call owns its own
 // cache, so two callers (or two platform builds loaded together in one smoke) stay
-// independent — the same guarantee `createLinking` documents.
+// independent - the same guarantee `createLinking` documents.
 export function createDeviceEventModule<TModule>(
   config: IDeviceEventModuleConfig<TModule>,
 ): IDeviceEventModule<TModule> {

@@ -1,8 +1,8 @@
 // Vue `<style scoped>` class-name rewriter. Distinct responsibility from the sibling
 // ./index.ts (the CSS class -> style registry): this module does pure NAME rewriting,
 // no registry lookup, no CSS parsing. It runs at the compiled call site of a Vue SFC's
-// scoped-style template — `adapters/vue/metro-vue-transformer.cjs` emits calls to
-// scopeClassName (imported there as `__scopeClass`) — BEFORE Vue's own normalizeClass()
+// scoped-style template - `adapters/vue/metro-vue-transformer.cjs` emits calls to
+// scopeClassName (imported there as `__scopeClass`) - BEFORE Vue's own normalizeClass()
 // collapses string/object/array `class` values to a final string, so it must pre-process
 // all three shapes normalizeClass understands. resolveClassName in ./index.ts still does
 // the actual style lookup, unchanged, against the rewritten (possibly suffixed) name.
@@ -31,7 +31,7 @@ export function scopeClassName(
 }
 
 // A token arrives as either the camelCase registry key (`sectionLabel`) or its kebab-case
-// authoring form (`section-label`) — normalize to camelCase FIRST, then decide scoping, so
+// authoring form (`section-label`) - normalize to camelCase FIRST, then decide scoping, so
 // `localNames` (always camelCase, built from the css-parser's registered keys) recognizes a
 // kebab-written token. The emitted (possibly suffixed) name is always the camelCase form.
 function scopeToken(token: string, localNames: ReadonlySet<string>, scopeId: string): string {

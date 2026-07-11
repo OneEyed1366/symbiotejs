@@ -1,6 +1,3 @@
-// The four primitive runtime guards used throughout the engine to narrow `unknown`
-// at trust boundaries (native payloads, ViewConfig attributes, style values) without
-// an `as` cast. Previously reimplemented locally in ~20 files; consolidated here.
 import { describe, expect, it } from 'vitest';
 import { isBoolean, isNumber, isRecord, isString } from './type-guards';
 

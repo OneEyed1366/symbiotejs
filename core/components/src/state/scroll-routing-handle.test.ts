@@ -2,11 +2,10 @@
 // handle types must stay composed of the SAME shared routing tail plus only their own
 // primary member(s), so a stub satisfying one composes cleanly into the other. The real
 // drift guard is structural (TypeScript itself, via these literal assignments and
-// expectTypeOf) — `pnpm --filter @symbiote-native/components run typecheck` excludes
-// *.test.ts, so removing a member here was verified separately by running the Vue
-// adapter's typecheck (its literal `handle: IVirtualizedListHandle = {...}` and
-// `isVirtualizedListHandle` guards give real excess/missing-property errors); see the
-// task notes for that run's output.
+// expectTypeOf) - `pnpm --filter @symbiote-native/components run typecheck` excludes
+// *.test.ts, so removing a member here needs a separate check: run the Vue adapter's
+// typecheck, whose literal `handle: IVirtualizedListHandle = {...}` and
+// `isVirtualizedListHandle` guards give real excess/missing-property errors.
 
 import { describe, expect, expectTypeOf, it } from 'vitest';
 import type { IScrollViewHandle } from '../scroll-view-commands';

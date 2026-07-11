@@ -20,7 +20,7 @@ import { isRecord } from '../type-guards';
 // RN fall back to the TurboModule `UIManager.configureNextLayoutAnimation`
 // (`TurboModuleRegistry.getEnforcing('UIManager')` in NativeUIManager.js; iOS's
 // RCTUIManager.mm registers under the same bare "UIManager" name via
-// RCT_EXPORT_MODULE()). There is only ONE correct TurboModule name — RN never
+// RCT_EXPORT_MODULE()). There is only ONE correct TurboModule name; RN never
 // registers a module under "FabricUIManager".
 const NATIVE_UI_MANAGER_MODULE_NAME = 'UIManager';
 
@@ -69,10 +69,9 @@ export interface ILayoutAnimationConfig {
 type IOnAnimationDidEndCallback = () => void;
 type IOnAnimationDidFailCallback = () => void;
 
-// The native UIManager surface this module talks to. The caller vouches for the
-// shape via `getNativeModule<T>` (the single trust-boundary narrowing, no
-// per-call `as`). The method is optional because an older/partial host may not
-// expose it; we feature-detect before calling.
+// The caller vouches for this shape via `getNativeModule<T>` (the single
+// trust-boundary narrowing, no per-call `as`). The method is optional because an
+// older/partial host may not expose it; we feature-detect before calling.
 interface INativeLayoutAnimationUIManager {
   configureNextLayoutAnimation?(
     config: ILayoutAnimationConfig,
@@ -99,7 +98,7 @@ function hasConfigureNextLayoutAnimation(value: unknown): value is INativeLayout
 // process: a cached module survived the flip-off, so configureNext kept calling native when
 // the module was meant to be absent.)
 function resolveUIManager(): INativeLayoutAnimationUIManager | null {
-  // Mechanism 1: the Fabric global slot, read directly — a JSI global, not a
+  // Mechanism 1: the Fabric global slot, read directly: a JSI global, not a
   // TurboModule lookup.
   const fabricUIManager = globalThis.nativeFabricUIManager;
   if (hasConfigureNextLayoutAnimation(fabricUIManager)) {
@@ -188,7 +187,7 @@ function setLayoutAnimationEnabled(value: boolean): void {
 
 // Configures the next commit to be animated. NATIVE drives completion:
 // `onAnimationDidEnd` is passed straight through as the native success callback,
-// so it fires exactly when the native animation actually finishes, including
+// so it fires exactly when the native animation finishes, including
 // when native extends it past `duration` (spring overshoot, OS slowdown,
 // reduce-motion). `onAnimationDidFail` fires only if native config parsing fails.
 // When no native module is linked (headless), this is a logged no-op; an app
@@ -228,7 +227,7 @@ function configureNext(
   };
 
   dlog(`LayoutAnimation.configureNext: dispatching config (duration=${config.duration})`);
-  // onError only fires if native config parsing fails; default to a no-op.
+  // Default to a no-op when the caller doesn't supply one.
   manager.configureNextLayoutAnimation(config, onComplete, onAnimationDidFail ?? (() => {}));
 }
 

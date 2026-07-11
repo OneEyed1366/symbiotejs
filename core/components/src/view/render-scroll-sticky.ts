@@ -59,9 +59,9 @@ export type IStickyInterpolationParams = {
   nextHeaderLayoutY: number | undefined;
 };
 
-// Build the scroll-offset → translateY interpolation ranges that keep the header pinned.
+// Build the scroll-offset -> translateY interpolation ranges that keep the header pinned.
 // Ported byte-for-byte from ScrollViewStickyHeader.js's effect (both branches). The base
-// [-1, 0] → [0, 0] stub is the un-measured identity; once measured, the top branch pins at
+// [-1, 0] -> [0, 0] stub is the un-measured identity; once measured, the top branch pins at
 // layoutY and tracks 1:1 until the next header pushes it off, while the inverted branch pins
 // at the viewport bottom (stickStartPoint) and tracks up to the collision point.
 export function computeStickyInterpolation(params: IStickyInterpolationParams): {

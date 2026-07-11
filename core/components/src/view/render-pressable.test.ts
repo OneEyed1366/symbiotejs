@@ -1,6 +1,6 @@
 // Co-located unit test for the 3 agnostic gating predicates buildPressableListeners is built
 // from. These are also the predicates the Angular Pressable calls directly (it has no listener
-// bag to spread onto — see adapters/angular/src/components/pressable/index.ts), so this file is
+// bag to spread onto - see adapters/angular/src/components/pressable/index.ts), so this file is
 // the single source of truth for the disabled/cancelable semantics both sides must agree on.
 
 import { describe, expect, it } from 'vitest';
@@ -50,7 +50,7 @@ describe('isTerminationAllowed', () => {
   // This is exactly the case render-pressable.ts and the Angular Pressable used to disagree on:
   // render-pressable.ts left the whole onResponderTerminationRequest listener off the bag when
   // cancelable is unset (deferring to RN's own default), while Angular's allowTermination()
-  // hardcoded `cancelable !== false` (defaulting to allowed). Both resolve to "allowed" — this
+  // hardcoded `cancelable !== false` (defaulting to allowed). Both resolve to "allowed" - this
   // predicate is the single definition both sides now call, matching RN's documented default.
   it('defaults to allowed when cancelable is undefined, matching RN default-true-when-unset', () => {
     expect(isTerminationAllowed(undefined)).toBe(true);

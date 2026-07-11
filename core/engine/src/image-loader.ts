@@ -1,16 +1,16 @@
-// Image static methods (RN's Image.getSize / prefetch / queryCache / …).
+// Image static methods (RN's Image.getSize / prefetch / queryCache / etc).
 //
 // These mirror RN's iOS Image statics (Libraries/Image/Image.ios.js), which delegate to the
 // `ImageLoader` native (Turbo)Module declared in NativeImageLoaderIOS.js. The Android spec
 // (NativeImageLoaderAndroid.js) registers under the SAME module name ('ImageLoader'), so this
-// stays a flat, non-platform-split module — only the Android prefetch call signature differs (a
+// stays a flat, non-platform-split module - only the Android prefetch call signature differs (a
 // second `requestId` arg), branched on Platform.OS below, not on module name. NOTE the asymmetry
 // in the iOS spec: `getSize` resolves a `[width, height]` ARRAY, while `getSizeWithHeaders`
 // resolves a `{width, height}` OBJECT, both are guarded below before reading. The native result
 // crosses the I/O boundary as `unknown`; we never cast it, we narrow its shape.
 //
 // This is a stateful, native-bridge-touching imperative module (module-level ImageLoader cache +
-// prefetch requestId counter) with no view of its own — it belongs in @symbiote-native/engine
+// prefetch requestId counter) with no view of its own - it belongs in @symbiote-native/engine
 // alongside Alert/Share, not in a view/render-*.ts file (whose contract is zero state / zero
 // native bridge).
 
@@ -32,16 +32,16 @@ type ISizeFailure = (error: unknown) => void;
 
 // The `ImageLoader` native module surface we consume. Promise-based on the New Architecture (the
 // spec returns Promises directly). One name, two signatures: Android's `prefetchImage` takes a
-// second `requestId` arg (abortRequest keys off it) via NativeImageLoaderAndroid.js, while iOS
-// takes only `uri`. iOS ignores the extra arg, so we always pass a requestId and stay
-// parity-correct on both. `abortRequest` cancels an in-flight prefetch keyed by its requestId. It
-// is on the Android spec only (NativeImageLoaderAndroid.js); iOS's ImageLoader has no such method,
-// so the call is best-effort and silently no-ops where unsupported.
+// second `requestId` arg (abortRequest keys off it) via NativeImageLoaderAndroid.js; iOS takes
+// only `uri` and throws on the extra arg, so the call below branches on Platform.OS instead of
+// passing requestId unconditionally. `abortRequest` cancels an in-flight prefetch keyed by its
+// requestId; it exists on the Android spec only (NativeImageLoaderAndroid.js), so calling it where
+// unsupported (iOS, headless) is a no-op rather than a throw.
 type INativeImageLoader = {
   getSize(uri: string): Promise<unknown>;
   getSizeWithHeaders(uri: string, headers: Record<string, string>): Promise<unknown>;
   // iOS takes ONLY the uri (NativeImageLoaderIOS); Android adds the requestId so abortRequest can
-  // key off it. The arg is optional here so the iOS call passes exactly one — a second arg makes the
+  // key off it. The arg is optional here so the iOS call passes exactly one - a second arg makes the
   // bridgeless TurboModule throw "Exception in HostFunction".
   prefetchImage(uri: string, requestId?: number): Promise<unknown>;
   abortRequest?(requestId: number): void;
@@ -50,7 +50,7 @@ type INativeImageLoader = {
 
 // The iOS native module name RN registers this under (NativeImageLoaderIOS.js resolves
 // `TurboModuleRegistry.getEnforcing<Spec>('ImageLoader')`). A module name like this is only
-// provable on a real host — a headless fake answers to any name — so this iOS name is
+// provable on a real host - a headless fake answers to any name - so this iOS name is
 // device-verify-pending.
 const IMAGE_LOADER_MODULE = 'ImageLoader';
 
@@ -193,7 +193,7 @@ async function queryCache(uris: string[]): Promise<Record<string, IImageCacheSta
     .then(() => {
       const loader = requireLoader('queryCache');
       // The native queryCache never rejects (RCTImageLoader resolves getImageCacheStatus), so a
-      // rejection here is a JS↔native boundary fault: log whether the method is even callable and
+      // rejection here is a JS/native boundary fault: log whether the method is even callable and
       // the arg shape, to tell "not a function" (interop gap) from a marshalling reject.
       dlog(
         `Image.queryCache: typeof loader.queryCache=${typeof loader.queryCache} uris=${uris.length}`,
@@ -209,8 +209,8 @@ async function queryCache(uris: string[]): Promise<Record<string, IImageCacheSta
 
 // PURE JS: run the currently-installed source resolver (the same machinery the Image component
 // uses via resolveImageSource). RN's resolveAssetSource turns a require() asset id into
-// {uri, scale, …}; the app injects the real one with setImageSourceResolver, and this exposes its
-// output to callers directly.
+// {uri, scale, ...}; the app injects the real one with setImageSourceResolver, and this exposes
+// its output to callers directly.
 function resolveAssetSource(source: IImageSourceProp): unknown {
   return resolveImageSource(source);
 }

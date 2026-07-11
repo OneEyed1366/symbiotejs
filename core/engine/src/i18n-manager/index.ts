@@ -18,8 +18,8 @@ import { getNativeModule } from '../native-modules';
 import { isBoolean } from '../type-guards';
 
 // The iOS native module name RN registers this under (the same name on both
-// platforms). A module name is only provable on a real host — a headless fake
-// answers to any name — so this name is still pending verification on device.
+// platforms). A module name is only provable on a real host (a headless fake
+// answers to any name), so this name is still pending verification on device.
 const I18N_MANAGER_MODULE = 'I18nManager';
 
 export type II18nManagerConstants = {

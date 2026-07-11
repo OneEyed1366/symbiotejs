@@ -1,5 +1,5 @@
 // The color-keyed style processors (box-shadow/filter/background-image) used to import
-// processColor back from commit.ts, which itself imports them to build STYLE_PROCESSORS — a
+// processColor back from commit.ts, which itself imports them to build STYLE_PROCESSORS - a
 // real 2-hop dependency cycle, held together only by "no TDZ hazard" comments (processColor was
 // only ever called at runtime, never at module-init). platform-color.ts is the stable leaf that
 // owns color processing now, so none of these three should reach into commit.ts anymore. A

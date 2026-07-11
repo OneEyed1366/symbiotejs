@@ -247,7 +247,7 @@ export type {
 } from './alert';
 export { Share } from './share';
 export type { IShareContent, IShareOptions, IShareAction } from './share';
-// Image statics (getSize/prefetch/queryCache/…): a stateful, native-bridge-touching module with
+// Image statics (getSize/prefetch/queryCache/...): a stateful, native-bridge-touching module with
 // no view of its own, same shape as Alert/Share. The source-resolution seam it shares with
 // @symbiote-native/components' renderImage lives alongside it in image-source-resolver.
 export { imageStatics } from './image-loader';

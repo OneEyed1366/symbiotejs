@@ -195,7 +195,7 @@ class AccessibilityInfoAndroid implements IAccessibilityInfoStatic {
   // Emit a named accessibility event at a view through the Fabric slot. The shared
   // routing (isSymbioteNode guard + dispatch) lives in shared.ts, identical on both
   // platforms; Android has no early-return special case, so it passes no shouldSkip
-  // hook — every event reaches the slot.
+  // hook - every event reaches the slot.
   sendAccessibilityEvent(handle: IAccessibilityHandle, eventType: IAccessibilityEventType): void {
     routeSendAccessibilityEvent('android', handle, eventType);
   }

@@ -90,9 +90,8 @@ export function splitLayoutProps(style: IStyleProp<IViewStyle> | undefined): {
   return { outer, inner };
 }
 
-// Re-exported (not just used internally): the package barrel (index.ts) re-exports this guard
-// from this module, so external callers importing it from '@symbiote-native/components' keep
-// working even though the guard itself now lives in the engine, next to ISymbioteEvent.
+// Re-exported so the package barrel (index.ts) can still export this guard to
+// '@symbiote-native/components' callers, now that it lives in the engine, next to ISymbioteEvent.
 export { isSymbioteEvent };
 
 // Forward a wrapped scroll event to the user's ScrollHandler. The Animated.event listener

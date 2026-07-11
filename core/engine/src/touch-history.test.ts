@@ -1,7 +1,6 @@
-// Unit test for the touch-history store, extracted from events/index.ts (was the
-// `#region responder touch-history store`). Exercises the public surface directly —
-// record a touch, verify the bank/history state, shift on move/end, reset — independent
-// of the event-routing layer that consumes it (events.test.ts covers that indirectly).
+// Exercises the touch-history store's public surface directly: record a touch, check
+// bank/history state, shift on move/end, reset. Independent of the event-routing layer
+// that consumes it (events.test.ts covers that indirectly).
 
 import { beforeEach, describe, expect, it } from 'vitest';
 import {

@@ -2,7 +2,7 @@
 // handshake this value owns end-to-end (make itself native, mint its tag, hand the
 // curve to the native module, sync the JS value back on completion). Extracted out
 // of BaseAnimation.startNativeIfNeeded (animations/base.ts) so a driver never reaches
-// into __makeNative / __getNativeTag / __onNativeUpdate / flushValue directly —
+// into __makeNative / __getNativeTag / __onNativeUpdate / flushValue directly.
 // Information Expert: this value is the one object that actually owns those
 // internals. Native module mocked the same way animated-operators.test.ts /
 // animated-native-loop.test.ts do (a fake nativeModuleProxy.NativeAnimatedTurboModule).

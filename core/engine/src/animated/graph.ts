@@ -32,7 +32,7 @@ let nextListenerId = 1;
 // a circular value import. Instead interpolate-node.ts injects its own constructor
 // once at module load via registerInterpolationFactory, mirroring how commit.ts's
 // setColorProcessor breaks the same kind of cycle. The two `import type`s above are
-// erased at compile time (verbatimModuleSyntax) — only this factory crosses at runtime.
+// erased at compile time (verbatimModuleSyntax); only this factory crosses at runtime.
 type IInterpolationFactory = (
   parent: AnimatedNode,
   config: IInterpolationConfig,
@@ -144,7 +144,7 @@ export class AnimatedNode {
   }
 
   // Map this node's value before it reaches a prop, e.g. 0..1 -> 0..10. Defined once
-  // here (Information Expert — every node subclass wants the identical one-liner)
+  // here (Information Expert: every node subclass wants the identical one-liner)
   // instead of duplicated per subclass; see registerInterpolationFactory above for
   // why the concrete constructor is injected rather than imported directly.
   interpolate(config: IInterpolationConfig): AnimatedInterpolation {

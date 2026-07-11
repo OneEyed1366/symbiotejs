@@ -4,7 +4,7 @@
 // on both platforms except iOS's one 'click' no-op: createElement + createSurface commit
 // a real node so commit.ts's mirror resolves it, and the fake Fabric slot is augmented
 // with sendAccessibilityEvent (installFabric's harness models commit/clone, not the a11y
-// sink — same augmentation the React adapter's accessibility-info test already uses).
+// sink - same augmentation the React adapter's accessibility-info test already uses).
 
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import {

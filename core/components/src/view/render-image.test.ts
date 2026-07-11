@@ -1,7 +1,7 @@
 // Unit test for the pure renderImage view fn, split out from the imperative Image statics
 // (@symbiote-native/engine's image-loader.ts) per the VIEW layer's zero-state / zero-native-bridge
 // contract. Exercises source resolution (source / src / srcSet), the width/height style fold,
-// resizeMode/tintColor read from style, and the alt -> accessibilityLabel fold — no adapter, no
+// resizeMode/tintColor read from style, and the alt -> accessibilityLabel fold - no adapter, no
 // Fabric slot.
 
 import { afterEach, describe, expect, it } from 'vitest';
@@ -14,7 +14,7 @@ function baseView(overrides: Partial<IImageViewProps> = {}): IImageViewProps {
 }
 
 // resizeMode/tintColor on `style` is a legacy Image pattern renderImage reads defensively
-// (readStyleString) — IViewStyle itself doesn't declare these keys, so a widened local type
+// (readStyleString) - IViewStyle itself doesn't declare these keys, so a widened local type
 // is needed to construct the fixture without an `as` cast.
 type ILegacyImageStyle = IViewStyle & { resizeMode?: string; tintColor?: string };
 

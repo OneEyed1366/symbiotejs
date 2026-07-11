@@ -2,7 +2,7 @@
 // based state getters (VoiceOver / reduce-motion / bold-text / grayscale / invert-colors /
 // reduce-transparency / darker-system-colors), announce + focus side effects, and the
 // observe-counters for the device-event subscription. Subscribes to iOS device events
-// (`screenReaderChanged` / `reduceMotionChanged` / `boldTextChanged` / …) via a
+// (`screenReaderChanged` / `reduceMotionChanged` / `boldTextChanged` / ...) via a
 // NativeEventEmitter and re-broadcasts to JS listeners. Metro picks this on an iOS host;
 // the bare accessibility-info.ts re-exports it as the default for tsc / tsx / headless.
 // Mirrors RN's AccessibilityInfo.js iOS branches.

@@ -77,7 +77,7 @@ export abstract class BaseAnimation implements IAnimation {
     this.__active = true;
   }
 
-  // A native driver overrides this with its curve config (`{type:'frames'|'spring'|'decay', …}`).
+  // A native driver overrides this with its curve config (`{type:'frames'|'spring'|'decay', ...}`).
   protected getNativeAnimationConfig(): INativeAnimationConfig {
     throw new Error('This animation type cannot be offloaded to the native driver');
   }
@@ -95,7 +95,7 @@ export abstract class BaseAnimation implements IAnimation {
     }
     this.nativeId = generateNativeAnimationId();
     // The value owns the native handshake (make native, mint tag, sync back on
-    // completion); we hand over only what THIS driver owns — the curve, RN's
+    // completion); we hand over only what THIS driver owns: the curve, RN's
     // Animation.js:137 platform bag, this animation's id, and its own end callback.
     animatedValue.__startNativeAnimation(
       this.getNativeAnimationConfig(),

@@ -63,8 +63,8 @@ describe('Animated operators — JS path', () => {
   });
 });
 
-// Every binary operator (add/subtract/multiply/divide) shares the exact same
-// __attach/__detach/__makeNative boilerplate around its own arithmetic — this is
+// Every binary operator (add/subtract/multiply/divide) shares the same
+// __attach/__detach/__makeNative boilerplate around its own arithmetic; this is
 // the regression net for extracting that boilerplate into a common base.
 describe('Animated binary operators — shared attach/detach/makeNative boilerplate', () => {
   const operators: ReadonlyArray<{
@@ -123,7 +123,7 @@ describe('Animated binary operators — shared attach/detach/makeNative boilerpl
       const firstValue = operator.__getValue();
 
       // Not proportional to the starting values, so every operator (incl. divide)
-      // is guaranteed a different result — a scaled pair would coincidentally
+      // is guaranteed a different result: a scaled pair would coincidentally
       // reproduce the same quotient.
       a.setValue(10);
       b.setValue(3);

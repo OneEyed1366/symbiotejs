@@ -19,11 +19,8 @@ import {
 } from '../touch-history';
 import { isRecord } from '../type-guards';
 
-// Raw Fabric event name -> listener name. Generic bubbling events live here; press
-// is synthesized from a touch sequence and layout is direct, so both are handled
-// outside this table.
 // Raw Fabric event -> listener name, split by dispatch phase. Press is synthesized
-// from a touch sequence (handled separately below); everything else is table-driven.
+// from a touch sequence and layout is direct, so neither lives in this table.
 // Bubbling events walk target -> root; direct events fire only on the target.
 const BUBBLING_EVENTS: Readonly<Record<string, string>> = {
   topFocus: 'focus',
@@ -160,7 +157,7 @@ function readTouchPoint(
 // Whether any touch still down started inside the responder (its target IS the
 // responder or a descendant). RN's noResponderTouches walks nativeEvent.touches and
 // returns false the moment one is found; a release fires only when none remain. The
-// headless smokes fire with an empty `{}` event (no `touches`) → no remaining touch →
+// headless smokes fire with an empty `{}` event (no `touches`) -> no remaining touch ->
 // release fires, preserving single-touch behavior. (ResponderEventPlugin.noResponder-
 // Touches + isAncestor.)
 function hasRemainingResponderTouch(
@@ -533,7 +530,7 @@ function bubble(
   const path = pathToRoot(target);
   for (let i = path.length - 1; i >= 0; i--) {
     const node = path[i];
-    // Anchors (Angular's #anchor component hosts) never paint and have no native view — a
+    // Anchors (Angular's #anchor component hosts) never paint and have no native view. A
     // listener registered on one only exists because a framework's own output-binding
     // machinery (already delivered directly, e.g. Angular's EventEmitter.subscribe) also
     // registered it through Renderer2.listen. Bubbling into it would refire that same
@@ -553,7 +550,7 @@ function bubble(
   }
 
   // Bubble phase: target -> root, invoking each ancestor's plain listener. Anchors are
-  // transparent here too (see the capture-phase comment above) — same event, same reason.
+  // transparent here too, same reason (see the capture-phase comment above).
   let node: ISymbioteNode | undefined = target;
   while (node) {
     const listener = isAnchor(node) ? undefined : node.listeners?.get(listenerName);

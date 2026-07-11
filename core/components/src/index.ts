@@ -101,10 +101,10 @@ export type {
   IImageViewProps,
 } from './view/render-image';
 export { renderImage } from './view/render-image';
-// Image statics (getSize/prefetch/queryCache/…) and the source-resolver registration now live in
-// @symbiote-native/engine (image-loader.ts / image-source-resolver.ts) — same imperative,
-// native-bridge-touching shape as Alert/Share, out of the pure view layer. Re-exported here so
-// the public `Image.*` surface is unchanged.
+// Image statics (getSize/prefetch/queryCache/etc) and the source-resolver registration live in
+// @symbiote-native/engine (image-loader.ts / image-source-resolver.ts), the same imperative,
+// native-bridge-touching shape as Alert/Share, kept out of the pure view layer. Re-exported here
+// so the public `Image.*` surface is unchanged.
 export type { IImageStatics, IImageSize, IImageCacheStatus } from '@symbiote-native/engine';
 export { imageStatics, setImageSourceResolver } from '@symbiote-native/engine';
 

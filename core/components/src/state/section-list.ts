@@ -2,8 +2,8 @@
 // section contributes a header row, its item rows, then a footer row (RN counts 2 per
 // section around the items); the flattened sequence feeds VirtualizedList as one tagged
 // stream, so headers, items, and footers are windowed by the same machinery. All of this
-// is pure transform — every adapter reuses it; the adapter supplies only the per-entry
-// element creation (renderSectionHeader / renderItem / …) and the ref wiring.
+// is pure transform - every adapter reuses it; the adapter supplies only the per-entry
+// element creation (renderSectionHeader / renderItem / etc.) and the ref wiring.
 
 import type { IScrollRoutingHandle } from './scroll-routing-handle';
 
@@ -14,7 +14,7 @@ export interface ISection<ItemT> {
 
 // A flattened entry is a section header, an item, a section footer, or a between-sections
 // separator, tagged so the single renderItem can dispatch to the right renderer. The
-// separator carries no data — it just paints the gap.
+// separator carries no data - it just paints the gap.
 export type ISectionEntry<ItemT> =
   | { kind: 'header'; section: ISection<ItemT>; sectionIndex: number }
   | {
@@ -31,7 +31,7 @@ export type ISectionEntry<ItemT> =
 // own primary member: it resolves a (sectionIndex, itemIndex) coordinate to the flattened
 // entry index and forwards to the inner VirtualizedList's scrollToIndex. The
 // flash/scroll-ref/interaction tail is the inner-scroll routing shared with
-// VirtualizedList (see IScrollRoutingHandle) — extending it, rather than re-declaring it,
+// VirtualizedList (see IScrollRoutingHandle) - extending it, rather than re-declaring it,
 // is what keeps the two handle types from drifting from each other.
 export interface IVirtualizedSectionListHandle extends IScrollRoutingHandle {
   scrollToLocation(params: {

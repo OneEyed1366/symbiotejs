@@ -1,6 +1,6 @@
 // Co-located unit test: readLayoutField pulls a numeric field out of an onLayout event's
 // nativeEvent.layout without a cast. Shared by render-scroll-view's dimension read (width/height)
-// and render-scroll-sticky's position read (y/height) — one guard, tested once.
+// and render-scroll-sticky's position read (y/height) - one guard, tested once.
 
 import { createElement, type ISymbioteEvent } from '@symbiote-native/engine';
 import { describe, expect, it } from 'vitest';

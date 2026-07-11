@@ -140,9 +140,9 @@ export class AnimatedValue extends AnimatedWithChildren {
 
   // Own the native-driver "start" handshake end-to-end: make this value native, mint
   // its tag, hand the curve to the native module, and on completion sync the JS value
-  // (no re-flush to bound leaves' native side — native already moved the view). A
-  // driver (BaseAnimation.startNativeIfNeeded) supplies only what IT owns — the curve
-  // config, its own animation id, its platform bag, and its own end callback — never
+  // (no re-flush to bound leaves' native side; native already moved the view). A
+  // driver (BaseAnimation.startNativeIfNeeded) supplies only what IT owns: the curve
+  // config, its own animation id, its platform bag, and its own end callback, never
   // touching __makeNative / __getNativeTag / __onNativeUpdate / flushValue directly.
   // Information Expert: this value is the one object that actually holds those internals.
   __startNativeAnimation(

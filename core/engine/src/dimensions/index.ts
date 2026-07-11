@@ -137,12 +137,12 @@ function setDimensions(payload: IDimensionsPayload): void {
 }
 
 // The policy that diverges from a plain lazy-resolve+emitter: DeviceInfo carries no
-// observe-counters (only getConstants), so it never binds into the emitter —
+// observe-counters (only getConstants), so it never binds into the emitter -
 // bindModuleToEmitter stays false, matching the original `new
 // NativeEventEmitter(undefined)`. And the subscribe-BEFORE-reading-constants order
 // (native could push an update between the two, RN orders addListener before
 // getConstants for the same reason) lives in onEmitterCreated, which runs addListener
-// first and only then touches getConstants() — same order as before the extraction.
+// first and only then touches getConstants() - same order as before the extraction.
 const deviceEventModule = createDeviceEventModule<INativeDeviceInfo>({
   moduleName: DEVICE_INFO_MODULE,
   moduleLogPrefix: 'Dimensions: module',

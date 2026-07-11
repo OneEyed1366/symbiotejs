@@ -11,7 +11,7 @@
 // shared must stay react-native-free (the headless harness runs in plain Node), so
 // the ViewConfig lookup is INJECTED, exactly like the color processor: the adapter
 // wires `setNativeViewConfigSource(ReactNativeViewConfigRegistry.get)` on a real
-// host (on a real host that one source covers BOTH RN core and every library).
+// host, where that one source covers BOTH RN core and every library.
 //
 // The ONLY explicit list is OUR OWN built-in primitives (BUILTIN_COMPONENTS): a
 // finite set we own, which keep their hand-tuned tables (view-config events, commit
@@ -142,7 +142,7 @@ function deriveFromConfig(config: INativeViewConfig, into: IResolved): void {
       const attribute = validAttributes[key];
       if (isRecord(attribute)) {
         const process = attribute.process;
-        // The codegen config already carries the right processor (processColor, …);
+        // The codegen config already carries the right processor (processColor, ...);
         // wrap it so the typed Function becomes a PropProcessor without a cast.
         if (typeof process === 'function') into.processors.set(key, value => process(value));
       }

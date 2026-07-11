@@ -18,10 +18,10 @@ export function resolveDisabledAccessibilityState(
   return disabled !== undefined ? { ...accessibilityState, disabled } : accessibilityState;
 }
 
-// The 3 agnostic gating predicates behind the listener bag below. Angular has no bag to spread —
+// The 3 agnostic gating predicates behind the listener bag below. Angular has no bag to spread -
 // it binds these directly onto template event outputs (see adapters/angular/src/components/
-// pressable/index.ts) — so these are exported and shared rather than folded back into
-// buildPressableListeners, keeping both sides on one definition instead of two independent ones.
+// pressable/index.ts), so they're exported and shared rather than folded back into
+// buildPressableListeners, keeping both sides on one definition instead of two.
 
 // A disabled Pressable suppresses a press entirely: it never fires and pressed-state never flips,
 // exactly as RN's disabled Pressable.
@@ -36,14 +36,14 @@ export function shouldClaimResponder(disabled: boolean | undefined): boolean {
 }
 
 // cancelable === false refuses to yield the responder (RN routes cancelable to
-// onResponderTerminationRequest). Unset defers to RN's own default, which is allowed — so this
+// onResponderTerminationRequest). Unset defers to RN's own default, which is allowed - so this
 // resolves to true for undefined rather than hardcoding a value, mirroring the more deliberate of
 // the two definitions this predicate replaces.
 export function isTerminationAllowed(cancelable: boolean | undefined): boolean {
   return cancelable !== false;
 }
 
-// The listeners the responder View carries. When disabled, leave them off entirely — see
+// The listeners the responder View carries. When disabled, leave them off entirely - see
 // shouldSuppressPress. onResponderTerminationRequest itself is only attached when cancelable is
 // set at all, so an unset cancelable leaves RN's native default in charge rather than this
 // listener asserting one.

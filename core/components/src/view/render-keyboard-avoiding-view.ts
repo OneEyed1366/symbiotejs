@@ -1,6 +1,6 @@
 // KeyboardAvoidingView: the pure logic + view-contract half (framework-agnostic). It owns
 // every piece that does NOT need a framework: the keyboard/frame inset math, the onLayout
-// frame read, and the behavior → style/structure decision. Each adapter supplies ONLY the
+// frame read, and the behavior -> style/structure decision. Each adapter supplies ONLY the
 // lifecycle (subscribe to the Keyboard module, measure via onLayout, hold the inset in its
 // reactive primitive) and assembles the wrapper element around its own opaque children.
 //

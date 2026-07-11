@@ -62,7 +62,7 @@ export interface IShareActionSheetError {
 // The native module typed as the interface we vouch for. Single trust-boundary
 // point (no per-call `as`); the generic on getNativeModule carries it. The
 // callback `buttonIndex`/`completed`/`activityType` arrive typed because we
-// declare them here. This is the sole owner of the ActionSheetManager contract —
+// declare them here. This is the sole owner of the ActionSheetManager contract -
 // Share (share/index.ios.ts) imports this interface rather than redeclaring its
 // own narrower view onto the same native module.
 export interface INativeActionSheetManager {

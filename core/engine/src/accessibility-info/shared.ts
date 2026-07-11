@@ -98,8 +98,8 @@ export type IAccessibilityEventType = 'click' | 'focus' | 'viewHoverEnter' | 'wi
 // side maps it; the handle here IS the SymbioteNode (symbiote augments the node in
 // place as its public instance).
 //
-// The one thing that genuinely diverges by platform — iOS's early return on 'click'
-// (VoiceOver has no click producer, AccessibilityInfo.js) — is NOT decided here: a
+// The one thing that genuinely diverges by platform - iOS's early return on 'click'
+// (VoiceOver has no click producer, AccessibilityInfo.js) - is NOT decided here: a
 // platform passes `shouldSkip`, which both decides AND logs its own skip (so iOS keeps
 // its exact "iOS no-op (RN parity)" message); Android omits it and every event reaches
 // the slot.

@@ -1,5 +1,4 @@
-// Unit test for the Vue `<style scoped>` class-name rewriter. Moved out of
-// style-registry.test.ts alongside the scope.ts extraction — a separate responsibility
+// Unit test for the Vue `<style scoped>` class-name rewriter - a separate responsibility
 // from the CSS class registry, see scope.ts's own doc comment.
 
 import { describe, expect, it } from 'vitest';
@@ -47,7 +46,7 @@ describe('scopeClassName', () => {
   });
 
   it('normalizes an untouched (non-local) kebab-case token to camelCase too', () => {
-    // foo-bar isn't in localNames, so it isn't suffixed — but the runtime registry only ever
+    // foo-bar isn't in localNames, so it isn't suffixed - but the runtime registry only ever
     // has camelCase keys, so the emitted token must still be normalized or resolveClassName's
     // exact-match would look up an unregistered literal "foo-bar" key.
     expect(scopeClassName('card foo-bar', localNames, 'a1b2c3d4')).toBe('card__a1b2c3d4 fooBar');
