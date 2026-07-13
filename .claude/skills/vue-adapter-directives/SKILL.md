@@ -169,19 +169,32 @@ crash. Cross-surface support is a deliberate non-goal for v1, not an oversight.
 
 ## Live examples — SFC vs TSX get the guard differently
 
-`examples/vue-sfc/App.vue` has a "Show toast (Teleport)" button: the overlay
-host is a persistent, empty `<View pointer-events="box-none">` rendered as a
-SIBLING of the root `ScrollView`, referenced via a plain string `ref=` +
-`shallowRef` (not `ref()` — Gotcha 1 in `vue-adapter-reactivity`). The SFC's
-`<Teleport>` is compiler-injected and auto-retargeted by
-`metro-vue-transformer.js`, so it gets our validating wrapper for free.
+The demo lives in each app's `screens/CanaryScreen.*`, not `App.*` — both moved
+one level deeper into the nav tree once `@symbiote-native/navigation` gave each app a
+real Menu as its initial route (2026-07). This same move is why the demo went
+missing for a while: `examples/react`/`examples/vue-sfc`/`examples/vue-tsx` had
+only a Modal demo post-move, while `examples/angular/screens/CanaryScreen.ts`
+kept its `*portal`/`*tunnelIn` twin the whole time — brought back to parity here.
 
-`examples/vue-tsx/App.tsx` needs one extra step: its `metro.config.js` aliases
-bare `'vue'` straight to `@vue/runtime-core` (no transformer interception — see
-that file's own top comment), so a plain `import { Teleport } from 'vue'` there
-would be the REAL, unguarded component. The TSX demo instead imports
-`{ Teleport } from '@symbiote-native/vue/runtime-helpers'` explicitly — the one line
-in that file that deviates from its usual `from 'vue'` pattern.
+`examples/vue-sfc/screens/CanaryScreen.vue` has a "Show toast (Teleport)"
+button: the overlay host is a persistent, empty `<View pointer-events="box-none">`
+rendered as a SIBLING of the root `ScrollView`, referenced via a plain string
+`ref=` + `shallowRef` (not `ref()` — Gotcha 1 in `vue-adapter-reactivity`). The
+SFC's `<Teleport>` is compiler-injected and auto-retargeted by
+`metro-vue-transformer.js`, so it gets our validating wrapper for free. A
+second button, "Show toast (createTunnel)", demos a module-level
+`createTunnel()` singleton's `TunnelIn`/`TunnelOut` (destructured to PascalCase
+in `<script setup>` so the SFC compiler auto-registers them as template tags).
+
+`examples/vue-tsx/screens/CanaryScreen.tsx` needs one extra step: its
+`metro.config.js` aliases bare `'vue'` straight to `@vue/runtime-core` (no
+transformer interception — see that file's own top comment), so a plain
+`import { Teleport } from 'vue'` there would be the REAL, unguarded component.
+The TSX demo instead imports `{ Teleport } from '@symbiote-native/vue/runtime-helpers'`
+explicitly — the one line in that file that deviates from its usual `from 'vue'`
+pattern. Its createTunnel twin reuses the pre-existing module-level singleton in
+`examples/vue-tsx/tunnel-demo.ts` (`export const tunnelDemo = createTunnel();`),
+imported into `CanaryScreen.tsx` rather than declared inline.
 
 ## Scope — what this does NOT cover
 
