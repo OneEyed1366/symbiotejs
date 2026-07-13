@@ -432,6 +432,28 @@ both lowercase their lookup/insert key — closes this for every current AND fut
 component without touching the (still-necessary, still manually maintained per §11) allowlist
 itself.
 
+**§11b. The §11a fix regressed — the Set literal drifted back to un-lowercased strings while
+this section still described the fix as done (found + refixed 2026-07-13).** `renderer/index.ts`
+had `const ANCHOR_HOST_COMPONENTS: Set<string> = new Set([...capitalized strings...])` with NO
+`.map(s => s.toLowerCase())` on the array — a plain `new Set([...])` does not normalize its own
+members, so `ANCHOR_HOST_COMPONENTS.has(engineName.toLowerCase())` was comparing a lowercased
+query against literal `'ActivityIndicator'`/`'Switch'`/`'ScrollView'`/`'StatusBar'`/`'Pressable'`/
+etc. entries and silently missing on all of them (only the handful already spelled lowercase in
+the literal — `symbiote-animated-view`, `tunnel-out`, `symbiote-descriptor-outlet`, … — ever
+matched). Surfaced as 8 headless `vitest` failures across 5 files after an unrelated
+folder-as-module file-layout pass touched `renderer.ts` — confirmed via `git stash` against the
+literal HEAD commit that the failures pre-existed the file move, so this was a real, already-
+committed regression, not caused by the move. It stayed masked in the other ~15 composed-
+component tests because most search by `testID`/style, which finds the real inner node
+regardless of an extra un-anchored ancestor; only tests asserting exact `viewName`, a strict
+serialized-tree string, `root.children.length`, or an exact event-fire count (activity-indicator,
+switch, status-bar, pressable, scroll-view-projection) actually broke. **Re-fixed identically**:
+`.map(selector => selector.toLowerCase())` on the array passed to `new Set(...)`. Lesson: this
+skill describing a fix as done is not proof the code still has it — the Set literal is a single
+array anyone editing `ANCHOR_HOST_COMPONENTS` (e.g. adding a new component) could accidentally
+retype without the `.map`, silently reintroducing this every time; if a future audit touches this
+file, verify the `.map(toLowerCase)` call is still there before trusting §11a/§11b's narrative.
+
 ## §16. `[style]="[a, b]"` (RN's array-composition idiom) crashes Angular's built-in `ɵɵstyleMap` — always flatten first (2026-07)
 
 Angular's template compiler special-cases the literal binding name `style` (and `class`,
