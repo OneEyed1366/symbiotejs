@@ -10,7 +10,13 @@
 // exactly this reason.
 
 import { Component, OnDestroy, OnInit } from '@angular/core';
-import { Animated, AnimatedView, Button, Text, View } from '@symbiote-native/angular';
+import {
+  Animated,
+  AnimatedView,
+  Button,
+  Text,
+  View,
+} from '@symbiote-native/angular';
 // Static look lives in AnimatedDemo.css — compiled at build time by @symbiote-native/css-parser.
 import './AnimatedDemo.css';
 

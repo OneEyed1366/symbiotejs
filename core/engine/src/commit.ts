@@ -24,33 +24,26 @@ import {
 } from './fabric';
 import {
   createElement,
-  isAnchor,
-  RAW_TEXT_COMPONENT,
-  VIRTUAL_TEXT_COMPONENT,
   debugNodeId,
+  isAnchor,
+  VIRTUAL_TEXT_COMPONENT,
   type ISymbioteNode,
 } from './node';
 import { dlog, isDebug } from './debug';
 import { flattenStyle } from './style';
-import { registeredProcessor } from './registry';
 import { nextTag } from './tags';
-import { isOpaqueColorValue, type IColorValue } from './platform-color';
-import { processBoxShadow } from './process-box-shadow';
 import { registerPostCommit, runPostCommitHooks } from './post-commit';
-import { processFilter } from './process-filter';
-import { processTransformOrigin } from './process-transform-origin';
-import { processTransform } from './process-transform';
-import { processAspectRatio } from './process-aspect-ratio';
-import { processFontVariant } from './process-font-variant';
-import { processBackgroundImage } from './process-background-image';
+import { fabricProps } from './fabric-props';
+import { isRecord } from './type-guards';
+
+// processColor/setColorProcessor now live in ./platform-color (the stable color-processing
+// leaf every color-touching module imports from); re-exported here so nothing outside this
+// module needs to change its import path.
+export { processColor, setColorProcessor } from './platform-color';
 
 // Per-commit work counters, surfaced via dlog so a device run can prove the
 // engine is incremental (created=0 with clones after the first mount).
 const stats = { created: 0, cloneProps: 0, cloneChildren: 0, reused: 0 };
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null;
-}
 
 // Diagnostic (gated): Fabric serializes props to folly::dynamic, which rejects a JS
 // Symbol or function with "JS Symbols are not convertible to dynamic". A hard native
@@ -102,198 +95,10 @@ function guardSerializable(propsDiff: IFabricProps, viewName: string, tag: numbe
   if (bad !== undefined) dlog(`NON-SERIALIZABLE prop on ${viewName}#${tag}: ${bad}`);
 }
 
-// Color props must reach Fabric as platform ints, not CSS strings. Fabric's C++
-// color parser silently drops strings. The actual conversion (processColor) is
-// RN-platform-specific, so it is injected here rather than imported, keeping
-// shared free of a react-native dependency (and the headless harness working).
-const COLOR_PROPS: ReadonlySet<string> = new Set([
-  'backgroundColor',
-  'color',
-  'borderColor',
-  'borderTopColor',
-  'borderRightColor',
-  'borderBottomColor',
-  'borderLeftColor',
-  // Logical (writing-direction-relative) border colors + the block axis, all wired to
-  // processColor in RN's ReactNativeStyleAttributes. borderStartColor/borderEndColor are
-  // even publicly typed ColorValue, so they silently dropped on iOS / threw on Android.
-  'borderStartColor',
-  'borderEndColor',
-  'borderBlockColor',
-  'borderBlockStartColor',
-  'borderBlockEndColor',
-  'shadowColor',
-  // Text shadow + the W3C `outline`/image `overlay` colors, also processColor in RN.
-  'textShadowColor',
-  'overlayColor',
-  'outlineColor',
-  'tintColor',
-  // TextInput color props. iOS's native input accepts a CSS string, but Android's
-  // AndroidTextInput is strict ("ColorValue: the value must be a number or Object"),
-  // so these must be processColor'd here too, same as any other color reaching Fabric.
-  'placeholderTextColor',
-  'selectionColor',
-  'cursorColor',
-  'underlineColorAndroid',
-  // Text decoration color (underline/strike): same Fabric strictness as any color.
-  'textDecorationColor',
-  'selectionHandleColor',
-  // Switch track/thumb colors. RN processColors each via the Switch ViewConfig
-  // (SwitchNativeComponent / AndroidSwitchNativeComponent validAttributes). iOS takes
-  // onTintColor (ON) / tintColor (OFF); Android takes trackColorForTrue/False +
-  // trackTintColor, and Android's ColorPropConverter is strict ("the value must be a
-  // number or Object"), so a raw CSS string crashes. thumbTintColor reaches both.
-  'onTintColor',
-  'thumbTintColor',
-  'trackColorForTrue',
-  'trackColorForFalse',
-  'trackTintColor',
-]);
-
-// Accepts a CSS string or an opaque PlatformColor / DynamicColorIOS object. RN's
-// processColor (the value the canary injects) handles both, resolving the opaque
-// shapes to the platform ints/dicts iOS UIColor expects.
-let colorProcessor: (value: IColorValue) => unknown = value => value;
-
-export function setColorProcessor(process: (value: IColorValue) => unknown): void {
-  colorProcessor = process;
-}
-
-// Public mirror of RN's processColor: run a color through the injected platform
-// processor (the canary wires RN's own). Off a real host it resolves CSS strings
-// and opaque PlatformColor objects to the platform ints Fabric expects; headless
-// (no processor wired) it is the identity, so smokes see the input unchanged.
-export function processColor(color: IColorValue): unknown {
-  return colorProcessor(color);
-}
-
-// A color-keyed value the platform processor must convert before Fabric: a CSS
-// string, or an opaque PlatformColor / DynamicColorIOS object. Numbers (already
-// platform ints) and undefined are left untouched.
-function isProcessableColor(value: unknown): value is IColorValue {
-  return typeof value === 'string' || isOpaqueColorValue(value);
-}
-
-// Structured CSS-style keys RN parses in JS before native (boxShadow/filter register
-// with enableNativeCSSParsing(), which DEFAULTS TO FALSE, so native CSS parsing is off
-// and the raw string is dropped). Each runs on the hoisted top-level style key, turning
-// a CSS string or structured array into the processed array Fabric's C++ expects.
-const STYLE_PROCESSORS = new Map<string, (value: unknown) => unknown>([
-  ['boxShadow', value => processBoxShadow(asBoxShadowInput(value))],
-  ['filter', value => processFilter(asFilterInput(value))],
-  ['transformOrigin', value => processTransformOrigin(asTransformOriginInput(value))],
-  ['transform', processTransformValue],
-  ['aspectRatio', value => processAspectRatio(asAspectRatioInput(value))],
-  ['fontVariant', value => processFontVariant(asFontVariantInput(value))],
-  ['experimental_backgroundImage', value => processBackgroundImage(asBackgroundImageInput(value))],
-]);
-
-// boxShadow accepts a CSS string or an array of shadow objects; anything else is
-// undefined to processBoxShadow (which returns []). Narrowing avoids an `as` cast.
-function asBoxShadowInput(value: unknown): Parameters<typeof processBoxShadow>[0] {
-  if (typeof value === 'string') return value;
-  if (Array.isArray(value)) return value.filter(isRecord);
-  return undefined;
-}
-
-// filter accepts a CSS string or an array of single-key filter objects; same narrowing.
-function asFilterInput(value: unknown): Parameters<typeof processFilter>[0] {
-  if (typeof value === 'string') return value;
-  if (Array.isArray(value)) return value.filter(isRecord);
-  return undefined;
-}
-
-// experimental_backgroundImage accepts a CSS string (gradient functions) or an array of
-// structured gradient objects; same narrowing as boxShadow/filter.
-function asBackgroundImageInput(value: unknown): Parameters<typeof processBackgroundImage>[0] {
-  if (typeof value === 'string') return value;
-  if (Array.isArray(value)) return value.filter(isRecord);
-  return undefined;
-}
-
-// transformOrigin accepts a CSS string or a [x, y, z] array of strings/numbers; anything
-// else is undefined to processTransformOrigin (which defaults to center/center/0).
-function asTransformOriginInput(value: unknown): Parameters<typeof processTransformOrigin>[0] {
-  if (typeof value === 'string') return value;
-  if (Array.isArray(value)) return value.filter(isStringOrNumber);
-  return undefined;
-}
-
-// aspectRatio accepts a number (the common, working form) or a ratio string; otherwise
-// undefined, which processAspectRatio drops.
-function asAspectRatioInput(value: unknown): Parameters<typeof processAspectRatio>[0] {
-  if (typeof value === 'number' || typeof value === 'string') return value;
-  return undefined;
-}
-
-// fontVariant accepts an array of variant strings (the common, working form) or a
-// space-separated string; anything else becomes an empty string, which yields [].
-function asFontVariantInput(value: unknown): Parameters<typeof processFontVariant>[0] {
-  if (typeof value === 'string') return value;
-  if (Array.isArray(value)) return value.filter(isString);
-  return '';
-}
-
-// transform accepts a CSS string (processTransform parses it) or an array of single-key
-// transform records (the hot animated / sticky-header path, passed through unchanged).
-// A non-string non-array value is NOT dropped: it may already be processed, so it passes
-// through verbatim rather than being coerced to [] (which would erase a valid transform).
-function processTransformValue(value: unknown): unknown {
-  if (typeof value === 'string') return processTransform(value);
-  if (Array.isArray(value)) return processTransform(value.filter(isRecord));
-  return value;
-}
-
-function isStringOrNumber(value: unknown): value is string | number {
-  return typeof value === 'string' || typeof value === 'number';
-}
-
-function isString(value: unknown): value is string {
-  return typeof value === 'string';
-}
-
-// Convert a prop to the shape Fabric's C++ expects. A third-party view contributes
-// its own processors, auto-derived from its ViewConfig (validAttributes[*].process,
-// e.g. processColor for a slider's track tints); those run first. Then the structured
-// CSS-style processors (boxShadow/filter). Built-ins are never in the registry, so they
-// fall through to the global color path, where any CSS-string color is run through the
-// injected platform processor (Fabric's C++ color parser silently drops strings).
-function processValue(component: string, key: string, value: unknown): unknown {
-  const processor = registeredProcessor(component, key);
-  if (processor !== undefined) return processor(value);
-  const styleProcessor = STYLE_PROCESSORS.get(key);
-  if (styleProcessor !== undefined) return styleProcessor(value);
-  if (COLOR_PROPS.has(key) && isProcessableColor(value)) return colorProcessor(value);
-  return value;
-}
-
 function viewNameFor(node: ISymbioteNode, hasTextAncestor: boolean): string {
   // The only position-dependent name: a <Text> inside another <Text> becomes a
   // virtual span. Everything else is the component string the adapter chose.
   return node.isText && hasTextAncestor ? VIRTUAL_TEXT_COMPONENT : node.component;
-}
-
-// Translate the retained node's logical props into the flat payload Fabric's C++
-// props expect: `style` keys are hoisted to the top level, event handlers and
-// undefined values are dropped.
-function fabricProps(node: ISymbioteNode): IFabricProps {
-  if (node.component === RAW_TEXT_COMPONENT) {
-    return { text: node.props.text };
-  }
-  const out: Record<string, unknown> = {};
-  for (const [key, value] of Object.entries(node.props)) {
-    if (key === 'style') continue;
-    if (typeof value === 'function') continue;
-    if (value === undefined) continue;
-    out[key] = processValue(node.component, key, value);
-  }
-  // Collapse style (object | array | nested arrays) into one flat payload before
-  // hoisting: `style={[base, override]}` is RN's idiom and Fabric wants it flat.
-  const style = flattenStyle(node.props.style);
-  for (const [key, value] of Object.entries(style)) {
-    if (value !== undefined) out[key] = processValue(node.component, key, value);
-  }
-  return out;
 }
 
 // Fabric's clone*WithNewProps MERGES the raw payload onto the node's existing props,
@@ -569,7 +374,7 @@ function rootContainerFor(rootTag: IRootTag): ISymbioteNode {
 // from scratch (fresh tags, fresh mirror) instead of cloning handles that belonged to a
 // now-stopped surface. Called from unmount (the bridgeless surface-stop path): the host stops then restarts a
 // surface (Fast Refresh, focus/lifecycle) reusing the same rootTag, and a stale root
-// container would re-clone dead handles into the new surface → a blank screen. The old
+// container would re-clone dead handles into the new surface -> a blank screen. The old
 // container's descendants fall out of every reference and their mirror entries GC.
 export function disposeRoot(rootTag: IRootTag): void {
   if (rootContainers.delete(rootTag)) dlog(`root container disposed root=${rootTag}`);
@@ -584,7 +389,7 @@ export function commitChildren(rootTag: IRootTag, children: readonly ISymbioteNo
 
 // Re-run the scoped commit for a surface from its synthetic root container, reusing
 // whatever top-level children it currently holds. The shared half of the engine: both
-// a full mutation→commit and a single-node Animated frame (setNativeProps) funnel here.
+// a full mutation->commit and a single-node Animated frame (setNativeProps) funnel here.
 function commitContainer(rootTag: IRootTag): void {
   const slot = getSlot();
   const container = rootContainerFor(rootTag);
@@ -677,7 +482,7 @@ registerPostCommit(() => {
   }
 });
 
-// Run `action` once `node` has a committed Fabric tag — immediately if it already does, else after
+// Run `action` once `node` has a committed Fabric tag - immediately if it already does, else after
 // the commit that assigns it. The canonical fix for the Vue async-commit race: defer instead of
 // silently no-opping. Returns a cancel fn (drop the pending retry, e.g. on unmount).
 export function whenCommitted(node: ISymbioteNode, action: () => void): () => void {

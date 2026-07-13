@@ -36,6 +36,7 @@ import {
 import {
   dispatchViewCommand,
   dlog,
+  isSymbioteEvent,
   isSymbioteNode,
   type IStyleProp,
   type ISymbioteEvent,
@@ -46,12 +47,6 @@ import { anchorHostStyle, RefreshControlHost, SymbioteHostPropsDirective } from 
 // Record<string, unknown> already tolerates `style` holding the [anchorHostStyle, this.style]
 // array anchorHostStyle's merge produces (see hostProps below) — no widening needed.
 type IHostProps = Record<string, unknown>;
-
-// Angular infers an `(event)` binding's $event as the DOM Event for a custom-schema element,
-// so each handler enters as `unknown` and is narrowed here before reaching a typed callback.
-function isSymbioteEvent(value: unknown): value is ISymbioteEvent {
-  return typeof value === 'object' && value !== null && 'nativeEvent' in value;
-}
 
 // Mirrors React's IRefreshControlProps minus children (Angular takes the Android-wrapped scroll view
 // via <ng-content>), declared per-adapter over the shared accessibility base since the framework-specific

@@ -7,6 +7,7 @@
 import { type ReactElement } from 'react';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { StatusBar, View, mount, unmount } from '@symbiote-native/react';
+import { statusBarImperative } from '@symbiote-native/engine';
 import { installFabric } from '@symbiote-native/test-utils';
 
 const BAR_STYLE = 'dark-content';
@@ -90,5 +91,19 @@ describe('StatusBar (iOS)', () => {
   it('never calls the network-activity setter when its prop is omitted', () => {
     mount(ROOT_TAG, <App />);
     expect(find('setNetworkActivityIndicatorVisible')).toBeUndefined();
+  });
+
+  // Proves delegation, not just matching behavior: the statics must be the SAME function
+  // objects the engine exports, not a local reimplementation that happens to produce
+  // identical native calls. A duplicated-but-equivalent body would pass every test above
+  // while still being the bug this fix removes.
+  it('attaches the engine statusBarImperative statics verbatim, not a local reimplementation', () => {
+    expect(StatusBar.setBarStyle).toBe(statusBarImperative.setBarStyle);
+    expect(StatusBar.setHidden).toBe(statusBarImperative.setHidden);
+    expect(StatusBar.setNetworkActivityIndicatorVisible).toBe(
+      statusBarImperative.setNetworkActivityIndicatorVisible,
+    );
+    expect(StatusBar.setBackgroundColor).toBe(statusBarImperative.setBackgroundColor);
+    expect(StatusBar.setTranslucent).toBe(statusBarImperative.setTranslucent);
   });
 });

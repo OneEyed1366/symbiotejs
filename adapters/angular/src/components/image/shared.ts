@@ -9,7 +9,12 @@ import {
   type IImageSourceProp,
   type IResizeMode,
 } from '@symbiote-native/components';
-import type { IStyleProp, ISymbioteEvent, IViewStyle } from '@symbiote-native/engine';
+import {
+  isSymbioteEvent,
+  type IStyleProp,
+  type ISymbioteEvent,
+  type IViewStyle,
+} from '@symbiote-native/engine';
 
 export { setImageSourceResolver } from '@symbiote-native/components';
 export type {
@@ -151,10 +156,6 @@ function asCrossOrigin(value: unknown): 'anonymous' | 'use-credentials' | undefi
 
 function asStyle(value: unknown): IStyleProp<IViewStyle> | undefined {
   return typeof value === 'object' && value !== null ? value : undefined;
-}
-
-function isSymbioteEvent(value: unknown): value is ISymbioteEvent {
-  return typeof value === 'object' && value !== null && Reflect.has(value, 'nativeEvent');
 }
 
 export function resolveImageProps(input: Record<string, unknown>): Record<string, unknown> {

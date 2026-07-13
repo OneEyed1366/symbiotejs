@@ -7,13 +7,8 @@
 // degrades to a no-op when the native module is absent, matching RN's
 // BackHandler.ios.js stub. Mirrors RN's Libraries/Utilities/BackHandler.android.js.
 
-import { getNativeModule } from '../native-modules';
-import {
-  installDeviceEventHub,
-  NativeEventEmitter,
-  type IEventEmitterModule,
-  type IEventSubscription,
-} from '../native-events';
+import { createDeviceEventModule } from '../native-modules';
+import { type IEventEmitterModule, type IEventSubscription } from '../native-events';
 import { dlog } from '../debug';
 
 // The native module name RN registers this under. NOTE: this is the name the
@@ -57,27 +52,24 @@ function isHandled(result: ReturnType<IBackPressHandler>): boolean {
 // Lazily resolved so importing this module has no native side effect: a headless
 // run without a fake __turboModuleProxy still loads it; resolution happens on the
 // first use. `null` when the module isn't linked (e.g. iOS).
-let deviceEventManager: INativeDeviceEventManager | null | undefined;
-let emitter: NativeEventEmitter | undefined;
+//
+// The self-subscription policy that diverges from a plain lazy-resolve+emitter:
+// BackHandler wires the native back-press event to the reverse-order chain exactly
+// once, permanently.
+const deviceEventModule = createDeviceEventModule<INativeDeviceEventManager>({
+  moduleName: DEVICE_EVENT_MANAGER_MODULE,
+  moduleLogPrefix: 'BackHandler: module',
+  onEmitterCreated: emitter => {
+    emitter.addListener(DEVICE_BACK_EVENT, dispatchBackPress);
+  },
+});
 
 function getModule(): INativeDeviceEventManager | null {
-  if (deviceEventManager === undefined) {
-    deviceEventManager = getNativeModule<INativeDeviceEventManager>(DEVICE_EVENT_MANAGER_MODULE);
-    dlog(`BackHandler: module ${deviceEventManager ? 'resolved' : 'NOT resolved (null)'}`);
-  }
-  return deviceEventManager;
+  return deviceEventModule.getModule();
 }
 
-function getEmitter(): NativeEventEmitter {
-  if (emitter === undefined) {
-    // WHY lazy: install on first subscribe so the hub exists before native emits,
-    // without a hard bootstrap-order dependency. Idempotent.
-    installDeviceEventHub();
-    emitter = new NativeEventEmitter(getModule() ?? undefined);
-    // Wire the native back-press event to the reverse-order chain exactly once.
-    emitter.addListener(DEVICE_BACK_EVENT, dispatchBackPress);
-  }
-  return emitter;
+function getEmitter() {
+  return deviceEventModule.getEmitter();
 }
 
 // Run handlers last-registered-first; the first to return true consumes the press

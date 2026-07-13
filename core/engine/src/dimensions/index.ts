@@ -12,13 +12,10 @@
 // (getNativeModule), so this module stays importable headless before a fake proxy
 // is installed.
 
-import { getNativeModule } from '../native-modules';
-import {
-  installDeviceEventHub,
-  NativeEventEmitter,
-  type IEventSubscription,
-} from '../native-events';
+import { createDeviceEventModule } from '../native-modules';
+import { type IEventSubscription } from '../native-events';
 import { dlog } from '../debug';
+import { isRecord } from '../type-guards';
 
 // The native module name RN registers device metrics under.
 const DEVICE_INFO_MODULE = 'DeviceInfo';
@@ -81,9 +78,6 @@ interface INativeDeviceInfo {
 // The trust boundary: native getConstants() crosses from an untyped HostObject into
 // our types here, behind a structural guard (no per-call cast). A shape that fails
 // the guard is treated as "module absent".
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null;
-}
 
 function isDimensionsConstants(value: unknown): value is { Dimensions: IDimensionsPayload } {
   return isRecord(value) && isRecord(value.Dimensions);
@@ -142,21 +136,19 @@ function setDimensions(payload: IDimensionsPayload): void {
   for (const listener of [...changeListeners]) listener(cached);
 }
 
-// Resolve initial metrics lazily and subscribe to native updates once. Re-attempts
-// on each call until a valid module is cached, so a later-installed DeviceInfo still
-// gets picked up (same pattern as platform.ts).
-let updateSubscription: IEventSubscription | undefined;
-
-function ensureResolved(): IDimensionsSet {
-  if (cached !== undefined) return cached;
-
-  // Subscribe BEFORE reading constants so an update fired in between isn't missed
-  // (RN orders the addListener before the getConstants call for the same reason).
-  if (updateSubscription === undefined) {
-    const module = getNativeModule<INativeDeviceInfo>(DEVICE_INFO_MODULE);
-    installDeviceEventHub();
-    const emitter = new NativeEventEmitter(undefined);
-    updateSubscription = emitter.addListener(DID_UPDATE_DIMENSIONS, payload => {
+// The policy that diverges from a plain lazy-resolve+emitter: DeviceInfo carries no
+// observe-counters (only getConstants), so it never binds into the emitter -
+// bindModuleToEmitter stays false, matching the original `new
+// NativeEventEmitter(undefined)`. And the subscribe-BEFORE-reading-constants order
+// (native could push an update between the two, RN orders addListener before
+// getConstants for the same reason) lives in onEmitterCreated, which runs addListener
+// first and only then touches getConstants() - same order as before the extraction.
+const deviceEventModule = createDeviceEventModule<INativeDeviceInfo>({
+  moduleName: DEVICE_INFO_MODULE,
+  moduleLogPrefix: 'Dimensions: module',
+  bindModuleToEmitter: false,
+  onEmitterCreated: (emitter, module) => {
+    emitter.addListener(DID_UPDATE_DIMENSIONS, payload => {
       if (isDimensionsPayload(payload)) setDimensions(payload);
     });
 
@@ -173,8 +165,15 @@ function ensureResolved(): IDimensionsSet {
         );
       }
     }
-  }
+  },
+});
 
+// Resolve initial metrics lazily and subscribe to native updates once. Re-attempts
+// on each call until a valid module is cached, so a later-installed DeviceInfo still
+// gets picked up (same pattern as platform.ts).
+function ensureResolved(): IDimensionsSet {
+  if (cached !== undefined) return cached;
+  deviceEventModule.getEmitter();
   return cached ?? { window: ZERO_METRICS, screen: ZERO_METRICS };
 }
 

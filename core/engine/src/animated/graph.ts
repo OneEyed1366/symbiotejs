@@ -16,6 +16,8 @@ import {
   type INativeNodeConfig,
   type IPlatformConfig,
 } from './native/native-animated';
+import type { IInterpolationConfig } from './interpolation';
+import type { AnimatedInterpolation } from './interpolation-node';
 
 // Most nodes emit a scalar; a composite node (AnimatedColor) emits its rasterized
 // string (an rgba() value). The payload is the union so one listener map serves
@@ -23,6 +25,24 @@ import {
 export type IValueListener = (state: { value: number | string }) => void;
 
 let nextListenerId = 1;
+
+// AnimatedNode.interpolate (below) needs to construct a real AnimatedInterpolation,
+// but this module cannot value-import interpolation-node.ts: that module already
+// imports AnimatedNode/AnimatedWithChildren FROM here, so importing it back would be
+// a circular value import. Instead interpolate-node.ts injects its own constructor
+// once at module load via registerInterpolationFactory, mirroring how commit.ts's
+// setColorProcessor breaks the same kind of cycle. The two `import type`s above are
+// erased at compile time (verbatimModuleSyntax); only this factory crosses at runtime.
+type IInterpolationFactory = (
+  parent: AnimatedNode,
+  config: IInterpolationConfig,
+) => AnimatedInterpolation;
+
+let createInterpolationNode: IInterpolationFactory | undefined;
+
+export function registerInterpolationFactory(factory: IInterpolationFactory): void {
+  createInterpolationNode = factory;
+}
 
 // Depth of the currently-active withSuspendedCallbacks blocks. While > 0, a
 // composite setter (AnimatedColor.setValue) is driving several channels in a row;
@@ -121,6 +141,17 @@ export class AnimatedNode {
 
   __getAnimatedValue(): unknown {
     return this.__getValue();
+  }
+
+  // Map this node's value before it reaches a prop, e.g. 0..1 -> 0..10. Defined once
+  // here (Information Expert: every node subclass wants the identical one-liner)
+  // instead of duplicated per subclass; see registerInterpolationFactory above for
+  // why the concrete constructor is injected rather than imported directly.
+  interpolate(config: IInterpolationConfig): AnimatedInterpolation {
+    if (createInterpolationNode === undefined) {
+      throw new Error('AnimatedNode.interpolate: interpolation factory not registered');
+    }
+    return createInterpolationNode(this, config);
   }
 
   __addChild(_child: AnimatedNode): void {}

@@ -6,13 +6,8 @@
 // public 'change'/'memoryWarning'/'focus'/'blur' listeners, mirroring RN's
 // Libraries/AppState/AppState.js.
 
-import { getNativeModule } from '../native-modules';
-import {
-  installDeviceEventHub,
-  NativeEventEmitter,
-  type IEventEmitterModule,
-  type IEventSubscription,
-} from '../native-events';
+import { createDeviceEventModule } from '../native-modules';
+import { type IEventEmitterModule, type IEventSubscription } from '../native-events';
 import { dlog } from '../debug';
 
 // The native module name RN registers AppState under, confirmed from its spec
@@ -51,37 +46,33 @@ function isStateChangePayload(value: unknown): value is { app_state: string } {
 // Lazily resolved so importing this module has no native side effect: a headless
 // run without a fake __turboModuleProxy still loads it; resolution happens on first
 // use. `null` when the module isn't linked.
-let appStateModule: INativeAppState | null | undefined;
-let emitter: NativeEventEmitter | undefined;
 let currentState: string | null = null;
 
-function getModule(): INativeAppState | null {
-  if (appStateModule === undefined) {
-    appStateModule = getNativeModule<INativeAppState>(APP_STATE_MODULE);
-    dlog(`AppState: module ${appStateModule ? 'resolved' : 'NOT resolved (null)'}`);
-  }
-  return appStateModule;
-}
-
-function getEmitter(): NativeEventEmitter {
-  if (emitter === undefined) {
-    // WHY lazy: install on first use so the hub exists before native emits, without
-    // a hard bootstrap-order dependency. Idempotent.
-    installDeviceEventHub();
-    const module = getModule();
+// The self-subscription policy that diverges from a plain lazy-resolve+emitter:
+// AppState hydrates `currentState` from the module's initial constants, then keeps it
+// fresh forever via a permanent 'appStateDidChange' listener, so a read after a native
+// change returns the new value even with nobody else listening (RN parity).
+const deviceEventModule = createDeviceEventModule<INativeAppState>({
+  moduleName: APP_STATE_MODULE,
+  moduleLogPrefix: 'AppState: module',
+  onEmitterCreated: (emitter, module) => {
     if (module !== null) {
       currentState = module.getConstants().initialAppState;
     }
-    emitter = new NativeEventEmitter(module ?? undefined);
-    // Keep `currentState` fresh even when nobody listens, so a read after a state
-    // change returns the new value; RN registers the same always-on observer.
     emitter.addListener(NATIVE_EVENT.stateDidChange, payload => {
       if (!isStateChangePayload(payload)) return;
       dlog(`AppState: ${NATIVE_EVENT.stateDidChange} -> ${payload.app_state}`);
       currentState = payload.app_state;
     });
-  }
-  return emitter;
+  },
+});
+
+function getModule(): INativeAppState | null {
+  return deviceEventModule.getModule();
+}
+
+function getEmitter() {
+  return deviceEventModule.getEmitter();
 }
 
 class AppStateImpl {

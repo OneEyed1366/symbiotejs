@@ -8,6 +8,7 @@
 // the layout state, and building the interpolation onto its Animated value.
 
 import type { AnimatedValue, ISymbioteEvent } from '@symbiote-native/engine';
+import { readLayoutField } from './layout-event';
 
 // RN gives the sticky wrapper zIndex:10 (ScrollViewStickyHeader.js styles.header) so the
 // pinned header paints OVER the rows that scroll up under it. Without it the next rows (later
@@ -40,11 +41,11 @@ export type IStickyHeaderProps = {
   scrollViewHeight: number | undefined;
 };
 
+// Thin re-export kept for the existing public surface (adapters import this name from
+// `@symbiote-native/components`); the actual field read is shared with render-scroll-view's
+// width/height read in layout-event.ts.
 export function readLayoutNumber(event: ISymbioteEvent, key: 'y' | 'height'): number | undefined {
-  const layout = event.nativeEvent.layout;
-  if (typeof layout !== 'object' || layout === null) return undefined;
-  const value = Reflect.get(layout, key);
-  return typeof value === 'number' ? value : undefined;
+  return readLayoutField(event, key);
 }
 
 // The inputs the top/inverted interpolation math reads. `measured` gates the extra ranges:
@@ -58,9 +59,9 @@ export type IStickyInterpolationParams = {
   nextHeaderLayoutY: number | undefined;
 };
 
-// Build the scroll-offset → translateY interpolation ranges that keep the header pinned.
+// Build the scroll-offset -> translateY interpolation ranges that keep the header pinned.
 // Ported byte-for-byte from ScrollViewStickyHeader.js's effect (both branches). The base
-// [-1, 0] → [0, 0] stub is the un-measured identity; once measured, the top branch pins at
+// [-1, 0] -> [0, 0] stub is the un-measured identity; once measured, the top branch pins at
 // layoutY and tracks 1:1 until the next header pushes it off, while the inverted branch pins
 // at the viewport bottom (stickStartPoint) and tracks up to the collision point.
 export function computeStickyInterpolation(params: IStickyInterpolationParams): {

@@ -4,7 +4,29 @@
 // number->number path stays untouched. Pure functions, so no Fabric slot.
 
 import { describe, expect, it } from 'vitest';
-import { AnimatedValue } from '@symbiote-native/engine';
+import { AnimatedNode, AnimatedValue } from '@symbiote-native/engine';
+
+describe('AnimatedNode.interpolate — the base-class implementation', () => {
+  it('works on a plain AnimatedNode subclass with no interpolate override of its own', () => {
+    // A bare AnimatedNode subclass (not AnimatedValue, not any of the operator
+    // classes): none of those per-class interpolate() overrides can be reached from
+    // here, so a passing __getValue() proves the method lives on AnimatedNode itself.
+    class BareValueNode extends AnimatedNode {
+      constructor(private readonly value: number) {
+        super();
+      }
+
+      override __getValue(): number {
+        return this.value;
+      }
+    }
+
+    const bare = new BareValueNode(0.5);
+    const doubled = bare.interpolate({ inputRange: [0, 1], outputRange: [0, 2] });
+
+    expect(doubled.__getValue()).toBe(1);
+  });
+});
 
 describe('AnimatedInterpolation non-numeric output ranges', () => {
   it("interpolates a degrees string ('0deg' -> '360deg') at 0.5", () => {

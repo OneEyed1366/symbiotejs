@@ -1,6 +1,6 @@
 // KeyboardAvoidingView: the pure logic + view-contract half (framework-agnostic). It owns
 // every piece that does NOT need a framework: the keyboard/frame inset math, the onLayout
-// frame read, and the behavior → style/structure decision. Each adapter supplies ONLY the
+// frame read, and the behavior -> style/structure decision. Each adapter supplies ONLY the
 // lifecycle (subscribe to the Keyboard module, measure via onLayout, hold the inset in its
 // reactive primitive) and assembles the wrapper element around its own opaque children.
 //
@@ -10,6 +10,7 @@
 // and the adapter builds its own element tree with its children. Mirrors RN's
 // Libraries/Components/Keyboard/KeyboardAvoidingView.js inset/behavior logic.
 
+import { isRecord } from '@symbiote-native/engine';
 import type { IStyleProp, IViewStyle } from '@symbiote-native/engine';
 
 export type IKeyboardAvoidingBehavior = 'height' | 'position' | 'padding';
@@ -30,10 +31,6 @@ export interface IMeasuredFrame {
 export interface IKeyboardFrame {
   screenY: number;
   height: number;
-}
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null;
 }
 
 // Pull the keyboard's top edge (screenY) and height off the raw native payload. The shape is

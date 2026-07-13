@@ -19,6 +19,7 @@ import { getNativeTag, whenCommitted } from '../commit';
 import { isSymbioteNode, type ISymbioteNode } from '../node';
 import { AnimatedNode, flushValue } from './graph';
 import { isNativeAnimatedAvailable, nativeAnimated } from './native/native-animated';
+import { isRecord } from '../type-guards';
 
 // A leaf in the mapping is an AnimatedNode; every interior position is a nested
 // record of further mappings. We never name AnimatedValueXY here (deferred).
@@ -40,10 +41,6 @@ export interface IEventConfig {
 interface IMappedValue {
   readonly path: readonly string[];
   readonly node: AnimatedNode;
-}
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null;
 }
 
 // A value node settable from an event field. AnimatedValue carries setValue; we
@@ -107,9 +104,9 @@ export class AnimatedEvent {
   // RN parity: the event remembers whether useNativeDriver was requested. Honored only
   // when a native module is present (__isNative); otherwise the JS path drives values.
   private readonly nativeDriverRequested: boolean;
-  // Flipped once a host view native-attaches this event. The JS handler then stops
-  // setting values (native owns them on the UI thread) and only forwards listeners.
-  // no double-drive, no redundant per-tick commit.
+  // Flipped once a host view native-attaches this event: the JS handler then stops
+  // setting values (native owns them on the UI thread) and only forwards listeners,
+  // avoiding a double drive and a redundant per-tick commit.
   private attachedNatively = false;
 
   constructor(argMapping: readonly IMapping[], config?: IEventConfig) {
@@ -223,8 +220,8 @@ export function attachNativeEvent(
   let attachedTag: number | undefined;
 
   // Bind once the node is committed: now if it already has a Fabric tag, else after the commit that
-  // assigns it. Vue/Svelte batch commits on a microtask, so the adapter can wire this — e.g. the
-  // sticky-header scroll — before the tag exists; whenCommitted defers instead of silently binding
+  // assigns it. Vue/Svelte batch commits on a microtask, so the adapter can wire this (e.g. the
+  // sticky-header scroll) before the tag exists; whenCommitted defers instead of silently binding
   // nothing. React commits synchronously and binds on the first try.
   const cancel = whenCommitted(node, () => {
     const viewTag = getNativeTag(node);
@@ -245,7 +242,7 @@ export function attachNativeEvent(
 // Native-attach the AnimatedEvent already behind a handler from `event(...)`, binding it
 // to a committed host node. Unlike attachNativeEvent (which builds a fresh event from a
 // raw mapping for ScrollView's internal sticky value), this REUSES the caller's handler,
-// so createAnimatedComponent can offload `onScroll={Animated.event(…, {useNativeDriver})}`
+// so createAnimatedComponent can offload `onScroll={Animated.event(..., {useNativeDriver})}`
 // to the UI thread, and the __makeNative cascade carries the bound interpolations/props
 // native with it. Returns undefined (caller keeps the JS path) when the prop is not a native
 // event handler; if it IS but the node has no tag yet, the bind defers to the commit (same race).

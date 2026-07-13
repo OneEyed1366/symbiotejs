@@ -19,6 +19,7 @@
 
 import { dlog } from '../debug';
 import { getNativeModule } from '../native-modules';
+import { isRecord } from '../type-guards';
 
 import {
   DEFAULT_POSITIVE_TEXT,
@@ -83,9 +84,6 @@ interface INativeDialogManagerAndroid {
 
 // The trust boundary for getConstants(): native sends an untyped HostObject. Read each key
 // with a typeof guard and fall back to RN's documented default when it's missing.
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null;
-}
 
 function readDialogConstants(raw: unknown): IAndroidDialogConstants {
   if (!isRecord(raw)) {

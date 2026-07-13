@@ -4,12 +4,8 @@
 // processed array to native; Fabric's C++ never sees the raw string. symbiote was
 // forwarding the raw value, which native (CSS parsing off) silently ignores: shadow
 // rendered nothing. This restores the missing JS parse + per-color processColor.
-//
-// processColor is referenced from ./commit at RUNTIME only (inside the function bodies),
-// never at module-init, so the cyclic import (commit -> here -> commit) has no TDZ hazard.
 
-import { processColor } from '../commit';
-import { isOpaqueColorValue } from '../platform-color';
+import { isOpaqueColorValue, processColor } from '../platform-color';
 import { dlog } from '../debug';
 
 // RN processBoxShadow.js:16-19: split args only on the delimiters that are NOT inside

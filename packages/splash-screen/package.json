@@ -1,6 +1,6 @@
 {
   "name": "@symbiote-native/splash-screen",
-  "version": "0.1.4",
+  "version": "1.0.0",
   "description": "Third-party splash-screen native module wrapped for SymbioteNative — one framework-agnostic core, built once and reachable from the React, Vue, and Angular adapters.",
   "repository": {
     "type": "git",

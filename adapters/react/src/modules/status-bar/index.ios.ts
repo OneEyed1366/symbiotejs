@@ -1,89 +1,39 @@
-// StatusBar on iOS: drives the iOS `StatusBarManager` TurboModule from its props
-// (and from static methods). The native contract matches React Native's own
-// NativeStatusBarManagerIOS spec:
-//   setStyle(statusBarStyle?: string, animated: boolean)
-//   setHidden(hidden: boolean, withAnimation: 'none' | 'fade' | 'slide')
-//   setNetworkActivityIndicatorVisible(visible: boolean)
-// Only those three setters are mirrored as the hand-written interface, the typed trust
-// boundary getNativeModule<T> resolves against. Metro picks this on an iOS host.
+// StatusBar on iOS: the declarative React half only. The native `StatusBarManager`
+// TurboModule driving (applyStatusBarProps), the imperative statics (statusBarImperative),
+// and the iOS currentHeight stub all live in @symbiote-native/engine, shared verbatim with
+// every adapter (Vue's status-bar.ts, Angular's status-bar.ts drive the exact same functions).
+// This file supplies only what's React-specific: an FC that renders null and re-applies props
+// via useEffect on mount + every prop change, with the imperative statics attached to the
+// function object, exactly like RN's own StatusBar.
 //
-// The native-call logic stays in the adapter (not the engine): the platform module shape
-// diverges iOS/Android and the headless smokes import this file by name (tsx has no
-// platform picker, so routing through the engine barrel would resolve the iOS base on every
-// platform). The engine owns only the pure shared contract: types, constants, hideTransition.
+// Metro picks this file on an iOS host; the headless/tsx base (status-bar/index.ts) re-exports
+// it, which is also what a bare '@symbiote-native/engine' import resolves to under vitest — so
+// this file's own engine import is already vitest-correct, no platform-selection subtlety here.
 
-import { useEffect } from 'react';
-import {
-  dlog,
-  getNativeModule,
-  STATUS_BAR_MANAGER,
-  STATIC_HIDE_TRANSITION,
-  hideTransition,
-} from '@symbiote-native/engine';
-import type { IStatusBarAnimation, IStatusBarComponent, IStatusBarStyle } from './shared';
+import { useEffect, type FC } from 'react';
+import { applyStatusBarProps, statusBarImperative } from '@symbiote-native/engine';
+import type { IStatusBarComponent, IStatusBarProps } from './shared';
 export type { IStatusBarProps, IStatusBarStyle } from './shared';
-
-// The native module typed as the interface this file vouches for: only the setters used.
-// The single point that accepts the native shape (no per-call `as`).
-interface INativeStatusBarManager {
-  setStyle(statusBarStyle: IStatusBarStyle, animated: boolean): void;
-  setHidden(hidden: boolean, withAnimation: IStatusBarAnimation): void;
-  setNetworkActivityIndicatorVisible(visible: boolean): void;
-}
 
 // StatusBar renders null and applies its props to the native module in an effect,
 // on mount and on every prop change. Simplification vs RN: RN maintains a
 // prop-merge stack so nested StatusBars compose (deepest/last wins). This module
 // direct-applies a single component's props, which is correct for one StatusBar.
-export const StatusBar: IStatusBarComponent = props => {
-  const { barStyle, hidden, animated = false, networkActivityIndicatorVisible } = props;
+const StatusBarComponent: FC<IStatusBarProps> = props => {
+  const { barStyle, hidden, animated, networkActivityIndicatorVisible } = props;
 
   useEffect(() => {
-    // Resolve lazily inside the effect, not at import, keeps this module importable
-    // headless before a fake __turboModuleProxy is installed. Non-enforcing: a
-    // declarative StatusBar must NOT crash the whole render if the module can't resolve.
-    const manager = getNativeModule<INativeStatusBarManager>(STATUS_BAR_MANAGER);
-    if (manager === null) {
-      dlog('StatusBar: StatusBarManager not resolvable via __turboModuleProxy — skipping');
-      return;
-    }
-    dlog('StatusBar -> applying props to StatusBarManager');
-
-    if (barStyle !== undefined) manager.setStyle(barStyle, animated);
-    if (hidden !== undefined) manager.setHidden(hidden, hideTransition(animated));
-    if (networkActivityIndicatorVisible !== undefined) {
-      manager.setNetworkActivityIndicatorVisible(networkActivityIndicatorVisible);
-    }
+    applyStatusBarProps(props);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- deps are the primitive fields, not `props` itself, so an unchanged prop shape doesn't re-fire.
   }, [barStyle, hidden, animated, networkActivityIndicatorVisible]);
 
   return null;
 };
 
-// The static API mirrors the declarative component: non-throwing. A missing optional
-// native module is a no-op.
-StatusBar.setBarStyle = (style, animated = false) => {
-  dlog('StatusBar.setBarStyle');
-  getNativeModule<INativeStatusBarManager>(STATUS_BAR_MANAGER)?.setStyle(style, animated);
-};
-
-StatusBar.setHidden = (hidden, animation = STATIC_HIDE_TRANSITION) => {
-  dlog('StatusBar.setHidden');
-  getNativeModule<INativeStatusBarManager>(STATUS_BAR_MANAGER)?.setHidden(hidden, animation);
-};
-
-StatusBar.setNetworkActivityIndicatorVisible = visible => {
-  dlog('StatusBar.setNetworkActivityIndicatorVisible');
-  getNativeModule<INativeStatusBarManager>(STATUS_BAR_MANAGER)?.setNetworkActivityIndicatorVisible(
-    visible,
-  );
-};
-
-// Android-only on RN, inert on iOS (the iOS status bar has no background color and
-// is never translucent in RN's sense). Present so the contract is platform-uniform.
-StatusBar.setBackgroundColor = () => {
-  dlog('StatusBar.setBackgroundColor (ios no-op)');
-};
-StatusBar.setTranslucent = () => {
-  dlog('StatusBar.setTranslucent (ios no-op)');
-};
-// currentHeight is Android-only; absent on iOS (RN sets it to null on iOS).
+// The imperative statics mirror the declarative component: non-throwing, a missing optional
+// native module is a no-op. currentHeight is Android-only; absent on iOS (RN sets it to null
+// on iOS), so it's intentionally not attached here.
+export const StatusBar: IStatusBarComponent = Object.assign(
+  StatusBarComponent,
+  statusBarImperative,
+);

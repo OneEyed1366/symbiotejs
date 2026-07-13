@@ -32,15 +32,11 @@ import {
   type Type,
 } from '@angular/core';
 import {
-  AnimatedProps,
-  attachNativeEventHandler,
-  dlog,
   isNativeAnimatedAvailable,
   isSymbioteNode,
   reduceProps,
   readPassthroughStyle,
   resolveHostNode,
-  whenCommitted,
   type ISymbioteNode,
 } from '@symbiote-native/engine';
 import { selectScrollIntrinsics } from '@symbiote-native/components';
@@ -61,6 +57,7 @@ import {
   resolveImageProps,
 } from '../../components/image/shared';
 import { SectionList } from '../../components/section-list';
+import { AnimatedLeafBinder } from './animated-leaf-binder';
 
 // RN's prop carrying explicit (already-rasterized) values that override the animated prop in
 // the COMMITTED props (sticky-header passthrough). Named once so the directive input and the
@@ -97,12 +94,14 @@ export abstract class AnimatedComponentBase implements AfterViewInit, OnChanges,
   // the leaf binds to. Inherited by the decorated subclass (Angular collects base-class queries).
   @ViewChild(SymbioteHostPropsDirective) private hostDirective?: SymbioteHostPropsDirective;
 
-  // The leaf currently wired into the value graph. Null until the first reconcile.
-  private attached: AnimatedProps | null = null;
-  // The whenCommitted waiter for the current leaf's node binding, cancelled before the next.
-  private cancelBind: (() => void) | undefined;
-  // Detachers for any Animated.event prop bound natively to the committed node (JS path: none).
-  private eventDetachers: Array<() => void> = [];
+  // The leaf-lifecycle orchestration (build/attach/swap/bind/detach an AnimatedProps leaf) is a
+  // Pure Fabrication shared with AnimatedImage, which cannot extend this class (it must extend
+  // ImageBase — see the file header). `resolveNode` stays a resolver, not a captured node: the
+  // committed node only exists after `hostDirective` is populated post-view-init.
+  private readonly leafBinder = new AnimatedLeafBinder(
+    () => this.hostNode(),
+    this.constructor.name,
+  );
   // Set once the view (and the inner host directive) exists; ngOnChanges before then is a no-op.
   private viewReady = false;
 
@@ -130,78 +129,22 @@ export abstract class AnimatedComponentBase implements AfterViewInit, OnChanges,
   }
 
   ngOnDestroy(): void {
-    this.cancelBind?.();
-    this.cancelBind = undefined;
-    this.detachEvents();
-    if (this.attached !== null) {
-      this.attached.__detach();
-      this.attached = null;
-    }
+    this.leafBinder.destroy();
   }
 
-  // Build a fresh AnimatedProps leaf from the current props (the React/Vue per-render
-  // useMemo(rest)), wire it into the graph, and swap the previous one out. Attach the NEW leaf
-  // BEFORE detaching the OLD one: a shared Value self-detaches (dropping its native node) the
-  // instant its child count hits zero, so detaching first would kill a running native animation
-  // on any unrelated re-render (mirrors RN's AnimatedComponent._attachProps). Then bind the
-  // committed node, go native if wanted, and rebind native events.
+  // A non-stable [animatedProps]/[style] input (a fresh object literal in the template) pushes
+  // a new reference on every change-detection pass of the HOST view, re-triggering this on every
+  // unrelated interaction elsewhere in the app — DEBUG=1 turns this into a visible tick count in
+  // AnimatedLeafBinder.reconcile, so an unexpectedly high rate for a component nobody is
+  // animating is the tell (see AnimatedScrollView's stable-reference fix in examples/angular/App.ts).
   private reconcile(): void {
     if (!this.viewReady) return;
-    // A non-stable [animatedProps]/[style] input (a fresh object literal in the template)
-    // pushes a new reference on every change-detection pass of the HOST view, re-triggering
-    // this on every unrelated interaction elsewhere in the app — DEBUG=1 turns this into a
-    // visible tick count, so an unexpectedly high rate for a component nobody is animating
-    // is the tell (see AnimatedScrollView's stable-reference fix in examples/angular/App.ts).
-    dlog(`AnimatedComponentBase reconcile (${this.constructor.name})`);
     const props = this.mergedProps();
     const hasPassthroughAnimatedValues =
       this.passthroughAnimatedPropExplicitValues !== null &&
       this.passthroughAnimatedPropExplicitValues !== undefined;
     const wantsNative = hasPassthroughAnimatedValues && isNativeAnimatedAvailable();
-
-    const newLeaf = new AnimatedProps(props);
-    newLeaf.__attach();
-    if (this.attached !== null && this.attached !== newLeaf) this.attached.__detach();
-    this.attached = newLeaf;
-
-    this.bindNode(newLeaf, props, wantsNative);
-  }
-
-  // Bind the leaf to the host's Fabric node THROUGH whenCommitted: under Angular's zoneless
-  // batched change detection the inner host's tag does not exist yet at ngAfterViewInit time
-  // (the same async-commit gotcha Vue documents), so binding eagerly would no-op. whenCommitted
-  // runs the action now if already committed, else after the commit that assigns the tag.
-  private bindNode(
-    leaf: AnimatedProps,
-    props: Record<string, unknown>,
-    wantsNative: boolean,
-  ): void {
-    this.cancelBind?.();
-    this.cancelBind = undefined;
-    const node = this.hostNode();
-    if (node === null) return;
-    this.cancelBind = whenCommitted(node, () => {
-      leaf.setNativeView(node);
-      if (wantsNative) leaf.__makeNative();
-      this.attachEvents(node, props);
-    });
-  }
-
-  // Native-attach any Animated.event prop (e.g. onScroll={Animated.event(…,{useNativeDriver:true})})
-  // to the committed node. attachNativeEventHandler no-ops (returns undefined) unless the prop is a
-  // native event handler with a committed tag, so the JS path stays the fallback. Rebound each
-  // reconcile so a new inline event re-attaches; detached first to avoid leaking the prior binding.
-  private attachEvents(node: ISymbioteNode, props: Record<string, unknown>): void {
-    this.detachEvents();
-    for (const key of Object.keys(props)) {
-      const attachment = attachNativeEventHandler(node, key, props[key]);
-      if (attachment !== undefined) this.eventDetachers.push(attachment.detach);
-    }
-  }
-
-  private detachEvents(): void {
-    for (const detach of this.eventDetachers) detach();
-    this.eventDetachers = [];
+    this.leafBinder.reconcile(props, wantsNative);
   }
 
   // Merge the dedicated `style` input over the generic `animatedProps` bag into one props map —
@@ -287,9 +230,13 @@ export class AnimatedImage extends ImageBase implements AfterViewInit, OnChanges
 
   @ViewChild(SymbioteHostPropsDirective) private hostDirective?: SymbioteHostPropsDirective;
 
-  private attached: AnimatedProps | null = null;
-  private cancelBind: (() => void) | undefined;
-  private eventDetachers: Array<() => void> = [];
+  // Same Pure Fabrication AnimatedComponentBase holds — see its matching comment. AnimatedImage
+  // can't extend AnimatedComponentBase (it must extend ImageBase, see the file header), so it
+  // gets the leaf-lifecycle via composition instead of duplicating it.
+  private readonly leafBinder = new AnimatedLeafBinder(
+    () => this.hostNode(),
+    this.constructor.name,
+  );
   private viewReady = false;
 
   get animatedImageProps(): Record<string, unknown> {
@@ -314,13 +261,7 @@ export class AnimatedImage extends ImageBase implements AfterViewInit, OnChanges
   }
 
   ngOnDestroy(): void {
-    this.cancelBind?.();
-    this.cancelBind = undefined;
-    this.detachEvents();
-    if (this.attached !== null) {
-      this.attached.__detach();
-      this.attached = null;
-    }
+    this.leafBinder.destroy();
   }
 
   private reconcile(): void {
@@ -330,42 +271,7 @@ export class AnimatedImage extends ImageBase implements AfterViewInit, OnChanges
       this.passthroughAnimatedPropExplicitValues !== null &&
       this.passthroughAnimatedPropExplicitValues !== undefined;
     const wantsNative = hasPassthroughAnimatedValues && isNativeAnimatedAvailable();
-
-    const newLeaf = new AnimatedProps(props);
-    newLeaf.__attach();
-    if (this.attached !== null && this.attached !== newLeaf) this.attached.__detach();
-    this.attached = newLeaf;
-
-    this.bindNode(newLeaf, props, wantsNative);
-  }
-
-  private bindNode(
-    leaf: AnimatedProps,
-    props: Record<string, unknown>,
-    wantsNative: boolean,
-  ): void {
-    this.cancelBind?.();
-    this.cancelBind = undefined;
-    const node = this.hostNode();
-    if (node === null) return;
-    this.cancelBind = whenCommitted(node, () => {
-      leaf.setNativeView(node);
-      if (wantsNative) leaf.__makeNative();
-      this.attachEvents(node, props);
-    });
-  }
-
-  private attachEvents(node: ISymbioteNode, props: Record<string, unknown>): void {
-    this.detachEvents();
-    for (const key of Object.keys(props)) {
-      const attachment = attachNativeEventHandler(node, key, props[key]);
-      if (attachment !== undefined) this.eventDetachers.push(attachment.detach);
-    }
-  }
-
-  private detachEvents(): void {
-    for (const detach of this.eventDetachers) detach();
-    this.eventDetachers = [];
+    this.leafBinder.reconcile(props, wantsNative);
   }
 
   private mergedProps(): Record<string, unknown> {

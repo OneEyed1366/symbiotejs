@@ -4,13 +4,10 @@
 // structured result. symbiote forwarded the raw value; the array form already worked
 // (Fabric accepts it raw, `filter:[{brightness:0.5}]` was device-verified), but the
 // CSS-string form and drop-shadow color processing were missing. This restores them.
-//
-// processColor is referenced from ./commit at RUNTIME only (inside function bodies),
-// never at module-init, so the cyclic import (commit -> here -> commit) has no TDZ hazard.
 
-import { processColor } from './commit';
-import { isOpaqueColorValue } from './platform-color';
+import { isOpaqueColorValue, processColor } from './platform-color';
 import { dlog } from './debug';
+import { isRecord } from './type-guards';
 
 // RN processFilter.js:19-24: pre-compiled patterns.
 const NEWLINE_REGEX = /\n/g;
@@ -46,10 +43,6 @@ type IRawDropShadow = Record<string, unknown>;
 type IRawFilterFunction = Record<string, unknown>;
 
 const RADIANS_TO_DEGREES = 180 / Math.PI;
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null;
-}
 
 // A length field may be a CSS string or a number; resolve to a number or null.
 function resolveLength(value: unknown): number | null {

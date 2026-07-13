@@ -18,15 +18,40 @@ export function resolveDisabledAccessibilityState(
   return disabled !== undefined ? { ...accessibilityState, disabled } : accessibilityState;
 }
 
-// The listeners the responder View carries. When disabled, leave them off entirely. A press
-// never fires and pressed-state never flips, exactly as RN's disabled Pressable. cancelable ===
-// false refuses to yield the responder (RN routes cancelable to onResponderTerminationRequest,
-// default true when unset).
+// The 3 agnostic gating predicates behind the listener bag below. Angular has no bag to spread -
+// it binds these directly onto template event outputs (see adapters/angular/src/components/
+// pressable/index.ts), so they're exported and shared rather than folded back into
+// buildPressableListeners, keeping both sides on one definition instead of two.
+
+// A disabled Pressable suppresses a press entirely: it never fires and pressed-state never flips,
+// exactly as RN's disabled Pressable.
+export function shouldSuppressPress(disabled: boolean | undefined): boolean {
+  return disabled === true;
+}
+
+// Claim the responder so the move stream reaches this View whenever the press isn't suppressed;
+// retention reads it.
+export function shouldClaimResponder(disabled: boolean | undefined): boolean {
+  return disabled !== true;
+}
+
+// cancelable === false refuses to yield the responder (RN routes cancelable to
+// onResponderTerminationRequest). Unset defers to RN's own default, which is allowed - so this
+// resolves to true for undefined rather than hardcoding a value, mirroring the more deliberate of
+// the two definitions this predicate replaces.
+export function isTerminationAllowed(cancelable: boolean | undefined): boolean {
+  return cancelable !== false;
+}
+
+// The listeners the responder View carries. When disabled, leave them off entirely - see
+// shouldSuppressPress. onResponderTerminationRequest itself is only attached when cancelable is
+// set at all, so an unset cancelable leaves RN's native default in charge rather than this
+// listener asserting one.
 export function buildPressableListeners(
   handlers: IPressHandlers,
   options: { disabled?: boolean; cancelable?: boolean },
 ): Record<string, unknown> {
-  if (options.disabled === true) {
+  if (shouldSuppressPress(options.disabled)) {
     dlog('Pressable disabled — listeners suppressed');
     return {};
   }
@@ -34,12 +59,11 @@ export function buildPressableListeners(
     onPress: handlers.handlePress,
     onPressIn: handlers.handlePressIn,
     onPressOut: handlers.handlePressOut,
-    // Claim the responder so the move stream reaches this View; retention reads it.
-    onStartShouldSetResponder: () => true,
+    onStartShouldSetResponder: () => shouldClaimResponder(options.disabled),
     onResponderMove: handlers.handleResponderMove,
   };
   if (options.cancelable !== undefined) {
-    listeners.onResponderTerminationRequest = () => options.cancelable;
+    listeners.onResponderTerminationRequest = () => isTerminationAllowed(options.cancelable);
   }
   return listeners;
 }

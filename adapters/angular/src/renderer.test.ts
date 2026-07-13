@@ -9,11 +9,12 @@ import {
   clearGlobalStyles,
   createSurface,
   disposeRoot,
+  isAnchor,
   isSymbioteNode,
   registerStyles,
 } from '@symbiote-native/engine';
 import { installFabric } from '@symbiote-native/test-utils';
-import { SymbioteRenderer, SymbioteRendererFactory } from './renderer';
+import { registerComposedComponent, SymbioteRenderer, SymbioteRendererFactory } from './renderer';
 
 const ROOT_TAG = 707;
 const PROBE_ID = 'probe';
@@ -175,5 +176,27 @@ describe('Angular SymbioteRenderer drives the engine', () => {
   it('listen on a global target (window/document) is an inert no-op', () => {
     const { renderer } = setup();
     expect(() => renderer.listen('window', 'resize', () => {})()).not.toThrow();
+  });
+
+  // App/third-party selectors must not be hardcoded into ANCHOR_HOST_COMPONENTS — the owning
+  // package registers itself via registerComposedComponent, same as an adapter-owned composed
+  // component. 'RefApiDemo' names examples/angular's demo component; this test never imports
+  // it, it only proves the renderer treats an unregistered selector as a raw Fabric view name,
+  // not a hardcoded anchor host. MUST run before the registration test below, since
+  // registerComposedComponent mutates the module-level Set for the rest of the file.
+  it('does not anchor-host an app-owned selector unless it self-registers', () => {
+    const { renderer } = setup();
+    const node = renderer.createElement('RefApiDemo');
+    if (!isSymbioteNode(node)) throw new Error('unreachable: createElement returns a node');
+    expect(isAnchor(node), 'falls through to a raw Fabric view, not an anchor').toBe(false);
+    expect(node.component).toBe('RefApiDemo');
+  });
+
+  it('anchor-hosts an app-owned selector once it self-registers via registerComposedComponent', () => {
+    registerComposedComponent('RefApiDemo');
+    const { renderer } = setup();
+    const node = renderer.createElement('RefApiDemo');
+    if (!isSymbioteNode(node)) throw new Error('unreachable: createElement returns a node');
+    expect(isAnchor(node)).toBe(true);
   });
 });

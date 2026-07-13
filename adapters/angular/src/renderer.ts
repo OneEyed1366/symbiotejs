@@ -83,113 +83,53 @@ export function registerComposedComponent(selector: string): void {
   ANCHOR_HOST_COMPONENTS.add(selector.toLowerCase());
 }
 
-// Lookup is case-insensitive (populated pre-lowercased below, checked via .toLowerCase() in
-// createElement) because Angular does NOT preserve a component's authored selector case
-// uniformly: a STATIC template tag (`<Stack>` in App.ts) reaches Renderer2.createElement with
-// its literal source-text case intact (the compiler just copies the tag string), but a
-// component mounted dynamically via ViewContainerRef.createComponent/NgComponentOutlet (every
-// screen Stack/Tab/Drawer mount) derives its host tag from the component's runtime selector
-// metadata, which Angular's selector-matching internals lowercase (HTML tag names are
-// case-insensitive, so Ivy normalizes to lowercase there). A case-sensitive Set only ever
-// matched the static-tag path — every dynamically-mounted screen (MenuScreen, CanaryScreen, …)
-// silently missed this allowlist and fell through to a raw createNode with an unrecognized
-// lowercase view name ("menuscreen"), producing a real device-visible blank screen: the
-// unrecognized host doesn't size/paint, so its entire real subtree renders invisibly even
-// though every descendant node has correct props (only surfaced 2026-07-09, the first real
-// device run of a Stack-mounted dynamic screen — vitest/JSDOM never exercised this case
-// distinction). Confirmed by comparing DEBUG=1 device logs: `createElement Stack -> anchor
-// host` (case preserved) vs `createElement menuscreen -> menuscreen` (lowercased, fell
-// through) for the exact same kind of composed-component mount.
-const ANCHOR_HOST_COMPONENTS: Set<string> = new Set(
-  [
-    // Composed Angular components render their real Fabric descriptor tree from the template;
-    // their Angular host element is only a framework bookkeeping node and must not paint. This
-    // is NOT limited to adapter-authored components — ANY custom composed @Component used as a
-    // plain <Tag> inside another template needs its selector listed here too, adapter or app
-    // code alike, or Angular's automatic host-element creation for it falls through to a raw
-    // Fabric createNode call with an unrecognized view name, which paints RN's own "Unimplemented
-    // component: <Tag>" fallback view instead (a real device-visible bug, not a silent no-op —
-    // discovered when examples/angular's own new demo components hit this).
-    'AccessibilityDemo',
-    'ActivityIndicator',
-    'AnimatedDemo',
-    'AnimatedParityDemo',
-    'Button',
-    'FlatList',
-    'NativeModulesDemo',
-    'ParityDemo',
-    'PlatformColorDemo',
-    'RefApiDemo',
-    'ResponderDemo',
-    'Slider',
-    // @symbiote-native/navigation's composed navigators (packages/navigation/src/angular/{stack,
-    // tabs,drawer}.ts) — each renders its own real Fabric descriptor tree (RNSScreenStack/View
-    // primitives) from its template, so its own <Stack>/<Tab>/<Drawer> host tag must anchor rather
-    // than paint, same reasoning as Slider above. See those files' own "KNOWN GAP" header comments.
-    'Drawer',
-    'Stack',
-    'Tab',
-    // .examples/angular's navigation demo suite (screens/*.ts + components/ActionButton.ts) — every
-    // one of these is a composed @Component mounted either statically (ActionButton used as a plain
-    // tag inside a screen's own template) or dynamically via NgComponentOutlet (the 11 top-level
-    // routes, mounted by Stack/Tab/Drawer — NgComponentOutlet's component creation goes through the
-    // SAME Renderer2.createElement(selector) path as static template instantiation, so it needs the
-    // same anchor-host treatment). Follow-up closed for the gap the navigation-adapter task left open
-    // (see packages/navigation/src/angular/{stack,tabs,drawer}.ts's own "KNOWN GAP" comments).
-    'ActionButton',
-    'MenuScreen',
-    'CanaryScreen',
-    'DetailsScreen',
-    'HeaderOptionsScreen',
-    'SheetDemoScreen',
-    'TabsDemoScreen',
-    'TabHomeScreen',
-    'TabSearchScreen',
-    'TabProfileScreen',
-    'DrawerDemoScreen',
-    'DrawerHomeScreen',
-    'DrawerSettingsScreen',
-    'NestedNavigatorsScreen',
-    'NestedTabHomeScreen',
-    'NestedTabInfoScreen',
-    'HooksDemoScreen',
-    'DeepLinkingScreen',
-    'StatePersistenceScreen',
-    'AnimatedView',
-    'symbiote-animated-view',
-    'AnimatedText',
-    'symbiote-animated-text',
-    'AnimatedImage',
-    'symbiote-animated-image',
-    'AnimatedScrollView',
-    'symbiote-animated-scroll-view',
-    'symbiote-descriptor-outlet',
-    'tunnel-out',
-    'Image',
-    'ImageBackground',
-    'InputAccessoryView',
-    'KeyboardAvoidingView',
-    'Modal',
-    'Pressable',
-    'RefreshControl',
-    'SafeAreaView',
-    'ScrollView',
-    'ScrollViewStickyHeader',
-    'SectionList',
-    'symbiote-sticky-header',
-    'StatusBar',
-    'Switch',
-    'Text',
-    'TextInput',
-    'TouchableHighlight',
-    'TouchableNativeFeedback',
-    'TouchableOpacity',
-    'TouchableWithoutFeedback',
-    'VirtualizedList',
-    'VirtualizedSectionList',
-    'symbiote-pressable',
-  ].map(selector => selector.toLowerCase()),
-);
+const ANCHOR_HOST_COMPONENTS: Set<string> = new Set([
+  // Composed Angular components render their real Fabric descriptor tree from the template;
+  // their Angular host element is only a framework bookkeeping node and must not paint. This
+  // is NOT limited to adapter-authored components — ANY custom composed @Component used as a
+  // plain <Tag> inside another template needs its selector listed here too, or Angular's
+  // automatic host-element creation for it falls through to a raw Fabric createNode call with
+  // an unrecognized view name, which paints RN's own "Unimplemented component: <Tag>" fallback
+  // view instead (a real device-visible bug, not a silent no-op). This Set holds only
+  // adapter/engine-owned selectors; app code and third-party packages self-register their own
+  // composed components through registerComposedComponent instead of being hardcoded here.
+  'ActivityIndicator',
+  'Button',
+  'FlatList',
+  'AnimatedView',
+  'symbiote-animated-view',
+  'AnimatedText',
+  'symbiote-animated-text',
+  'AnimatedImage',
+  'symbiote-animated-image',
+  'AnimatedScrollView',
+  'symbiote-animated-scroll-view',
+  'symbiote-descriptor-outlet',
+  'tunnel-out',
+  'Image',
+  'ImageBackground',
+  'InputAccessoryView',
+  'KeyboardAvoidingView',
+  'Modal',
+  'Pressable',
+  'RefreshControl',
+  'SafeAreaView',
+  'ScrollView',
+  'ScrollViewStickyHeader',
+  'SectionList',
+  'symbiote-sticky-header',
+  'StatusBar',
+  'Switch',
+  'Text',
+  'TextInput',
+  'TouchableHighlight',
+  'TouchableNativeFeedback',
+  'TouchableOpacity',
+  'TouchableWithoutFeedback',
+  'VirtualizedList',
+  'VirtualizedSectionList',
+  'symbiote-pressable',
+]);
 
 // Inserting a bare raw-text node anywhere but inside a <Text> is invalid in Fabric (a
 // stray RCTRawText would paint). Angular's ɵɵtext only ever lands text inside a <Text>,

@@ -14,6 +14,7 @@
 
 import { dlog } from '../debug';
 import type { ISymbioteEvent } from '../node';
+import { isRecord } from '../type-guards';
 
 // gestureState fields the caller reads; `stateID` is a stable per-gesture id and
 // `_accountsForMovesUpTo` is the timestamp every field has been advanced through.
@@ -102,10 +103,6 @@ interface ITouchHistory {
 const SINGLE_TOUCH_COUNT = 1;
 // onShouldBlockNativeResponder defaults to true (RN: block native by default).
 const DEFAULT_BLOCK_NATIVE_RESPONDER = true;
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null;
-}
 
 function toFiniteNumber(value: unknown): number | undefined {
   return typeof value === 'number' && Number.isFinite(value) ? value : undefined;

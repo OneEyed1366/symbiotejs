@@ -7,10 +7,9 @@
 import type { IAnimation, IEndCallback } from './animation';
 import { AnimatedWithChildren, flushValue, type IValueListener } from './graph';
 import type { AnimatedTracking } from './animations/tracking';
-import { AnimatedInterpolation } from './interpolation-node';
-import type { IInterpolationConfig } from './interpolation';
 import {
   nativeAnimated,
+  type INativeAnimationConfig,
   type INativeNodeConfig,
   type IPlatformConfig,
 } from './native/native-animated';
@@ -139,6 +138,29 @@ export class AnimatedValue extends AnimatedWithChildren {
     }
   }
 
+  // Own the native-driver "start" handshake end-to-end: make this value native, mint
+  // its tag, hand the curve to the native module, and on completion sync the JS value
+  // (no re-flush to bound leaves' native side; native already moved the view). A
+  // driver (BaseAnimation.startNativeIfNeeded) supplies only what IT owns: the curve
+  // config, its own animation id, its platform bag, and its own end callback, never
+  // touching __makeNative / __getNativeTag / __onNativeUpdate / flushValue directly.
+  // Information Expert: this value is the one object that actually holds those internals.
+  __startNativeAnimation(
+    config: INativeAnimationConfig,
+    nativeId: number,
+    onEnd: (finished: boolean) => void,
+    platformConfig?: IPlatformConfig,
+  ): void {
+    this.__makeNative(platformConfig);
+    nativeAnimated.startAnimatingNode(nativeId, this.__getNativeTag(), config, result => {
+      onEnd(result.finished);
+      if (result.value !== undefined) {
+        this.__onNativeUpdate(result.value, result.offset);
+        flushValue(this);
+      }
+    });
+  }
+
   override __getNativeConfig(): INativeNodeConfig {
     return { type: 'value', value: this.value, offset: this.offset };
   }
@@ -175,11 +197,6 @@ export class AnimatedValue extends AnimatedWithChildren {
   resetAnimation(callback?: (value: number) => void): void {
     this.stopAnimation(callback);
     this.value = this.startingValue;
-  }
-
-  // Map the value before it reaches a prop, e.g. 0..1 -> 0..10.
-  interpolate(config: IInterpolationConfig): AnimatedInterpolation {
-    return new AnimatedInterpolation(this, config);
   }
 
   // Drive this value with an animation. Typically called by Animated.timing /

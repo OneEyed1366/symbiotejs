@@ -9,18 +9,16 @@
 import { Platform } from '@symbiote-native/engine';
 import type { IStyleProp, ISymbioteEvent, IViewStyle } from '@symbiote-native/engine';
 import type { ISymbioteIntrinsic } from '../component-names/shared';
+import { readLayoutField } from './layout-event';
 
-// Pull a numeric field out of an onLayout event's nativeEvent.layout without a cast:
-// SymbioteEvent.nativeEvent is Record<string, unknown>, so the layout box and its
-// width/height are narrowed at runtime. A malformed event yields undefined (no-op).
+// Thin re-export kept for the existing public surface (adapters import this name from
+// `@symbiote-native/components`); the actual field read is shared with render-scroll-sticky's
+// y/height read in layout-event.ts.
 export function readLayoutDimension(
   event: ISymbioteEvent,
   key: 'width' | 'height',
 ): number | undefined {
-  const layout = event.nativeEvent.layout;
-  if (typeof layout !== 'object' || layout === null) return undefined;
-  const value = Reflect.get(layout, key);
-  return typeof value === 'number' ? value : undefined;
+  return readLayoutField(event, key);
 }
 
 // 'normal'/'fast' resolve to DIFFERENT friction constants per platform: RN's

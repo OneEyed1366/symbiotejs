@@ -1,6 +1,6 @@
 {
   "name": "@symbiote-native/components",
-  "version": "0.2.3",
+  "version": "0.2.4",
   "description": "Framework-agnostic component logic (state machines + render functions) for SymbioteNative — written once, inherited by every adapter (React, Vue, Angular, ...).",
   "repository": {
     "type": "git",

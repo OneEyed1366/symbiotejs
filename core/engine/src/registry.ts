@@ -11,13 +11,15 @@
 // shared must stay react-native-free (the headless harness runs in plain Node), so
 // the ViewConfig lookup is INJECTED, exactly like the color processor: the adapter
 // wires `setNativeViewConfigSource(ReactNativeViewConfigRegistry.get)` on a real
-// host (on a real host that one source covers BOTH RN core and every library).
+// host, where that one source covers BOTH RN core and every library.
 //
 // The ONLY explicit list is OUR OWN built-in primitives (BUILTIN_COMPONENTS): a
 // finite set we own, which keep their hand-tuned tables (view-config events, commit
 // COLOR_PROPS) and are never read from the source, so they can't drift. Everything
 // NOT in that set derives. The list never grows with the community; it grows only
 // when we add a core primitive of our own.
+
+import { isRecord } from './type-guards';
 
 export type IPropProcessor = (value: unknown) => unknown;
 
@@ -109,10 +111,6 @@ export function registerComponent(name: string, registration: IComponentRegistra
   resolvedCache.delete(name);
 }
 
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null;
-}
-
 // onChange -> change (mirrors node.ts listenerName; the split of the handler prop).
 function splitListener(handlerProp: string): string {
   return handlerProp.charAt(2).toLowerCase() + handlerProp.slice(3);
@@ -144,7 +142,7 @@ function deriveFromConfig(config: INativeViewConfig, into: IResolved): void {
       const attribute = validAttributes[key];
       if (isRecord(attribute)) {
         const process = attribute.process;
-        // The codegen config already carries the right processor (processColor, …);
+        // The codegen config already carries the right processor (processColor, ...);
         // wrap it so the typed Function becomes a PropProcessor without a cast.
         if (typeof process === 'function') into.processors.set(key, value => process(value));
       }

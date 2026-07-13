@@ -3,7 +3,7 @@
 // string-with-units, and color output ranges (the value graph; native config
 // removed). Platform (Native) colors stay out of scope, color.ts defers them.
 
-import { AnimatedNode, AnimatedWithChildren } from './graph';
+import { AnimatedNode, AnimatedWithChildren, registerInterpolationFactory } from './graph';
 import { checkValidRanges, createInterpolation, type IInterpolationConfig } from './interpolation';
 import type { INativeNodeConfig, IPlatformConfig } from './native/native-animated';
 
@@ -35,10 +35,6 @@ export class AnimatedInterpolation extends AnimatedWithChildren {
     return this.getInterpolation()(parentValue);
   }
 
-  interpolate(config: IInterpolationConfig): AnimatedInterpolation {
-    return new AnimatedInterpolation(this, config);
-  }
-
   override __attach(): void {
     this.parent.__addChild(this);
     super.__attach();
@@ -66,3 +62,8 @@ export class AnimatedInterpolation extends AnimatedWithChildren {
     };
   }
 }
+
+// Hand graph.ts's AnimatedNode.interpolate() the real constructor at module load,
+// so every node subclass's base-class interpolate() produces an actual
+// AnimatedInterpolation without graph.ts ever value-importing this module.
+registerInterpolationFactory((parent, config) => new AnimatedInterpolation(parent, config));

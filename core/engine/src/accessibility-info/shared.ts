@@ -10,8 +10,11 @@
 // files, not derived from this file's name. Mirrors
 // RN's Libraries/Components/AccessibilityInfo/AccessibilityInfo.js.
 
-import type { ISymbioteNode } from '../node';
+import { isSymbioteNode, type ISymbioteNode } from '../node';
 import type { IEventSubscription } from '../native-events';
+import { sendAccessibilityEvent as dispatchAccessibilityEvent } from '../commit';
+import { dlog } from '../debug';
+export { isBoolean } from '../type-guards';
 
 // The public event names a caller can subscribe to. A superset of both platforms:
 // some only ever fire on iOS, some only on Android. On a platform that never emits a
@@ -88,6 +91,31 @@ export interface IAccessibilityInfoStatic {
 // The named events sendAccessibilityEvent can dispatch (RN's AccessibilityEventTypes).
 export type IAccessibilityEventType = 'click' | 'focus' | 'viewHoverEnter' | 'windowStateChange';
 
-export function isBoolean(value: unknown): value is boolean {
-  return typeof value === 'boolean';
+// The routing behind IAccessibilityInfoStatic.sendAccessibilityEvent, shared by both
+// platforms: resolve the handle to a real SymbioteNode and dispatch through the Fabric
+// slot. RN's Fabric path hands the public-instance handle straight to
+// nativeFabricUIManager.sendAccessibilityEvent with the STRING eventType, and the C++
+// side maps it; the handle here IS the SymbioteNode (symbiote augments the node in
+// place as its public instance).
+//
+// The one thing that genuinely diverges by platform - iOS's early return on 'click'
+// (VoiceOver has no click producer, AccessibilityInfo.js) - is NOT decided here: a
+// platform passes `shouldSkip`, which both decides AND logs its own skip (so iOS keeps
+// its exact "iOS no-op (RN parity)" message); Android omits it and every event reaches
+// the slot.
+export function routeSendAccessibilityEvent(
+  platformLabel: string,
+  handle: IAccessibilityHandle,
+  eventType: IAccessibilityEventType,
+  shouldSkip?: () => boolean,
+): void {
+  if (shouldSkip?.() === true) return;
+  if (!isSymbioteNode(handle)) {
+    dlog(
+      `AccessibilityInfo(${platformLabel}).sendAccessibilityEvent("${eventType}") -> handle is not a node (no-op)`,
+    );
+    return;
+  }
+  dlog(`AccessibilityInfo(${platformLabel}).sendAccessibilityEvent("${eventType}") -> slot`);
+  dispatchAccessibilityEvent(handle, eventType);
 }

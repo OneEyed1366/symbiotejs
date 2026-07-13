@@ -1,6 +1,6 @@
 {
   "name": "@symbiote-native/slider",
-  "version": "2.0.6",
+  "version": "3.0.0",
   "description": "Third-party native Slider view wrapped for SymbioteNative — one framework-agnostic core, built once and reachable from the React, Vue, and Angular adapters.",
   "repository": {
     "type": "git",
