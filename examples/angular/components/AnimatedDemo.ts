@@ -24,7 +24,7 @@ const FREEZE_MS = 1500;
   standalone: true,
   imports: [View, Text, Button, AnimatedView],
   template: `
-    <View class="section">
+    <View class="section-nested">
       <Text class="section-label">Animated · JS vs native driver</Text>
 
       <View class="pulse-frame">

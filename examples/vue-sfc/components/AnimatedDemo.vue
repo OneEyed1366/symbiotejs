@@ -84,7 +84,7 @@ const freezeJs = (): void => {
 </script>
 
 <template>
-  <View class="section">
+  <View class="section-nested">
     <Text class="section-label">Animated · JS vs native driver</Text>
 
     <!-- native-driven perpetual pulse -->

@@ -15,8 +15,12 @@
   border-radius: 24px;
   background-color: #dd0031;
 }
+/* height matches pulse-frame's own slack (64px frame around a 48px dot = 8px/side) so the
+   visual gap around every animated dot reads the same, even though the dots themselves are
+   different sizes (28px here vs 48px there) — a uniform .section gap alone isn't enough when
+   the frames it separates carry different built-in padding. */
 .slide-track {
-  height: 36px;
+  height: 44px;
   justify-content: center;
 }
 .js-slide-dot {

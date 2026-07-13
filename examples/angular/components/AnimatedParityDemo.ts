@@ -30,7 +30,7 @@ const SCROLL_DURATION_MS = 180;
   standalone: true,
   imports: [View, Text, Button, AnimatedView],
   template: `
-    <View class="section">
+    <View class="section-nested">
       <Text class="section-label">Animated · ValueXY / tracking / diffClamp</Text>
 
       <Text class="drag-hint">drag the purple box →</Text>

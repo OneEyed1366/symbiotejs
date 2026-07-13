@@ -72,7 +72,7 @@ const scrollBy = (delta: number): void => {
 </script>
 
 <template>
-  <View class="section">
+  <View class="section-nested">
     <Text class="section-label">Animated · ValueXY / tracking / diffClamp</Text>
 
     <!-- ValueXY box you drag with a finger (PanResponder) -->

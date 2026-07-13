@@ -23,7 +23,7 @@ onMounted(() => {
 </script>
 
 <template>
-  <View class="section">
+  <View class="section-nested">
     <Text class="section-label">Accessibility · props → native · aria/role transform · AccessibilityInfo</Text>
     <!-- getter readout: 'off' (no screen reader) proves the module resolved -->
     <Text class="info-text">{{ `screen reader: ${screenReader}` }}</Text>

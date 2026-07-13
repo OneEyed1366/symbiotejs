@@ -25,7 +25,7 @@ const TAP_KEY = 'symbiote.tapCount';
   standalone: true,
   imports: [View, Text, Button, Image],
   template: `
-    <View class="section">
+    <View class="section-nested">
       <Text class="section-label"
         >Runtime modules · I18nManager / Settings / Image statics</Text
       >

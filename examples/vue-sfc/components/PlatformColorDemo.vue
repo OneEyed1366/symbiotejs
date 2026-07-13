@@ -12,7 +12,7 @@ const scheme = useColorScheme()
 </script>
 
 <template>
-  <View class="section">
+  <View class="section-nested">
     <Text class="section-label">{{ `PlatformColor · semantic + DynamicColorIOS (${scheme ?? 'unknown'})` }}</Text>
     <View class="row">
       <View class="color-tile" :style="{ backgroundColor: PlatformColor('systemBlue') }">

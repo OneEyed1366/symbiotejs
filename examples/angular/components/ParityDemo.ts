@@ -75,7 +75,7 @@ const paritySections: ISection<ISectionEntry>[] = [
     SymbioteHostPropsDirective,
   ],
   template: `
-    <View class="section">
+    <View class="section-nested">
       <Text #titleRef class="section-label"
         >Parity checks · longPress · dismiss · animated scroll · sticky · a11y focus</Text
       >

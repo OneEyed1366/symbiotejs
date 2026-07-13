@@ -27,7 +27,7 @@ import './AccessibilityDemo.css';
   standalone: true,
   imports: [View, Text, SymbioteHostPropsDirective],
   template: `
-    <View class="section">
+    <View class="section-nested">
       <Text class="section-label"
         >Accessibility · props → native · aria/role transform ·
         AccessibilityInfo</Text

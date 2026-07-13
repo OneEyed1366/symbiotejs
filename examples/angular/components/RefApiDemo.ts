@@ -19,7 +19,7 @@ import './RefApiDemo.css';
   standalone: true,
   imports: [View, Text, Button],
   template: `
-    <View class="section">
+    <View class="section-nested">
       <Text class="section-label"
         >Imperative ref · measure / setNativeProps / findNodeHandle</Text
       >

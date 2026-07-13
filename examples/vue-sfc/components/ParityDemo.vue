@@ -61,7 +61,7 @@ const parityRowHeightStyle = { height: PARITY_ROW_H }
 </script>
 
 <template>
-  <View class="section">
+  <View class="section-nested">
     <Text ref="titleRef" class="section-label">Parity checks · longPress · dismiss · animated scroll · sticky · a11y focus</Text>
 
     <!-- #10 Text.onLongPress synthesis: hold ~0.5s (suppresses tap) vs quick tap -->

@@ -14,7 +14,7 @@ import './PlatformColorDemo.css';
   standalone: true,
   imports: [View, Text],
   template: `
-    <View class="section">
+    <View class="section-nested">
       <Text class="section-label">{{
         'PlatformColor · semantic + DynamicColorIOS (' + schemeLabel + ')'
       }}</Text>

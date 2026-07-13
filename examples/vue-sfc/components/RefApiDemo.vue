@@ -41,7 +41,7 @@ const onFlash = (): void => {
 </script>
 
 <template>
-  <View class="section">
+  <View class="section-nested">
     <Text class="section-label">Imperative ref · measure / setNativeProps / findNodeHandle</Text>
     <View testID="ref-box" ref="boxRef" class="ref-box">
       <Text class="ref-box-text">{{ `native tag ${tag ?? '—'}` }}</Text>

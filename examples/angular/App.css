@@ -38,16 +38,26 @@
   --line-routing: #f2789a;
 }
 
-/* shared / common. .section is always the outermost content wrapper directly inside a demo
-   screen's SafeAreaView (never a nested inner group — CanaryScreen's own inner groups use
-   .section-tight instead), so its padding matches CanaryScreen's own root .scroll-content
-   edge padding (24px) without double-padding anything nested. */
+/* shared / common. .section is the outermost content wrapper directly inside a demo screen's
+   SafeAreaView (e.g. DetailsScreen, HooksDemoScreen) — a screen with no ScrollView padding of
+   its own, so .section's own 24px is the sole edge inset. CanaryScreen is different: its
+   ScrollView already carries that same 24px via .scroll-content, so anything nested INSIDE it
+   uses .section-tight (no padding, just the tighter 8px gap) or .section-nested (same 24px
+   top/bottom rhythm + 12px gap as .section, but no left/right — the horizontal inset already
+   comes from .scroll-content) instead of plain .section, which would double it to 48px. */
 .section {
   gap: 12px;
   padding: 24px;
 }
 .section-tight {
   gap: 8px;
+}
+/* CanaryScreen's own extracted demo components (AnimatedDemo, NativeModulesDemo, …) — see the
+   .section comment above for why this exists instead of reusing .section unmodified. */
+.section-nested {
+  gap: 12px;
+  padding-top: 24px;
+  padding-bottom: 24px;
 }
 .row {
   flex-direction: row;
