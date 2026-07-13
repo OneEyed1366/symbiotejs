@@ -83,53 +83,61 @@ export function registerComposedComponent(selector: string): void {
   ANCHOR_HOST_COMPONENTS.add(selector.toLowerCase());
 }
 
-const ANCHOR_HOST_COMPONENTS: Set<string> = new Set([
-  // Composed Angular components render their real Fabric descriptor tree from the template;
-  // their Angular host element is only a framework bookkeeping node and must not paint. This
-  // is NOT limited to adapter-authored components — ANY custom composed @Component used as a
-  // plain <Tag> inside another template needs its selector listed here too, or Angular's
-  // automatic host-element creation for it falls through to a raw Fabric createNode call with
-  // an unrecognized view name, which paints RN's own "Unimplemented component: <Tag>" fallback
-  // view instead (a real device-visible bug, not a silent no-op). This Set holds only
-  // adapter/engine-owned selectors; app code and third-party packages self-register their own
-  // composed components through registerComposedComponent instead of being hardcoded here.
-  'ActivityIndicator',
-  'Button',
-  'FlatList',
-  'AnimatedView',
-  'symbiote-animated-view',
-  'AnimatedText',
-  'symbiote-animated-text',
-  'AnimatedImage',
-  'symbiote-animated-image',
-  'AnimatedScrollView',
-  'symbiote-animated-scroll-view',
-  'symbiote-descriptor-outlet',
-  'tunnel-out',
-  'Image',
-  'ImageBackground',
-  'InputAccessoryView',
-  'KeyboardAvoidingView',
-  'Modal',
-  'Pressable',
-  'RefreshControl',
-  'SafeAreaView',
-  'ScrollView',
-  'ScrollViewStickyHeader',
-  'SectionList',
-  'symbiote-sticky-header',
-  'StatusBar',
-  'Switch',
-  'Text',
-  'TextInput',
-  'TouchableHighlight',
-  'TouchableNativeFeedback',
-  'TouchableOpacity',
-  'TouchableWithoutFeedback',
-  'VirtualizedList',
-  'VirtualizedSectionList',
-  'symbiote-pressable',
-]);
+// Lowercased at construction — createElement's lookup and registerComposedComponent's insert
+// both normalize to lowercase (Angular lowercases a dynamically-mounted component's selector at
+// runtime, see §11a), so the literal entries below must match that or every capitalized one
+// (all but the handful already written lowercase) silently never matches .has() and falls
+// through to a real Fabric createNode — the exact "Unimplemented component" / extra-wrapper-node
+// bug this Set exists to prevent.
+const ANCHOR_HOST_COMPONENTS: Set<string> = new Set(
+  [
+    // Composed Angular components render their real Fabric descriptor tree from the template;
+    // their Angular host element is only a framework bookkeeping node and must not paint. This
+    // is NOT limited to adapter-authored components — ANY custom composed @Component used as a
+    // plain <Tag> inside another template needs its selector listed here too, or Angular's
+    // automatic host-element creation for it falls through to a raw Fabric createNode call with
+    // an unrecognized view name, which paints RN's own "Unimplemented component: <Tag>" fallback
+    // view instead (a real device-visible bug, not a silent no-op). This Set holds only
+    // adapter/engine-owned selectors; app code and third-party packages self-register their own
+    // composed components through registerComposedComponent instead of being hardcoded here.
+    'ActivityIndicator',
+    'Button',
+    'FlatList',
+    'AnimatedView',
+    'symbiote-animated-view',
+    'AnimatedText',
+    'symbiote-animated-text',
+    'AnimatedImage',
+    'symbiote-animated-image',
+    'AnimatedScrollView',
+    'symbiote-animated-scroll-view',
+    'symbiote-descriptor-outlet',
+    'tunnel-out',
+    'Image',
+    'ImageBackground',
+    'InputAccessoryView',
+    'KeyboardAvoidingView',
+    'Modal',
+    'Pressable',
+    'RefreshControl',
+    'SafeAreaView',
+    'ScrollView',
+    'ScrollViewStickyHeader',
+    'SectionList',
+    'symbiote-sticky-header',
+    'StatusBar',
+    'Switch',
+    'Text',
+    'TextInput',
+    'TouchableHighlight',
+    'TouchableNativeFeedback',
+    'TouchableOpacity',
+    'TouchableWithoutFeedback',
+    'VirtualizedList',
+    'VirtualizedSectionList',
+    'symbiote-pressable',
+  ].map(selector => selector.toLowerCase()),
+);
 
 // Inserting a bare raw-text node anywhere but inside a <Text> is invalid in Fabric (a
 // stray RCTRawText would paint). Angular's ɵɵtext only ever lands text inside a <Text>,
