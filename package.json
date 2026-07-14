@@ -12,7 +12,7 @@
     "typecheck:watch": "tsc --build --watch",
     "prepublish-build": "pnpm run typecheck && pnpm run fix-esm-extensions && pnpm --filter './{core,adapters,packages}/*' --if-present run ng:build",
     "build": "pnpm run prepublish-build && pnpm run docs:build",
-    "fix-esm-extensions": "node scripts/fix-esm-extensions.mjs core/components/build core/css-parser/build core/engine/build packages/navigation/build adapters/react/build packages/slider/build packages/splash-screen/build core/test-utils/build adapters/vue/build",
+    "fix-esm-extensions": "node scripts/fix-esm-extensions.mjs",
     "sync:release-config": "node scripts/sync-release-config.mjs",
     "sync:release-config:check": "node scripts/sync-release-config.mjs --check",
     "test": "vitest run",

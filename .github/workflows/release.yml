@@ -11,9 +11,9 @@ on:
         type: boolean
         default: false
       # BEGIN GENERATED CANARY PACKAGE INPUTS — do not edit by hand, run
-      # `pnpm run sync:release-config` (scripts/sync-release-config.mjs derives
-      # this list from publishablePackageEntries(), the same package
-      # discovery `select-canary-dirs.mjs`/`trust-publishers.mjs` use).
+      # `pnpm run sync:release-config` (derives this list from
+      # publishablePackageEntries(), the same package discovery
+      # `select-canary-dirs.mjs`/`trust-publishers.mjs` use).
       android:
         description: '@symbiote-native/android'
         type: boolean
