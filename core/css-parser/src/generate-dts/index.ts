@@ -6,7 +6,7 @@
 // here has NO index signature: a typo in `styles.typo` is a genuine `error TS2339` under `tsc`/
 // `vue-tsc`, not a silent runtime miss. Named `<file>.d.ts` (full original filename, extension
 // appended rather than replaced — e.g. `Card.module.css.d.ts`) so TypeScript's own module
-// resolution picks it up for `import styles from './Card.module.css'` without a separate
+// resolution picks it up for a default import of `Card.module.css` without a separate
 // registration step, the same convention typed-css-modules uses.
 import { parseCSS } from '../parser/index.ts';
 import { compile, detectLanguage } from '../preprocessors/index.ts';
