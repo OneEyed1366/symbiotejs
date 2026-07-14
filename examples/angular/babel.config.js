@@ -1,3 +1,4 @@
+
 // Inline `process.env.DEBUG` at bundle time so @symbiote diagnostic logs can be toggled
 // from the shell:
 //   DEBUG=1 pnpm start --reset-cache
@@ -15,6 +16,7 @@ function inlineDebugFlag({ types: t }) {
     },
   };
 }
+
 
 module.exports = {
   presets: ['module:@react-native/babel-preset'],

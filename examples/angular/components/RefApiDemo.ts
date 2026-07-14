@@ -5,7 +5,7 @@ import {
   ViewChild,
   inject,
 } from '@angular/core';
-import { Button, findNodeHandle, Text, View } from '@symbiote-native/angular';
+import { Button, Text, View, findNodeHandle } from '@symbiote-native/angular';
 
 // Static look lives in RefApiDemo.css, compiled at build time by @symbiote-native/css-parser.
 import './RefApiDemo.css';

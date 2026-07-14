@@ -1,6 +1,7 @@
 /* Symbiote canary app — static styles, compiled at build time by @symbiote-native/css-parser
-   into the same RN style objects StyleSheet.create used to produce. Referenced via className,
-   now supported on every component's public prop type. `transform`/`transformOrigin`/`filter`/`box-shadow`/
+   into the same RN style objects StyleSheet.create used to produce (see the
+   symbiote-sfc-style-compiler skill). Referenced via className, now supported on every
+   component's public prop type. `transform`/`transformOrigin`/`filter`/`box-shadow`/
    `background-image` ARE supported (raw CSS-text passthrough, 2026-07 — see .gradient-card
    below) — App.tsx's existing shadow-card/filter-tile/rotated-card demos just predate that
    and still use inline dynamic style, which is still valid, not a gap. What stays in
@@ -11,9 +12,36 @@
    single component tree, so every class here is effectively global already, no
    <style scoped> needed. */
 
-/* shared / common */
+:root {
+  /* app-wide surface/text tokens — same values already used ad hoc across this file; named here
+     so the navigation-demo classes below reference them instead of repeating hex literals. */
+  --ink: #0b1622;
+  --paper: #13243a;
+  --mist: #41506a;
+  --chalk: #cbd5e1;
+  --chalk-bright: #ffffff;
+
+  /* wayfinding line system — the @symbiote-native/navigation demo suite's signature. Its 9 tour
+     screens (MenuScreen's rows) group into 5 thematic "lines" (which part of the package each one
+     exercises), each carrying its own color through a 2-letter badge, a matching hint tint, and
+     (where a screen's own native header/tab bar takes a tint) the OS chrome itself — replacing the
+     single flat accent every row/button used to share. Kept in sync by hand with
+     navigation-lines.ts's LINE_COLOR (CSS custom properties and that module are different
+     runtimes with no shared import path). */
+  --line-primitives: #149eca;
+  --line-presentation: #5ec8f2;
+  --line-structure: #4fd1a5;
+  --line-introspection: #b18cf5;
+  --line-routing: #f2789a;
+}
+
+/* shared / common. .section is always the outermost content wrapper directly inside a demo
+   screen's SafeAreaView (never a nested inner group — CanaryScreen's own inner groups use
+   .section-tight instead), so its padding matches CanaryScreen's own root .scroll-content
+   edge padding (24px) without double-padding anything nested. */
 .section {
   gap: 12px;
+  padding: 24px;
 }
 .section-tight {
   gap: 8px;
@@ -50,6 +78,61 @@
 .list-row-text {
   color: #cbd5e1;
   font-size: 15px;
+}
+
+/* ActionButton — every demo screen's tappable action, replacing RN's stock unstyled <Button>.
+   borderColor/color stay dynamic (ActionButton's own `color` prop, one per call site — the
+   per-feature color-coding a class can't parametrize), everything else is the shared chrome. */
+.action-button {
+  align-items: center;
+  justify-content: center;
+  border-radius: 12px;
+  border-width: 1.5px;
+  padding-top: 12px;
+  padding-bottom: 12px;
+  padding-left: 16px;
+  padding-right: 16px;
+  background-color: var(--paper);
+}
+.action-button-text {
+  font-size: 15px;
+  font-weight: bold;
+}
+
+/* Hero card — the "you've arrived" intro every tour screen can lead with (CanaryScreen's own,
+   mirroring MenuScreen's hero + the per-line badge language already used for its row/line-tag). */
+.hero-card {
+  flex-direction: row;
+  align-items: center;
+  gap: 14px;
+  padding: 16px;
+  border-radius: 16px;
+  background-color: var(--paper);
+}
+.hero-badge {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  align-items: center;
+  justify-content: center;
+}
+.hero-badge-text {
+  color: var(--ink);
+  font-size: 15px;
+  font-weight: bold;
+}
+.hero-copy {
+  flex: 1;
+  gap: 4px;
+}
+.hero-title {
+  color: var(--chalk-bright);
+  font-size: 18px;
+  font-weight: bold;
+}
+.hero-body {
+  color: var(--chalk);
+  font-size: 13px;
 }
 
 /* AnimatedDemo */
@@ -280,29 +363,33 @@
   background-color: #0f1e30;
 }
 
-/* App */
+/* App / CanaryScreen — retokenized onto the shared --ink/--paper/--mist/--chalk palette (2026-07
+   cohesion pass); accent chrome uses --line-primitives, CanaryScreen's own tour-line color (its
+   line-tag is "CN · PRIMITIVES LINE"). Demo colors that ARE the content — the shadow-card glow,
+   the rainbow chip hues, per-feature ActionButton tints in CanaryScreen.tsx/components/* — are
+   deliberately left alone; only chrome that used to duplicate these tokens ad hoc changed. */
 .screen {
   flex: 1;
-  background-color: #0b1622;
+  background-color: var(--ink);
 }
 .text-input {
   height: 44px;
   border-radius: 10px;
   border-width: 1px;
-  border-color: #2b6cb0;
+  border-color: var(--line-primitives);
   padding-left: 14px;
   padding-right: 14px;
-  color: #ffffff;
+  color: var(--chalk-bright);
   font-size: 18px;
-  background-color: #0f1e30;
+  background-color: var(--paper);
 }
 .scroll-content {
-  padding-top: 64px;
-  padding-bottom: 64px;
+  padding-top: 24px;
+  padding-bottom: 40px;
   padding-left: 24px;
   padding-right: 24px;
   align-items: stretch;
-  gap: 28px;
+  gap: 20px;
 }
 .slider {
   height: 40px;
@@ -316,7 +403,7 @@
 .box-list160 {
   height: 160px;
   border-radius: 12px;
-  background-color: #0f1e30;
+  background-color: var(--paper);
 }
 .web-image {
   border-radius: 8px;
@@ -328,23 +415,18 @@
   border-radius: 12px;
   align-self: center;
 }
-.title {
-  color: #7fb5ff;
-  font-size: 16px;
-  text-align: center;
-}
 .header-note {
-  color: #7fb5ff;
+  color: var(--mist);
   font-size: 13px;
   text-align: center;
 }
 /* borderTopWidth stays dynamic (StyleSheet.hairlineWidth is a runtime constant) */
 .hairline-note {
-  color: #7fb5ff;
+  color: var(--mist);
   font-size: 13px;
   text-align: center;
   padding-top: 8px;
-  border-top-color: #2b6cb0;
+  border-top-color: var(--mist);
 }
 .refresh-row {
   flex-direction: row;
@@ -353,11 +435,11 @@
   gap: 8px;
 }
 .accent-note {
-  color: #7fb5ff;
+  color: var(--line-primitives);
   font-size: 13px;
 }
 .muted-center {
-  color: #41506a;
+  color: var(--mist);
   font-size: 13px;
   text-align: center;
 }
@@ -365,16 +447,16 @@
   padding-top: 18px;
   padding-bottom: 18px;
   border-radius: 16px;
-  background-color: #2b6cb0;
+  background-color: var(--line-primitives);
   align-items: center;
 }
 .counter-text {
-  color: #ffffff;
+  color: var(--ink);
   font-size: 24px;
   font-weight: bold;
 }
 .greeting {
-  color: #ffffff;
+  color: var(--chalk-bright);
   font-size: 20px;
   text-align: center;
 }
@@ -398,7 +480,8 @@
 }
 /* width/marginRight stay dynamic — they reference the CHIP_WIDTH/CHIP_GAP script
    consts (also used by FlatList's getItemLayout), which a CSS selector has no way to
-   read; backgroundColor stays dynamic (item.color, per-chip) */
+   read; backgroundColor stays dynamic (item.color, per-chip — a deliberate rainbow, the
+   FlatList windowing demo's whole point is telling 24 distinct chips apart at a glance) */
 .chip-card {
   height: 72px;
   border-radius: 12px;
@@ -406,7 +489,7 @@
   justify-content: center;
 }
 .chip-number {
-  color: #0b1622;
+  color: var(--ink);
   font-size: 18px;
   font-weight: bold;
 }
@@ -424,14 +507,14 @@
 }
 /* opacity/transform stay dynamic (the native-driver scroll interpolation) */
 .parity-header {
-  background-color: #2b6cb0;
+  background-color: var(--line-primitives);
   border-radius: 12px;
   padding-top: 12px;
   padding-bottom: 12px;
   align-items: center;
 }
 .parity-header-text {
-  color: #ffffff;
+  color: var(--ink);
   font-size: 15px;
   font-weight: bold;
 }
@@ -442,15 +525,16 @@
   padding-right: 14px;
 }
 .tiny-center {
-  color: #41506a;
+  color: var(--mist);
   font-size: 12px;
   text-align: center;
 }
-/* boxShadow stays dynamic — outside @symbiote-native/css-parser's supported property table */
+/* boxShadow stays dynamic (outside @symbiote-native/css-parser's supported property table) —
+   the glow's own blue IS the demo (a black shadow is invisible on this bg), left untouched */
 .shadow-card {
   height: 64px;
   border-radius: 12px;
-  background-color: #13243a;
+  background-color: var(--paper);
   align-items: center;
   justify-content: center;
 }
@@ -458,38 +542,42 @@
   flex: 1;
   height: 64px;
   border-radius: 12px;
-  background-color: #2b6cb0;
+  background-color: var(--line-primitives);
   align-items: center;
   justify-content: center;
 }
 .tile-text {
-  color: #ffffff;
+  color: var(--ink);
   font-size: 13px;
+  font-weight: bold;
 }
 /* transformOrigin/transform stay dynamic — same css-parser gap as boxShadow above */
 .rotated-card {
   height: 64px;
   border-radius: 12px;
-  background-color: #2b6cb0;
+  background-color: var(--line-primitives);
   align-items: center;
   justify-content: center;
 }
+/* literal hex, not var(--line-primitives) — untested whether the css-parser resolves a custom
+   property nested inside a gradient function's stop list, and this demo's whole point is
+   proving background-image itself works, so it isn't the place to find out */
 .gradient-card {
   height: 64px;
   border-radius: 12px;
-  background-image: linear-gradient(to right, #2b6cb0, #f6ad55);
+  background-image: linear-gradient(to right, #149eca, #61dafb);
   align-items: center;
   justify-content: center;
 }
 .bottom-card {
   height: 200px;
   border-radius: 16px;
-  background-color: #13243a;
+  background-color: var(--paper);
   align-items: center;
   justify-content: center;
 }
 .bottom-text {
-  color: #7fb5ff;
+  color: var(--line-primitives);
   font-size: 16px;
 }
 .modal-overlay {
@@ -502,17 +590,163 @@
   width: 280px;
   padding: 24px;
   border-radius: 20px;
-  background-color: #0f1e30;
+  background-color: var(--paper);
   align-items: center;
   gap: 16px;
 }
 .modal-title {
-  color: #ffffff;
+  color: var(--chalk-bright);
   font-size: 20px;
   font-weight: bold;
 }
 .modal-body {
-  color: #cbd5e1;
+  color: var(--chalk);
   font-size: 14px;
   text-align: center;
+}
+
+/* MenuScreen hero */
+.menu-hero {
+  gap: 6px;
+  padding-bottom: 8px;
+}
+.menu-eyebrow {
+  color: var(--mist);
+  font-size: 12px;
+  letter-spacing: 2px;
+}
+.menu-hero-title {
+  color: var(--chalk-bright);
+  font-size: 26px;
+  font-weight: bold;
+}
+.menu-hero-subtitle {
+  color: var(--chalk);
+  font-size: 14px;
+}
+
+/* line tag — the "you are here" pill each demo screen carries, matching its MenuScreen row */
+.line-tag {
+  align-self: flex-start;
+  padding-top: 4px;
+  padding-bottom: 4px;
+  padding-left: 10px;
+  padding-right: 10px;
+  border-radius: 999px;
+}
+.line-tag-primitives {
+  background-color: var(--line-primitives);
+}
+.line-tag-presentation {
+  background-color: var(--line-presentation);
+}
+.line-tag-structure {
+  background-color: var(--line-structure);
+}
+.line-tag-introspection {
+  background-color: var(--line-introspection);
+}
+.line-tag-routing {
+  background-color: var(--line-routing);
+}
+.line-tag-text {
+  color: var(--ink);
+  font-size: 11px;
+  font-weight: bold;
+  letter-spacing: 1px;
+}
+
+/* DrawerDemoScreen's renderDrawerContent panel — its own floating side-panel background comes
+   from the Drawer's drawerStyle prop, not a class (RN style prop, not className), so this only
+   needs the edge padding .section-tight itself deliberately doesn't carry (it's also reused
+   inside CanaryScreen's already-padded scroll-content, where a second padding would double up). */
+.drawer-panel {
+  padding: 16px;
+}
+
+/* MenuScreen rows + DrawerDemoScreen's renderDrawerContent (shared row look) */
+.menu-row {
+  flex-direction: row;
+  align-items: center;
+  gap: 14px;
+  padding: 14px;
+  border-radius: 12px;
+  background-color: var(--paper);
+}
+.menu-row-primitives {
+  border-left-width: 3px;
+  border-left-color: var(--line-primitives);
+}
+.menu-row-presentation {
+  border-left-width: 3px;
+  border-left-color: var(--line-presentation);
+}
+.menu-row-structure {
+  border-left-width: 3px;
+  border-left-color: var(--line-structure);
+}
+.menu-row-introspection {
+  border-left-width: 3px;
+  border-left-color: var(--line-introspection);
+}
+.menu-row-routing {
+  border-left-width: 3px;
+  border-left-color: var(--line-routing);
+}
+
+.menu-badge {
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  align-items: center;
+  justify-content: center;
+}
+.menu-badge-primitives {
+  background-color: var(--line-primitives);
+}
+.menu-badge-presentation {
+  background-color: var(--line-presentation);
+}
+.menu-badge-structure {
+  background-color: var(--line-structure);
+}
+.menu-badge-introspection {
+  background-color: var(--line-introspection);
+}
+.menu-badge-routing {
+  background-color: var(--line-routing);
+}
+.menu-badge-text {
+  color: var(--ink);
+  font-size: 12px;
+  font-weight: bold;
+  letter-spacing: 0.5px;
+}
+
+.menu-row-copy {
+  flex: 1;
+  gap: 4px;
+}
+.menu-row-label {
+  color: var(--chalk-bright);
+  font-size: 16px;
+  font-weight: bold;
+}
+.menu-row-hint {
+  font-size: 12px;
+}
+.menu-row-hint-primitives {
+  color: var(--line-primitives);
+}
+.menu-row-hint-presentation {
+  color: var(--line-presentation);
+}
+.menu-row-hint-structure {
+  color: var(--line-structure);
+}
+.menu-row-hint-introspection {
+  color: var(--line-introspection);
+}
+.menu-row-hint-routing {
+  color: var(--line-routing);
 }

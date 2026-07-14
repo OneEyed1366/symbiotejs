@@ -1,14 +1,5 @@
-.section {
-  gap: 12px;
-}
-.section-label {
-  color: #3b5266;
-  font-size: 13px;
-}
-.info-text {
-  color: #cbd5e1;
-  font-size: 14px;
-}
+/* .section/.section-label/.info-text are the app-wide generic classes from App.css, not
+   redeclared here — see the style-registry-collisions rule. */
 .row-align-center {
   flex-direction: row;
   align-items: center;

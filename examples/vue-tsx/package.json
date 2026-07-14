@@ -6,6 +6,7 @@
     "android": "react-native run-android",
     "ios": "react-native run-ios",
     "lint": "eslint .",
+    "typecheck": "vue-tsc --noEmit -p tsconfig.typecheck.json",
     "dev": "react-native start --reset-cache",
     "start": "react-native start",
     "test": "vitest run",
@@ -15,11 +16,12 @@
     "e2e:test:android": "detox test --configuration android.emu.debug"
   },
   "dependencies": {
-    "@symbiote-native/components": "catalog:",
-    "@symbiote-native/engine": "catalog:",
-    "@symbiote-native/slider": "catalog:",
-    "@symbiote-native/splash-screen": "catalog:",
-    "@symbiote-native/vue": "catalog:",
+    "@symbiote-native/components": "workspace:*",
+    "@symbiote-native/engine": "workspace:*",
+    "@symbiote-native/navigation": "workspace:*",
+    "@symbiote-native/slider": "workspace:*",
+    "@symbiote-native/splash-screen": "workspace:*",
+    "@symbiote-native/vue": "workspace:*",
     "@vue/runtime-core": "catalog:",
     "react": "catalog:",
     "react-native": "catalog:"
@@ -37,9 +39,10 @@
     "@react-native/gradle-plugin": "catalog:",
     "@react-native/metro-config": "catalog:",
     "@react-native/typescript-config": "catalog:",
-    "@symbiote-native/css-parser": "catalog:",
-    "@symbiote-native/test-utils": "catalog:",
+    "@symbiote-native/css-parser": "workspace:*",
+    "@symbiote-native/test-utils": "workspace:*",
     "@types/jest": "catalog:",
+    "@types/node": "catalog:",
     "@vue/babel-plugin-jsx": "catalog:",
     "detox": "catalog:",
     "eslint": "catalog:rn-app",
@@ -48,7 +51,9 @@
     "prettier": "catalog:",
     "ts-jest": "catalog:",
     "typescript": "catalog:",
-    "vitest": "catalog:"
+    "vitest": "catalog:",
+    "vue": "catalog:",
+    "vue-tsc": "catalog:"
   },
   "engines": {
     "node": ">= 22.11.0"

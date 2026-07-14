@@ -2,13 +2,8 @@
    stay dynamic — Animated-driven values composed at the use site via [style] in AnimatedDemo.ts,
    alongside each dot's class for its static half. */
 
-.section {
-  gap: 12px;
-}
-.section-label {
-  color: #3b5266;
-  font-size: 13px;
-}
+/* .section/.section-label are the app-wide generic classes from App.css, not redeclared here —
+   see the style-registry-collisions rule. */
 .pulse-frame {
   height: 64px;
   align-items: center;

@@ -1,962 +1,197 @@
-import { ChangeDetectorRef, Component, OnDestroy, OnInit, inject } from '@angular/core';
+/**
+ * Symbiote canary app entry: composes the native stack navigator
+ * (@symbiote-native/navigation/angular, driven by react-native-screens' RNSScreen/
+ * RNSScreenStack native views) over the full demo screen surface. Menu is the initial
+ * route — a menu of buttons, one per navigator/feature @symbiote-native/navigation exports;
+ * Canary is unchanged and reachable from the menu's first row. Details has no menu row of its
+ * own — it's the DeepLinking demo's resolution target (symbiotecanaryangular://details/:id),
+ * reached only through that tour stop. The actual canary surface (every
+ * @symbiote-native/angular primitive) lives in ./screens/CanaryScreen; the demo sections it
+ * renders live under ./components. Angular twin of ../react/App.tsx.
+ *
+ * @format
+ */
+
 import {
-  ActivityIndicator,
-  Alert,
-  ActionSheetIOS,
-  Animated,
-  AnimatedScrollView,
-  AnimatedView,
-  AppState,
-  Button,
-  ColorSchemeService,
-  FlatList,
-  Image,
-  ImageBackground,
-  KEYBOARD_EVENT,
-  Keyboard,
-  KeyboardAvoidingView,
-  Linking,
-  Modal,
-  PixelRatio,
-  Platform,
-  PortalDirective,
-  PortalOutletDirective,
-  Pressable,
-  RefreshControl,
-  SafeAreaView,
-  ScrollView,
-  Share,
-  StatusBar,
-  StyleSheet,
-  Switch,
-  Text,
-  TextInput,
-  TunnelInDirective,
-  TunnelOut,
-  VListItemDirective,
-  Vibration,
-  View,
-  WindowDimensionsService,
-  createTunnel,
-  type ISymbioteEvent,
-} from '@symbiote-native/angular';
-// A real third-party native view, driven through symbiote's own wrapper (@symbiote-native/slider)
-// rather than the library's React component — the wrapper renders through DescriptorOutlet
-// (descriptorToAngular), so the SAME slider works on React/Vue/Angular. App code and the app
-// manifest name only @symbiote-native/slider; the native package is the wrapper's own dependency.
-import { Slider } from '@symbiote-native/slider/angular';
+  AfterViewInit,
+  Component,
+  Injector,
+  OnInit,
+  ViewChild,
+  inject,
+  runInInjectionContext,
+} from '@angular/core';
+import { Stack, ScreenDirective, injectLinkingIntegration } from '@symbiote-native/navigation/angular';
+import type { IAngularScreenOptions } from '@symbiote-native/navigation/angular';
 import { hide } from '@symbiote-native/splash-screen/angular';
-import { AccessibilityDemo } from './components/AccessibilityDemo';
-import { AnimatedDemo } from './components/AnimatedDemo';
-import { AnimatedParityDemo } from './components/AnimatedParityDemo';
-import { NativeModulesDemo } from './components/NativeModulesDemo';
-import { ParityDemo } from './components/ParityDemo';
-import { PlatformColorDemo } from './components/PlatformColorDemo';
-import { RefApiDemo } from './components/RefApiDemo';
-import { ResponderDemo } from './components/ResponderDemo';
+import { MenuScreen } from './screens/MenuScreen';
+import { CanaryScreen } from './screens/CanaryScreen';
+import { DetailsScreen } from './screens/DetailsScreen';
+import { HeaderOptionsScreen, headerOptionsScreenOptions } from './screens/HeaderOptionsScreen';
+import { SheetDemoScreen, sheetDemoScreenOptions } from './screens/SheetDemoScreen';
+import { TabsDemoScreen } from './screens/TabsDemoScreen';
+import { DrawerDemoScreen } from './screens/DrawerDemoScreen';
+import { NestedNavigatorsScreen } from './screens/NestedNavigatorsScreen';
+import { HooksDemoScreen } from './screens/HooksDemoScreen';
+import { DeepLinkingScreen } from './screens/DeepLinkingScreen';
+import { StatePersistenceScreen } from './screens/StatePersistenceScreen';
+import { APP_LINKING_CONFIG } from './navigation-linking';
+import { ROUTE_NAME } from './routes';
+import { LINE_COLOR } from './navigation-lines';
 // Static look lives in App.css — a plain global .css file, compiled at build time by
 // @symbiote-native/css-parser and resolved at runtime through the shared style registry every
 // adapter's class/className/addClass path shares.
 import './App.css';
 
-const ANGULAR_LOGO_URI =
-  'https://angular.io/assets/images/logos/angular/angular.png';
-const CHIP_WIDTH = 72;
-const CHIP_GAP = 12;
-const REFRESH_MS = 2000;
-
-interface IChip {
-  id: string;
-  index: number;
-  color: string;
-}
-
-interface IMvcpItem {
-  id: string;
-  label: string;
-}
-
-const chips: IChip[] = Array.from({ length: 24 }, (_unused, index) => ({
-  id: `chip-${index}`,
-  index,
-  color: `hsl(${(index * 37) % 360} 72% 56%)`,
-}));
-
-// A module-level singleton (NOT created inside AppComponent) — the whole point of createTunnel
-// is that TunnelIn/TunnelOut don't need to share a component instance, only this store.
-const overlayTunnel = createTunnel();
+const DARK_HEADER_STYLE = { backgroundColor: '#0b1622' } as const;
 
 @Component({
   selector: 'symbiote-angular-app',
   standalone: true,
-  imports: [
-    AccessibilityDemo,
-    ActivityIndicator,
-    AnimatedDemo,
-    AnimatedParityDemo,
-    AnimatedScrollView,
-    AnimatedView,
-    Button,
-    FlatList,
-    Image,
-    ImageBackground,
-    KeyboardAvoidingView,
-    Modal,
-    NativeModulesDemo,
-    ParityDemo,
-    PlatformColorDemo,
-    PortalDirective,
-    PortalOutletDirective,
-    Pressable,
-    RefApiDemo,
-    RefreshControl,
-    ResponderDemo,
-    SafeAreaView,
-    ScrollView,
-    Slider,
-    Switch,
-    Text,
-    TextInput,
-    TunnelInDirective,
-    TunnelOut,
-    View,
-    VListItemDirective,
-  ],
+  imports: [Stack, ScreenDirective],
   template: `
-    <SafeAreaView testID="angular-safe-area" class="screen">
-      <ScrollView
-        testID="angular-canary-scroll"
-        class="screen"
-        contentContainerStyle="scroll-content"
-      >
-        <RefreshControl
-          testID="angular-refresh-control"
-          [refreshing]="refreshing"
-          (refresh)="onRefresh()"
-          tintColor="#dd0031"
-        />
-
-        <View testID="angular-hero" class="hero-card">
-          <Image
-            testID="angular-logo"
-            [src]="angularLogoUri"
-            alt="Angular logo"
-            resizeMode="contain"
-            [width]="56"
-            [height]="56"
-            class="logo"
-          />
-          <View class="hero-copy">
-            <Text testID="angular-badge" class="badge">
-              ◆ RENDERED FROM ANGULAR
-            </Text>
-            <Text class="title">symbiote · Angular adapter</Text>
-            <Text class="body">
-              Angular templates drive @symbiote-native/engine, then Fabric paints real
-              native views.
-            </Text>
-          </View>
-        </View>
-
-        <Text
-          testID="angular-platform"
-          class="hairline-note"
-          [style]="platformHairlineStyle"
-        >
-          {{ platformText }}
-        </Text>
-        <Text testID="angular-dimensions" class="header-note">
-          {{ dimensionsText }}
-        </Text>
-        <Text testID="angular-keyboard" class="header-note">
-          {{
-            keyboardHeight > 0
-              ? 'keyboard up · ' + keyboardHeight + 'px'
-              : 'keyboard down'
-          }}
-        </Text>
-
-        <View class="row">
-          <View class="flex-1">
-            <Button
-              testID="angular-status-bar-hidden-btn"
-              [title]="statusBarHidden ? 'Show status bar' : 'Hide status bar'"
-              (press)="toggleStatusBarHidden()"
-              color="#dd0031"
-            ></Button>
-          </View>
-          <View class="flex-1">
-            <Button
-              testID="angular-status-bar-style-btn"
-              [title]="darkStatusBar ? 'Light text' : 'Dark text'"
-              (press)="toggleStatusBarStyle()"
-              color="#dd0031"
-            ></Button>
-          </View>
-        </View>
-
-        @if (Platform.OS === 'android') {
-          <View class="row">
-            <View class="flex-1">
-              <Button
-                testID="angular-status-bar-bg-btn"
-                [title]="statusBarRed ? 'BG default' : 'BG red'"
-                (press)="toggleStatusBarRed()"
-                color="#dd0031"
-              ></Button>
-            </View>
-            <View class="flex-1">
-              <Button
-                testID="angular-status-bar-translucent-btn"
-                [title]="statusBarTranslucent ? 'Opaque' : 'Translucent'"
-                (press)="toggleStatusBarTranslucent()"
-                color="#dd0031"
-              ></Button>
-            </View>
-          </View>
-        }
-
-        <View class="row">
-          <View class="flex-1">
-            <Button
-              testID="angular-alert-btn"
-              title="Alert"
-              (press)="onAlert()"
-              color="#dd0031"
-            ></Button>
-          </View>
-          @if (Platform.OS !== 'android') {
-            <View class="flex-1">
-              <Button
-                testID="angular-action-sheet-btn"
-                title="Action sheet"
-                (press)="onActionSheet()"
-                color="#dd0031"
-              ></Button>
-            </View>
-          }
-        </View>
-        <View class="row">
-          <View class="flex-1">
-            <Button
-              testID="angular-share-btn"
-              title="Share"
-              (press)="onShare()"
-              color="#dd0031"
-            ></Button>
-          </View>
-          <View class="flex-1">
-            <Button
-              testID="angular-vibrate-btn"
-              title="Vibrate"
-              (press)="onVibrate()"
-              color="#dd0031"
-            ></Button>
-          </View>
-        </View>
-        <Button
-          testID="angular-open-url-btn"
-          title="Open angular.dev"
-          (press)="onOpenUrl()"
-          color="#dd0031"
-        ></Button>
-
-        <Pressable
-          testID="angular-counter-card"
-          class="counter-card"
-          (press)="increment()"
-        >
-          <Text testID="angular-counter-value" class="counter-text">
-            tapped {{ count }}×
-          </Text>
-        </Pressable>
-
-        <TextInput
-          testID="angular-greeting-input"
-          [(value)]="name"
-          placeholder="type your name…"
-          placeholderTextColor="#6b7280"
-          class="text-input"
-        />
-        <Text testID="angular-greeting-output" class="greeting">
-          {{ name ? 'Hello, ' + name : 'Hello, stranger' }}
-        </Text>
-
-        <View testID="angular-switch-row" class="switch-row">
-          <Text class="switch-label">spinner</Text>
-          <Switch
-            testID="angular-spinner-switch"
-            [(value)]="spinning"
-            [trackColor]="switchTrackColor"
-            thumbColor="#ffffff"
-          />
-        </View>
-        <ActivityIndicator
-          testID="angular-spinner-indicator"
-          [animating]="spinning"
-          color="#dd0031"
-          size="large"
-        />
-
-        <View testID="angular-native-row" class="native-row">
-          <ActivityIndicator
-            testID="angular-small-spinner"
-            [animating]="true"
-            color="#dd0031"
-            size="small"
-            [hidesWhenStopped]="true"
-            class="spinner"
-          />
-          <Text class="native-row-text">
-            host intrinsics exported from @symbiote-native/angular
-          </Text>
-        </View>
-
-        <View class="section-tight">
-          <Text class="switch-label">volume · {{ volumePercent }}%</Text>
-          <Slider
-            testID="angular-volume-slider"
-            [(value)]="volume"
-            [minimumValue]="0"
-            [maximumValue]="1"
-            [step]="0.01"
-            minimumTrackTintColor="#dd0031"
-            maximumTrackTintColor="#334155"
-            thumbTintColor="#ffffff"
-            class="slider"
-          />
-        </View>
-
-        <AnimatedDemo></AnimatedDemo>
-        <AnimatedParityDemo></AnimatedParityDemo>
-        <NativeModulesDemo></NativeModulesDemo>
-        <RefApiDemo></RefApiDemo>
-        <PlatformColorDemo></PlatformColorDemo>
-        <AccessibilityDemo></AccessibilityDemo>
-        <ResponderDemo></ResponderDemo>
-        <ParityDemo></ParityDemo>
-
-        <Pressable
-          testID="angular-pressable"
-          (press)="increment()"
-          [style]="pressableStyle"
-          accessibilityLabel="Angular pressable counter"
-        >
-          <Text class="pressable-label">press me (also +1)</Text>
-        </Pressable>
-
-        <Text class="section-label"> FlatList · 24 chips, windowed </Text>
-        <FlatList
-          testID="angular-chips-list"
-          [horizontal]="true"
-          [data]="chips"
-          [keyExtractor]="chipKeyExtractor"
-          [getItemLayout]="chipItemLayout"
-          class="chip-list"
-        >
-          <ng-template vListItem let-item>
-            <View class="chip-card" [style]="chipStyle(item)">
-              <Text class="chip-number">{{ chipIndex(item) }}</Text>
-            </View>
-          </ng-template>
-        </FlatList>
-
-        <!-- Press-retention measured rect. PASS: press, then drag DOWN ~100px: the panel
-            STAYS highlighted (inside the measured rect + 80px bottom retention). Drag UP
-            off the top: highlight drops. Proves measured-rect retention rather than a
-            symmetric-radius approximation. -->
-        <Pressable
-          testID="angular-retention-pressable"
-          [hitSlop]="{ top: 0, bottom: 40, left: 0, right: 0 }"
-          [pressRetentionOffset]="{ top: 0, bottom: 80, left: 0, right: 0 }"
-          (pressMove)="onRetentionMove($event)"
-          [style]="retentionStyle"
-        >
-          <Text testID="angular-retention-readout" class="info-text">
-            drag me · dx {{ retentionMove.dx }} · dy {{ retentionMove.dy }}
-          </Text>
-        </Pressable>
-
-        <Text class="section-label">MVCP · prepend without jump</Text>
-        <FlatList
-          testID="angular-mvcp-list"
-          [data]="mvcpItems"
-          [keyExtractor]="mvcpKeyExtractor"
-          [maintainVisibleContentPosition]="mvcpConfig"
-          class="box-list160"
-        >
-          <ng-template vListItem let-item>
-            <View class="mvcp-row">
-              <Text class="list-row-text">{{ mvcpLabel(item) }}</Text>
-            </View>
-          </ng-template>
-        </FlatList>
-        <Button
-          testID="angular-mvcp-prepend-btn"
-          title="Prepend 5"
-          color="#dd0031"
-          (press)="prependMvcpItems()"
-        ></Button>
-
-        <!-- Animated.ScrollView scroll-driven header (native driver). PASS: drag INSIDE the
-            box below (not the page): the bright bar above SMOOTHLY fades to near-invisible and
-            lifts, on the UI thread (no jank, no per-frame JS). AnimatedScrollView takes onScroll
-            through [animatedProps] (no discrete [onScroll] input) — the general escape hatch for
-            any prop that may carry an Animated.event marker, same as AnimatedParityDemo's
-            panHandlers. -->
-        <AnimatedView
-          testID="angular-parity-header"
-          class="parity-header"
-          [style]="parityHeaderStyle"
-        >
-          <Text class="parity-header-text">HEADER — fades as you scroll ↓</Text>
-        </AnimatedView>
-        <AnimatedScrollView
-          testID="angular-parity-scroll-box"
-          class="box-list160"
-          [animatedProps]="scrollAnimatedProps"
-        >
-          @for (i of scrollRows; track i) {
-            <View class="scroll-demo-row">
-              <Text class="list-row-text">scroll me · row {{ i }}</Text>
-            </View>
-          }
-        </AnimatedScrollView>
-        <Text class="tiny-center"
-          >↑ drag inside the box — the bar above reacts</Text
-        >
-        <!-- Native-driver proof for Animated.event: tap to JAM the JS thread 3s, then drag
-            the box above DURING the freeze. If the bar keeps fading/lifting while JS is frozen,
-            the scroll event drives parityScrollY on the UI thread (native attach). -->
-        <Button
-          testID="angular-freeze-js-scroll-btn"
-          title="Freeze JS 3s — then scroll the box ↑"
-          color="#fc8181"
-          (press)="freezeJsScroll()"
-        ></Button>
-        <Text class="tiny-center"
-          >tap Freeze, then immediately drag the box — bar should still
-          move</Text
-        >
-
-        <!-- Modern style props reaching Fabric's C++ parser. Each is an A/B so the effect
-            is unmistakable on the dark theme. -->
-        <View class="shadow-card">
-          <Text class="note-text">boxShadow · blue glow</Text>
-        </View>
-        <View class="row">
-          <View class="filter-tile">
-            <Text class="tile-text">no filter</Text>
-          </View>
-          <View class="filter-tile filter-tile-dim">
-            <Text class="tile-text">brightness 0.5</Text>
-          </View>
-        </View>
-        <View class="rotated-card">
-          <Text class="tile-text">transformOrigin · top-left</Text>
-        </View>
-
-        <!-- background-image: a CSS linear-gradient(...) authored entirely in App.css
-            (.gradient-card), proving @symbiote-native/css-parser's background-image to RN's
-            experimental_backgroundImage raw passthrough works end to end.
-            PASS: the panel shows a red-to-orange gradient sweeping left to right. -->
-        <View class="gradient-card">
-          <Text class="tile-text">background-image · linear-gradient</Text>
-        </View>
-
-        <!-- Image web aliases. PASS: the logo loads via the web-alias fold (src→source uri,
-            width/height→style); a screen reader reads "Angular logo" (alt→accessibilityLabel). -->
-        <Image
-          [src]="angularLogoUri"
-          alt="Angular logo"
-          [width]="48"
-          [height]="48"
-          class="web-image"
-        />
-
-        <!-- KeyboardAvoidingView enabled toggle. PASS: with enabled ON, focusing the field
-            lifts it above the keyboard AND the keyboard is the email layout (proves
-            autoComplete/inputMode fold); with enabled OFF the keyboard covers the field. -->
-        <View class="switch-row">
-          <Text class="switch-label">avoid keyboard</Text>
-          <Switch
-            testID="angular-kav-switch"
-            [(value)]="kavEnabled"
-            [trackColor]="switchTrackColor"
-          />
-        </View>
-        <KeyboardAvoidingView
-          [behavior]="Platform.OS === 'ios' ? 'padding' : 'height'"
-          [enabled]="kavEnabled"
-        >
-          <TextInput
-            testID="angular-email-input"
-            autoComplete="email"
-            inputMode="email"
-            enterKeyHint="done"
-            placeholder="email — focus me near the bottom…"
-            placeholderTextColor="#6b7280"
-            class="text-input"
-          />
-        </KeyboardAvoidingView>
-
-        <Image [src]="angularLogoUri" alt="Angular logo" class="logo-image" />
-
-        <View class="bottom-card">
-          <Text class="bottom-text">↑ you scrolled to the bottom</Text>
-        </View>
-
-        <Pressable
-          testID="angular-open-modal"
-          (press)="openModal()"
-          class="modal-trigger"
-          accessibilityLabel="Open Angular modal"
-        >
-          <Text class="counter-text">open modal</Text>
-        </Pressable>
-        <Modal
-          testID="angular-modal"
-          [visible]="modalVisible"
-          animationType="fade"
-          [transparent]="true"
-          (requestClose)="closeModal()"
-        >
-          <View testID="angular-modal-card" class="modal-card">
-            <Text class="title">Angular Modal</Text>
-            <Text class="body">
-              Committed through the same Fabric childSet from the Angular
-              adapter.
-            </Text>
-            <Pressable
-              testID="angular-close-modal"
-              (press)="closeModal()"
-              class="modal-trigger"
-              accessibilityLabel="Close Angular modal"
-            >
-              <Text class="counter-text">close</Text>
-            </Pressable>
-          </View>
-        </Modal>
-
-        <!-- createPortal: moves the toast card OUT of this scroll content and INTO the
-            overlay-host View rendered as a sibling of ScrollView below — same surface, so it
-            repaints on the ONE change-detection pass this tree already runs. *portal is a
-            structural directive, same idiom as *ngIf: it sits directly on the content, no
-            separate <ng-template>/[content] indirection. -->
-        <Pressable
-          testID="angular-toast-open"
-          (press)="showToast()"
-          class="modal-trigger"
-          accessibilityLabel="Show toast via createPortal"
-        >
-          <Text class="counter-text">Show toast (createPortal)</Text>
-        </Pressable>
-        @if (toastVisible) {
-          <View
-            *portal="overlayHost"
-            testID="angular-toast-card"
-            class="toast-card"
-          >
-            <Text class="toast-text">Ported via createPortal ✦</Text>
-            <Pressable
-              testID="angular-toast-dismiss-btn"
-              (press)="dismissToast()"
-              class="modal-trigger"
-              accessibilityLabel="Dismiss toast"
-            >
-              <Text class="counter-text">Dismiss</Text>
-            </Pressable>
-          </View>
-        }
-
-        <!-- createTunnel: no ref, no target node — *tunnelIn sits directly on the content
-            (same structural-directive idiom as *portal above); tunnel-out (rendered in the
-            overlay host below) reads it back through its OWN normal render, wherever that
-            happens to be mounted, even a different mounted surface entirely. -->
-        <Pressable
-          testID="angular-tunnel-toast-open"
-          (press)="showTunnelToast()"
-          class="modal-trigger"
-          accessibilityLabel="Show toast via createTunnel"
-        >
-          <Text class="counter-text">Show toast (createTunnel)</Text>
-        </Pressable>
-        @if (tunnelToastVisible) {
-          <View
-            *tunnelIn="overlayTunnel"
-            testID="angular-tunnel-toast-card"
-            class="toast-card"
-          >
-            <Text class="toast-text">Ported via createTunnel ✦</Text>
-            <Pressable
-              testID="angular-tunnel-toast-dismiss-btn"
-              (press)="dismissTunnelToast()"
-              class="modal-trigger"
-              accessibilityLabel="Dismiss tunnel toast"
-            >
-              <Text class="counter-text">Dismiss</Text>
-            </Pressable>
-          </View>
-        }
-
-        <ImageBackground
-          testID="angular-image-bg"
-          [src]="angularLogoUri"
-          alt="Angular image background"
-          resizeMode="cover"
-          class="image-background"
-          imageStyle="image-background-image"
-        >
-          <Text testID="angular-image-bg-label" class="image-background-label">
-            Angular children paint on top of the image
-          </Text>
-        </ImageBackground>
-      </ScrollView>
-
-      <!-- The portal target: a persistent, empty View sitting above the scroll content.
-          pointerEvents="box-none" lets touches pass through everywhere except an actual
-          ported child (the toast card). Rendered here — a sibling of ScrollView, same
-          surface — so createPortal above can reach it via its exported ViewContainerRef;
-          createTunnel's Out below works identically wherever it's mounted. -->
-      <View
-        testID="angular-overlay-host"
-        portalOutlet
-        #overlayHost="portalOutlet"
-        pointerEvents="box-none"
-        class="overlay-host"
-      >
-        <tunnel-out [tunnel]="overlayTunnel" />
-      </View>
-    </SafeAreaView>
+    <Stack #nav initialRouteName="Menu">
+      <ng-template symbioteScreen name="Menu" [component]="menuScreen" [options]="menuOptions"></ng-template>
+      <ng-template symbioteScreen name="Canary" [component]="canaryScreen" [options]="canaryOptions"></ng-template>
+      <ng-template symbioteScreen name="Details" [component]="detailsScreen" [options]="detailsOptions"></ng-template>
+      <ng-template symbioteScreen name="HeaderOptions" [component]="headerOptionsScreen" [options]="headerOptionsOptions"></ng-template>
+      <ng-template symbioteScreen name="SheetDemo" [component]="sheetDemoScreen" [options]="sheetDemoOptions"></ng-template>
+      <ng-template symbioteScreen name="TabsDemo" [component]="tabsDemoScreen" [options]="tabsDemoOptions"></ng-template>
+      <ng-template symbioteScreen name="DrawerDemo" [component]="drawerDemoScreen" [options]="drawerDemoOptions"></ng-template>
+      <ng-template symbioteScreen name="NestedNavigators" [component]="nestedNavigatorsScreen" [options]="nestedNavigatorsOptions"></ng-template>
+      <ng-template symbioteScreen name="HooksDemo" [component]="hooksDemoScreen" [options]="hooksDemoOptions"></ng-template>
+      <ng-template symbioteScreen name="DeepLinking" [component]="deepLinkingScreen" [options]="deepLinkingOptions"></ng-template>
+      <ng-template symbioteScreen name="StatePersistence" [component]="statePersistenceScreen" [options]="statePersistenceOptions"></ng-template>
+    </Stack>
   `,
 })
-export class AppComponent implements OnInit, OnDestroy {
-  private readonly windowDimensions = inject(WindowDimensionsService)
-    .dimensions;
-  private readonly colorScheme = inject(ColorSchemeService).colorScheme;
-  private readonly changeDetector = inject(ChangeDetectorRef);
+export class AppComponent implements OnInit, AfterViewInit {
+  @ViewChild('nav') private readonly nav!: Stack;
+  private readonly injector = inject(Injector);
 
-  readonly Platform = Platform;
-  readonly angularLogoUri = ANGULAR_LOGO_URI;
-  readonly chips = chips;
-  readonly switchTrackColor = { false: '#334155', true: '#dd0031' };
-  readonly mvcpConfig = { minIndexForVisible: 0 };
-  readonly platformHairlineStyle = { borderTopWidth: StyleSheet.hairlineWidth };
+  readonly menuScreen = MenuScreen;
+  readonly canaryScreen = CanaryScreen;
+  readonly detailsScreen = DetailsScreen;
+  readonly headerOptionsScreen = HeaderOptionsScreen;
+  readonly sheetDemoScreen = SheetDemoScreen;
+  readonly tabsDemoScreen = TabsDemoScreen;
+  readonly drawerDemoScreen = DrawerDemoScreen;
+  readonly nestedNavigatorsScreen = NestedNavigatorsScreen;
+  readonly hooksDemoScreen = HooksDemoScreen;
+  readonly deepLinkingScreen = DeepLinkingScreen;
+  readonly statePersistenceScreen = StatePersistenceScreen;
 
-  count = 0;
-  name = '';
-  spinning = true;
-  volume = 0.5;
-  refreshing = false;
-  keyboardHeight = 0;
-  statusBarHidden = false;
-  darkStatusBar = false;
-  statusBarRed = false;
-  statusBarTranslucent = false;
-  modalVisible = false;
-  toastVisible = false;
-  tunnelToastVisible = false;
-  readonly overlayTunnel = overlayTunnel;
-  kavEnabled = true;
-  appState = AppState.currentState ?? 'unknown';
-  mvcpHead = 0;
-  mvcpItems: IMvcpItem[] = Array.from({ length: 20 }, (_value, index) => ({
-    id: `row-${index}`,
-    label: `item ${index}`,
-  }));
-  retentionMove = { dx: 0, dy: 0 };
-  // 0..5, so the keyed loop matches the other canaries' index-keyed 6-row scroll demo.
-  readonly scrollRows = Array.from({ length: 6 }, (_value, index) => index);
-
-  // native-driver scroll value: Animated.event attaches it on the UI thread, so the header
-  // opacity/translateY are driven without a JS frame per scroll tick.
-  private readonly parityScrollY = new Animated.Value(0);
-  readonly parityHeaderOpacity = this.parityScrollY.interpolate({
-    inputRange: [0, 120],
-    outputRange: [1, 0.12],
-    extrapolate: 'clamp',
-  });
-  readonly parityHeaderTranslateY = this.parityScrollY.interpolate({
-    inputRange: [0, 120],
-    outputRange: [0, -16],
-    extrapolate: 'clamp',
-  });
-  readonly onParityScroll = Animated.event(
-    [{ nativeEvent: { contentOffset: { y: this.parityScrollY } } }],
-    { useNativeDriver: true },
-  );
-  // STABLE object references for [style]/[animatedProps], mirroring AnimatedParityDemo's
-  // [animatedProps]="panResponder.panHandlers". A fresh object literal written directly in the
-  // template re-evaluates to a new reference on every change-detection pass of this root
-  // component (which every press anywhere in the app triggers via markForCheck bubbling to
-  // root), so the Animated wrapper's ngOnChanges fired constantly, tearing down and
-  // re-attaching its native binding on every unrelated interaction elsewhere in the app
-  // instead of only reacting to the scroll itself.
-  readonly parityHeaderStyle = {
-    opacity: this.parityHeaderOpacity,
-    transform: [{ translateY: this.parityHeaderTranslateY }],
-  };
-  readonly scrollAnimatedProps = {
-    onScroll: this.onParityScroll,
-    scrollEventThrottle: 16,
+  readonly menuOptions: IAngularScreenOptions = {
+    title: 'Navigation Demos',
+    headerTranslucent: true,
+    headerTitleColor: '#ffffff',
+    headerStyle: DARK_HEADER_STYLE,
+    headerUserInterfaceStyle: 'dark',
   };
 
-  get volumePercent(): number {
-    return Math.round(this.volume * 100);
-  }
-
-  readonly increment = (): void => {
-    this.count += 1;
+  readonly canaryOptions: IAngularScreenOptions = {
+    title: 'Symbiote Canary',
+    headerShown: true,
+    headerTranslucent: true,
+    headerTintColor: LINE_COLOR.primitives,
+    headerTitleColor: '#ffffff',
+    headerStyle: DARK_HEADER_STYLE,
+    headerUserInterfaceStyle: 'dark',
   };
 
-  readonly onRefresh = (): void => {
-    this.refreshing = true;
-    this.changeDetector.detectChanges();
-    setTimeout(() => {
-      this.refreshing = false;
-      this.changeDetector.detectChanges();
-    }, REFRESH_MS);
+  readonly detailsOptions: IAngularScreenOptions = {
+    title: 'Navigation Demo',
+    headerTranslucent: true,
+    headerTintColor: LINE_COLOR.primitives,
+    headerTitleColor: '#ffffff',
+    headerStyle: DARK_HEADER_STYLE,
+    headerUserInterfaceStyle: 'dark',
+    // Edge-flicker investigation experiment (see ../react/App.tsx's matching comment): 'default'
+    // resolved to an ~480ms native transition (measured via dlog). Explicit values here to check
+    // whether pinning stackAnimation/transitionDuration changes the artifact's presence/character.
+    stackAnimation: 'slide_from_right',
+    transitionDuration: 300,
   };
 
-  readonly toggleStatusBarHidden = (): void => {
-    const next = !this.statusBarHidden;
-    this.statusBarHidden = next;
-    StatusBar.setHidden(next, 'fade');
+  readonly headerOptionsOptions = headerOptionsScreenOptions;
+  readonly sheetDemoOptions = sheetDemoScreenOptions;
+
+  readonly tabsDemoOptions: IAngularScreenOptions = {
+    title: 'Tabs Demo',
+    headerShown: true,
+    headerTintColor: LINE_COLOR.structure,
+    headerTranslucent: true,
+    headerTitleColor: '#ffffff',
+    headerStyle: DARK_HEADER_STYLE,
+    headerUserInterfaceStyle: 'dark',
   };
 
-  readonly toggleStatusBarStyle = (): void => {
-    const next = !this.darkStatusBar;
-    this.darkStatusBar = next;
-    StatusBar.setBarStyle(next ? 'dark-content' : 'light-content', true);
+  readonly drawerDemoOptions: IAngularScreenOptions = {
+    title: 'Drawer Demo',
+    headerShown: true,
+    headerTintColor: LINE_COLOR.structure,
+    headerTranslucent: true,
+    headerTitleColor: '#ffffff',
+    headerStyle: DARK_HEADER_STYLE,
+    headerUserInterfaceStyle: 'dark',
   };
 
-  readonly toggleStatusBarRed = (): void => {
-    const next = !this.statusBarRed;
-    this.statusBarRed = next;
-    StatusBar.setBackgroundColor(next ? '#dd0031' : '#111827', true);
+  readonly nestedNavigatorsOptions: IAngularScreenOptions = {
+    title: 'Nested Navigators',
+    headerShown: true,
+    headerTintColor: LINE_COLOR.structure,
+    headerTranslucent: true,
+    headerTitleColor: '#ffffff',
+    headerStyle: DARK_HEADER_STYLE,
+    headerUserInterfaceStyle: 'dark',
   };
 
-  readonly toggleStatusBarTranslucent = (): void => {
-    const next = !this.statusBarTranslucent;
-    this.statusBarTranslucent = next;
-    StatusBar.setTranslucent(next);
+  readonly hooksDemoOptions: IAngularScreenOptions = {
+    title: 'Hooks Demo',
+    headerShown: true,
+    headerTintColor: LINE_COLOR.introspection,
+    headerTranslucent: true,
+    headerTitleColor: '#ffffff',
+    headerStyle: DARK_HEADER_STYLE,
+    headerUserInterfaceStyle: 'dark',
   };
 
-  readonly onShare = (): void => {
-    void Share.share({
-      message: 'Sent from symbiote Angular',
-      url: 'https://angular.dev',
-    }).catch(() => undefined);
+  readonly deepLinkingOptions: IAngularScreenOptions = {
+    title: 'Deep Linking',
+    headerShown: true,
+    headerTintColor: LINE_COLOR.routing,
+    headerTranslucent: true,
+    headerTitleColor: '#ffffff',
+    headerStyle: DARK_HEADER_STYLE,
+    headerUserInterfaceStyle: 'dark',
   };
 
-  readonly onAlert = (): void => {
-    Alert.alert('symbiote', 'Angular reached the native AlertManager.', [
-      { text: 'Cancel', style: 'cancel' },
-      { text: 'Vibrate', onPress: () => Vibration.vibrate() },
-    ]);
+  readonly statePersistenceOptions: IAngularScreenOptions = {
+    title: 'State Persistence',
+    headerShown: true,
+    headerTintColor: LINE_COLOR.routing,
+    headerTranslucent: true,
+    headerTitleColor: '#ffffff',
+    headerStyle: DARK_HEADER_STYLE,
+    headerUserInterfaceStyle: 'dark',
   };
-
-  readonly onActionSheet = (): void => {
-    ActionSheetIOS.showActionSheetWithOptions(
-      { options: ['Share', 'Vibrate', 'Cancel'], cancelButtonIndex: 2 },
-      (index: number) => {
-        if (index === 0) this.onShare();
-        if (index === 1) Vibration.vibrate();
-      },
-    );
-  };
-
-  readonly onOpenUrl = (): void => {
-    void Linking.openURL('https://angular.dev').catch(() => undefined);
-  };
-
-  // nativeEvent is a framework-agnostic Record<string, unknown>, so a numeric field
-  // (locationX/locationY…) arrives untyped, narrow it here instead of casting.
-  private nativeNumber(event: ISymbioteEvent, key: string): number {
-    const value = event.nativeEvent[key];
-    return typeof value === 'number' ? value : 0;
-  }
-
-  readonly onRetentionMove = (event: ISymbioteEvent): void => {
-    this.retentionMove = {
-      dx: Math.round(this.nativeNumber(event, 'locationX')),
-      dy: Math.round(this.nativeNumber(event, 'locationY')),
-    };
-  };
-
-  // Pressable's `style` is a FUNCTION of press state (RN's own idiom) — Angular's [class]
-  // binding only accepts a plain string/array/object, not a callback, so this stays a full
-  // JS object rather than splitting a class out (same reasoning as pressableStyle below).
-  readonly retentionStyle = ({ pressed }: { pressed: boolean }) => ({
-    height: 64,
-    borderRadius: 14,
-    alignItems: 'center' as const,
-    justifyContent: 'center' as const,
-    backgroundColor: pressed ? '#3b0b18' : '#181f33',
-  });
-
-  readonly freezeJsScroll = (): void => {
-    const until = Date.now() + 3000;
-    while (Date.now() < until) {
-      // Intentionally block the JS thread: no JS frame can run here, so any header motion
-      // during the freeze must be coming from the native driver.
-    }
-  };
-
-  readonly onVibrate = (): void => {
-    Vibration.vibrate();
-  };
-
-  readonly openModal = (): void => {
-    this.modalVisible = true;
-  };
-
-  readonly closeModal = (): void => {
-    this.modalVisible = false;
-  };
-
-  readonly showToast = (): void => {
-    this.toastVisible = true;
-  };
-
-  readonly dismissToast = (): void => {
-    this.toastVisible = false;
-  };
-
-  readonly showTunnelToast = (): void => {
-    this.tunnelToastVisible = true;
-  };
-
-  readonly dismissTunnelToast = (): void => {
-    this.tunnelToastVisible = false;
-  };
-
-  readonly chipKeyExtractor = (item: IChip): string => item.id;
-
-  readonly chipItemLayout = (
-    _data: unknown,
-    index: number,
-  ): {
-    length: number;
-    offset: number;
-    index: number;
-  } => ({
-    length: CHIP_WIDTH + CHIP_GAP,
-    offset: (CHIP_WIDTH + CHIP_GAP) * index,
-    index,
-  });
-
-  readonly mvcpKeyExtractor = (item: IMvcpItem): string => item.id;
-
-  readonly chipColor = (item: unknown): string =>
-    this.isChip(item) ? item.color : '#dd0031';
-
-  readonly chipIndex = (item: unknown): number | string =>
-    this.isChip(item) ? item.index : '?';
-
-  // width / marginRight stay dynamic — they reference the CHIP_WIDTH/CHIP_GAP script consts,
-  // which a CSS selector has no way to read (the rest of chip-card's look lives in App.css).
-  readonly chipStyle = (item: unknown) => ({
-    width: CHIP_WIDTH,
-    marginRight: CHIP_GAP,
-    backgroundColor: this.chipColor(item),
-  });
-
-  readonly mvcpLabel = (item: unknown): string =>
-    this.isMvcpItem(item) ? item.label : '';
-
-  readonly prependMvcpItems = (): void => {
-    this.mvcpHead -= 5;
-    const head = this.mvcpHead;
-    const prepended = Array.from({ length: 5 }, (_value, index) => {
-      const n = head + index;
-      return { id: `row-${n}`, label: `item ${n}` };
-    });
-    this.mvcpItems = [...prepended, ...this.mvcpItems];
-  };
-
-  // Same style-is-a-function reasoning as retentionStyle above — stays a full JS object.
-  readonly pressableStyle = ({ pressed }: { pressed: boolean }) => ({
-    alignSelf: 'flex-start' as const,
-    borderRadius: 14,
-    borderWidth: 1,
-    paddingHorizontal: 18,
-    paddingVertical: 12,
-    backgroundColor: pressed ? '#3b0b18' : '#181f33',
-    borderColor: pressed ? '#ff6b8a' : '#dd0031',
-  });
-
-  get platformText(): string {
-    return (
-      `${Platform.OS} ${Platform.Version}` +
-      `${Platform.isPad ? ' · iPad' : ''}` +
-      ` · ${Platform.select({ ios: 'native ios', android: 'native android', default: '?' })}` +
-      ` · hairline ${StyleSheet.hairlineWidth.toFixed(3)}`
-    );
-  }
-
-  get dimensionsText(): string {
-    const window = this.windowDimensions();
-    return (
-      `${Math.round(window.width)}×${Math.round(window.height)} @${PixelRatio.get()}x` +
-      ` · ${this.colorScheme() ?? 'no-scheme'} · ${this.appState}`
-    );
-  }
 
   ngOnInit(): void {
     hide();
   }
 
-  ngOnDestroy(): void {
-    this.subscriptions.forEach(subscription => subscription.remove());
+  // injectLinkingIntegration needs `inject(DestroyRef)`, so it must run inside an injection
+  // context - plain lifecycle-hook bodies aren't one (only field initializers/constructors are),
+  // hence runInInjectionContext. `nav` (the Stack component instance itself, which implements
+  // INavigatorHandle directly) is already stable by the time @ViewChild resolves it, so
+  // ngAfterViewInit - the first hook Angular guarantees @ViewChild queries are populated - is the
+  // earliest safe call site. Angular's own twin of React's App.tsx LinkingRunner-mounted-once-handle-is-real
+  // dance: there, a plain ref only attaches during commit, so a child component gates the hook call
+  // until a non-null handle exists; here @ViewChild + runInInjectionContext achieves the same gating
+  // without needing a second component.
+  ngAfterViewInit(): void {
+    runInInjectionContext(this.injector, () => {
+      injectLinkingIntegration(APP_LINKING_CONFIG, this.nav);
+    });
   }
-
-  private isChip(item: unknown): item is IChip {
-    return (
-      typeof item === 'object' &&
-      item !== null &&
-      'color' in item &&
-      typeof item.color === 'string' &&
-      'index' in item &&
-      typeof item.index === 'number'
-    );
-  }
-
-  private isMvcpItem(item: unknown): item is IMvcpItem {
-    return (
-      typeof item === 'object' &&
-      item !== null &&
-      'label' in item &&
-      typeof item.label === 'string'
-    );
-  }
-
-  private readonly handleKeyboardShow = (payload: unknown): void => {
-    const height =
-      typeof payload === 'object' &&
-      payload !== null &&
-      'endCoordinates' in payload &&
-      typeof payload.endCoordinates === 'object' &&
-      payload.endCoordinates !== null &&
-      'height' in payload.endCoordinates &&
-      typeof payload.endCoordinates.height === 'number'
-        ? payload.endCoordinates.height
-        : 0;
-    this.keyboardHeight = height;
-  };
-
-  private readonly handleKeyboardHide = (): void => {
-    this.keyboardHeight = 0;
-  };
-
-  private readonly handleAppStateChange = (...args: unknown[]): void => {
-    const next = args[0];
-    if (typeof next === 'string') this.appState = next;
-  };
-
-  private readonly subscriptions: Array<{ remove(): void }> = [
-    Keyboard.addListener(KEYBOARD_EVENT.didShow, this.handleKeyboardShow),
-    Keyboard.addListener(KEYBOARD_EVENT.didHide, this.handleKeyboardHide),
-    AppState.addEventListener('change', this.handleAppStateChange),
-  ];
 }

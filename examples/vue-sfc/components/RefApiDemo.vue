@@ -7,7 +7,8 @@
 -->
 <script setup lang="ts">
 import { ref, shallowRef, onMounted } from 'vue'
-import { View, Text, Button, findNodeHandle, type IHostInstance } from '@symbiote-native/vue'
+import { View, Text, findNodeHandle, type IHostInstance } from '@symbiote-native/vue'
+import ActionButton from './ActionButton.vue'
 
 // shallowRef, NOT ref: the engine node is held by IDENTITY so measure()/setNativeProps()
 // hit the engine's WeakMap mirror (a plain ref wraps it in a reactive Proxy → mirror miss).
@@ -48,44 +49,11 @@ const onFlash = (): void => {
     <Text testID="measure-frame" class="info-text">{{ `frame: ${frame}` }}</Text>
     <View class="row">
       <View class="flex1">
-        <Button testID="measure-btn" title="Measure" @press="onMeasure" color="#42b883" />
+        <ActionButton testID="measure-btn" title="Measure" :onPress="onMeasure" color="#42b883" />
       </View>
       <View class="flex1">
-        <Button testID="flash-btn" title="Flash (setNativeProps)" @press="onFlash" color="#f6ad55" />
+        <ActionButton title="Flash (setNativeProps)" :onPress="onFlash" color="#f6ad55" />
       </View>
     </View>
   </View>
 </template>
-
-<style scoped>
-.section {
-  gap: 12px;
-}
-.section-label {
-  color: #3b5266;
-  font-size: 13px;
-}
-.info-text {
-  color: #cbd5e1;
-  font-size: 14px;
-}
-.row {
-  flex-direction: row;
-  gap: 12px;
-}
-.flex1 {
-  flex: 1;
-}
-.ref-box {
-  height: 56px;
-  border-radius: 12px;
-  background-color: #42b883;
-  align-items: center;
-  justify-content: center;
-}
-.ref-box-text {
-  color: #1b2a36;
-  font-size: 14px;
-  font-weight: bold;
-}
-</style>

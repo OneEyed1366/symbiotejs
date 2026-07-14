@@ -14,7 +14,6 @@ import {
   View,
   Text,
   TextInput,
-  Button,
   FlatList,
   SectionList,
   Keyboard,
@@ -23,6 +22,7 @@ import {
   type IFlatListHandle,
   type ISection,
 } from '@symbiote-native/vue'
+import ActionButton from './ActionButton.vue'
 
 const PARITY_ROW_H = 30
 const parityRows = Array.from({ length: 30 }, (_unused, index) => ({ id: `pr-${index}`, n: index }))
@@ -54,42 +54,38 @@ const focusTitle = (): void => {
   }
 }
 
-// Every static look lives in the <style scoped> block below. `parityRow`'s height
-// references the script const PARITY_ROW_H, which a CSS selector has no way to read —
-// that one property stays dynamic via :style alongside the static `class="parity-row"`
-// for justifyContent/padding.
+// `parityRow`'s height references the script const PARITY_ROW_H, which a CSS selector has
+// no way to read — that one property stays dynamic via :style alongside the static
+// `class="parity-row"` (defined in App.css) for justifyContent/padding.
 const parityRowHeightStyle = { height: PARITY_ROW_H }
 </script>
 
 <template>
   <View class="section">
-    <Text testID="panel-title" ref="titleRef" class="section-label">Parity checks · longPress · dismiss · animated scroll · sticky · a11y focus</Text>
+    <Text ref="titleRef" class="section-label">Parity checks · longPress · dismiss · animated scroll · sticky · a11y focus</Text>
 
     <!-- #10 Text.onLongPress synthesis: hold ~0.5s (suppresses tap) vs quick tap -->
     <Text
-      testID="long-press-msg"
       @long-press="() => { longPressMsg = 'long press! (tap was suppressed)' }"
       @press="() => { longPressMsg = 'tap' }"
       class="long-press-row">{{ longPressMsg }}</Text>
 
     <!-- #15 Keyboard.dismiss: blurs whatever input holds focus without needing a ref -->
     <TextInput
-      testID="dismiss-focus-input"
       placeholder="focus me…"
-      placeholder-text-color="#3b5266"
+      placeholder-text-color="#41506a"
       @focus="() => { dismissMsg = 'keyboard up — tap Hide keyboard' }"
       @blur="() => { dismissMsg = 'blurred (keyboard down)' }"
       class="focus-input"
     />
-    <Text testID="dismiss-msg" class="note-text">{{ dismissMsg }}</Text>
-    <Button testID="hide-keyboard-btn" title="Hide keyboard" @press="() => Keyboard.dismiss()" color="#42b883" />
+    <Text class="note-text">{{ dismissMsg }}</Text>
+    <ActionButton title="Hide keyboard" :onPress="() => Keyboard.dismiss()" color="#42b883" />
 
     <!-- #12 animated VirtualizedList scroll: smooth (native command) vs instant.
          A fixed height with no wrapper: the vertical ScrollView clips to its own
          frame (overflow:'scroll' base, like RN), so rows stay inside the box on iOS too. -->
     <Text class="section-label">FlatList · animated scrollToOffset</Text>
     <FlatList
-      testID="parity-flat-list"
       ref="listRef"
       :data="parityRows"
       :key-extractor="keyExtractor"
@@ -104,10 +100,10 @@ const parityRowHeightStyle = { height: PARITY_ROW_H }
     </FlatList>
     <View class="row">
       <View class="flex1">
-        <Button testID="parity-scroll-down-btn" title="Scroll ▼ animated" @press="scrollDown" color="#42b883" />
+        <ActionButton title="Scroll ▼ animated" :onPress="scrollDown" color="#42b883" />
       </View>
       <View class="flex1">
-        <Button testID="parity-scroll-top-btn" title="Top · instant" @press="scrollTop" color="#42b883" />
+        <ActionButton title="Top · instant" :onPress="scrollTop" color="#42b883" />
       </View>
     </View>
 
@@ -134,73 +130,10 @@ const parityRowHeightStyle = { height: PARITY_ROW_H }
 
     <!-- #14 a11y focus: node-based sendAccessibilityEvent routes through the Fabric
          slot on both platforms (enable TalkBack/VoiceOver to feel the focus jump) -->
-    <Button testID="focus-title-btn" title="Focus the panel title (a11y)" @press="focusTitle" color="#42b883" />
+    <ActionButton title="Focus the panel title (a11y)" :onPress="focusTitle" color="#42b883" />
   </View>
 </template>
 
-<style scoped>
-.section {
-  gap: 12px;
-}
-.section-label {
-  color: #3b5266;
-  font-size: 13px;
-}
-.info-text {
-  color: #cbd5e1;
-  font-size: 14px;
-}
-.note-text {
-  color: #cbd5e1;
-  font-size: 13px;
-}
-.row {
-  flex-direction: row;
-  gap: 12px;
-}
-.flex1 {
-  flex: 1;
-}
-.long-press-row {
-  color: #cbd5e1;
-  font-size: 15px;
-  padding: 12px;
-  border-radius: 10px;
-  background-color: #2c3e50;
-}
-.focus-input {
-  color: #e2e8f0;
-  padding: 12px;
-  border-radius: 10px;
-  background-color: #22323f;
-  border-width: 1px;
-  border-color: #369870;
-}
-.parity-list {
-  height: 120px;
-  border-radius: 10px;
-  background-color: #22323f;
-}
-/* height stays dynamic (:style="parityRowHeightStyle") — it references the script
-     const PARITY_ROW_H, which a CSS selector has no way to read */
-.parity-row {
-  justify-content: center;
-  padding-left: 12px;
-  padding-right: 12px;
-}
-.section-list {
-  height: 200px;
-  border-radius: 10px;
-  background-color: #22323f;
-}
-.section-header {
-  color: #1b2a36;
-  font-size: 13px;
-  font-weight: bold;
-  padding-top: 6px;
-  padding-bottom: 6px;
-  padding-left: 12px;
-  padding-right: 12px;
-  background-color: #42b883;
-}
-</style>
+<!-- No local <style> block here on purpose: every class this component references already
+     lives in App.css; :style="parityRowHeightStyle" stays inline because it reads the script
+     const PARITY_ROW_H, which a CSS selector has no way to reach. -->

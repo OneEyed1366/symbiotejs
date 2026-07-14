@@ -1,14 +1,5 @@
-.section {
-  gap: 12px;
-}
-.section-label {
-  color: #3b5266;
-  font-size: 13px;
-}
-.row {
-  flex-direction: row;
-  gap: 12px;
-}
+/* .section/.section-label/.row are the app-wide generic classes from App.css, not redeclared
+   here — see the style-registry-collisions rule. */
 /* background-color stays dynamic — systemBlue is PlatformColor(...), an opaque runtime
    value @symbiote-native/css-parser cannot express (App.ts's [style] binding) */
 .color-tile {
