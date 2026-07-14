@@ -29,7 +29,9 @@
   "files": [
     "src",
     "build",
-    "build-ngc"
+    "build-ngc",
+    "react-native.config.cjs",
+    "symbiote-navigation.podspec"
   ],
   "publishConfig": {
     "access": "public",
