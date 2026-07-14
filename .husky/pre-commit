@@ -1,1 +1,3 @@
+pnpm run sync:release-config
+git add .github/workflows/release.yml package.json
 pnpm exec lint-staged
