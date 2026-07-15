@@ -52,21 +52,28 @@ import {
   INVERTED_X_STYLE,
   INVERTED_Y_STYLE,
   NO_CONTENT_LENGTH_SENT,
+  NO_INDEX,
   averageMeasuredLength,
   buildListPlan,
   buildOffsets,
   buildViewabilityPairs,
   computeEndReached,
+  computeMvcpAdjustment,
   computeStartReached,
   computeViewableSet,
   computeWindow,
+  decideEdgeReached,
   diffViewable,
   highestMeasuredIndex,
+  indexOfItem,
+  isSeparatorGapInRange,
   maxMinimumViewTime,
+  offsetForEnd,
   offsetForIndex,
   readLayoutLength,
   readScrollOffset,
   resolveAccessibilityProps,
+  resolveItemKey,
   throttleWindow,
   type IAccessibilityProps,
   type IAccessibilityStateValue,
@@ -629,7 +636,7 @@ export class VirtualizedList<ItemT = unknown>
 
   private keyFor = (index: number): string => {
     const item = this.getItem(this.data, index);
-    return this.keyExtractor ? this.keyExtractor(item, index) : String(index);
+    return resolveItemKey(item, index, this.keyExtractor);
   };
 
   // Once-per-CD recompute, BEFORE the template bindings are read (so the freshly computed
@@ -880,7 +887,7 @@ export class VirtualizedList<ItemT = unknown>
 
   private mergeSeparator(gapIndex: number, patch: Partial<ISeparatorProps<unknown>>): void {
     const count = this.metricsCore.count;
-    if (gapIndex < FIRST_INDEX || gapIndex > count - 2) return;
+    if (!isSeparatorGapInRange(gapIndex, count)) return;
     this.separatorOverrides.set(gapIndex, { ...this.separatorOverrides.get(gapIndex), ...patch });
     this.cdr.markForCheck();
   }
@@ -942,21 +949,20 @@ export class VirtualizedList<ItemT = unknown>
 
   scrollToItem(params: { item: unknown; animated?: boolean; viewPosition?: number }): void {
     const count = this.metricsCore.count;
-    for (let index = FIRST_INDEX; index < count; index += 1) {
-      if (this.getItem(this.data, index) === params.item) {
-        this.scrollToPixel(
-          this.offsetForIndexLocal(index, params.viewPosition ?? FIRST_INDEX, EMPTY_OFFSET),
-          params.animated ?? true,
-        );
-        return;
-      }
+    const index = indexOfItem(this.data, this.getItem, count, params.item);
+    if (index === NO_INDEX) {
+      dlog('Angular VirtualizedList scrollToItem: item not found');
+      return;
     }
-    dlog('Angular VirtualizedList scrollToItem: item not found');
+    this.scrollToPixel(
+      this.offsetForIndexLocal(index, params.viewPosition ?? FIRST_INDEX, EMPTY_OFFSET),
+      params.animated ?? true,
+    );
   }
 
   scrollToEnd(params?: { animated?: boolean }): void {
     this.scrollToPixel(
-      Math.max(EMPTY_OFFSET, this.metricsCore.total - this.viewportLength),
+      offsetForEnd(this.metricsCore.total, this.viewportLength),
       params?.animated ?? true,
     );
   }
@@ -1044,16 +1050,20 @@ export class VirtualizedList<ItemT = unknown>
       this.viewportLength,
       this.onEndReachedThresholdValue,
     );
-    const lastCellRendered = m.last === m.count - 1;
-    if (withinThreshold && lastCellRendered && this.sentEndForContentLength !== m.total) {
-      this.sentEndForContentLength = m.total;
+    const { shouldFire, nextSentForContentLength } = decideEdgeReached({
+      withinThreshold,
+      edgeCellRendered: m.last === m.count - 1,
+      total: m.total,
+      sentForContentLength: this.sentEndForContentLength,
+    });
+    this.sentEndForContentLength = nextSentForContentLength;
+    if (shouldFire) {
       dlog(
         `Angular VirtualizedList endReached distanceFromEnd=${distanceFromEnd} ` +
           `(last=${m.last} of ${m.count}, contentLength=${m.total})`,
       );
       this.endReached.emit({ distanceFromEnd });
     }
-    if (!withinThreshold) this.sentEndForContentLength = NO_CONTENT_LENGTH_SENT;
   }
 
   // startReached: the top-edge twin of endReached.
@@ -1065,16 +1075,20 @@ export class VirtualizedList<ItemT = unknown>
       this.viewportLength,
       this.onStartReachedThresholdValue,
     );
-    const firstCellRendered = m.first === FIRST_INDEX;
-    if (withinThreshold && firstCellRendered && this.sentStartForContentLength !== m.total) {
-      this.sentStartForContentLength = m.total;
+    const { shouldFire, nextSentForContentLength } = decideEdgeReached({
+      withinThreshold,
+      edgeCellRendered: m.first === FIRST_INDEX,
+      total: m.total,
+      sentForContentLength: this.sentStartForContentLength,
+    });
+    this.sentStartForContentLength = nextSentForContentLength;
+    if (shouldFire) {
       dlog(
         `Angular VirtualizedList startReached distanceFromStart=${distanceFromStart} ` +
           `(first=${m.first}, contentLength=${m.total})`,
       );
       this.startReached.emit({ distanceFromStart });
     }
-    if (!withinThreshold) this.sentStartForContentLength = NO_CONTENT_LENGTH_SENT;
   }
 
   // Viewability: recompute which rendered cells clear the threshold and, if the viewable set
@@ -1157,47 +1171,18 @@ export class VirtualizedList<ItemT = unknown>
   // (RN getDerivedStateFromProps).
   private effectMaintainVisibleContentPosition(): void {
     const m = this.metricsCore;
-    if (this.maintainVisibleContentPosition === undefined || m.count === FIRST_INDEX) {
-      this.firstVisibleKey = null;
-      return;
-    }
-    const minIndexForVisible = this.maintainVisibleContentPosition.minIndexForVisible;
-    const newFirstVisibleKey =
-      m.count > minIndexForVisible ? this.keyFor(minIndexForVisible) : null;
-    const prevKey = this.firstVisibleKey;
-
-    if (prevKey !== null && newFirstVisibleKey !== null && prevKey !== newFirstVisibleKey) {
-      let anchorIndex = -1;
-      for (let index = minIndexForVisible; index < m.count; index += 1) {
-        if (this.keyFor(index) === prevKey) {
-          anchorIndex = index;
-          break;
-        }
-      }
-      if (anchorIndex > minIndexForVisible) {
-        const spacerEnd = Math.min(anchorIndex, this.committedWindow.first);
-        const insertedExtent =
-          spacerEnd > minIndexForVisible
-            ? m.offsets[spacerEnd] - m.offsets[minIndexForVisible]
-            : EMPTY_OFFSET;
-        if (insertedExtent > EMPTY_OFFSET) {
-          const autoThreshold = this.maintainVisibleContentPosition.autoscrollToTopThreshold;
-          const anchoredNearTop = autoThreshold !== undefined && this.scrollOffset <= autoThreshold;
-          if (anchoredNearTop) {
-            dlog(
-              `Angular VirtualizedList MVCP autoscroll-to-top (offset=${this.scrollOffset} <= ${autoThreshold})`,
-            );
-            this.scrollToPixel(EMPTY_OFFSET, true);
-          } else {
-            dlog(
-              `Angular VirtualizedList MVCP adjust +${insertedExtent}px ` +
-                `(anchor "${prevKey}" moved ${minIndexForVisible}->${anchorIndex})`,
-            );
-            this.scrollToPixel(this.scrollOffset + insertedExtent, false);
-          }
-        }
-      }
-    }
-    this.firstVisibleKey = newFirstVisibleKey;
+    const { firstVisibleKey, action } = computeMvcpAdjustment({
+      minIndexForVisible: this.maintainVisibleContentPosition?.minIndexForVisible,
+      autoscrollToTopThreshold: this.maintainVisibleContentPosition?.autoscrollToTopThreshold,
+      count: m.count,
+      committedFirst: this.committedWindow.first,
+      offsets: m.offsets,
+      scrollOffset: this.scrollOffset,
+      prevFirstVisibleKey: this.firstVisibleKey,
+      keyFor: index => this.keyFor(index),
+    });
+    if (action.kind === 'autoscroll-top') this.scrollToPixel(EMPTY_OFFSET, true);
+    else if (action.kind === 'shift') this.scrollToPixel(action.offset, false);
+    this.firstVisibleKey = firstVisibleKey;
   }
 }

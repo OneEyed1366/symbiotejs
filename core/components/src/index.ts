@@ -284,8 +284,18 @@ export {
   diffViewable,
   maxMinimumViewTime,
   buildListPlan,
+  computeMvcpAdjustment,
+  resolveItemKey,
+  indexOfItem,
+  offsetForEnd,
+  isSeparatorGapInRange,
+  decideEdgeReached,
+  resolveStickySectionHeaders,
 } from './state/virtualized-list';
 export type {
+  IMvcpAction,
+  IMvcpAdjustmentParams,
+  IMvcpAdjustmentResult,
   ICellLayout,
   ISeparators,
   ISeparatorProps,

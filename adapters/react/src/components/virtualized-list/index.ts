@@ -44,20 +44,27 @@ import {
   INVERTED_X_STYLE,
   INVERTED_Y_STYLE,
   NO_CONTENT_LENGTH_SENT,
+  NO_INDEX,
   averageMeasuredLength,
   buildListPlan,
   buildOffsets,
   buildViewabilityPairs,
   computeEndReached,
+  computeMvcpAdjustment,
   computeStartReached,
   computeViewableSet,
   computeWindow,
+  decideEdgeReached,
   diffViewable,
   highestMeasuredIndex as findHighestMeasuredIndex,
+  indexOfItem,
+  isSeparatorGapInRange,
   maxMinimumViewTime,
+  offsetForEnd,
   offsetForIndex as resolveOffsetForIndex,
   readLayoutLength,
   readScrollOffset,
+  resolveItemKey,
   throttleWindow,
   type ICellLayout,
   type ISeparators,
@@ -374,17 +381,19 @@ export function VirtualizedList<ItemT>(
       viewportLength,
       onEndReachedThreshold,
     );
-    const lastCellRendered = last === count - 1;
-    if (withinThreshold && lastCellRendered && sentEndForContentLengthRef.current !== total) {
-      sentEndForContentLengthRef.current = total;
+    const decision = decideEdgeReached({
+      withinThreshold,
+      edgeCellRendered: last === count - 1,
+      total,
+      sentForContentLength: sentEndForContentLengthRef.current,
+    });
+    sentEndForContentLengthRef.current = decision.nextSentForContentLength;
+    if (decision.shouldFire) {
       dlog(
         `VirtualizedList onEndReached distanceFromEnd=${distanceFromEnd} ` +
           `(last=${last} of ${count}, contentLength=${total})`,
       );
       onEndReached({ distanceFromEnd });
-    }
-    if (!withinThreshold) {
-      sentEndForContentLengthRef.current = NO_CONTENT_LENGTH_SENT;
     }
   }, [onEndReached, onEndReachedThreshold, viewportLength, scrollOffset, total, last, count]);
 
@@ -396,17 +405,19 @@ export function VirtualizedList<ItemT>(
       viewportLength,
       onStartReachedThreshold,
     );
-    const firstCellRendered = first === FIRST_INDEX;
-    if (withinThreshold && firstCellRendered && sentStartForContentLengthRef.current !== total) {
-      sentStartForContentLengthRef.current = total;
+    const decision = decideEdgeReached({
+      withinThreshold,
+      edgeCellRendered: first === FIRST_INDEX,
+      total,
+      sentForContentLength: sentStartForContentLengthRef.current,
+    });
+    sentStartForContentLengthRef.current = decision.nextSentForContentLength;
+    if (decision.shouldFire) {
       dlog(
         `VirtualizedList onStartReached distanceFromStart=${distanceFromStart} ` +
           `(first=${first}, contentLength=${total})`,
       );
       onStartReached({ distanceFromStart });
-    }
-    if (!withinThreshold) {
-      sentStartForContentLengthRef.current = NO_CONTENT_LENGTH_SENT;
     }
   }, [onStartReached, onStartReachedThreshold, viewportLength, scrollOffset, total, first]);
 
@@ -523,7 +534,7 @@ export function VirtualizedList<ItemT>(
   // outside [0, count-2] has no separator, so the write is a no-op (RN bails the same way).
   const mergeSeparator = useCallback(
     (gapIndex: number, patch: Partial<ISeparatorProps<ItemT>>): void => {
-      if (gapIndex < FIRST_INDEX || gapIndex > count - 2) return;
+      if (!isSeparatorGapInRange(gapIndex, count)) return;
       const overrides = separatorOverridesRef.current;
       overrides.set(gapIndex, { ...overrides.get(gapIndex), ...patch });
       setSeparatorVersion(version => version + 1);
@@ -633,19 +644,18 @@ export function VirtualizedList<ItemT>(
         animated?: boolean;
         viewPosition?: number;
       }): void => {
-        for (let index = FIRST_INDEX; index < count; index += 1) {
-          if (getItem(data, index) === params.item) {
-            scrollToPixel(
-              offsetForIndex(index, params.viewPosition ?? FIRST_INDEX, EMPTY_OFFSET),
-              params.animated ?? true,
-            );
-            return;
-          }
+        const index = indexOfItem(data, getItem, count, params.item);
+        if (index === NO_INDEX) {
+          dlog('VirtualizedList scrollToItem: item not found');
+          return;
         }
-        dlog('VirtualizedList scrollToItem: item not found');
+        scrollToPixel(
+          offsetForIndex(index, params.viewPosition ?? FIRST_INDEX, EMPTY_OFFSET),
+          params.animated ?? true,
+        );
       },
       scrollToEnd: (params?: { animated?: boolean }): void => {
-        scrollToPixel(Math.max(EMPTY_OFFSET, total - viewportLength), params?.animated ?? true);
+        scrollToPixel(offsetForEnd(total, viewportLength), params?.animated ?? true);
       },
       flashScrollIndicators: (): void => {
         scrollViewRef.current?.flashScrollIndicators?.();
@@ -685,62 +695,26 @@ export function VirtualizedList<ItemT>(
   }, [initialScrollIndex, viewportLength, count, scrollToPixel, offsetForIndex]);
 
   const keyForIndex = useCallback(
-    (index: number): string => {
-      const item = getItem(data, index);
-      return keyExtractor ? keyExtractor(item, index) : String(index);
-    },
+    (index: number): string => resolveItemKey(getItem(data, index), index, keyExtractor),
     [getItem, data, keyExtractor],
   );
 
-  // maintainVisibleContentPosition JS anchor adjustment (RN getDerivedStateFromProps:715-768): the
-  // native MVCP cannot see prepended items above the window (they are collapsed into the leading
-  // SPACER), so we replicate the JS shift for exactly those. Runs in a layout effect so the
-  // correction lands before paint.
+  // maintainVisibleContentPosition: the pure decision lives in computeMvcpAdjustment (core); the
+  // adapter owns only the layout-effect timing (correction before paint) and the imperative scroll.
   useLayoutEffect(() => {
-    if (maintainVisibleContentPosition === undefined || count === FIRST_INDEX) {
-      firstVisibleKeyRef.current = null;
-      return;
-    }
-    const minIndexForVisible = maintainVisibleContentPosition.minIndexForVisible;
-    const newFirstVisibleKey = count > minIndexForVisible ? keyForIndex(minIndexForVisible) : null;
-    const prevKey = firstVisibleKeyRef.current;
-
-    if (prevKey !== null && newFirstVisibleKey !== null && prevKey !== newFirstVisibleKey) {
-      let anchorIndex = -1;
-      for (let index = minIndexForVisible; index < count; index += 1) {
-        if (keyForIndex(index) === prevKey) {
-          anchorIndex = index;
-          break;
-        }
-      }
-      if (anchorIndex > minIndexForVisible) {
-        // Native MVCP shifts in-window cells itself; the JS shift covers ONLY the inserted items
-        // in the leading SPACER (above the first rendered index). Counting the full inserted extent
-        // here would double-correct.
-        const spacerEnd = Math.min(anchorIndex, committedWindowRef.current.first);
-        const insertedExtent =
-          spacerEnd > minIndexForVisible
-            ? offsets[spacerEnd] - offsets[minIndexForVisible]
-            : EMPTY_OFFSET;
-        if (insertedExtent > EMPTY_OFFSET) {
-          const autoThreshold = maintainVisibleContentPosition.autoscrollToTopThreshold;
-          const anchoredNearTop = autoThreshold !== undefined && scrollOffset <= autoThreshold;
-          if (anchoredNearTop) {
-            dlog(
-              `VirtualizedList MVCP autoscroll-to-top (offset=${scrollOffset} <= ${autoThreshold})`,
-            );
-            scrollToPixel(EMPTY_OFFSET, true);
-          } else {
-            dlog(
-              `VirtualizedList MVCP adjust +${insertedExtent}px ` +
-                `(anchor "${prevKey}" moved ${minIndexForVisible}->${anchorIndex})`,
-            );
-            scrollToPixel(scrollOffset + insertedExtent, false);
-          }
-        }
-      }
-    }
-    firstVisibleKeyRef.current = newFirstVisibleKey;
+    const { firstVisibleKey, action } = computeMvcpAdjustment({
+      minIndexForVisible: maintainVisibleContentPosition?.minIndexForVisible,
+      autoscrollToTopThreshold: maintainVisibleContentPosition?.autoscrollToTopThreshold,
+      count,
+      committedFirst: committedWindowRef.current.first,
+      offsets,
+      scrollOffset,
+      prevFirstVisibleKey: firstVisibleKeyRef.current,
+      keyFor: keyForIndex,
+    });
+    if (action.kind === 'autoscroll-top') scrollToPixel(EMPTY_OFFSET, true);
+    else if (action.kind === 'shift') scrollToPixel(action.offset, false);
+    firstVisibleKeyRef.current = firstVisibleKey;
   }, [maintainVisibleContentPosition, count, keyForIndex, offsets, scrollOffset, scrollToPixel]);
 
   // ---- assemble the windowed child list ----------------------------------

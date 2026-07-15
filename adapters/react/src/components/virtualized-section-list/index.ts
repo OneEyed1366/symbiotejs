@@ -18,6 +18,7 @@ import {
 import { dlog, Platform, type ISymbioteEvent, type ISymbioteNode } from '@symbiote-native/engine';
 import {
   flattenSections,
+  resolveStickySectionHeaders,
   scrollLocationToFlatIndex,
   sectionEntryKey,
   unwrapEntryItem,
@@ -126,9 +127,11 @@ export function VirtualizedSectionList<ItemT>(
 
   // RN sticks section headers by default only on iOS; Android does not unless asked. headerIndices
   // are the flat positions of every section header; VirtualizedList forwards the in-window ones.
-  const stickyDefault = Platform.OS === 'ios';
-  const stickyEnabled = stickySectionHeadersEnabled ?? stickyDefault;
-  const stickyHeaderIndices = stickyEnabled ? headerIndices : undefined;
+  const stickyHeaderIndices = resolveStickySectionHeaders(
+    stickySectionHeadersEnabled,
+    headerIndices,
+    Platform.OS,
+  );
 
   // The handle reaches into the inner VirtualizedList to drive scrollToIndex.
   const listRef = useRef<IVirtualizedListHandle | null>(null);

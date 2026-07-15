@@ -50,20 +50,27 @@ import {
   INVERTED_X_STYLE,
   INVERTED_Y_STYLE,
   NO_CONTENT_LENGTH_SENT,
+  NO_INDEX,
   averageMeasuredLength,
   buildListPlan,
   buildOffsets,
   buildViewabilityPairs,
   computeEndReached,
+  computeMvcpAdjustment,
   computeStartReached,
   computeViewableSet,
   computeWindow,
+  decideEdgeReached,
   diffViewable,
   highestMeasuredIndex,
+  indexOfItem,
+  isSeparatorGapInRange,
   maxMinimumViewTime,
+  offsetForEnd,
   offsetForIndex,
   readLayoutLength,
   readScrollOffset,
+  resolveItemKey,
   throttleWindow,
   type ICellLayout,
   type IScrollViewHandle,
@@ -465,7 +472,7 @@ export const VirtualizedList = defineComponent(
     const keyFor = (index: number): string => {
       const p = narrowed.value;
       const item = p.getItem(p.data, index);
-      return p.keyExtractor ? p.keyExtractor(item, index) : String(index);
+      return resolveItemKey(item, index, p.keyExtractor);
     };
 
     // The windowing math, run through the shared @symbiote-native/components functions. It mutates the
@@ -586,7 +593,7 @@ export const VirtualizedList = defineComponent(
 
     const mergeSeparator = (gapIndex: number, patch: Partial<ISeparatorProps<unknown>>): void => {
       const count = metrics.value.count;
-      if (gapIndex < FIRST_INDEX || gapIndex > count - 2) return;
+      if (!isSeparatorGapInRange(gapIndex, count)) return;
       separatorOverrides.set(gapIndex, { ...separatorOverrides.get(gapIndex), ...patch });
       separatorVersion.value += 1;
     };
@@ -641,20 +648,19 @@ export const VirtualizedList = defineComponent(
       scrollToItem: (params): void => {
         const p = narrowed.value;
         const count = metrics.value.count;
-        for (let index = FIRST_INDEX; index < count; index += 1) {
-          if (p.getItem(p.data, index) === params.item) {
-            scrollToPixel(
-              offsetForIndexLocal(index, params.viewPosition ?? FIRST_INDEX, EMPTY_OFFSET),
-              params.animated ?? true,
-            );
-            return;
-          }
+        const index = indexOfItem(p.data, p.getItem, count, params.item);
+        if (index === NO_INDEX) {
+          dlog('Vue VirtualizedList scrollToItem: item not found');
+          return;
         }
-        dlog('Vue VirtualizedList scrollToItem: item not found');
+        scrollToPixel(
+          offsetForIndexLocal(index, params.viewPosition ?? FIRST_INDEX, EMPTY_OFFSET),
+          params.animated ?? true,
+        );
       },
       scrollToEnd: (params): void => {
         scrollToPixel(
-          Math.max(EMPTY_OFFSET, metrics.value.total - viewportLength.value),
+          offsetForEnd(metrics.value.total, viewportLength.value),
           params?.animated ?? true,
         );
       },
@@ -705,16 +711,20 @@ export const VirtualizedList = defineComponent(
           viewportLength.value,
           p.onEndReachedThreshold,
         );
-        const lastCellRendered = m.last === m.count - 1;
-        if (withinThreshold && lastCellRendered && sentEndForContentLength !== m.total) {
-          sentEndForContentLength = m.total;
+        const { shouldFire, nextSentForContentLength } = decideEdgeReached({
+          withinThreshold,
+          edgeCellRendered: m.last === m.count - 1,
+          total: m.total,
+          sentForContentLength: sentEndForContentLength,
+        });
+        sentEndForContentLength = nextSentForContentLength;
+        if (shouldFire) {
           dlog(
             `Vue VirtualizedList onEndReached distanceFromEnd=${distanceFromEnd} ` +
               `(last=${m.last} of ${m.count}, contentLength=${m.total})`,
           );
           p.onEndReached({ distanceFromEnd });
         }
-        if (!withinThreshold) sentEndForContentLength = NO_CONTENT_LENGTH_SENT;
       },
       { flush: 'post' },
     );
@@ -731,16 +741,20 @@ export const VirtualizedList = defineComponent(
           viewportLength.value,
           p.onStartReachedThreshold,
         );
-        const firstCellRendered = m.first === FIRST_INDEX;
-        if (withinThreshold && firstCellRendered && sentStartForContentLength !== m.total) {
-          sentStartForContentLength = m.total;
+        const { shouldFire, nextSentForContentLength } = decideEdgeReached({
+          withinThreshold,
+          edgeCellRendered: m.first === FIRST_INDEX,
+          total: m.total,
+          sentForContentLength: sentStartForContentLength,
+        });
+        sentStartForContentLength = nextSentForContentLength;
+        if (shouldFire) {
           dlog(
             `Vue VirtualizedList onStartReached distanceFromStart=${distanceFromStart} ` +
               `(first=${m.first}, contentLength=${m.total})`,
           );
           p.onStartReached({ distanceFromStart });
         }
-        if (!withinThreshold) sentStartForContentLength = NO_CONTENT_LENGTH_SENT;
       },
       { flush: 'post' },
     );
@@ -833,48 +847,19 @@ export const VirtualizedList = defineComponent(
       () => {
         const p = narrowed.value;
         const m = metrics.value;
-        if (p.maintainVisibleContentPosition === undefined || m.count === FIRST_INDEX) {
-          firstVisibleKey = null;
-          return;
-        }
-        const minIndexForVisible = p.maintainVisibleContentPosition.minIndexForVisible;
-        const newFirstVisibleKey = m.count > minIndexForVisible ? keyFor(minIndexForVisible) : null;
-        const prevKey = firstVisibleKey;
-
-        if (prevKey !== null && newFirstVisibleKey !== null && prevKey !== newFirstVisibleKey) {
-          let anchorIndex = -1;
-          for (let index = minIndexForVisible; index < m.count; index += 1) {
-            if (keyFor(index) === prevKey) {
-              anchorIndex = index;
-              break;
-            }
-          }
-          if (anchorIndex > minIndexForVisible) {
-            const spacerEnd = Math.min(anchorIndex, committedWindow.first);
-            const insertedExtent =
-              spacerEnd > minIndexForVisible
-                ? m.offsets[spacerEnd] - m.offsets[minIndexForVisible]
-                : EMPTY_OFFSET;
-            if (insertedExtent > EMPTY_OFFSET) {
-              const autoThreshold = p.maintainVisibleContentPosition.autoscrollToTopThreshold;
-              const anchoredNearTop =
-                autoThreshold !== undefined && scrollOffset.value <= autoThreshold;
-              if (anchoredNearTop) {
-                dlog(
-                  `Vue VirtualizedList MVCP autoscroll-to-top (offset=${scrollOffset.value} <= ${autoThreshold})`,
-                );
-                scrollToPixel(EMPTY_OFFSET, true);
-              } else {
-                dlog(
-                  `Vue VirtualizedList MVCP adjust +${insertedExtent}px ` +
-                    `(anchor "${prevKey}" moved ${minIndexForVisible}->${anchorIndex})`,
-                );
-                scrollToPixel(scrollOffset.value + insertedExtent, false);
-              }
-            }
-          }
-        }
-        firstVisibleKey = newFirstVisibleKey;
+        const { firstVisibleKey: nextKey, action } = computeMvcpAdjustment({
+          minIndexForVisible: p.maintainVisibleContentPosition?.minIndexForVisible,
+          autoscrollToTopThreshold: p.maintainVisibleContentPosition?.autoscrollToTopThreshold,
+          count: m.count,
+          committedFirst: committedWindow.first,
+          offsets: m.offsets,
+          scrollOffset: scrollOffset.value,
+          prevFirstVisibleKey: firstVisibleKey,
+          keyFor,
+        });
+        if (action.kind === 'autoscroll-top') scrollToPixel(EMPTY_OFFSET, true);
+        else if (action.kind === 'shift') scrollToPixel(action.offset, false);
+        firstVisibleKey = nextKey;
       },
       { flush: 'post' },
     );
