@@ -1,7 +1,8 @@
 {
   "name": "@symbiote-native/navigation",
-  "version": "1.0.0",
+  "version": "2.0.0",
   "description": "Native stack navigator for SymbioteNative, built on react-native-screens' native view primitives (RNSScreen/RNSScreenStack) — one framework-agnostic core, reachable from the React, Vue, and Angular adapters.",
+  "license": "MIT",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/OneEyed1366/symbiote-native.git",
@@ -162,7 +163,7 @@
     "@angular/common": ">=20",
     "@angular/core": ">=20",
     "@symbiote-native/angular": "workspace:*",
-    "@symbiote-native/engine": ">=0.1.6",
+    "@symbiote-native/engine": ">=0.1.7",
     "@symbiote-native/react": "workspace:*",
     "@symbiote-native/vue": "workspace:*",
     "@vue/runtime-core": "^3.5.13",

@@ -165,9 +165,10 @@ example app, per the adapter's own README:
 - **[`adapters/vue`](./adapters/vue)** — TSX needs nothing extra; SFC adds a Metro transformer for `.vue` files.
 - **[`adapters/angular`](./adapters/angular)** — needs `ngc --watch` running alongside Metro (AOT compiles separately from Metro).
 
-The third-party-view wrapper ([`@symbiote-native/slider`](./packages/slider)) and the Android
-host-shim package ([`@symbiote-native/android`](./packages/android)) are also on npm, installed the
-same way.
+The navigation package ([`@symbiote-native/navigation`](./packages/navigation) — a native
+stack/tab/drawer navigator over `react-native-screens`), the third-party-view wrapper
+([`@symbiote-native/slider`](./packages/slider)), and the Android host-shim package
+([`@symbiote-native/android`](./packages/android)) are also on npm, installed the same way.
 
 ---
 
@@ -254,17 +255,18 @@ app can't ship without is a more urgent proof than a fourth/fifth framework adap
 | ↳ M3.2 | Shared component layer | `VirtualizedList` family + component logic extracted to `@symbiote-native/components`, inherited by React **and** Vue | ✅ done |
 | ↳ M3.3 | Test harness per adapter | colocated `vitest` (headless, fake Fabric slot) + `Detox` e2e mirrored across all three example apps | ✅ done |
 | **M4** | Angular adapter | `Renderer2`/`RendererFactory2` + DOM-less bootstrap on the validated core — second non-React framework, full canary component parity, on the live framework switcher | ✅ done |
-| **M5** | **App-ready ecosystem** | the minimal third-party surface a real app needs, built once against the agnostic core (like `@symbiote-native/slider`) rather than ported per-framework — starting with **navigation** | ⏳ planned |
-| ↳ M5.1 | Navigation | a framework-agnostic navigation core (stack/state) in `@symbiote-native/engine`/`@symbiote-native/components`, with a thin per-adapter screen/transition bridge — the `react-navigation` UI itself is React-only (`<third_party_rn_packages_are_react_only>`), so this can't be a wrapper, it's a genuine new shared component | ⏳ planned |
-| ↳ M5.2 | Remaining gaps | audit the rest of the "can't ship a real app without it" list (e.g. persistent storage, safe-area edge cases beyond `SafeAreaView`) once navigation lands | ⏳ planned |
+| **M5** | **App-ready ecosystem** | the minimal third-party surface a real app needs, built once against the agnostic core (like `@symbiote-native/slider`) rather than ported per-framework — navigation shipped, next targeting package-surface parity with Expo's SDK | 🔁 ongoing |
+| ↳ M5.1 | Navigation | a framework-agnostic navigation core (stack/tab/drawer state + `react-native-screens` prop folds) in `@symbiote-native/navigation`, with a thin per-adapter screen/lifecycle bridge — the `react-navigation` UI itself is React-only (`<third_party_rn_packages_are_react_only>`), so this couldn't be a wrapper, it's a genuine new shared component | ✅ done |
+| ↳ M5.2 | Small native-module wrappers | one-dependency proxy packages closing the gap against Expo's package set one module at a time — Clipboard-class APIs first (same recipe as `@symbiote-native/slider`/`@symbiote-native/splash-screen`), plus lingering primitive-level gaps (persistent storage, safe-area edges beyond `SafeAreaView`) | ⏳ planned |
+| ↳ M5.3 | Reanimated | the largest remaining gap, saved for last — a full worklet-driven animation layer | ⏳ planned |
 | **M6** | Svelte adapter | compiled-output framework driving the engine's mutation API | ⏳ planned |
 | **M7** | Solid adapter | fine-grained reactivity driving the engine's mutation API | ⏳ planned |
 | **M8** | Web *(stretch)* | the same trees rendered to the web as a default platform target | 💭 maybe |
 | **DX** | `create-symbiote` scaffolder | pins `react-native` + `react` at the app root so your app code imports only `@symbiote-native/*`, never `react-native` | ⏳ planned |
 
 **End goal:** each framework — Vue, Angular, Svelte, Solid, React — can render native iOS and
-Android apps the same way React Native does today, off one untouched native core, **with the
-ecosystem depth (navigation and the rest) to actually build one.** Web as a default platform
+Android apps the same way React Native does today, off one untouched native core, **with
+package-surface parity against Expo's SDK to actually build one.** Web as a default platform
 target is a possible later pass.
 
 Each adapter is built in layers (static paint → reactive update → event) so a break is
@@ -284,6 +286,7 @@ adapters/
   angular/     @symbiote-native/angular    — Renderer2/RendererFactory2 + DOM-less bootstrap over the engine
 packages/
   android/     @symbiote-native/android    — autolinked native host shims (keyboard, settings) for Android
+  navigation/  @symbiote-native/navigation — native stack/tab/drawer navigator over react-native-screens
   slider/      @symbiote-native/slider     — third-party native-view wrapper (React + Vue + Angular builds)
 examples/
   react/       stock RN 0.86 app driven by @symbiote-native/react (the reference canary)

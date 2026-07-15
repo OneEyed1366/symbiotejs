@@ -17,6 +17,7 @@ parity through shared layers.
 | Engine            | In progress               | Retained tree, clone-on-write commits, event normalization.                                                         |
 | Components        | In progress               | Shared state/view layers so adapters inherit parity.                                                                |
 | Android host shim | Active                    | Keeps Android at canary parity with iOS.                                                                             |
+| Navigation package | Shipped                  | Native stack/tab/drawer navigator over `react-native-screens`, shared by every adapter.                             |
 
 ## Next adapter work
 
@@ -42,6 +43,16 @@ gained `v-model` on controlled components and a working `v-show` directive;
 Angular's `[(value)]` two-way binding covers the same controlled-component
 case idiomatically. All three adapters now share one `AppRegistry` entry
 point over the same `@symbiote-native/engine` core.
+
+## Package parity with Expo
+
+The [navigation package](/docs/navigation/) closed the biggest gap on the "can a real app ship
+without React Navigation" list. Next up is a run of small, one-dependency native-module wrapper
+packages — Clipboard-class APIs first, following the same recipe as `@symbiote-native/slider` and
+`@symbiote-native/splash-screen` — closing the gap against Expo's package set one module at a
+time. Reanimated, a full worklet-driven animation layer, is the largest remaining piece and is
+saved for last. The end goal is package-surface parity with Expo's SDK: whatever a real app can
+reach for in Expo, a SymbioteNative app can reach for too, off the same untouched native core.
 
 ## Styling / CSS compiler
 

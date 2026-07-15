@@ -1,5 +1,17 @@
 # @symbiote-native/css-parser
 
+## 0.2.3
+
+### Patch Changes
+
+- 39bcaaf: Fix a false `UNRESOLVED` hit in the build's ESM-extension fixer: a doc comment quoting an example import (`` `import styles from './Card.module.css'` ``) matched the same regex the fixer uses to rewrite real relative imports, and since no such file exists on disk it was reported as unresolved and failed the build. The comment now describes the example without the literal import-statement text, so the fixer only ever matches real code.
+- 56ef0d9: Add the missing `"license": "MIT"` field to every publishable package's `package.json`. The
+  `LICENSE` file itself was already shipping correctly (pnpm copies the workspace root `LICENSE`
+  into a package's tarball at pack/publish time when the package has none of its own — confirmed
+  against the already-published `@symbiote-native/slider@4.0.0` tarball on npm), but the
+  `package.json` metadata field npm reads for the registry page's license badge and `npm install`'s
+  own license check was missing on all eleven packages.
+
 ## 0.2.2
 
 ### Patch Changes
