@@ -14,9 +14,9 @@
 // `--watch` mode for live autocomplete while actively editing styles.
 import * as fs from 'node:fs/promises';
 import * as path from 'node:path';
-import { isStyleFile } from './preprocessors.ts';
-import { isCssModuleFile } from './metro-css-module.ts';
-import { generateModuleDts } from './generate-dts.ts';
+import { isStyleFile } from './preprocessors/index.ts';
+import { isCssModuleFile } from './metro-css-module/index.ts';
+import { generateModuleDts } from './generate-dts/index.ts';
 
 const SKIPPED_DIR_NAMES: ReadonlySet<string> = new Set(['node_modules', 'build', '.git']);
 

@@ -1,6 +1,6 @@
 ---
 name: symbiote-dependency-catalog
-description: "Symbiote dependency-version management — read BEFORE adding a dependency, bumping a version, scaffolding a new package, or touching ANY package.json / pnpm-workspace.yaml. The monorepo has ONE source of truth for versions: pnpm CATALOGS in pnpm-workspace.yaml. A package NEVER writes a literal version for an external dep — it references `catalog:` (default) or `catalog:NAME`. Covers: (1) the CATALOG LAYOUT — default `catalog:` holds every single-versioned dep (react, react-native 0.86 toolchain, vue, babel, jest, detox, typescript, vitest, prettier, eslint10 + root tooling); the named `catalogs.rn-app` holds ONLY the deps that legitimately cannot share the workspace version. (2) the RULES — prod+dev deps MUST be `catalog:`; peerDependencies are NEVER catalogued (they are compatibility RANGES like `0.86+`, not pins); `@symbiote-native/*` stay `workspace:*`; the `react` override is `'catalog:'` (quoted!). (3) the GUARD — syncpack `policy: catalog` in .syncpackrc.json, run via `pnpm deps:check` / auto-fixed via `pnpm deps:fix`, wired into lint-staged on any package.json / pnpm-workspace.yaml change. (4) the eslint CONSTRAINT — eslint canNOT be unified to the workspace's v10 because @react-native/eslint-config@0.86 peers `^8 || ^9` and examples lint via legacy .eslintrc.js (eslint 10 is flat-config only); this is upstream-forced, hence the rn-app split. (5) WORKFLOWS — add a dep, bump a version, add a package. (6) GOTCHAS — YAML requires quoting `'catalog:'`. Trigger on any add-dependency / bump-version / version-drift / new-package / 'why two eslints' / package.json edit decision."
+description: "Symbiote dependency-version management — read BEFORE adding a dependency, bumping a version, scaffolding a new package, or touching ANY package.json / pnpm-workspace.yaml. The monorepo has ONE source of truth for versions: pnpm CATALOGS in pnpm-workspace.yaml. A package NEVER writes a literal version for an external dep — it references `catalog:` (default) or `catalog:NAME`. Covers: (1) the CATALOG LAYOUT — default `catalog:` holds every single-versioned dep (react, react-native 0.86 toolchain, vue, babel, jest, detox, typescript, vitest, prettier, eslint10 + root tooling); the named `catalogs.rn-app` holds ONLY the deps that legitimately cannot share the workspace version. (2) the RULES — prod+dev deps MUST be `catalog:`; peerDependencies are NEVER catalogued (they are compatibility RANGES like `0.86+`, not pins); `@symbiote-native/*` stay `workspace:*`; the `react` override is `'catalog:'` (quoted!). (3) the GUARD — syncpack `policy: catalog` in .syncpackrc.json, run via `pnpm deps:check` / auto-fixed via `pnpm deps:fix`, wired into lint-staged on any package.json / pnpm-workspace.yaml change. (4) the eslint CONSTRAINT — eslint canNOT be unified to the workspace's v10 because @react-native/eslint-config@0.86 peers `^8 || ^9` and examples lint via legacy .eslintrc.js (eslint 10 is flat-config only); this is upstream-forced, hence the rn-app split. (5) WORKFLOWS — add a dep, bump a version, add a package. (6) GOTCHAS — YAML requires quoting `'catalog:'`; `examples/*` is OUTSIDE the pnpm workspace since 2026-07-14 (no catalog:/workspace:* there anymore — see symbiote-dev-examples); pnpm's `blockExoticSubdeps` (10.26+, boolean-only, no allowlist) blocks a pkg.pr.new/git URL dependency's OWN transitive URL subdeps anywhere in a shared pnpm workspace, poisoning every other workspace member's install too. Trigger on any add-dependency / bump-version / version-drift / new-package / 'why two eslints' / package.json edit decision, or 'pkg.pr.new install fails' / 'exotic subdep' / 'ERR_PNPM_EXOTIC_SUBDEP'."
 ---
 
 # Symbiote dependency-version management
@@ -133,26 +133,37 @@ It also runs in **lint-staged** (`lint-staged.config.js`) on any
 - **Orphan store copies are not drift.** `pnpm why <dep>` showing one version in the
   graph is the truth; a stray `node_modules/.pnpm/<dep>@<old>` is a peer-resolution
   variant, not a declared dependency.
-- **`examples/*` is SUPPOSED to be on `"@symbiote-native/*": "catalog:"` (the real PUBLISHED npm
-  package), always — never `workspace:*`.** This repo's pnpm does NOT auto-link a plain version
-  range to the local workspace package (`linkWorkspacePackages` is effectively off here), so
-  `catalog:` genuinely installs from the npm registry; local source edits in `adapters/*`/
-  `core/*` are invisible to `examples/*`, and that is BY DESIGN — those apps are the public canary,
-  demonstrating the real install experience (see `symbiote-dev-examples`). Switching them to
-  `workspace:*` for active development was tried for real and reverted (2026-07-04): it left the
-  public demo mid-migration and uncommittable. **Active development against local source happens
-  in `.examples/*` instead** (a separate, gitignored tree with the same apps wired to
-  `workspace:*`) — never by flipping `examples/*` to `workspace:*`. `.syncpackrc.json`'s
-  `isIgnored: true` on `@symbiote-native/**` only means syncpack doesn't enforce catalog vs
-  workspace either way; the enforced norm is `symbiote-dev-examples`'s split. Diagnostic:
-  `readlink examples/<app>/node_modules/@symbiote-native/<pkg>` vs
-  `readlink .examples/<app>/node_modules/@symbiote-native/<pkg>` — a target under
-  `node_modules/.pnpm/@symbiote-native+<pkg>@<version>_.../` means the published copy (correct for
-  `examples/*`, wrong for `.examples/*`); a target like `../../../adapters/<pkg>` or
-  `../../../core/<pkg>` means real workspace linking (correct for `.examples/*`, wrong for
-  `examples/*`). Check this FIRST, before suspecting a Metro config or `exports`-map bug, whenever
-  an app doesn't pick up a fresh local change — or whenever a public example looks like it's
-  tracking local source it shouldn't.
+- **`examples/*` is OUTSIDE the pnpm workspace entirely (since 2026-07-14) — this catalog/`.syncpackrc.json`
+  chapter no longer applies to it at all.** It was on `"@symbiote-native/*": "catalog:"` before
+  that date; it moved to a standalone `npm install`-able tree (literal versions, pkg.pr.new
+  canary URLs for `@symbiote-native/*` pending real npm releases) because pnpm 10.26+'s
+  `blockExoticSubdeps` (see the dedicated gotcha below) blocks a pkg.pr.new URL anywhere in a
+  SHARED pnpm-workspace lockfile — and `examples/*` shared one with `.examples/*`. Full story:
+  `symbiote-dev-examples` §1b. **`.examples/*` is UNCHANGED** — still in the pnpm workspace, still
+  `workspace:*`, still where all active local-source development happens (that half of this
+  gotcha, incl. the `readlink .examples/<app>/node_modules/@symbiote-native/<pkg>` diagnostic,
+  stays valid — see `symbiote-dev-examples` §5). Do not re-add `examples/*` to
+  `pnpm-workspace.yaml`'s `packages:` to "simplify" version management — that's the exact
+  regression this split fixes.
+
+- **`blockExoticSubdeps` — a pnpm 10.26+ supply-chain guard that blocks URL/git deps ANYWHERE
+  in a shared workspace resolution, not just where you put one.** `.npmrc` key
+  `block-exotic-subdeps`, default `true`, **boolean-only — no per-package allowlist** (confirmed
+  by reading pnpm's own bundled source, `pnpm.mjs`, and its `blog/releases/10.26.md`). It allows
+  a **direct** dependency to use an exotic protocol (a tarball URL, `git+ssh:`, etc.) but blocks
+  any **transitive** one. The trap: a `pkg-pr-new`-published preview tarball's own internal
+  cross-package deps (e.g. `@symbiote-native/angular`'s dependency on `@symbiote-native/components`)
+  get rewritten to sibling pkg.pr.new URLs by the publish tool, since it can't emit
+  `workspace:*` into a published artifact — so installing ONE pkg.pr.new URL as a direct
+  dependency anywhere in a pnpm workspace can still fail with
+  `[ERR_PNPM_EXOTIC_SUBDEP] Exotic dependency "..." (resolved via url) is not allowed in
+  subdependencies`, and because pnpm resolves the WHOLE workspace in one lockfile pass, this
+  poisons every OTHER workspace project's install too — even ones that never touched a URL
+  dependency themselves. There's no scoped fix (no allowlist, and a nested `.npmrc` doesn't
+  isolate a workspace member from the shared resolution pass) — the only real fix is keeping
+  exotic-URL dependencies out of the pnpm workspace altogether (see `examples/*` above) or
+  disabling the guard repo-wide (`block-exotic-subdeps: false` — a real security-policy
+  tradeoff, don't flip it silently).
 
 ## Verify
 

@@ -1,5 +1,18 @@
 # @symbiote-native/react
 
+## 0.2.5
+
+### Patch Changes
+
+- f43fe5b: Fix React's `StatusBar` duplicating `core/engine`'s native-module driving logic (`applyStatusBarProps`, `statusBarImperative`, `statusBarCurrentHeight`) instead of calling it, same as Vue and Angular already do. The iOS and Android modules now delegate to the shared engine functions — same public behavior, ~150 fewer lines of duplicated `getNativeModule`/setter-call logic.
+- Updated dependencies [1791d13]
+- Updated dependencies [1791d13]
+- Updated dependencies [1791d13]
+- Updated dependencies [1791d13]
+- Updated dependencies [1791d13]
+  - @symbiote-native/engine@0.1.5
+  - @symbiote-native/components@0.2.4
+
 ## 0.2.4
 
 ### Patch Changes

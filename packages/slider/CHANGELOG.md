@@ -1,5 +1,27 @@
 # @symbiote-native/slider
 
+## 3.0.0
+
+### Patch Changes
+
+- f9569fb: Fix `adapters/angular/src/renderer.ts` hardcoding `examples/angular`'s own demo-component selectors (and the third-party `Slider`) into its `ANCHOR_HOST_COMPONENTS` set — an infra layer knowing app/third-party names is a layer-direction violation. `registerComposedComponent` (now exported from the public barrel) is the existing self-registration escape hatch; `Slider` and the affected demo components now call it themselves instead of the adapter hardcoding their names.
+- 4e02c48: Angular's `Slider` no longer self-registers as an anchor host at module load — `@symbiote-native/angular/babel-register-composed` now covers it automatically, the same as every other composed Angular component. A consuming app must wire that Babel plugin into its `babel.config.js` (see the `angular-adapter-build` skill) for `Slider` to render correctly under Angular.
+- Updated dependencies [f9569fb]
+- Updated dependencies [a2cadf6]
+- Updated dependencies [09feeb9]
+- Updated dependencies [ad17e8f]
+- Updated dependencies [1791d13]
+- Updated dependencies [1791d13]
+- Updated dependencies [1791d13]
+- Updated dependencies [1791d13]
+- Updated dependencies [1791d13]
+- Updated dependencies [f43fe5b]
+  - @symbiote-native/angular@0.4.0
+  - @symbiote-native/engine@0.1.5
+  - @symbiote-native/components@0.2.4
+  - @symbiote-native/react@0.2.5
+  - @symbiote-native/vue@0.3.5
+
 ## 2.0.6
 
 ### Patch Changes

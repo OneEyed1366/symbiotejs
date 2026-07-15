@@ -1,0 +1,16 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "rootDir": "src",
+    "outDir": "build"
+  },
+  "include": ["src"],
+  "exclude": ["src/**/*.test.ts", "src/**/*.test.tsx"],
+  "references": [
+    { "path": "../../core/engine" },
+    { "path": "../../core/components" },
+    { "path": "../../adapters/vue" },
+    { "path": "../../adapters/react" },
+    { "path": "../../adapters/angular" }
+  ]
+}

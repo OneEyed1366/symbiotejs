@@ -1,18 +1,10 @@
 /* AccessibilityDemo's static look — compiled at build time by @symbiote-native/css-parser into
    the same RN style objects StyleSheet.create used to produce. This file is 100% static: no
-   computed values are involved in styling here. */
+   computed values are involved in styling here.
+   .section/.section-label/.info-text are NOT redeclared here — they're the app-wide generic
+   classes from App.css; a local redeclaration of the same name would silently shadow App.css's
+   version in the shared style registry (see the style-registry-collisions rule). */
 
-.section {
-  gap: 12px;
-}
-.section-label {
-  color: #3b5266;
-  font-size: 13px;
-}
-.info-text {
-  color: #cbd5e1;
-  font-size: 14px;
-}
 .a11y-card {
   padding: 12px;
   border-radius: 10px;

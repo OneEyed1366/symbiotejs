@@ -62,7 +62,7 @@ describe('Angular adapter gap regressions', () => {
 
   it('Button forwards its full accessibility and TV-focus surface through TouchableOpacity', () => {
     const buttonSource = readSource('adapters/angular/src/components/button.ts');
-    const touchableSource = readSource('adapters/angular/src/components/touchable.ts');
+    const touchableSource = readSource('adapters/angular/src/components/touchable/index.ts');
     const pressableSource = readSource('adapters/angular/src/components/pressable/index.ts');
 
     for (const binding of [

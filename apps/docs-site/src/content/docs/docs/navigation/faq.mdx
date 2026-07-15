@@ -1,0 +1,169 @@
+---
+title: FAQ
+description: Common @symbiote-native/navigation questions.
+---
+
+## Why is there no `navigate()` method?
+
+There isn't one, on purpose. React Navigation's `navigate()` overloads two
+behaviors — push a new screen, or jump back to one already on the stack — into
+a single call, and that overload is a common source of surprise. This library
+splits it into explicit verbs on the Stack handle: `push()` always adds a new
+entry, `replace()` swaps the current entry for a new one, and `popTo()` jumps
+back to an existing entry by name. If you're coming from React Navigation,
+read `navigate()` calls in your head as "probably `push()`." See the
+[Stack navigator](/docs/navigation/stack/) page for the full handle API.
+
+## What's the difference between `push` and `replace`?
+
+`push()` adds a new screen on top of the stack, so the previous screen is
+still underneath and back navigation returns to it. `replace()` swaps the
+current screen out for a new one at the same position, so there's nothing to
+go back to — useful after a login screen or a step in a wizard flow you don't
+want reachable via back. Neither one checks whether the target screen is
+already on the stack; that check, if you want it, is on you.
+
+## How do I pass and read route params?
+
+Pass a plain object as the second argument to `push()` (or the equivalent on
+`replace()`/`setParams()`), and read it off `route.params` on the receiving
+screen. Params are typed `unknown`, not narrowed to a per-screen shape,
+because this version has no generic param-list typing like React
+Navigation's `RootStackParamList`. Narrow `route.params` yourself with a
+small runtime guard function on each screen that expects params — not an `as`
+cast — so a malformed or missing param fails loudly instead of silently
+typing as something it isn't.
+
+## How do I read `route`/`navigation` in a screen?
+
+Call a hook. Every component under a navigator — the screen's own top-level component included —
+reads them with `useNavigation()`/`useRoute()` in React and Vue, or `injectNavigation()`/
+`injectRoute()` in Angular. Better yet, reach for the navigator-specific narrowed variant
+(`useStackNavigation()`/`useTabNavigation()`/`useDrawerNavigation()`, or Angular's
+`injectStackNavigation()`/etc.) so the handle comes back concretely typed with nothing to narrow.
+The navigator does not pass `route`/`navigation` in as a prop or `@Input()`; the hook is the only
+path, and it reads the same at any nesting depth. `useIsFocused()`/`useFocusEffect()`/
+`useNavigationState()` (Angular: `injectIsFocused()`/`injectFocusEffect()`/`injectNavigationState()`)
+work the same way. See [Hooks & focus](/docs/navigation/hooks/).
+
+## Why does my effect only run once instead of every time I visit the screen?
+
+Because an ordinary `useEffect`/`onMounted`/constructor with no dependency
+array runs once per **mount**, not once per **visit** — and on a Stack
+navigator, a pushed screen stays mounted the whole time it's on the stack, so
+navigating away and back doesn't remount it. Use `useFocusEffect` (React),
+`injectFocusEffect` (Vue/Angular), or `useIsFocused`/`injectIsFocused` if you
+just need a boolean, to run code on every focus instead of once. In React,
+wrap the callback you pass to `useFocusEffect` in `useCallback` — a new
+callback identity on every render re-subscribes the effect — Vue's and
+Angular's equivalents don't need this. See [Hooks & focus](/docs/navigation/hooks/).
+
+## Why did my Tab/Drawer screen's state reset when I switched back to it?
+
+Because Tab and Drawer only mount the currently-focused route's screen —
+switching away unmounts it and switching back mounts it fresh, re-running its
+constructor/setup and losing any local state. This is different from Stack,
+which keeps every pushed screen mounted for as long as it's on the stack. If
+you need a tab's state to survive switching away, lift it above the tab
+navigator (a shared store, a parent component) rather than relying on the
+tab screen staying mounted. See [Tab navigator](/docs/navigation/tabs/) and
+[Drawer navigator](/docs/navigation/drawer/).
+
+## How do I reach a parent navigator from a nested one?
+
+Call `getParent()` on the navigation handle (`useNavigation().getParent()` in
+React, the Vue/Angular equivalent elsewhere). It walks exactly one hop up to
+the enclosing navigator's handle — for example from a Tab navigator nested
+inside one Stack screen, up to that Stack's handle. There's no multi-hop or
+named-ancestor lookup; if you need to reach further up, call `getParent()`
+again on the handle it returns.
+
+## `useNavigation()` gives me a type I can't call `push` on. What's going on?
+
+`useNavigation()`/`injectNavigation()` return a union type
+(`IAnyNavigatorHandle`) because the enclosing navigator could be a Stack, a
+Tab, or a Drawer, and each exposes a different handle shape. A nested
+component's enclosing navigator kind doesn't change at runtime, so you almost
+always know which one it is — call `useStackNavigation()`/`useTabNavigation()`/
+`useDrawerNavigation()` (or Angular's `injectStackNavigation()`/
+`injectTabNavigation()`/`injectDrawerNavigation()`) instead of `useNavigation()`:
+each does the narrowing once, inside the library, and gives you back a
+concretely-typed handle with `push`/`jumpTo`/`openDrawer` already there,
+throwing a clear error if it turns out to be the wrong kind. See
+[Hooks & focus](/docs/navigation/hooks/).
+
+## How do I hide or customize the header for one screen?
+
+Set header options on that screen's `options` (or the equivalent per-screen
+config in your adapter) — title, visibility, and the iOS-only header bar
+buttons are all per-screen, not global. See
+[Stack navigator](/docs/navigation/stack/) for the full options list. Header
+left/right bar button items (`headerLeftBarButtonItems`/
+`headerRightBarButtonItems`) are an iOS-only native surface; there's no
+Android equivalent, so a header action you need on both platforms has to live
+in the screen's own content instead.
+
+## How do I customize the tab bar and its icons?
+
+The tab bar itself is built in — you configure its per-item look with
+options like `tabBarLabel`, `tabBarIcon`, `tabBarBadge`, and tint-color
+options, rather than swapping in your own tab bar component wholesale.
+`tabBarIcon` takes a plain string (a glyph or emoji) or a pre-built icon
+node, not a render-prop callback the way React Navigation's does — you
+resolve the icon before passing it in, rather than the navigator calling a
+function for you. See [Tab navigator](/docs/navigation/tabs/).
+
+## How do I customize the drawer's content?
+
+You have to — Drawer ships no built-in menu UI at all, unlike React
+Navigation's `@react-navigation/drawer`, which gives you `DrawerItemList` for
+free. Supply your own drawer content: React's `renderDrawerContent` prop,
+Vue's `drawerContent` scoped slot, or Angular's `#drawerContent` template.
+See [Drawer navigator](/docs/navigation/drawer/).
+
+## Can I open a screen as a modal or bottom sheet?
+
+Yes, through the Stack navigator's screen presentation options — the same
+`push()` call, with a presentation option set to modal/sheet on that screen.
+Because Stack is backed by real native screen views, the modal presentation
+and its dismiss gesture are the platform's own, not a JS-simulated overlay.
+See [Stack navigator](/docs/navigation/stack/) for the presentation options.
+
+## Deep linking opens the wrong screen (or nothing). Why?
+
+The most common cause is a mismatch between a path pattern and the screen
+name it's supposed to resolve to — double check the linking config against
+your actual screen names, which must be unique across the whole navigation
+tree. Also confirm you actually called `useLinkingIntegration`/
+`injectLinkingIntegration` yourself and passed it the Stack's own handle —
+there's no `<NavigationContainer linking={...}>` component wiring this up
+implicitly. If you changed a URL-scheme prefix, that needs a native rebuild
+to take effect, not just a JS reload. See [Linking & state](/docs/navigation/linking/).
+
+## Why doesn't my navigation state persist across app restarts?
+
+Because nothing persists it for you automatically — you call
+`serializeNavigatorState` before the app closes and `deserializeNavigatorState`
+plus the Stack handle's `reset(state)` on startup yourself, choosing your own
+storage. A common failure mode is passing non-JSON-serializable params
+(functions, class instances) into a route at some point — the round-trip
+through serialization silently drops or breaks those, so keep every route's
+`params` plain JSON. See [Linking & state](/docs/navigation/linking/).
+
+## Why doesn't `useNavigationState` update when I switch tabs?
+
+Because it only receives live updates under a Stack navigator — under a Tab
+or Drawer navigator it stays frozen on its initial one-route snapshot. This
+is a real, current scoping limitation of the hook, not a bug you're
+triggering by mistake. If you need live state under a Tab/Drawer, read it off
+the nearest ancestor Stack instead, via `getParent()`.
+
+## Is this the same as react-navigation?
+
+No, though it's intentionally similar — Stack/Tab/Drawer navigators, a
+`route`/`navigation` pair, hooks like `useFocusEffect`/`useIsFocused` all
+carry over the same shapes and names so react-navigation experience
+transfers. The differences are deliberate, not gaps: no `navigate()`, no
+generic param-list typing, a union return type from `useNavigation()`, a
+render-function-free `tabBarIcon`, and no built-in drawer menu UI, among
+others covered above. Treat it as a sibling API, not a drop-in replacement.

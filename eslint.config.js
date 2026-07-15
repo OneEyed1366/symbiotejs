@@ -14,7 +14,7 @@ import prettier from 'eslint-config-prettier';
 export default defineConfig(
   {
     // `codegen-specs/**` is third-party native-component source vendored verbatim at prepare
-    // time (see packages/*/vendor-codegen-specs.cjs) — generated, gitignored, not ours to lint.
+    // time (see scripts/vendor-codegen-specs.cjs) — generated, gitignored, not ours to lint.
     ignores: [
       '**/dist/**',
       '**/build/**',
@@ -49,9 +49,13 @@ export default defineConfig(
 
   // React: Rules of Hooks + exhaustive-deps. The adapter drives RN through use*State
   // hooks (useReducer/useEffect/useRef over the core/components state reducers), so a
-  // conditional hook or a stale dep array is a real bug class here.
+  // conditional hook or a stale dep array is a real bug class here. A third-party-wrapper
+  // package's own React entry (packages/*/src/react/**, e.g. packages/navigation) uses hooks
+  // the same way and needs the same coverage — without it, an `eslint-disable-next-line
+  // react-hooks/exhaustive-deps` comment there fails lint with "Definition for rule not found"
+  // instead of being suppressed.
   {
-    files: ['adapters/react/**/*.{ts,tsx}'],
+    files: ['adapters/react/**/*.{ts,tsx}', 'packages/*/src/react/**/*.{ts,tsx}'],
     plugins: { 'react-hooks': reactHooks },
     rules: {
       // Classic Rules of Hooks, the high-signal React-specific checks. The v7 plugin

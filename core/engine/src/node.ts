@@ -7,6 +7,7 @@
 
 import { isEventFor } from './view-config';
 import { isClassNameValue, resolveClassName } from './style-registry';
+import { dlog } from './debug';
 
 const BRAND: unique symbol = Symbol('symbiote.node');
 
@@ -83,6 +84,22 @@ export function createRawText(text: string): ISymbioteNode {
 // handler can confirm a target is one of ours before dispatching.
 export function isSymbioteNode(value: unknown): value is ISymbioteNode {
   return typeof value === 'object' && value !== null && BRAND in value;
+}
+
+// Investigation instrumentation (HeaderOptionsScreen search-bar-ref "node not committed" bug):
+// a WeakMap can't be logged, so this gives every node a small human-readable id, assigned lazily
+// on first call — lets a dlog at ref-attach time and a dlog at commit/dispatch time be compared
+// directly to prove whether they're the SAME node object or two different ones. Kept behind
+// DEBUG per <keep_logs_gate_behind_DEBUG>, never removed.
+const debugIds = new WeakMap<ISymbioteNode, number>();
+let nextDebugId = 1;
+export function debugNodeId(node: ISymbioteNode): number {
+  let id = debugIds.get(node);
+  if (id === undefined) {
+    id = nextDebugId++;
+    debugIds.set(node, id);
+  }
+  return id;
 }
 
 // Vue's runtime-core needs comment/anchor nodes (fragments, v-if, v-for) to track
@@ -225,7 +242,19 @@ export function routeProp(node: ISymbioteNode, key: string, value: unknown): voi
   }
   if (ON_PREFIX.test(key)) {
     const name = listenerName(key);
-    if (RESPONDER_EVENTS.has(name) || isEventFor(node.component, name)) {
+    const isRegisteredEvent = RESPONDER_EVENTS.has(name) || isEventFor(node.component, name);
+    // Investigation instrumentation (HeaderOptionsScreen unresponsive-buttons bug): RNS* views
+    // derive their events from react-native-screens' own codegen ViewConfig (registry.ts), so an
+    // unregistered event silently falls through to setProp below — a dead prop Fabric ignores,
+    // indistinguishable from "the button did nothing" at the UI. Scoped to RNS* to avoid noise
+    // from the rest of the app. Kept behind DEBUG per <keep_logs_gate_behind_DEBUG>, never removed.
+    if (node.component.startsWith('RNS')) {
+      dlog(
+        `routeProp: ${node.component} "${key}" -> listener "${name}" ` +
+          `registered=${isRegisteredEvent} at t=${Date.now()}`,
+      );
+    }
+    if (isRegisteredEvent) {
       setEventListener(node, name, value);
       return;
     }

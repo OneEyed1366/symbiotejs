@@ -5,7 +5,7 @@ import {
   ViewChild,
   inject,
 } from '@angular/core';
-import { Button, findNodeHandle, Text, View } from '@symbiote-native/angular';
+import { Button, Text, View, findNodeHandle } from '@symbiote-native/angular';
 
 // Static look lives in RefApiDemo.css, compiled at build time by @symbiote-native/css-parser.
 import './RefApiDemo.css';
@@ -19,7 +19,7 @@ import './RefApiDemo.css';
   standalone: true,
   imports: [View, Text, Button],
   template: `
-    <View class="section">
+    <View class="section-nested">
       <Text class="section-label"
         >Imperative ref · measure / setNativeProps / findNodeHandle</Text
       >

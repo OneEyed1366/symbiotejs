@@ -7,7 +7,7 @@
 // exempt these names, so it re-derives it here with its own minimal regex, independent of the
 // full CSS-to-style pipeline. Only the single-class form (`:global(.name)`) is recognized,
 // matching extractClassName's own documented narrower gap for partial/nested :global() wrapping.
-import { kebabToCamel } from './parser.ts';
+import { kebabToCamel } from './parser/index.ts';
 
 const GLOBAL_SELECTOR_PATTERN = /:global\(\s*\.([a-zA-Z0-9_-]+)\s*\)/g;
 

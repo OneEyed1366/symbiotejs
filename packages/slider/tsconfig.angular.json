@@ -20,6 +20,6 @@
     "compilationMode": "partial",
     "strictTemplates": true
   },
-  "include": ["src/core/**/*.ts", "src/angular/**/*.ts", "src/register.ts"],
+  "include": ["src/core/**/*.ts", "src/angular/**/*.ts", "src/register/**/*.ts"],
   "exclude": ["src/**/*.test.ts", "src/**/*.test.tsx"]
 }

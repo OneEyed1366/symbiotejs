@@ -18,7 +18,6 @@ packages:
   - 'core/*'
   - 'adapters/*'
   - 'packages/*'
-  - 'examples/*'
   - 'apps/*'
   # Gitignored dev harness — listing it lets pnpm manage it as a real workspace project
   # (bin-linking, .pnpm-store symlinks) instead of the ad-hoc node_modules it otherwise
@@ -62,6 +61,7 @@ catalog:
   vue: ^3.5.38
   vue-tsc: ^2.2.12
   '@angular/core': ^22
+  '@angular/common': ^22
   '@angular/compiler': ^22
   '@angular/compiler-cli': ^22
 
@@ -101,11 +101,12 @@ catalog:
   '@astrojs/starlight': ^0.41.1
   '@astrojs/check': ^0.9.9
 
-  # Published @symbiote-native/* packages, consumed by examples/* from the real npm
-  # registry (catalog:, not workspace:*) — kept in lock-step with each package's own
-  # release train in one place. @symbiote-native/navigation stays workspace:* directly
-  # in examples/react (not published yet); internal cross-package deps between
-  # core/adapters/packages also stay workspace:* (see .syncpackrc.json).
+  # Published @symbiote-native/* packages. examples/* left the pnpm workspace (2026-07) to
+  # become standalone `npm install`-able apps free of pnpm's blockExoticSubdeps guard — its
+  # package.json files now carry literal versions/pkg.pr.new URLs directly, not `catalog:`.
+  # These entries remain for .examples/angular's own css-parser dep and stay in lock-step
+  # with each package's release train; internal cross-package deps between
+  # core/adapters/packages stay workspace:* (see .syncpackrc.json).
   '@symbiote-native/react': latest
   '@symbiote-native/vue': latest
   '@symbiote-native/angular': latest
@@ -116,7 +117,9 @@ catalog:
   '@symbiote-native/splash-screen': latest
   '@symbiote-native/test-utils': latest
 
-  # React Native app toolchain — single-versioned, used only by examples/*
+  # React Native app toolchain — single-versioned. examples/* left the workspace (see above);
+  # entries here stay for @react-native/metro-babel-transformer (a real dependency of
+  # @symbiote-native/css-parser itself) and anything else the remaining workspace still needs.
   '@react-native/babel-preset': 0.86.0
   '@react-native/metro-config': 0.86.0
   # Real dependency of @symbiote-native/css-parser (createCssMetroTransformer resolves it itself),
@@ -130,10 +133,29 @@ catalog:
   '@react-native-community/cli': 20.1.0
   '@react-native-community/cli-platform-android': 20.1.0
   '@react-native-community/cli-platform-ios': 20.1.0
-  '@react-native-community/slider': ^5.2.0
-  react-native-bootsplash: ^7.3.2
+  # Exact pins, not caret ranges — same reason as react-native-screens below: packages/slider and
+  # packages/splash-screen vendor these libraries' codegen JS specs into a published
+  # codegen-specs/ snapshot (scripts/vendor-codegen-specs.cjs), and a caret range lets a
+  # standalone examples/* consumer's own npm install silently drift its NATIVE side ahead of
+  # that snapshot. No drift observed yet (both examples/* and this workspace currently resolve
+  # the same 5.2.0/7.3.2), but the class of failure is proven (react-native-screens, 2026-07-15)
+  # and silent at both ends until a real device/simulator build — pin here to close it off before
+  # it happens, not after.
+  '@react-native-community/slider': 5.2.0
+  react-native-bootsplash: 7.3.2
   react-native-is-edge-to-edge: ^1.3.1
-  react-native-screens: ^4.25.2
+  # Exact pin, not a caret range: @symbiote-native/navigation vendors this library's codegen JS
+  # specs into its own published codegen-specs/ at prepare time (see
+  # scripts/vendor-codegen-specs.cjs) — a floating range let a standalone `npm install` consumer
+  # (examples/*, outside this pnpm workspace) resolve a NEWER react-native-screens than whatever
+  # this workspace last vendored from, so the consumer's native .rn-screens (podspec-vendored
+  # fresh from THEIR install) referenced codegen types (e.g. RNSSplitHostColorScheme, added in
+  # 4.26.0) that our stale 4.25.2-vendored codegen-specs never generated Props.h entries for —
+  # `error: no type named 'RNSSplitHostColorScheme' in namespace 'facebook::react'` at pod-install
+  # time, with zero warning at either version's own install. An exact pin here + republishing
+  # @symbiote-native/navigation on every bump keeps codegen-specs and any consumer's native source
+  # permanently in lockstep — see .claude/rules/native-proxy-package-files.md.
+  react-native-screens: 4.26.0
   react-native-safe-area-context: ^5.5.2
   '@babel/core': ^7.25.2
   '@types/babel__core': ^7.20.5

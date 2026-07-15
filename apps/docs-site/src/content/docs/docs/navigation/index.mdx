@@ -1,0 +1,227 @@
+---
+title: Navigation
+description: A framework-agnostic Stack/Tab/Drawer navigation library with native react-native-screens transitions, shared across React, Vue, and Angular.
+---
+
+import { Aside, Tabs, TabItem } from '@astrojs/starlight/components';
+
+`@symbiote-native/navigation` is SymbioteNative's navigation library — broadly comparable in
+scope to `react-navigation`, but built the SymbioteNative way: **one shared,
+framework-agnostic core** (`packages/navigation/src/core/`) drives thin React, Vue, and Angular
+adapters, exactly like every other package in this monorepo. It ships **native Stack
+navigation** built on `react-native-screens`' `RNSScreen`/`RNSScreenStack` views — real native
+push/pop transitions, headers, and modals, not a JS-only fake — plus pure-JS **Tab** and
+**Drawer** navigators (bottom tabs and a swipeable side panel) for the parts of a navigation
+surface that don't need a native view underneath.
+
+| OS platform | Support |
+| ----------- | ------- |
+| iOS         | ✅ live |
+| Android     | ✅ live |
+
+| Framework adapter | Support |
+| ------------------ | ------- |
+| React               | ✅ live |
+| Vue                 | ✅ live |
+| Angular             | ✅ live |
+
+## Installation
+
+```sh
+pnpm add @symbiote-native/navigation
+```
+
+`@symbiote-native/navigation` itself is a workspace package (`packages/navigation`), not yet
+published — add it as a workspace dependency the same way the examples do.
+
+<Aside type="note">
+  Stack navigation is built on `react-native-screens`' native views, but you do **not** need to
+  `pnpm add react-native-screens` yourself or import anything from it directly.
+  `@symbiote-native/navigation` depends on it directly and registers its native views' `ViewConfig`s
+  itself — every adapter barrel (`react/index.ts`, `vue/index.ts`, `angular/index.ts`) starts with
+  `import '../register'`, a side-effect import that registers `RNSScreen`, `RNSScreenStack`,
+  `RNSModalScreen`, `RNSScreenStackHeaderConfig`, `RNSScreenStackHeaderSubview`, `RNSSearchBar`, and
+  `RNSScreenContentWrapper` in Fabric's view-config registry before any navigator is used. You only
+  ever import from `@symbiote-native/navigation/react`, `/vue`, or `/angular`.
+</Aside>
+
+## Quick start
+
+The smallest possible working Stack: two screens and a push/pop button. Each screen reads its
+navigator handle with `useStackNavigation()` (or its Vue/Angular equivalent) — the narrowed
+handle for a `Stack` screen, so there's no union and nothing to narrow by hand. See
+[Core concepts](#core-concepts) below for the full set of hooks, composables, and injectors.
+
+<Tabs syncKey="framework">
+  <TabItem label="React">
+    ```tsx
+    import { Stack, useStackNavigation } from '@symbiote-native/navigation/react';
+    import { Button } from '@symbiote-native/react';
+
+    function Home() {
+      const navigation = useStackNavigation();
+      return <Button title="Open details" onPress={() => navigation.push('Details')} />;
+    }
+
+    function Details() {
+      const navigation = useStackNavigation();
+      return <Button title="Go back" onPress={() => navigation.pop()} />;
+    }
+
+    export default function App() {
+      return (
+        <Stack initialRouteName="Home">
+          <Stack.Screen name="Home" component={Home} />
+          <Stack.Screen name="Details" component={Details} />
+        </Stack>
+      );
+    }
+    ```
+  </TabItem>
+  <TabItem label="Vue">
+    ```vue
+    <script setup lang="ts">
+    import { defineComponent, h } from 'vue';
+    import { Stack, Screen, useStackNavigation } from '@symbiote-native/navigation/vue';
+    import { Button } from '@symbiote-native/vue';
+
+    const Home = defineComponent(() => {
+      const navigation = useStackNavigation();
+      return () => h(Button, { title: 'Open details', onPress: () => navigation.value.push('Details') });
+    });
+
+    const Details = defineComponent(() => {
+      const navigation = useStackNavigation();
+      return () => h(Button, { title: 'Go back', onPress: () => navigation.value.pop() });
+    });
+    </script>
+
+    <template>
+      <Stack initial-route-name="Home">
+        <Screen name="Home" :component="Home" />
+        <Screen name="Details" :component="Details" />
+      </Stack>
+    </template>
+    ```
+  </TabItem>
+  <TabItem label="Angular">
+    ```ts
+    import { Component } from '@angular/core';
+    import { Stack, ScreenDirective, injectStackNavigation } from '@symbiote-native/navigation/angular';
+    import { Button } from '@symbiote-native/angular';
+
+    @Component({
+      selector: 'Home',
+      standalone: true,
+      imports: [Button],
+      template: `<Button title="Open details" (press)="navigation.push('Details')" />`,
+    })
+    class Home {
+      protected readonly navigation = injectStackNavigation();
+    }
+
+    @Component({
+      selector: 'Details',
+      standalone: true,
+      imports: [Button],
+      template: `<Button title="Go back" (press)="navigation.pop()" />`,
+    })
+    class Details {
+      protected readonly navigation = injectStackNavigation();
+    }
+
+    @Component({
+      selector: 'App',
+      standalone: true,
+      imports: [Stack, ScreenDirective],
+      template: `
+        <Stack initialRouteName="Home">
+          <ng-template symbioteScreen name="Home" [component]="home"></ng-template>
+          <ng-template symbioteScreen name="Details" [component]="details"></ng-template>
+        </Stack>
+      `,
+    })
+    class App {
+      readonly home = Home;
+      readonly details = Details;
+    }
+    ```
+  </TabItem>
+</Tabs>
+
+## What's in this section
+
+- [Stack](/docs/navigation/stack/) — the native stack navigator: headers, transitions, modals.
+- [Tabs](/docs/navigation/tabs/) — the bottom tab bar navigator.
+- [Drawer](/docs/navigation/drawer/) — the swipeable side-panel navigator.
+- [Hooks](/docs/navigation/hooks/) — `useNavigation`/`useRoute`/`useIsFocused`/`useFocusEffect`/`useNavigationState`
+  (and their Angular `injectX` equivalents) across all three adapters.
+- [Linking](/docs/navigation/linking/) — deep linking and navigation-state persistence.
+- [FAQ](/docs/navigation/faq/) — frequently asked questions.
+
+## Core concepts
+
+**There is no `navigate()`.** Coming from `react-navigation`, the single biggest point of
+confusion is that every navigator here exposes a small imperative handle with explicit verbs
+instead: a Stack handle has `push`/`pop`/`popToTop`/`popTo`/`replace`/`setParams`/`reset`/
+`canGoBack`; a Tab handle has `jumpTo`/`setParams`; a Drawer handle has `openDrawer`/
+`closeDrawer`/`toggleDrawer`/`jumpTo`. There is no single `navigate(name)` that infers push vs.
+tab-switch vs. drawer-open depending on context — you call the verb that matches what you mean.
+
+**Screens are registered the way each framework already registers things**, not forced into one
+shared shape. React uses JSX children (`<Stack.Screen name="..." component={...} />`); Vue uses
+default-slot components (`<Screen name="..." :component="..." />`, or a scoped slot for Drawer's
+custom content); Angular uses structural marker directives on an inert `ng-template`
+(`<ng-template symbioteScreen name="..." [component]="...">`). This is deliberate: each adapter
+follows its own framework's idiom for declaring children rather than forcing one JSX-shaped
+convention onto Vue's or Angular's template model.
+
+**Read `route`/`navigation` with a hook — there is no props path.** Every component under a
+navigator reads its current route and navigator handle by calling a hook (React/Vue) or an
+inject function (Angular): `useRoute()`/`useNavigation()` — or, better, the navigator-specific
+`useStackNavigation()`/`useTabNavigation()`/`useDrawerNavigation()` (Angular:
+`injectRoute()`/`injectNavigation()`/`injectStackNavigation()`/…). The navigator does **not**
+thread `route`/`navigation` into the mounted screen as a prop or `@Input()`; the screen's own
+top-level component reads them exactly the way any component nested deeper does, so there's
+nothing to forward through the layers in between. `useIsFocused()`/`useFocusEffect()`/
+`useNavigationState()` (Angular: `injectIsFocused()`/`injectFocusEffect()`/`injectNavigationState()`)
+are read the same way. See [Hooks & focus](/docs/navigation/hooks/) for the full set.
+
+<Aside type="note">
+  `useNavigation()`/`injectNavigation()` return a **union** type (`IAnyNavigatorHandle` — could be
+  a Stack, Tab, or Drawer handle, since the hook itself doesn't know which navigator mounted the
+  calling component) — that's TypeScript discriminating a union, not a null check; `navigation`
+  itself is never missing. Rather than narrowing it by hand at every call site, reach for
+  `useStackNavigation()`/`useTabNavigation()`/`useDrawerNavigation()` (Angular:
+  `injectStackNavigation()`/etc.) when the calling component knows which navigator kind it's
+  under — each does the narrowing once, inside the library, and hands back a concretely-typed
+  handle, throwing a clear error if the screen turns out to be under the wrong navigator kind.
+  See [Hooks & focus](/docs/navigation/hooks/) for the full picture.
+</Aside>
+
+**Route `params` are `unknown` in this v1** — there is no per-navigator generic param-list type
+the way `react-navigation`'s `RootStackParamList` gives you. `route.params` always types as
+`unknown`; narrow it yourself (a type guard, a schema, a cast at the one I/O edge) on the
+screen that reads it.
+
+## How it works
+
+All of the router logic — the route-stack reducer, screen-options resolution/merging, and the
+derivation of the native view props `RNSScreen`/`RNSScreenStack`/the header config leaves need —
+lives once in `core/`, shared verbatim by React, Vue, and Angular. Each adapter supplies only its
+own lifecycle glue (hooks, composables, or a directive/signal pair) and the descriptor bridge that
+turns the core's render output into that framework's elements:
+
+```
+packages/navigation/src/
+├── core/        # framework-agnostic: reducers, screen-options resolution, render-stack/-tabs/-drawer, linking-config
+├── register.ts   # side-effect: registers react-native-screens' native ViewConfigs
+├── react/         # React lifecycle (hooks) + descriptorToReact bridge
+├── vue/           # Vue lifecycle (composables) + descriptorToVue bridge
+└── angular/       # Angular lifecycle (injectors/signals) + directive-based descriptor bridge
+```
+
+A persistence bug in the route-stack reducer, or a header-layout bug in the native prop
+derivation, is fixed once in `core/` for all three adapters — the same shared-core pattern every
+SymbioteNative package follows. See [how it works](/docs/how-it-works/) for the general
+render-pipeline this sits on top of.

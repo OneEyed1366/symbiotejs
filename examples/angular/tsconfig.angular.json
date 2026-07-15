@@ -1,6 +1,12 @@
 {
   "extends": "@symbiote-native/angular/tsconfig.angular.base.json",
   "compilerOptions": {
+    // packages/navigation's `./angular` export now hands ngc a prebuilt
+    // `build-ngc/angular/index.d.ts` (a conditional `exports` entry, mirroring
+    // packages/splash-screen and adapters/angular) instead of raw `.ts` source, so this app no
+    // longer pulls sibling package source into its own program — declaration files are exempt
+    // from TS's rootDir check, so rootDir stays scoped to this directory like every other
+    // `.examples/*` app.
     "rootDir": ".",
     "outDir": "build/angular",
     "baseUrl": "."

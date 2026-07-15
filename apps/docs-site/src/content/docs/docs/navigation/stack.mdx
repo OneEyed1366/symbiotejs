@@ -1,0 +1,325 @@
+---
+title: Stack navigator
+description: Native push/pop screen transitions for @symbiote-native/navigation, backed by react-native-screens.
+---
+
+import { Aside, Tabs, TabItem } from '@astrojs/starlight/components';
+
+`Stack` is `@symbiote-native/navigation`'s push/pop navigator. Each screen you push mounts as a
+real `RNSScreen` inside a real `RNSScreenStack` — [`react-native-screens`](https://github.com/software-mansion/react-native-screens)'
+native views — so the push/pop transition, the native header, the interactive back-swipe gesture,
+and modal/sheet presentation are all driven by the platform's own navigation controller. Nothing
+here is a JS-simulated animation.
+
+| OS platform | Support |
+| ----------- | ------- |
+| iOS         | ✅ live |
+| Android     | ✅ live |
+
+| Framework adapter | Support |
+| ------------------ | ------- |
+| React               | ✅ live |
+| Vue                 | ✅ live |
+| Angular             | ✅ live |
+
+## Usage
+
+<Tabs syncKey="framework">
+  <TabItem label="React">
+    ```tsx
+    import { Stack, useStackNavigation } from '@symbiote-native/navigation/react';
+
+    function HomeScreen() {
+      const navigation = useStackNavigation();
+      return <ActionButton title="Go to Details" onPress={() => navigation.push('Details', { id: 42 })} />;
+    }
+
+    function DetailsScreen() {
+      const navigation = useStackNavigation();
+      return <ActionButton title="Back" onPress={() => navigation.pop()} />;
+    }
+
+    function App() {
+      return (
+        <Stack initialRouteName="Home">
+          <Stack.Screen name="Home" component={HomeScreen} options={{ title: 'Home' }} />
+          <Stack.Screen name="Details" component={DetailsScreen} options={{ title: 'Details' }} />
+        </Stack>
+      );
+    }
+    ```
+
+    `<Stack.Screen>`'s `component` prop is a component **type**, not a render prop — the navigator
+    mounts it itself. The screen reads its route and handle with `useRoute()`/`useStackNavigation()`;
+    `useStackNavigation()` hands back a concretely-typed Stack handle, no union to narrow. Any
+    component under the stack reads them the same way, at any nesting depth. See
+    [Hooks & focus](/docs/navigation/hooks/).
+  </TabItem>
+  <TabItem label="Vue">
+    ```vue
+    <script setup lang="ts">
+    import { ref } from 'vue';
+    import { Stack, Screen } from '@symbiote-native/navigation/vue';
+    import type { INavigatorHandle } from '@symbiote-native/navigation/vue';
+    import HomeScreen from './HomeScreen.vue';
+    import DetailsScreen from './DetailsScreen.vue';
+
+    const stackHandle = ref<INavigatorHandle | null>(null);
+    </script>
+
+    <template>
+      <Stack ref="stackHandle" initial-route-name="Home">
+        <Screen name="Home" :component="HomeScreen" :options="{ title: 'Home' }" />
+        <Screen name="Details" :component="DetailsScreen" :options="{ title: 'Details' }" />
+      </Stack>
+    </template>
+    ```
+
+    `Screen` is exported both as `Stack.Screen` and standalone, so SFC templates can write
+    `<Screen>` directly. `component` takes a plain Vue `Component` (an SFC default export or
+    `defineComponent(...)`), not a slot. Vue reads attrs case-insensitively, so `initial-route-name`
+    (kebab, as above) and `initialRouteName` (camel, in a TSX render function) both work.
+    `HomeScreen.vue`/`DetailsScreen.vue` read their `route`/`navigation` with `useRoute()`/
+    `useStackNavigation()` in `<script setup>` (reading `.value` on each) — the same hook pattern
+    as React's tab above.
+  </TabItem>
+  <TabItem label="Angular">
+    ```ts
+    // home-screen.ts
+    import { Component } from '@angular/core';
+    import { View } from '@symbiote-native/angular';
+    import { injectStackNavigation } from '@symbiote-native/navigation/angular';
+    import { ActionButton } from './action-button';
+
+    @Component({
+      selector: 'HomeScreen',
+      standalone: true,
+      imports: [ActionButton, View],
+      template: `
+        <View class="screen">
+          <ActionButton title="Go to Details" (press)="navigation.push('Details', { id: 42 })"></ActionButton>
+        </View>
+      `,
+    })
+    export class HomeScreen {
+      protected readonly navigation = injectStackNavigation();
+    }
+    ```
+
+    ```ts
+    // details-screen.ts
+    import { Component } from '@angular/core';
+    import { View } from '@symbiote-native/angular';
+    import { injectStackNavigation } from '@symbiote-native/navigation/angular';
+    import { ActionButton } from './action-button';
+
+    @Component({
+      selector: 'DetailsScreen',
+      standalone: true,
+      imports: [ActionButton, View],
+      template: `
+        <View class="screen">
+          <ActionButton title="Back" (press)="navigation.pop()"></ActionButton>
+        </View>
+      `,
+    })
+    export class DetailsScreen {
+      protected readonly navigation = injectStackNavigation();
+    }
+    ```
+
+    ```ts
+    // app.ts
+    import { Component } from '@angular/core';
+    import { Stack, ScreenDirective } from '@symbiote-native/navigation/angular';
+    import { HomeScreen } from './home-screen';
+    import { DetailsScreen } from './details-screen';
+
+    @Component({
+      selector: 'App',
+      standalone: true,
+      imports: [Stack, ScreenDirective],
+      template: `
+        <Stack initialRouteName="Home">
+          <ng-template symbioteScreen name="Home" [component]="homeScreen" [options]="{ title: 'Home' }"></ng-template>
+          <ng-template symbioteScreen name="Details" [component]="detailsScreen" [options]="{ title: 'Details' }"></ng-template>
+        </Stack>
+      `,
+    })
+    export class App {
+      readonly homeScreen = HomeScreen;
+      readonly detailsScreen = DetailsScreen;
+    }
+    ```
+
+    Screens are declared with an `ng-template symbioteScreen` structural directive, read by
+    `Stack` through `@ContentChildren` — not a component tag of their own. `component` takes a
+    component **class reference** (bound through a field, since Angular templates can't reference
+    an imported class by name directly). The screen reads its `route`/`navigation` with
+    `injectRoute()`/`injectStackNavigation()` from a field initializer or the constructor;
+    `injectStackNavigation()` returns a concretely-typed Stack handle. Any component under the
+    stack reads them the same way, at any nesting depth. See [Hooks & focus](/docs/navigation/hooks/).
+  </TabItem>
+</Tabs>
+
+### Getting the navigator handle imperatively
+
+<Tabs syncKey="framework">
+  <TabItem label="React">
+    ```tsx
+    const stackRef = useRef<INavigatorHandle>(null);
+    // <Stack ref={stackRef}>...</Stack>
+    stackRef.current?.push('Details');
+    ```
+  </TabItem>
+  <TabItem label="Vue">
+    ```vue
+    <script setup lang="ts">
+    const stackHandle = ref<INavigatorHandle | null>(null);
+    // <Stack ref="stackHandle">...</Stack>
+    stackHandle.value?.push('Details');
+    </script>
+    ```
+  </TabItem>
+  <TabItem label="Angular">
+    ```ts
+    @ViewChild('nav') private readonly nav!: Stack;
+    // <Stack #nav>...</Stack>
+    this.nav.push('Details');
+    ```
+
+    `Stack` implements `INavigatorHandle` directly — the component instance reached through the
+    template reference variable **is** the handle, no separate ref/ForwardRef indirection needed.
+  </TabItem>
+</Tabs>
+
+### Header customization
+
+`IScreenOptions.headerLeftBarButtonItems` / `headerRightBarButtonItems` add native bar buttons or
+menus to the header — this is an **iOS-only** native surface (react-native-screens exposes no
+Android equivalent). A right-side button that calls a handler:
+
+```tsx
+<Stack.Screen
+  name="Details"
+  component={DetailsScreen}
+  options={{
+    headerRightBarButtonItems: [
+      {
+        type: 'button',
+        title: 'Edit',
+        onPress: () => setEditing(true),
+      },
+    ],
+  }}
+/>
+```
+
+An item can also be `type: 'menu'` (opens a native menu of nested `action`/`submenu` items) or
+`type: 'spacing'`. Icons for any of these come from `{ type: 'sfSymbol', name }`,
+`{ type: 'xcasset', name }`, or an `imageSource`/`templateSource` pair.
+
+`headerSearchBarOptions` embeds a native search bar in the header. Besides its static config
+(`placeholder`, `autoCapitalize`, `placement`, …) and event callbacks, it exposes an imperative
+`ref` — `focus()` / `blur()` / `clearText()` / `setText(text)` / `cancelSearch()` /
+`toggleCancelButton(show)`:
+
+```tsx
+const searchBarRef = useRef<ISearchBarCommands>(null);
+
+<Stack.Screen
+  name="Details"
+  component={DetailsScreen}
+  options={{
+    headerSearchBarOptions: {
+      ref: searchBarRef,
+      placeholder: 'Search…',
+      onChangeText: (text) => setQuery(text),
+    },
+  }}
+/>
+
+<ActionButton title="Focus search" onPress={() => searchBarRef.current?.focus()} />
+```
+
+### Modals & sheets
+
+`stackPresentation` switches a pushed screen from a regular push to a modal or, on iOS, a
+`formSheet`/`pageSheet` with configurable detents:
+
+```tsx
+<Stack.Screen
+  name="Filters"
+  component={FiltersScreen}
+  options={{
+    stackPresentation: 'formSheet',
+    sheetAllowedDetents: 'medium',
+  }}
+/>
+```
+
+## API
+
+### Navigator handle
+
+<Aside type="caution">
+  Unlike react-navigation, `INavigatorHandle` has **no `.navigate()` method**. `push` always
+  stacks a new route instance; `replace` swaps the current top route for a new one. Pick whichever
+  of the two matches the transition you want.
+</Aside>
+
+| Method | Signature | Description |
+| --- | --- | --- |
+| `push` | `(name: string, params?: unknown) => void` | Pushes a new route onto the stack |
+| `pop` | `(count?: number) => void` | Pops `count` routes (default `1`) off the top; never pops below the last remaining route |
+| `popToTop` | `() => void` | Pops back to the first (initial) route |
+| `popTo` | `(key: string) => void` | Pops to the route matching `key`; a no-op if no route has that key |
+| `replace` | `(name: string, params?: unknown) => void` | Replaces the current top route with a new one (or pushes if the stack is empty) |
+| `setParams` | `(params: unknown, key?: string) => void` | Shallow-merges `params` into the route matched by `key`, defaulting to the currently focused route |
+| `reset` | `(state: INavigatorState) => void` | Replaces the entire navigator state verbatim; used to restore persisted state |
+| `canGoBack` | `() => boolean` | Whether `pop()` or the hardware back button would currently have an effect |
+
+### Screen options
+
+Every option below is passed through `<Stack.Screen options={...}>` (React), `:options` (Vue), or
+the `[options]` input on `ng-template symbioteScreen` (Angular) — or through `screenOptions` on
+`Stack` itself to apply defaults to every screen.
+
+| Option | Type | Description |
+| --- | --- | --- |
+| `title` | `string` | Header title text |
+| `headerShown` | `boolean` | `false` hides the native header entirely |
+| `headerTitleColor` | color | Title text color |
+| `headerStyle` | `{ backgroundColor?: color }` | Compact/collapsed header background |
+| `headerTintColor` | color | Tint for the back button and other header content |
+| `headerBackTitle` | `string` | Back-button label text |
+| `headerBackButtonDisplayMode` | `'minimal' \| 'default' \| 'generic'` | iOS back-button label display mode |
+| `headerLargeTitle` | `boolean` | Enables the iOS large-title header |
+| `headerLargeStyle` | `{ backgroundColor?: color }` | Background for the expanded large-title state (tracked separately from `headerStyle` — left unset it defaults to white even in a dark theme) |
+| `headerUserInterfaceStyle` | `'unspecified' \| 'light' \| 'dark'` | Forces header (and any embedded search bar) chrome, overriding system appearance |
+| `headerTranslucent` | `boolean` | Makes the header see-through; on Android also removes the automatic content offset below the toolbar |
+| `headerLeftBarButtonItems` / `headerRightBarButtonItems` | array of bar-button items | Header bar buttons/menus on each side (**iOS-only** native surface) |
+| `headerSearchBarOptions` | search bar options object | Embeds a native search bar in the header |
+| `gestureEnabled` | `boolean` | Enables/disables the interactive back-swipe gesture |
+| `stackAnimation` | `'default' \| 'flip' \| 'simple_push' \| 'none' \| 'fade' \| 'slide_from_right' \| 'slide_from_left' \| 'slide_from_bottom' \| 'fade_from_bottom' \| 'ios_from_right' \| 'ios_from_left'` | Push/pop transition animation |
+| `stackPresentation` | `'push' \| 'modal' \| 'transparentModal' \| 'fullScreenModal' \| 'formSheet' \| 'pageSheet' \| 'containedModal' \| 'containedTransparentModal'` | Push vs. modal-family presentation |
+| `transitionDuration` | `number` | Transition duration override |
+| `sheetAllowedDetents` | `number[] \| 'fitToContents' \| 'large' \| 'medium' \| 'all'` | Allowed formSheet/pageSheet detents |
+| `sheetLargestUndimmedDetentIndex` | `number \| 'last' \| 'none' \| 'all' \| 'large' \| 'medium'` | Detent index beyond which the dimming overlay applies |
+| `sheetInitialDetentIndex` | `number \| 'last'` | Initial detent the sheet opens at |
+| `sheetGrabberVisible` | `boolean` | Shows the sheet's grabber handle |
+| `sheetCornerRadius` | `number` | Sheet corner radius |
+| `sheetExpandsWhenScrolledToEdge` | `boolean` | Sheet expands to the next detent when content scrolls to its edge |
+| `sheetElevation` | `number` | Sheet shadow elevation |
+| `sheetShouldOverflowTopInset` | `boolean` | Whether sheet content can overflow the top safe-area inset |
+| `sheetDefaultResizeAnimationEnabled` | `boolean` | Enables the default resize animation for sheet detent changes |
+| `statusBarStyle` | `'inverted' \| 'auto' \| 'light' \| 'dark'` | Status bar style while this screen is focused |
+| `statusBarHidden` | `boolean` | Hides the status bar |
+| `statusBarAnimation` | `'none' \| 'fade' \| 'slide'` | Status bar show/hide animation |
+| `screenOrientation` | `'default' \| 'all' \| 'portrait' \| 'portrait_up' \| 'portrait_down' \| 'landscape' \| 'landscape_left' \| 'landscape_right'` | Locks screen orientation |
+
+## Next steps
+
+Read routes and drive focus-aware behavior with [`useNavigation()`/`useRoute()` (and their
+Vue/Angular equivalents)](/docs/navigation/hooks/), or resolve a URL into a pushed screen
+on [Deep linking](/docs/navigation/linking/).

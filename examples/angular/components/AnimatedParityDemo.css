@@ -4,13 +4,8 @@
    Animated transform keep that transform composed at the use site via [style], alongside this
    class for the static half. */
 
-.section {
-  gap: 12px;
-}
-.section-label {
-  color: #3b5266;
-  font-size: 13px;
-}
+/* .section/.section-label/.row-tight are the app-wide generic classes from App.css, not
+   redeclared here — see the style-registry-collisions rule. */
 .drag-hint {
   color: #718096;
   font-size: 11px;
@@ -36,7 +31,7 @@
   width: 22px;
   height: 22px;
   border-radius: 11px;
-  background-color: #4299e1;
+  background-color: #dd0031;
 }
 .follow-dot {
   width: 22px;
@@ -59,10 +54,6 @@
 .collapse-header-text {
   color: white;
   font-size: 12px;
-}
-.row-tight {
-  flex-direction: row;
-  gap: 8px;
 }
 .flex-1 {
   flex: 1;

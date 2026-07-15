@@ -1,24 +1,7 @@
-.section {
-  gap: 12px;
-}
-.section-label {
-  color: #3b5266;
-  font-size: 13px;
-}
-.info-text {
-  color: #cbd5e1;
-  font-size: 14px;
-}
-.row {
-  flex-direction: row;
-  gap: 12px;
-}
+/* .section/.section-label/.info-text/.row/.note-text are the app-wide generic classes from
+   App.css, not redeclared here — see the style-registry-collisions rule. */
 .flex-1 {
   flex: 1;
-}
-.note-text {
-  color: #cbd5e1;
-  font-size: 13px;
 }
 .long-press-row {
   background-color: #181f33;

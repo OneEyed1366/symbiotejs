@@ -110,6 +110,10 @@ async function assertTapMoves(triggerId: string, dotId: string): Promise<void> {
 describe('symbiote canary · user journeys', () => {
   beforeAll(async () => {
     await device.launchApp(launchOpts)
+    // App.tsx boots on the navigation demo Menu screen (@symbiote-native/navigation's Stack) —
+    // push into "Canary" first, the screen carrying every testID below.
+    await waitFor(element(by.id('menu-row-Canary'))).toBeVisible().withTimeout(10_000)
+    await element(by.id('menu-row-Canary')).tap()
     // Sync is OFF, so nothing auto-waits for the first commit. Gate on the scroll container existing
     // before any journey scrolls/queries, or the first whileElement(...).scroll() races the launch.
     await waitFor(element(by.id('canary-scroll'))).toExist().withTimeout(30_000)
@@ -124,9 +128,6 @@ describe('symbiote canary · user journeys', () => {
     // JS event -> setState -> recommit round-trip; poll like the other async readouts below.
     await tapWithRetry('counter-card')
     await waitForText('counter-value', text => text === 'tapped 1×', 3_000)
-    // eslint-disable-next-line no-console
-    console.log('DEBUG entering pause window now')
-    await sleep(30_000)
     await tapWithRetry('counter-card')
     await waitForText('counter-value', text => text === 'tapped 2×', 3_000)
   })

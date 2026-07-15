@@ -1,16 +1,17 @@
 import { readFileSync } from 'fs'
 import { by, device, element, expect, waitFor } from 'detox'
 
-// Canary user-journey e2e. Detox attaches at the stock RN host BELOW the renderer
-// symbiote replaces, so this exact spec is framework-agnostic: the identical file runs against the
+// Canary user-journey e2e. Detox attaches at the stock RN host BELOW the renderer symbiote
+// replaces, so this exact spec is framework-agnostic: the identical file runs against the
 // React, Vue-TSX and Vue-SFC canaries — all three render the same surface with the same testIDs.
 // Each journey drives a real native interaction AND asserts the observable outcome of ONE
 // component, so a component that mounts but MIS-behaves — e.g. a native-driver Animated view
 // that renders frozen — fails HERE, where a bare toBeVisible would pass.
 //
 // Sync is OFF from the first launch: the canary runs a perpetual native Animated.loop heartbeat
-// (offloaded to the native driver) so the app never reports idle and launchApp would hang waiting
-// for it; detoxEnableSynchronization:0 via launchArgs is the same gate the attach probe uses.
+// (offloaded to the UI thread, so JS never reports idle) which would otherwise hang launchApp
+// waiting for idle; detoxEnableSynchronization:0 via launchArgs is the same gate the attach probe
+// uses.
 
 const launchOpts = { newInstance: true, launchArgs: { detoxEnableSynchronization: 0 } }
 
@@ -72,8 +73,9 @@ async function tapWithRetry(id: string, attempts = 3): Promise<void> {
 // Animation liveness WITHOUT reading opacity/transform from JS (impossible for a native-driven
 // value — the frames live on the UI thread). element().takeScreenshot crops to THIS component and
 // resolves to a PNG path; two crops that differ byte-for-byte prove motion, identical crops prove a
-// freeze. This is what catches the static-circle class on-device. Element screenshots are iOS-solid;
-// on Android they depend on the Detox version (see the e2e-cases doc's open question).
+// freeze. This is what catches the static-circle class on-device. Element screenshots are solid on
+// iOS; on Android whether they crop to the element or the whole screen depends on the installed
+// Detox version, so treat any Android false negative here first.
 async function elementShot(id: string, name: string): Promise<Buffer> {
   const path = await element(by.id(id)).takeScreenshot(name)
   return readFileSync(path)
@@ -108,6 +110,10 @@ async function assertTapMoves(triggerId: string, dotId: string): Promise<void> {
 describe('symbiote canary · user journeys', () => {
   beforeAll(async () => {
     await device.launchApp(launchOpts)
+    // App.tsx boots on the navigation demo Menu screen (@symbiote-native/navigation's Stack) —
+    // push into "Canary" first, the screen carrying every testID below.
+    await waitFor(element(by.id('menu-row-Canary'))).toBeVisible().withTimeout(10_000)
+    await element(by.id('menu-row-Canary')).tap()
     // Sync is OFF, so nothing auto-waits for the first commit. Gate on the scroll container existing
     // before any journey scrolls/queries, or the first whileElement(...).scroll() races the launch.
     await waitFor(element(by.id('canary-scroll'))).toExist().withTimeout(30_000)

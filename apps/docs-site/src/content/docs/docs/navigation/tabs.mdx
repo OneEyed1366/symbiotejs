@@ -1,0 +1,183 @@
+---
+title: Tab navigator
+description: A pure-JS bottom-tabs navigator that mounts only the focused route's screen.
+---
+
+import { Aside, Tabs, TabItem } from '@astrojs/starlight/components';
+
+`Tab` renders a bottom tab bar and switches between a fixed set of screens declared as
+`<Tab.Screen>` children. Unlike [Stack](/docs/navigation/stack/), which drives native
+`react-native-screens` push/pop transitions and keeps every pushed route alive in memory, Tab
+paints its bar with ordinary `View`/`Text` primitives in JS — there is no native tab-bar
+component underneath.
+
+<Aside type="caution">
+  Only the **focused** route's screen is ever mounted. Switching tabs unmounts the previous
+  screen's component and mounts the new one from scratch — its state does not survive a switch
+  away and back, and its constructor/setup re-runs every time it regains focus. If you need to
+  react to that, see [`useIsFocused()`/`useFocusEffect()` (Angular: `injectIsFocused()`/
+  `injectFocusEffect()`)](/docs/navigation/hooks/) below.
+</Aside>
+
+A Tab navigator's route set is fixed at mount time — whatever `<Tab.Screen>`s you declare — so
+there is no `push`/`pop`, only `jumpTo` between the existing tabs.
+
+## Usage
+
+<Tabs syncKey="framework">
+  <TabItem label="React">
+    ```tsx
+    import { Tab } from '@symbiote-native/navigation/react';
+
+    export function TabsDemoScreen() {
+      return (
+        <Tab initialRouteName="Home">
+          <Tab.Screen
+            name="Home"
+            component={TabHomeScreen}
+            options={{ tabBarLabel: 'Home', tabBarIcon: '🏠', tabBarActiveTintColor: '#4fd1a5' }}
+          />
+          <Tab.Screen
+            name="Search"
+            component={TabSearchScreen}
+            options={{ tabBarLabel: 'Search', tabBarIcon: '🔍', tabBarBadge: 3 }}
+          />
+        </Tab>
+      );
+    }
+    ```
+  </TabItem>
+  <TabItem label="Vue">
+    ```vue
+    <script setup lang="ts">
+    import { Tab, TabScreen } from '@symbiote-native/navigation/vue';
+    import HomeTabScreen from './HomeTabScreen.vue';
+    import SearchTabScreen from './SearchTabScreen.vue';
+    </script>
+
+    <template>
+      <Tab initial-route-name="Home">
+        <TabScreen
+          name="Home"
+          :component="HomeTabScreen"
+          :options="{ tabBarLabel: 'Home', tabBarIcon: '🏠', tabBarActiveTintColor: '#4fd1a5' }"
+        />
+        <TabScreen
+          name="Search"
+          :component="SearchTabScreen"
+          :options="{ tabBarLabel: 'Search', tabBarIcon: '🔍', tabBarBadge: 3 }"
+        />
+      </Tab>
+    </template>
+    ```
+  </TabItem>
+  <TabItem label="Angular">
+    ```ts
+    import { Component } from '@angular/core';
+    import { Tab, TabScreenDirective } from '@symbiote-native/navigation/angular';
+    import { HomeTabScreen } from './home-tab-screen';
+    import { SearchTabScreen } from './search-tab-screen';
+
+    @Component({
+      selector: 'TabsDemoScreen',
+      standalone: true,
+      imports: [Tab, TabScreenDirective],
+      template: `
+        <Tab initialRouteName="Home">
+          <ng-template
+            symbioteTabScreen
+            name="Home"
+            [component]="homeTabScreen"
+            [options]="homeOptions"
+          ></ng-template>
+          <ng-template
+            symbioteTabScreen
+            name="Search"
+            [component]="searchTabScreen"
+            [options]="searchOptions"
+          ></ng-template>
+        </Tab>
+      `,
+    })
+    export class TabsDemoScreen {
+      readonly homeTabScreen = HomeTabScreen;
+      readonly searchTabScreen = SearchTabScreen;
+
+      readonly homeOptions = {
+        tabBarLabel: 'Home',
+        tabBarIcon: '🏠',
+        tabBarActiveTintColor: '#4fd1a5',
+      };
+      readonly searchOptions = { tabBarLabel: 'Search', tabBarIcon: '🔍', tabBarBadge: 3 };
+    }
+    ```
+
+    `symbioteTabScreen` is a structural directive on `<ng-template>`, Angular's twin of React's
+    `<Tab.Screen>`/Vue's `<TabScreen>`: `name` and `component` are required inputs, `options` and
+    `initialParams` are optional. A screen that needs its own `route`/`navigation` reads them with
+    `injectRoute()`/`injectTabNavigation()` (Angular) or `useRoute()`/`useTabNavigation()`
+    (React/Vue), the same as [Stack's screens](/docs/navigation/stack/). `HomeTabScreen`/
+    `SearchTabScreen` read theirs the same way.
+  </TabItem>
+</Tabs>
+
+<Aside type="note">
+  `tabBarIcon` takes an `IDescriptor` or a bare string rendered as a label-style glyph (an emoji
+  works well) — it is **not** a render-prop callback the way react-navigation's `tabBarIcon` is.
+  Coming from react-navigation, `tabBarIcon: ({ focused }) => <Icon .../>` has no equivalent here;
+  build the descriptor (or pick the string) yourself, outside the option.
+</Aside>
+
+### Styling the tab bar
+
+`tabBarStyle` styles the tab bar container itself; `tabBarActiveTintColor`/
+`tabBarInactiveTintColor` tint the focused/unfocused label and icon. All three can be set per-tab
+in `options` or shared across every tab via `screenOptions`:
+
+```tsx
+<Tab
+  screenOptions={{
+    tabBarStyle: { backgroundColor: '#101018', borderTopColor: '#26263a' },
+    tabBarActiveTintColor: '#4fd1a5',
+    tabBarInactiveTintColor: '#8e8e93',
+  }}
+>
+  {/* ...Tab.Screen children... */}
+</Tab>
+```
+
+## API
+
+### Navigator handle
+
+`ITabNavigatorHandle` — the shape of the object every adapter exposes (a forwarded ref in React,
+`expose()` in Vue, the `Tab` class itself in Angular):
+
+| Method | Signature | Description |
+| --- | --- | --- |
+| `jumpTo` | `(name: string, params?: unknown) => void` | Moves focus to the tab route named `name`. Never adds, removes, or reorders tabs |
+| `setParams` | `(params: unknown, key: string) => void` | Merges `params` into the route matched by `key`. `key` is **required** here, unlike Stack's `setParams`, whose key defaults to the focused route |
+
+### Tab options
+
+`ITabOptions` — passed as `options` on a single `<Tab.Screen>` (or `screenOptions` on `<Tab>` for
+every tab at once; a screen's own `options` win on a per-field basis):
+
+| Option | Type | Description |
+| --- | --- | --- |
+| `title` | `string` | Fallback label used when `tabBarLabel` is unset |
+| `tabBarLabel` | `string` | Explicit tab bar label text |
+| `tabBarIcon` | `IDescriptor \| string` | Tab icon: a pre-built descriptor node, or a bare string rendered as a label-style glyph (e.g. an emoji). Not a render-prop callback |
+| `tabBarBadge` | `string \| number` | Badge value shown on the tab icon |
+| `tabBarActiveTintColor` | color | Tint color for the label/icon when the tab is focused (site default `#007AFF`) |
+| `tabBarInactiveTintColor` | color | Tint color for the label/icon when unfocused (site default `#8e8e93`) |
+| `tabBarStyle` | style object | Style override for the tab bar container |
+
+## Related
+
+Because Tab remounts a screen's component on every focus switch, [`useIsFocused()` and
+`useFocusEffect()` (Angular: `injectIsFocused()`/`injectFocusEffect()`)](/docs/navigation/hooks/)
+are the tools for reacting to a tab regaining or
+losing focus without relying on mount/unmount timing. To combine push/pop transitions with a tab
+bar — a Stack nested inside a Tab screen, or a Tab nested inside a Stack screen — see
+[Stack navigator](/docs/navigation/stack/).

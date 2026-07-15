@@ -1,6 +1,6 @@
 {
   "name": "@symbiote-native/components",
-  "version": "0.2.3",
+  "version": "0.2.4",
   "description": "Framework-agnostic component logic (state machines + render functions) for SymbioteNative — written once, inherited by every adapter (React, Vue, Angular, ...).",
   "repository": {
     "type": "git",
@@ -18,7 +18,7 @@
   "types": "src/index.ts",
   "exports": {
     ".": "./src/index.ts",
-    "./bootstrap": "./src/bootstrap.ts"
+    "./bootstrap": "./src/bootstrap/index.ts"
   },
   "files": [
     "build"
@@ -34,8 +34,8 @@
         "default": "./build/index.js"
       },
       "./bootstrap": {
-        "types": "./build/bootstrap.d.ts",
-        "default": "./build/bootstrap.js"
+        "types": "./build/bootstrap/index.d.ts",
+        "default": "./build/bootstrap/index.js"
       }
     }
   },
@@ -43,13 +43,12 @@
     "typecheck": "tsc --build",
     "format": "prettier --write \"src/**/*.{ts,tsx}\""
   },
-  "dependencies": {
-    "@symbiote-native/engine": "workspace:*"
-  },
   "peerDependencies": {
+    "@symbiote-native/engine": ">=0.1.0",
     "react-native": ">=0.86"
   },
   "devDependencies": {
+    "@symbiote-native/engine": "workspace:*",
     "@types/node": "catalog:"
   }
 }

@@ -23,41 +23,22 @@ onMounted(() => {
 </script>
 
 <template>
-  <View class="section">
+  <View class="section-nested">
     <Text class="section-label">Accessibility · props → native · aria/role transform · AccessibilityInfo</Text>
     <!-- getter readout: 'off' (no screen reader) proves the module resolved -->
-    <Text testID="a11y-screen-reader" class="info-text">{{ `screen reader: ${screenReader}` }}</Text>
+    <Text class="info-text">{{ `screen reader: ${screenReader}` }}</Text>
     <!-- canonical accessibility*: content-desc 'a11y-canonical-label' + role=header -->
-    <View testID="a11y-canonical-card" :accessible="true" accessibility-role="header" accessibility-label="a11y-canonical-label" class="a11y-card">
+    <View :accessible="true" accessibility-role="header" accessibility-label="a11y-canonical-label" class="a11y-card">
       <Text class="info-text">canonical label + role=header</Text>
     </View>
     <!-- web aria and role aliases MUST fold: content-desc should be
          'a11y-aria-label', a raw aria-label attribute must not reach the native node -->
-    <View testID="a11y-aria-card" :accessible="true" role="button" aria-label="a11y-aria-label" class="a11y-card">
+    <View :accessible="true" role="button" aria-label="a11y-aria-label" class="a11y-card">
       <Text class="info-text">aria-label + role=button</Text>
     </View>
     <!-- accessibilityState: uiautomator shows enabled=false / selected=true -->
-    <View testID="a11y-state-card" :accessible="true" accessibility-label="a11y-state" :accessibility-state="{ disabled: true, selected: true }" class="a11y-card">
+    <View :accessible="true" accessibility-label="a11y-state" :accessibility-state="{ disabled: true, selected: true }" class="a11y-card">
       <Text class="info-text">state: disabled + selected</Text>
     </View>
   </View>
 </template>
-
-<style scoped>
-.section {
-  gap: 12px;
-}
-.section-label {
-  color: #3b5266;
-  font-size: 13px;
-}
-.info-text {
-  color: #cbd5e1;
-  font-size: 14px;
-}
-.a11y-card {
-  padding: 12px;
-  border-radius: 10px;
-  background-color: #2c3e50;
-}
-</style>

@@ -19,6 +19,7 @@ export {
   isSymbioteNode,
   isSymbioteEvent,
   RAW_TEXT_COMPONENT,
+  debugNodeId,
 } from './node';
 export { isEventFor } from './view-config';
 export { registerComponent, setNativeViewConfigSource } from './registry';

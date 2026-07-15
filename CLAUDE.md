@@ -169,20 +169,29 @@ component of their own. New runtime modules follow this split, never the reverse
 </runtime_modules_layering>
 
 <examples_vs_dot_examples>
-`examples/*` are the PUBLIC canary apps: every
-`@symbiote-native/*` dependency is ALWAYS `catalog:` (the real published npm
-version), demonstrating the actual install experience for external users and docs.
+`examples/*` are the PUBLIC canary apps. Since 2026-07-14 they are OUTSIDE the
+pnpm workspace entirely (removed from `pnpm-workspace.yaml`'s `packages:`) — a
+standalone `npm install`-able tree with no `catalog:`/`workspace:*` specifiers
+(neither resolves outside a pnpm workspace); every dependency is a literal
+version, and every `@symbiote-native/*` is a pkg.pr.new canary URL pending a real
+npm release. Install with plain `npm install` INSIDE the example directory, never
+`pnpm install` from repo root — that reason is load-bearing: pnpm's
+`blockExoticSubdeps` supply-chain guard blocks a pkg.pr.new URL's own transitive
+URL subdeps anywhere in a SHARED pnpm workspace, which used to poison
+`.examples/*`'s install too when both trees shared one lockfile.
 `.examples/{react,vue-sfc,vue-tsx,angular}` (dot-prefixed, gitignored by the
-existing blanket `.*/` rule — no explicit `.gitignore` entry needed) is a private,
-untracked dev harness: the same apps, full native scaffolding, but every
-`@symbiote-native/*` dependency is `workspace:*` so local source edits in
-`core/*`/`adapters/*`/`packages/*` are picked up live. **Any task that adds, ports,
-or wires up a component / adapter / third-party wrapper / package integrates it
-ONLY into the matching `.examples/<app>` — never into `examples/<app>`.**
-`examples/<app>` is updated later, deliberately, to bump a `catalog:` version after
-a real npm publish. Full mechanics, the diagnostic for which tree an app is
-actually linked to, and the 2026-07-04 incident that motivated the split: the
-`symbiote-dev-examples` skill.
+existing blanket `.*/` rule — no explicit `.gitignore` entry needed) is UNCHANGED:
+a private, untracked dev harness still inside the pnpm workspace, same apps, full
+native scaffolding, every `@symbiote-native/*` dependency `workspace:*` so local
+source edits in `core/*`/`adapters/*`/`packages/*` are picked up live. **Any task
+that adds, ports, or wires up a component / adapter / third-party wrapper /
+package integrates it ONLY into the matching `.examples/<app>` — never into
+`examples/<app>`.** `examples/<app>` is updated later, deliberately, as its own
+step: a direct literal-version edit in `examples/*/package.json` after a real npm
+publish (no catalog to bump anymore). Full mechanics, the `blockExoticSubdeps`
+root cause, the Metro/`react-native.config.js` fallout, the diagnostic for which
+tree an app is actually linked to, and the 2026-07-04 incident that originally
+motivated the split: the `symbiote-dev-examples` skill.
 </examples_vs_dot_examples>
 
 <components_split_logic_view_lifecycle>

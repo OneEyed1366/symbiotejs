@@ -1,6 +1,6 @@
 {
   "name": "@symbiote-native/splash-screen",
-  "version": "0.1.4",
+  "version": "1.0.0",
   "description": "Third-party splash-screen native module wrapped for SymbioteNative — one framework-agnostic core, built once and reachable from the React, Vue, and Angular adapters.",
   "repository": {
     "type": "git",
@@ -72,7 +72,7 @@
     }
   },
   "scripts": {
-    "prepare": "node vendor-codegen-specs.cjs && pnpm run ng:build",
+    "prepare": "node ../../scripts/vendor-codegen-specs.cjs react-native-bootsplash src/specs && pnpm run ng:build",
     "typecheck": "tsc --build",
     "ng:build": "ngc -p tsconfig.angular.json",
     "format": "prettier --write \"src/**/*.{ts,tsx}\""
@@ -80,11 +80,11 @@
   "dependencies": {
     "react-native-bootsplash": "catalog:",
     "react-native-is-edge-to-edge": "catalog:",
-    "@symbiote-native/components": "workspace:*",
-    "@symbiote-native/engine": "workspace:*"
+    "@symbiote-native/components": "workspace:*"
   },
   "peerDependencies": {
     "@symbiote-native/angular": "workspace:*",
+    "@symbiote-native/engine": ">=0.1.0",
     "@symbiote-native/react": "workspace:*",
     "@symbiote-native/vue": "workspace:*",
     "@angular/core": ">=20",
@@ -121,6 +121,7 @@
     "@angular/compiler-cli": "catalog:",
     "@angular/core": "catalog:",
     "@symbiote-native/angular": "workspace:*",
+    "@symbiote-native/engine": "workspace:*",
     "@symbiote-native/react": "workspace:*",
     "@symbiote-native/test-utils": "workspace:*",
     "@symbiote-native/vue": "workspace:*",

@@ -10,13 +10,7 @@
 // exactly this reason.
 
 import { Component, OnDestroy, OnInit } from '@angular/core';
-import {
-  Animated,
-  AnimatedView,
-  Button,
-  Text,
-  View,
-} from '@symbiote-native/angular';
+import { Animated, AnimatedView, Button, Text, View } from '@symbiote-native/angular';
 // Static look lives in AnimatedDemo.css — compiled at build time by @symbiote-native/css-parser.
 import './AnimatedDemo.css';
 
@@ -30,7 +24,7 @@ const FREEZE_MS = 1500;
   standalone: true,
   imports: [View, Text, Button, AnimatedView],
   template: `
-    <View class="section">
+    <View class="section-nested">
       <Text class="section-label">Animated · JS vs native driver</Text>
 
       <View class="pulse-frame">

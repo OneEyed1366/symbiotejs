@@ -22,13 +22,12 @@ import './AccessibilityDemo.css';
 // The established fix (see adapters/angular/src/components/pressable/index.ts's `[symbioteHostProps]`
 // usage, and SymbioteHostPropsDirective's own docstring) is to bundle such props into one object and
 // bind it through `[symbioteHostProps]`, a REAL declared @Input the type-checker already knows about.
-
 @Component({
   selector: 'AccessibilityDemo',
   standalone: true,
   imports: [View, Text, SymbioteHostPropsDirective],
   template: `
-    <View class="section">
+    <View class="section-nested">
       <Text class="section-label"
         >Accessibility · props → native · aria/role transform ·
         AccessibilityInfo</Text

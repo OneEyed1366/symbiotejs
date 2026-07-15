@@ -1,5 +1,25 @@
 # @symbiote-native/splash-screen
 
+## 1.0.0
+
+### Patch Changes
+
+- Updated dependencies [f9569fb]
+- Updated dependencies [a2cadf6]
+- Updated dependencies [09feeb9]
+- Updated dependencies [ad17e8f]
+- Updated dependencies [1791d13]
+- Updated dependencies [1791d13]
+- Updated dependencies [1791d13]
+- Updated dependencies [1791d13]
+- Updated dependencies [1791d13]
+- Updated dependencies [f43fe5b]
+  - @symbiote-native/angular@0.4.0
+  - @symbiote-native/engine@0.1.5
+  - @symbiote-native/components@0.2.4
+  - @symbiote-native/react@0.2.5
+  - @symbiote-native/vue@0.3.5
+
 ## 0.1.4
 
 ### Patch Changes
