@@ -2,18 +2,13 @@ const path = require('path');
 const { getDefaultConfig, mergeConfig } = require('@react-native/metro-config');
 
 const projectRoot = __dirname;
-const repoRoot = path.resolve(projectRoot, '../..');
-const enginePkg = path.resolve(repoRoot, 'core/engine');
-const componentsPkg = path.resolve(repoRoot, 'core/components');
-const vuePkg = path.resolve(repoRoot, 'adapters/vue');
 
 const defaultConfig = getDefaultConfig(projectRoot);
 
 /**
- * Metro is pointed straight at our packages' TypeScript source; there is no build step.
- * @react-native/babel-preset strips the types. react and @vue/runtime-core are pinned to
- * the app's single copies so the Vue adapter and the app share one Vue runtime. Vue's
- * reactivity is a singleton, so two copies would silently fail to react.
+ * @symbiote-native/* and @vue/runtime-core resolve as ordinary npm packages from this app's
+ * own node_modules (examples/* is a standalone npm install, decoupled from the monorepo's
+ * pnpm workspace — see pnpm-workspace.yaml). @react-native/babel-preset strips the types.
  *
  * @type {import('@react-native/metro-config').MetroConfig}
  */
@@ -28,31 +23,19 @@ const config = {
   transformer: {
     babelTransformerPath: require.resolve('@symbiote-native/vue/metro-css-parser'),
   },
-  // Watch the whole monorepo: examples/* are now pnpm-workspace packages whose deps
-  // (react, @babel/runtime, …) are symlinked into the repo-root `.pnpm` store, so Metro
-  // must treat repoRoot as a watched root to follow those symlinks.
-  watchFolders: [repoRoot],
   resolver: {
     // Teach Metro that a style file is a source file (the transformer turns it into a module).
     // scss/sass/less/styl are optional SCSS/Sass/Less/Stylus preprocessor sources — see
     // core/css-parser/src/preprocessors.ts.
     sourceExts: [...defaultConfig.resolver.sourceExts, 'css', 'scss', 'sass', 'less', 'styl'],
     extraNodeModules: {
-      '@symbiote-native/engine': enginePkg,
-      '@symbiote-native/components': componentsPkg,
-      '@symbiote-native/vue': vuePkg,
-      react: path.resolve(projectRoot, 'node_modules/react'),
-      '@vue/runtime-core': runtimeCore,
       // @vue/babel-plugin-jsx injects helper imports `from 'vue'`; there is no vue/runtime-dom
-      // in a native bundle, so the bare 'vue' specifier resolves to the runtime-core singleton
-      // the adapter renders on (the resolver twin of the SFC transformer's 'vue'→runtime-core
-      // string rewrite).
+      // in a native bundle, and this app never installs the `vue` package itself (only
+      // @vue/runtime-core), so the bare 'vue' specifier is aliased to the runtime-core
+      // singleton the adapter renders on (the resolver twin of the SFC transformer's
+      // 'vue'→runtime-core string rewrite).
       vue: runtimeCore,
     },
-    nodeModulesPaths: [
-      path.resolve(projectRoot, 'node_modules'),
-      path.resolve(repoRoot, 'node_modules'),
-    ],
   },
 };
 

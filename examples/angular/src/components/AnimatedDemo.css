@@ -1,0 +1,33 @@
+/* Static look lives here, compiled at build time by @symbiote-native/css-parser. opacity/transform
+   stay dynamic — Animated-driven values composed at the use site via [style] in AnimatedDemo.ts,
+   alongside each dot's class for its static half. */
+
+/* .section/.section-label are the app-wide generic classes from App.css, not redeclared here —
+   see the style-registry-collisions rule. */
+.pulse-frame {
+  height: 64px;
+  align-items: center;
+  justify-content: center;
+}
+.pulse-dot {
+  width: 48px;
+  height: 48px;
+  border-radius: 24px;
+  background-color: #dd0031;
+}
+.slide-track {
+  height: 36px;
+  justify-content: center;
+}
+.js-slide-dot {
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  background-color: #f6ad55;
+}
+.native-slide-dot {
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  background-color: #68d391;
+}

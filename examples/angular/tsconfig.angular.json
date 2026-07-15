@@ -11,14 +11,31 @@
     "outDir": "build/angular",
     "baseUrl": "."
   },
-  "files": ["App.ts", "css.d.ts"],
+  "files": ["src/App.ts", "src/css.d.ts"],
   "exclude": ["build", "e2e", "**/node_modules", "**/Pods"],
+  // `ngc --watch` (perform_watch.js) chokidar-watches `angularCompilerOptions.basePath`
+  // recursively, filtered only by a hardcoded regex (node_modules/.dotfiles/.js/.map/
+  // .metadata.json — NOT ios/android/build). basePath defaults to dirname(this file) =
+  // examples/angular/, a sibling of ios/ (17k+ files) and android/ (1k+ files), so the watcher
+  // recursed into both and hit EMFILE. All real source now lives under src/ (moved 2026-07-14
+  // specifically for this), so basePath narrows the watch root to just that — confirmed empirically
+  // that overriding basePath does NOT affect file/rootDir resolution (parseJsonConfigFileContent
+  // uses it only as the include/exclude glob base, independent of `files`), only the watch root.
+  // Kept relative here (portable, machine-independent) even though @angular/compiler-cli's
+  // INCREMENTAL recompile path needs it absolute (throws TS500 "path is not absolute" via
+  // absoluteFrom() otherwise, on the second file change onward) — symbiote-angular-dev.cjs
+  // resolves it to absolute at spawn time via a throwaway override config, so this file never
+  // carries a hardcoded machine path. `ngc -p tsconfig.angular.json` one-shot builds (ng:build)
+  // don't need that resolution — a relative basePath is fine for a cold compile.
+  "angularCompilerOptions": {
+    "basePath": "src"
+  },
   // Editor tsserver honors this (and resolves it relative to THIS file, not the
   // extended tsconfig.angular.base.json — microsoft/TypeScript#55656 — so it can't
   // live in the shared base). `ngc --watch` itself does NOT: @angular/compiler-cli's
   // watch mode calls chokidar directly (perform_watch.js) instead of TS's native
-  // watch host, so watchOptions has zero effect on it. Revisit this if
-  // `ngc --watch` hits EMFILE again.
+  // watch host, so watchOptions has zero effect on it — the angularCompilerOptions.basePath
+  // above is what actually fixes the watch scope.
   "watchOptions": {
     "excludeDirectories": ["**/node_modules", "../../node_modules", "**/.git", "**/build"]
   }

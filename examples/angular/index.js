@@ -6,7 +6,7 @@
  */
 
 import { bootstrapApplication } from '@symbiote-native/angular/bootstrap';
-import { AppComponent } from './build/angular/App';
+import { AppComponent } from './build/angular/src/App';
 import { name as appName } from './app.json';
 
 bootstrapApplication(AppComponent, { appName });

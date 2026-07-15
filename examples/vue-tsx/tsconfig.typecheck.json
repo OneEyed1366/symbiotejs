@@ -1,0 +1,10 @@
+{
+  "extends": "./tsconfig.json",
+  "comment": "vue-tsc typecheck of the app's Vue JSX (.tsx). @symbiote-native/* resolve to source (the monorepo's by-design source resolution), so this also re-checks adapter/engine source — `types: [node]` restores the runtime globals (setTimeout/process/console/queueMicrotask) the app tsconfig strips with `types: []`. e2e/ is excluded: Detox tests with jest globals, type-checked via ts-jest.",
+  "compilerOptions": {
+    "types": ["node"],
+    "jsx": "preserve",
+    "jsxFactory": "VueJsx.createElement"
+  },
+  "exclude": ["**/node_modules", "**/Pods", "e2e"]
+}
