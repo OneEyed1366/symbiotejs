@@ -8,7 +8,13 @@
 import '@angular/compiler';
 import { Component, CUSTOM_ELEMENTS_SCHEMA, ViewChild, type Signal } from '@angular/core';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { mount, unmount, Dimensions, registerComposedComponent } from '@symbiote-native/angular';
+import {
+  Animated,
+  mount,
+  unmount,
+  Dimensions,
+  registerComposedComponent,
+} from '@symbiote-native/angular';
 import { installFabric, type IFakeNode } from '@symbiote-native/test-utils';
 import { Drawer } from './index';
 import type { IDrawerNavigatorHandle } from './index';
@@ -193,6 +199,25 @@ describe('Angular Drawer navigator', () => {
       findInTree(n => n.viewName === 'RCTRawText' && n.props.text === 'settings'),
     ).toBeDefined();
     expect(findInTree(n => n.viewName === 'RCTRawText' && n.props.text === 'home')).toBeUndefined();
+  });
+
+  // Regression test: jumpTo() used to read isOpen off the signal AFTER dispatch(), by which point
+  // drawerRouterReducer had already flipped it to false - so the "was it open?" check always saw
+  // false and never animated the panel closed, leaving it visually stuck open even though the
+  // router state itself was already correct. Asserts on the actual Animated.timing call
+  // (animateProgressTo's own entry point), not just the state-derived content used above, since
+  // that's what the stuck-open bug never touched.
+  it('jumpTo() animates the panel closed when the drawer was open', async () => {
+    const handle = await mountDrawer();
+    handle.openDrawer();
+    await tick();
+    const timingSpy = vi.spyOn(Animated, 'timing');
+    handle.jumpTo('Settings');
+    await tick();
+    expect(timingSpy).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({ toValue: 0 }),
+    );
   });
 
   it('openDrawer()/closeDrawer()/toggleDrawer() drive the router state', async () => {
