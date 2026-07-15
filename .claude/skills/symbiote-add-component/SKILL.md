@@ -291,6 +291,36 @@ the §5b metro fix (see `symbiote-dev-examples`), which most are NOT by default.
 applies ONLY when the core half is genuinely shared; a per-adapter behavior (a
 framework-specific bridge quirk) still needs that adapter on device.
 
+**Component-conformance status (2026-07-16 — audit complete, no violators left).**
+A five-domain parallel audit of all 19 components confirmed the whole component
+layer now conforms to the three-layer split. The last two holdouts were extracted
+this date: `touchable` (the TouchableOpacity/Highlight press-scheduling machine was
+triplicated line-for-line) and `scroll-view` sticky headers (the per-header effect
+machine, hand-written in every adapter and TWICE in Angular — component +
+`StickyProjectionWrapper`). ScrollView PROPER already conformed — its imperative
+handle is core-owned (`buildScrollViewHandle`), scroll-offset is native-owned, MVCP
+/ RefreshControl are legit seams, so it never needed a `reduceScroll`. There are now
+three enriched-machine instances to copy from: `reduceList`
+(`state/virtualized-list-reducer.ts`), `reduceSticky` (`state/sticky-header-reducer.ts`),
+and `createTouchableFeedbackHandlers` (`state/touchable.ts`). The list family
+(flat/section/virtualized-section) conforms purely by COMPOSING VirtualizedList — no
+per-list reducer needed. Do not re-audit these; extend the map if a NEW component lands.
+
+**Enriched-machine extraction conventions (learned across the three instances).**
+When you extract a stateful effect machine into core:
+- Inject the clock and scheduler (`now: () => number`, `schedule: (cb, ms) => cancel`)
+  so the machine is unit-testable with a fake clock AND timer globals stay out of
+  `@symbiote-native/components` (mirrors Pressable's `host.schedule`).
+- The reducer emits timing as DATA — a `schedule-debounce` effect the ADAPTER runs —
+  it never holds a live `setTimeout`. Same for the imperative native seam
+  (`Animated.timing` opacity, `interpolate()` + `addListener`): injected via
+  `activate`/`deactivate` callbacks or run by the adapter from an effect, never in core.
+- A shared decision helper returns DECISIONS, not freshly-built handlers, when an
+  adapter caches handlers by identity. `resolveScrollForwarding` returns
+  `{ mode, scrollEventThrottle, ... }` (not an `onScroll` closure) precisely because
+  Angular caches its handlers to avoid a Fabric re-clone cascade on every change-detection
+  pass; a fresh-closure-per-call helper would regress it.
+
 Adding a component to a brand-new adapter that has no renderer yet? Do
 `symbiote-new-adapter` first. Touching the engine API in the process?
 `symbiote-engine-core`.
