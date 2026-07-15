@@ -7,6 +7,9 @@ import {
   isSeparatorGapInRange,
   decideEdgeReached,
   resolveStickySectionHeaders,
+  wrapFixedLayout,
+  resolveAverageLength,
+  type ICellLayout,
 } from './virtualized-list';
 
 // keyFor over a fixed key array (index -> key), the adapter's keyForIndex twin.
@@ -214,5 +217,40 @@ describe('resolveStickySectionHeaders', () => {
   it('honors the explicit prop over the platform default', () => {
     expect(resolveStickySectionHeaders(false, [0, 4], 'ios')).toBeUndefined();
     expect(resolveStickySectionHeaders(true, [0, 4], 'android')).toEqual([0, 4]);
+  });
+});
+
+describe('wrapFixedLayout', () => {
+  it('returns undefined without getItemLayout', () => {
+    expect(wrapFixedLayout([], undefined)).toBeUndefined();
+  });
+  it('wraps getItemLayout into an (index) => ICellLayout, dropping the index field', () => {
+    const getItemLayout = (_data: unknown, index: number) => ({
+      length: 10,
+      offset: index * 10,
+      index,
+    });
+    const fixed = wrapFixedLayout(['a', 'b'], getItemLayout);
+    expect(fixed?.(1)).toEqual({ length: 10, offset: 10 });
+  });
+});
+
+describe('resolveAverageLength', () => {
+  const measured = new Map([
+    [0, 20],
+    [1, 40],
+  ]);
+  it('averages the measured cells when there is no fixed layout', () => {
+    expect(resolveAverageLength(undefined, 2, measured)).toBe(30);
+  });
+  it('uses the first fixed cell length when getItemLayout is set', () => {
+    const fixed = (): ICellLayout => ({ length: 50, offset: 0 });
+    expect(resolveAverageLength(fixed, 3, measured)).toBe(50);
+  });
+  it('guards an empty list (count 0) instead of touching a missing cell', () => {
+    const fixed = (): ICellLayout => {
+      throw new Error('must not touch a cell on an empty list');
+    };
+    expect(resolveAverageLength(fixed, 0, measured)).toBe(0);
   });
 });

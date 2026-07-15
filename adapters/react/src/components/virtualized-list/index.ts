@@ -45,7 +45,6 @@ import {
   INVERTED_Y_STYLE,
   NO_CONTENT_LENGTH_SENT,
   NO_INDEX,
-  averageMeasuredLength,
   buildListPlan,
   buildOffsets,
   buildViewabilityPairs,
@@ -64,8 +63,10 @@ import {
   offsetForIndex as resolveOffsetForIndex,
   readLayoutLength,
   readScrollOffset,
+  resolveAverageLength,
   resolveItemKey,
   throttleWindow,
+  wrapFixedLayout,
   type ICellLayout,
   type ISeparators,
   type ISeparatorProps,
@@ -301,20 +302,14 @@ export function VirtualizedList<ItemT>(
   // maintainVisibleContentPosition anchor tracking (RN's State.firstVisibleItemKey).
   const firstVisibleKeyRef = useRef<string | null>(null);
 
-  const fixedLayout = useMemo(() => {
-    if (getItemLayout === undefined) return undefined;
-    return (index: number): ICellLayout => {
-      const layout = getItemLayout(data, index);
-      return { length: layout.length, offset: layout.offset };
-    };
-  }, [getItemLayout, data]);
+  const fixedLayout = useMemo(() => wrapFixedLayout(data, getItemLayout), [getItemLayout, data]);
 
   // Running average of known cell lengths, used to size not-yet-measured cells and the trailing
   // spacer so the total is plausible before full measurement.
-  const averageLength = useMemo(() => {
-    if (fixedLayout) return fixedLayout(FIRST_INDEX).length;
-    return averageMeasuredLength(measuredRef.current);
-  }, [fixedLayout, scrollOffset, viewportLength]);
+  const averageLength = useMemo(
+    () => resolveAverageLength(fixedLayout, count, measuredRef.current),
+    [fixedLayout, count, scrollOffset, viewportLength],
+  );
 
   const { offsets, lengths, total } = buildOffsets(
     count,

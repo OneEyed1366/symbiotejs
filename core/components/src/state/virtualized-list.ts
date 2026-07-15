@@ -633,3 +633,30 @@ export function resolveStickySectionHeaders(
   const stickyEnabled = enabled ?? platformOS === 'ios';
   return stickyEnabled ? headerIndices : undefined;
 }
+
+// Wrap the user's getItemLayout into an (index) => ICellLayout resolver (dropping the `index` field
+// RN's getItemLayout returns), or undefined when there is no getItemLayout.
+export function wrapFixedLayout(
+  data: unknown,
+  getItemLayout:
+    | ((data: unknown, index: number) => { length: number; offset: number; index: number })
+    | undefined,
+): ((index: number) => ICellLayout) | undefined {
+  if (getItemLayout === undefined) return undefined;
+  return (index: number): ICellLayout => {
+    const layout = getItemLayout(data, index);
+    return { length: layout.length, offset: layout.offset };
+  };
+}
+
+// The average cell length that sizes unmeasured cells and the trailing spacer: the fixed layout's
+// first cell length when getItemLayout is set (guarded against an empty list so it never calls
+// fixedLayout on a non-existent cell), else the running average of the measured cells.
+export function resolveAverageLength(
+  fixedLayout: ((index: number) => ICellLayout) | undefined,
+  count: number,
+  measured: Map<number, number>,
+): number {
+  if (fixedLayout === undefined) return averageMeasuredLength(measured);
+  return count > FIRST_INDEX ? fixedLayout(FIRST_INDEX).length : EMPTY_OFFSET;
+}

@@ -53,7 +53,6 @@ import {
   INVERTED_Y_STYLE,
   NO_CONTENT_LENGTH_SENT,
   NO_INDEX,
-  averageMeasuredLength,
   buildListPlan,
   buildOffsets,
   buildViewabilityPairs,
@@ -73,12 +72,13 @@ import {
   readLayoutLength,
   readScrollOffset,
   resolveAccessibilityProps,
+  resolveAverageLength,
   resolveItemKey,
   throttleWindow,
+  wrapFixedLayout,
   type IAccessibilityProps,
   type IAccessibilityStateValue,
   type IAriaProps,
-  type ICellLayout,
   type ISeparatorProps,
   type ISeparators,
   type IScrollViewHandle,
@@ -701,21 +701,8 @@ export class VirtualizedList<ItemT = unknown>
 
   private recomputeMetrics(): void {
     const count = this.getItemCount(this.data);
-    const gil = this.getItemLayout;
-    const data = this.data;
-    const fixedLayout =
-      gil !== undefined
-        ? (index: number): ICellLayout => {
-            const layout = gil(data, index);
-            return { length: layout.length, offset: layout.offset };
-          }
-        : undefined;
-    const averageLength =
-      fixedLayout !== undefined
-        ? count > FIRST_INDEX
-          ? fixedLayout(FIRST_INDEX).length
-          : EMPTY_OFFSET
-        : averageMeasuredLength(this.measured);
+    const fixedLayout = wrapFixedLayout(this.data, this.getItemLayout);
+    const averageLength = resolveAverageLength(fixedLayout, count, this.measured);
     const { offsets, lengths, total } = buildOffsets(
       count,
       this.measured,

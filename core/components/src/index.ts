@@ -291,6 +291,8 @@ export {
   isSeparatorGapInRange,
   decideEdgeReached,
   resolveStickySectionHeaders,
+  wrapFixedLayout,
+  resolveAverageLength,
 } from './state/virtualized-list';
 export type {
   IMvcpAction,

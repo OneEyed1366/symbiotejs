@@ -51,7 +51,6 @@ import {
   INVERTED_Y_STYLE,
   NO_CONTENT_LENGTH_SENT,
   NO_INDEX,
-  averageMeasuredLength,
   buildListPlan,
   buildOffsets,
   buildViewabilityPairs,
@@ -70,9 +69,10 @@ import {
   offsetForIndex,
   readLayoutLength,
   readScrollOffset,
+  resolveAverageLength,
   resolveItemKey,
   throttleWindow,
-  type ICellLayout,
+  wrapFixedLayout,
   type IScrollViewHandle,
   type ISeparatorProps,
   type ISeparators,
@@ -482,21 +482,8 @@ export const VirtualizedList = defineComponent(
       const p = narrowed.value;
       void measureVersion.value;
       const count = p.getItemCount(p.data);
-      const gil = p.getItemLayout;
-      const data = p.data;
-      const fixedLayout =
-        gil !== undefined
-          ? (index: number): ICellLayout => {
-              const layout = gil(data, index);
-              return { length: layout.length, offset: layout.offset };
-            }
-          : undefined;
-      const averageLength =
-        fixedLayout !== undefined
-          ? count > FIRST_INDEX
-            ? fixedLayout(FIRST_INDEX).length
-            : EMPTY_OFFSET
-          : averageMeasuredLength(measured);
+      const fixedLayout = wrapFixedLayout(p.data, p.getItemLayout);
+      const averageLength = resolveAverageLength(fixedLayout, count, measured);
       const { offsets, lengths, total } = buildOffsets(count, measured, fixedLayout, averageLength);
       const target = computeWindow(
         count,
