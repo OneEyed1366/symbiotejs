@@ -174,6 +174,18 @@ export default defineConfig({
           ],
         },
         {
+          label: 'Navigation',
+          items: [
+            { label: 'Overview', slug: 'docs/navigation' },
+            { label: 'Stack navigator', slug: 'docs/navigation/stack' },
+            { label: 'Tab navigator', slug: 'docs/navigation/tabs' },
+            { label: 'Drawer navigator', slug: 'docs/navigation/drawer' },
+            { label: 'Hooks & focus', slug: 'docs/navigation/hooks' },
+            { label: 'Linking & state', slug: 'docs/navigation/linking' },
+            { label: 'FAQ', slug: 'docs/navigation/faq' },
+          ],
+        },
+        {
           label: 'Testing',
           items: [{ label: 'Vitest + Detox', slug: 'docs/testing' }],
         },

@@ -1,10 +1,5 @@
-.section {
-  gap: 12px;
-}
-.section-label {
-  color: #3b5266;
-  font-size: 13px;
-}
+/* .section/.section-label/.info-text/.row are the app-wide generic classes from App.css, not
+   redeclared here — see the style-registry-collisions rule. */
 .ref-box {
   height: 56px;
   border-radius: 12px;
@@ -16,14 +11,6 @@
   color: #111827;
   font-size: 14px;
   font-weight: bold;
-}
-.info-text {
-  color: #cbd5e1;
-  font-size: 14px;
-}
-.row {
-  flex-direction: row;
-  gap: 12px;
 }
 .flex-1 {
   flex: 1;

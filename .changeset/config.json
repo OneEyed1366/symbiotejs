@@ -7,11 +7,5 @@
   "access": "public",
   "baseBranch": "master",
   "updateInternalDependencies": "patch",
-  "ignore": [
-    "@symbiote-native/docs-site",
-    "Canary",
-    "vue-sfc-canary",
-    "vue-tsx-canary",
-    "angular-canary"
-  ]
+  "ignore": ["@symbiote-native/docs-site"]
 }

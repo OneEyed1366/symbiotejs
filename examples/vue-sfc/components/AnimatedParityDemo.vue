@@ -7,7 +7,8 @@
 -->
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted } from 'vue'
-import { View, Text, Animated, Button, PanResponder } from '@symbiote-native/vue'
+import { View, Text, Animated, PanResponder } from '@symbiote-native/vue'
+import ActionButton from './ActionButton.vue'
 
 const AnimatedView = Animated.View
 
@@ -71,106 +72,37 @@ const scrollBy = (delta: number): void => {
 </script>
 
 <template>
-  <View class="section">
+  <View class="section-nested">
     <Text class="section-label">Animated · ValueXY / tracking / diffClamp</Text>
 
     <!-- ValueXY box you drag with a finger (PanResponder) -->
     <Text class="drag-hint">drag the purple box →</Text>
     <View class="xy-frame">
-      <AnimatedView testID="xy-drag-box" v-bind="panResponder.panHandlers" class="xy-box" :style="{ transform: xy.getTranslateTransform() }" />
+      <AnimatedView v-bind="panResponder.panHandlers" class="xy-box" :style="{ transform: xy.getTranslateTransform() }" />
     </View>
 
     <!-- Tracking: lead dot (blue) and follower (orange) that lags behind it -->
     <View class="track-row">
-      <AnimatedView testID="lead-dot" class="lead-dot" :style="{ transform: [{ translateX: lead }] }" />
+      <AnimatedView class="lead-dot" :style="{ transform: [{ translateX: lead }] }" />
     </View>
     <View class="track-row">
       <AnimatedView testID="follow-dot" class="follow-dot" :style="{ transform: [{ translateX: follow }] }" />
     </View>
-    <Button testID="track-btn" title="Move target (follower chases)" @press="moveLead" color="#42b883" />
+    <ActionButton testID="track-btn" title="Move target (follower chases)" :onPress="moveLead" color="#42b883" />
 
     <!-- diffClamp collapsing header -->
     <View class="collapse-frame">
-      <AnimatedView testID="collapse-header" class="collapse-header" :style="{ transform: [{ translateY: headerOffset }] }">
+      <AnimatedView class="collapse-header" :style="{ transform: [{ translateY: headerOffset }] }">
         <Text class="collapse-header-text">collapsing header</Text>
       </AnimatedView>
     </View>
     <View class="row-tight">
       <View class="flex1">
-        <Button testID="collapse-scroll-down-btn" title="Scroll ↓" @press="() => scrollBy(40)" color="#38b2ac" />
+        <ActionButton title="Scroll ↓" :onPress="() => scrollBy(40)" color="#38b2ac" />
       </View>
       <View class="flex1">
-        <Button testID="collapse-scroll-up-btn" title="Scroll ↑" @press="() => scrollBy(-40)" color="#38b2ac" />
+        <ActionButton title="Scroll ↑" :onPress="() => scrollBy(-40)" color="#38b2ac" />
       </View>
     </View>
   </View>
 </template>
-
-<style scoped>
-.section {
-  gap: 12px;
-}
-.section-label {
-  color: #3b5266;
-  font-size: 13px;
-}
-.row-tight {
-  flex-direction: row;
-  gap: 8px;
-}
-.flex1 {
-  flex: 1;
-}
-.drag-hint {
-  color: #718096;
-  font-size: 11px;
-}
-/* width/height hardcoded: XY_SPAN(96) + 36 = 132 — a true compile-time constant */
-.xy-frame {
-  width: 132px;
-  height: 132px;
-  border-radius: 12px;
-  background-color: #eef7f2;
-  padding: 6px;
-}
-.xy-box {
-  width: 36px;
-  height: 36px;
-  border-radius: 8px;
-  background-color: #9f7aea;
-}
-.track-row {
-  height: 30px;
-  justify-content: center;
-}
-.lead-dot {
-  width: 22px;
-  height: 22px;
-  border-radius: 11px;
-  background-color: #42b883;
-}
-.follow-dot {
-  width: 22px;
-  height: 22px;
-  border-radius: 11px;
-  background-color: #f6ad55;
-}
-/* height hardcoded: HEADER_COLLAPSE(60) + 24 = 84 — a true compile-time constant */
-.collapse-frame {
-  height: 84px;
-  overflow: hidden;
-  justify-content: flex-start;
-}
-/* height hardcoded: HEADER_COLLAPSE = 60 — a true compile-time constant */
-.collapse-header {
-  height: 60px;
-  border-radius: 8px;
-  background-color: #38b2ac;
-  align-items: center;
-  justify-content: center;
-}
-.collapse-header-text {
-  color: white;
-  font-size: 12px;
-}
-</style>

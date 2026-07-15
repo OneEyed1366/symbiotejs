@@ -16,11 +16,12 @@
   },
   "dependencies": {
     "@angular/core": "catalog:",
-    "@symbiote-native/angular": "catalog:",
-    "@symbiote-native/components": "catalog:",
-    "@symbiote-native/engine": "catalog:",
-    "@symbiote-native/slider": "catalog:",
-    "@symbiote-native/splash-screen": "catalog:",
+    "@symbiote-native/angular": "workspace:*",
+    "@symbiote-native/components": "workspace:*",
+    "@symbiote-native/engine": "workspace:*",
+    "@symbiote-native/navigation": "workspace:*",
+    "@symbiote-native/slider": "workspace:*",
+    "@symbiote-native/splash-screen": "workspace:*",
     "react": "catalog:",
     "react-native": "catalog:"
   },

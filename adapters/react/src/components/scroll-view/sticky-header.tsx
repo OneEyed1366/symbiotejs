@@ -80,7 +80,7 @@ export const ScrollViewStickyHeader: IStickyHeaderComponentType = props => {
   // position while the native driver animates. null until the listener first fires.
   const [translateY, setTranslateY] = useState<number | null>(null);
   const haveReceivedInitialZeroTranslateY = useRef(true);
-  const debounceTimer = useRef<number | null>(null);
+  const debounceTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     if (translateY !== 0 && translateY !== null) haveReceivedInitialZeroTranslateY.current = false;

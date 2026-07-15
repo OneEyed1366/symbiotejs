@@ -1,0 +1,224 @@
+---
+title: Linking & state
+description: Resolve external URLs to a screen and restore a navigator's route stack across app restarts.
+---
+
+import { Aside, Tabs, TabItem } from '@astrojs/starlight/components';
+
+Deep linking gets your app to a specific screen from an external URL — a push notification tap,
+a universal link, a QR code. State persistence restores where the user left off across app
+restarts — the stack they had open, not just the initial route. Both are **opt-in**: neither
+runs unless you wire it up yourself, and both work identically across all three adapters at the
+config/data level — only the lifecycle glue that wires them into a component differs.
+
+## Deep linking
+
+<Aside type="note">
+  There is no `<NavigationContainer linking={...}>`-equivalent component. Deep linking is wired
+  by calling a single hook/composable/injector explicitly, passed the Stack's own navigator
+  handle — not a top-level prop on the navigator itself.
+</Aside>
+
+The config shape (`ILinkingConfig`) is this library's **own** hand-rolled type — not
+react-navigation's, and not built on `react-router`'s matcher. That was a deliberate choice: see
+`packages/navigation/src/core/linking-config.ts` for why (react-router 8's matcher has no
+DOM-free subpath export and its param-name extraction only works for compile-time literal path
+strings, neither of which fits a runtime config object on Hermes).
+
+### `ILinkingConfig`
+
+```ts
+type IScreenLinkingConfig = string | { path?: string; screens?: Record<string, IScreenLinkingConfig> };
+
+type ILinkingConfig = {
+  prefixes: string[];                                          // URL prefixes to match, e.g. 'myapp://', 'https://example.com'
+  config: { screens: Record<string, IScreenLinkingConfig> };    // screen name -> path pattern ('user/:id') or a nested group
+};
+```
+
+```ts
+export const APP_LINKING_CONFIG: ILinkingConfig = {
+  prefixes: ['myapp://', 'https://example.com'],
+  config: {
+    screens: {
+      Details: 'details/:id',
+      HeaderOptions: 'header-options',
+      TabsDemo: 'tabs',
+    },
+  },
+};
+```
+
+## Wiring it up
+
+<Tabs syncKey="framework">
+  <TabItem label="React">
+    `useLinkingIntegration(config, navigatorHandle)` takes the **resolved** handle. A `ref` is
+    `null` on first render, so the real app defers mounting this hook in a small child component
+    until the Stack's ref callback has fired:
+
+    ```tsx
+    import { useState } from 'react';
+    import { Stack, useLinkingIntegration } from '@symbiote-native/navigation/react';
+    import type { ILinkingConfig, INavigatorHandle } from '@symbiote-native/navigation/react';
+    import { APP_LINKING_CONFIG } from './navigation-linking';
+
+    function LinkingRunner({ handle, config }: { handle: INavigatorHandle; config: ILinkingConfig }): null {
+      useLinkingIntegration(config, handle);
+      return null;
+    }
+
+    function App() {
+      const [stackHandle, setStackHandle] = useState<INavigatorHandle | null>(null);
+      return (
+        <>
+          <Stack ref={setStackHandle} initialRouteName="Home">{/* screens */}</Stack>
+          {stackHandle !== null && <LinkingRunner handle={stackHandle} config={APP_LINKING_CONFIG} />}
+        </>
+      );
+    }
+    ```
+  </TabItem>
+  <TabItem label="Vue">
+    `useLinkingIntegration(config, navigatorHandle)` deliberately takes the **ref itself**, not a
+    resolved handle. Vue's `onMounted` hooks fire bottom-up (children before parents), so by the
+    time this composable's own `onMounted` runs, the Stack's ref has already resolved — no child
+    component workaround needed, unlike React:
+
+    ```vue
+    <script setup lang="ts">
+    import { ref } from 'vue';
+    import { Stack, useLinkingIntegration } from '@symbiote-native/navigation/vue';
+    import type { INavigatorHandle } from '@symbiote-native/navigation/vue';
+    import { APP_LINKING_CONFIG } from './navigation-linking';
+
+    const stackHandle = ref<INavigatorHandle | null>(null);
+    useLinkingIntegration(APP_LINKING_CONFIG, stackHandle);
+    </script>
+    <template>
+      <Stack ref="stackHandle" initial-route-name="Home"><!-- screens --></Stack>
+    </template>
+    ```
+  </TabItem>
+  <TabItem label="Angular">
+    `injectLinkingIntegration(config, navigatorHandle)` is an injection function — it calls
+    `inject(DestroyRef)` internally, so it needs an injection context, which a plain lifecycle-hook
+    body isn't (only field initializers/constructors are). `Stack` implements `INavigatorHandle`
+    directly, so `@ViewChild` resolves the handle itself once view children are populated. The real
+    wiring runs it from `ngAfterViewInit` through `runInInjectionContext`:
+
+    ```ts
+    import {
+      AfterViewInit,
+      Component,
+      Injector,
+      ViewChild,
+      inject,
+      runInInjectionContext,
+    } from '@angular/core';
+    import { Stack, ScreenDirective, injectLinkingIntegration } from '@symbiote-native/navigation/angular';
+    import { APP_LINKING_CONFIG } from './navigation-linking';
+
+    @Component({
+      selector: 'App',
+      standalone: true,
+      imports: [Stack, ScreenDirective],
+      template: `
+        <Stack #nav initialRouteName="Home">
+          <!-- screens -->
+        </Stack>
+      `,
+    })
+    export class App implements AfterViewInit {
+      @ViewChild('nav') private readonly nav!: Stack;
+      private readonly injector = inject(Injector);
+
+      ngAfterViewInit(): void {
+        runInInjectionContext(this.injector, () => {
+          injectLinkingIntegration(APP_LINKING_CONFIG, this.nav);
+        });
+      }
+    }
+    ```
+
+    `ngAfterViewInit` is the first lifecycle hook Angular guarantees `@ViewChild` queries are
+    populated by, making it the earliest safe call site — the same gating React's `LinkingRunner`
+    achieves with a null-checked child component, done here with one hook instead of a second one.
+  </TabItem>
+</Tabs>
+
+### Behavior
+
+All three adapters share the same semantics: on mount, the OS's initial URL is resolved once and
+`navigatorHandle.replace(name, params)` is called for the resolved route. From then on, incoming
+deep-link URL events are subscribed to, and each one calls `navigatorHandle.push(name, params)`.
+Both paths resolve the URL through the same function as the standalone one below.
+
+### Manual resolution
+
+`resolveRouteFromUrl` and its inverse `resolveUrlFromRoute` are plain functions exported from the
+framework-agnostic `@symbiote-native/navigation` package root — not the `/react`, `/vue`, or
+`/angular` subpath, since they need no framework at all:
+
+```ts
+import { resolveRouteFromUrl } from '@symbiote-native/navigation';
+
+const route = resolveRouteFromUrl(APP_LINKING_CONFIG, 'myapp://details/42');
+// -> { key: 'Details', name: 'Details', params: { id: '42' } } | null
+```
+
+Useful for a debug screen, or for testing your linking config without triggering a real
+OS-level deep link — no OS event, no navigator, no adapter needed at all.
+
+### Common gotchas
+
+- A deep link resolving to the wrong screen (or `null`) is almost always a mismatch between the
+  configured path pattern and the actual registered screen `name` — double-check they match
+  exactly.
+- Screen/navigator names must be unique across the whole linking config, even across nested
+  groups — a duplicate name makes resolution ambiguous.
+- Changing `prefixes` (a custom URL scheme or universal-link domain) requires a native rebuild —
+  a JS-only reload won't pick up new native URL-scheme/associated-domain entitlements.
+
+## State persistence
+
+`serializeNavigatorState` / `deserializeNavigatorState` are plain framework-agnostic functions
+from the `@symbiote-native/navigation` package root — persistence *storage* (e.g. AsyncStorage) is
+left to the app, this package only handles the serialize/validate step. To restore, pass the
+result into a Stack handle's `reset(state)` method:
+
+```ts
+import { serializeNavigatorState, deserializeNavigatorState } from '@symbiote-native/navigation';
+import type { INavigatorState } from '@symbiote-native/navigation';
+import type { INavigatorHandle } from '@symbiote-native/navigation/react';
+
+// on navigator state change, persist it
+async function persist(state: INavigatorState): Promise<void> {
+  await AsyncStorage.setItem('nav-state', JSON.stringify(serializeNavigatorState(state)));
+}
+
+// on app launch, restore it
+async function restore(stackHandle: INavigatorHandle): Promise<void> {
+  const raw = await AsyncStorage.getItem('nav-state');
+  if (raw === null) return;
+  stackHandle.reset(deserializeNavigatorState(JSON.parse(raw)));
+}
+```
+
+<Aside type="caution">
+  Every route's `params` must be plain JSON-serializable data — no functions, class instances, or
+  circular references. A route with a non-serializable param silently breaks the round trip: it
+  either throws at `JSON.stringify` time, or worse, silently drops the offending field.
+</Aside>
+
+## API
+
+| Signature | Description |
+| --- | --- |
+| `useLinkingIntegration(config: ILinkingConfig, navigatorHandle: INavigatorHandle): void` (React) | Subscribes to deep links and drives the given handle. Takes the **resolved** handle — mount it only once the Stack's ref is non-null |
+| `useLinkingIntegration(config: ILinkingConfig, navigatorHandle: Ref<INavigatorHandle \| null>): void` (Vue) | Same behavior, but takes the **ref itself** — reads `.value` lazily inside its own `onMounted`, which fires after the Stack's ref has resolved |
+| `injectLinkingIntegration(config: ILinkingConfig, navigatorHandle: INavigatorHandle): void` (Angular) | Same behavior as an injection function — needs an injection context (`inject(DestroyRef)` internally), call it via `runInInjectionContext` from `ngAfterViewInit` |
+| `resolveRouteFromUrl(config: ILinkingConfig, url: string): IRoute<unknown> \| null` | Resolves a URL to a route synchronously, with no navigator or OS event involved — the same resolution the integration hooks use internally |
+| `resolveUrlFromRoute(config: ILinkingConfig, route: IRoute<unknown>): string \| null` | The inverse of `resolveRouteFromUrl` — builds a URL for a route, filling `:param` segments from `route.params`; `null` when a required param is missing or the route name isn't configured |
+| `serializeNavigatorState(state: INavigatorState): unknown` | Currently an identity passthrough — `INavigatorState` is already plain JSON-safe data |
+| `deserializeNavigatorState(raw: unknown): INavigatorState` | Validates the shape at runtime and throws `"deserializeNavigatorState: persisted value is not a valid navigator state"` if invalid — no blind `as` cast |

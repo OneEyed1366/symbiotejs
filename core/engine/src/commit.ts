@@ -22,7 +22,13 @@ import {
   type IMeasureInWindowOnSuccess,
   type IMeasureLayoutOnSuccess,
 } from './fabric';
-import { createElement, isAnchor, VIRTUAL_TEXT_COMPONENT, type ISymbioteNode } from './node';
+import {
+  createElement,
+  debugNodeId,
+  isAnchor,
+  VIRTUAL_TEXT_COMPONENT,
+  type ISymbioteNode,
+} from './node';
 import { dlog, isDebug } from './debug';
 import { flattenStyle } from './style';
 import { nextTag } from './tags';
@@ -257,6 +263,13 @@ function reconcile(
       slot.appendChild(handle, reconcile(slot, child, rootTag, childInText, node, true).handle);
     }
     logScrollChildren(node, viewName, tag);
+    // Investigation instrumentation (search-bar-ref "node not committed" bug): scoped to RNS* so
+    // it can be directly compared against the ref-attach log in stack.ts and the dispatch-miss
+    // log below — same debugNodeId on both sides proves/disproves an identity mismatch. Kept
+    // behind DEBUG per <keep_logs_gate_behind_DEBUG>, never removed.
+    if (viewName.startsWith('RNS')) {
+      dlog(`mirror.set (create) node=${debugNodeId(node)} tag=${tag} view=${viewName}`);
+    }
     mirror.set(node, {
       handle,
       tag,
@@ -308,6 +321,11 @@ function reconcile(
     handle = slot.cloneNodeWithNewProps(committed.handle, propsDiff);
   }
 
+  // Investigation instrumentation (search-bar-ref "node not committed" bug): see the create-path
+  // dlog above. Kept behind DEBUG per <keep_logs_gate_behind_DEBUG>, never removed.
+  if (viewName.startsWith('RNS')) {
+    dlog(`mirror.set (update) node=${debugNodeId(node)} tag=${committed.tag} view=${viewName}`);
+  }
   // The clone keeps the node's family, so its reactTag is unchanged; carry it.
   mirror.set(node, {
     handle,
@@ -495,10 +513,14 @@ export function dispatchViewCommand(
 ): void {
   const record = mirror.get(node);
   if (record === undefined) {
-    dlog(`dispatchViewCommand "${commandName}" skipped: node not committed`);
+    // node=... compares directly against the mirror.set logs above (same debugNodeId scheme) to
+    // prove/disprove a node-identity mismatch — see the search-bar-ref investigation note there.
+    dlog(
+      `dispatchViewCommand "${commandName}" skipped: node not committed (node=${debugNodeId(node)} component=${node.component})`,
+    );
     return;
   }
-  dlog(`dispatchViewCommand "${commandName}"`);
+  dlog(`dispatchViewCommand "${commandName}" (node=${debugNodeId(node)})`);
   getSlot().dispatchCommand(record.handle, commandName, args);
 }
 

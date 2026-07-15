@@ -1,14 +1,5 @@
-.section-tight {
-  gap: 8px;
-}
-.section-label {
-  color: #3b5266;
-  font-size: 13px;
-}
-.info-text {
-  color: #cbd5e1;
-  font-size: 14px;
-}
+/* .section-tight/.section-label/.info-text/.row-tight are the app-wide generic classes from
+   App.css, not redeclared here — see the style-registry-collisions rule. */
 .transfer-text {
   font-size: 13px;
 }
@@ -16,10 +7,6 @@
   padding: 12px;
   border-radius: 12px;
   background-color: #181f33;
-}
-.row-tight {
-  flex-direction: row;
-  gap: 8px;
 }
 .chip {
   width: 56px;

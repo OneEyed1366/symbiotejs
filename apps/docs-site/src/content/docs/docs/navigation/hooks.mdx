@@ -1,0 +1,517 @@
+---
+title: Hooks & focus
+description: Reading the current route/navigator and reacting to screen focus from React, Vue, and Angular.
+---
+
+import { Aside, Tabs, TabItem } from '@astrojs/starlight/components';
+
+A screen reads and reacts to navigation state through five small primitives: the navigator
+handle, the current route, whether the screen is focused right now, an effect that re-runs on
+focus/blur, and a live selector over the navigator's state. Every adapter names them per its own
+framework idiom — React and Vue use `useX()`, Angular uses `injectX()`. That's not a typo:
+Angular's own ecosystem convention names an [`inject()`](https://angular.dev/guide/di/dependency-injection)-based
+function `injectX`, the same way this site's [Angular guide](/docs/learn/angular/) documents for
+every other Angular-adapter API. All three read from the nearest enclosing `<Stack>`, `<Tab>`, or
+`<Drawer>` screen and throw if called outside one.
+
+<Aside type="tip">
+  This is the primary way to read `route`/`navigation` in **any** component under a navigator —
+  the screen's own top-level component included, not only ones nested below it (see
+  [Core concepts](/docs/navigation/#core-concepts)). Call `useRoute()`/`useNavigation()` (or
+  Angular's `injectRoute()`/`injectNavigation()`), or the navigator-specific narrowed variants
+  below. The other three primitives on this page — `useIsFocused()`, `useFocusEffect()`, and
+  `useNavigationState()` — are read the same way and have no other API, at any nesting depth.
+</Aside>
+
+## Reading the current route and navigator
+
+`useRoute`/`injectRoute` returns the current screen's route (name, key, params); `useNavigation`/
+`injectNavigation` returns the imperative handle for whichever navigator mounted the screen
+(`push`/`pop`/... for a `Stack` screen, `jumpTo` for a `Tab` screen, `openDrawer`/... for a
+`Drawer` screen). Each framework hands back a **different shape**, matching how that framework
+tracks changing values:
+
+<Tabs syncKey="framework">
+  <TabItem label="React">
+
+    | Primitive | Signature |
+    | --- | --- |
+    | Navigator handle | `useNavigation(): INavigationHandle` — plain object, re-read every render |
+    | Current route | `useRoute(): IRoute<unknown>` |
+
+  </TabItem>
+  <TabItem label="Vue">
+
+    | Primitive | Signature |
+    | --- | --- |
+    | Navigator handle | `useNavigation(): ComputedRef<INavigationHandle>` — read `.value` |
+    | Current route | `useRoute(): ComputedRef<IRoute<unknown>>` |
+
+  </TabItem>
+  <TabItem label="Angular">
+
+    | Primitive | Signature |
+    | --- | --- |
+    | Navigator handle | `injectNavigation(): INavigationHandle` — plain object, read once at injection time |
+    | Current route | `injectRoute(): Signal<IRoute<unknown>>` — call as `route()` |
+
+  </TabItem>
+</Tabs>
+
+<Aside type="note">
+  `useNavigation`/`injectNavigation` returns `IAnyNavigatorHandle & { addListener, getParent }`,
+  where `IAnyNavigatorHandle` is a union of `INavigatorHandle | ITabNavigatorHandle |
+  IDrawerNavigatorHandle` — the hook itself doesn't know which of the three navigator kinds
+  mounted the calling component. Since a nested child's enclosing navigator kind never changes at
+  runtime, that's almost always known upfront — so reach for `useStackNavigation()`/
+  `useTabNavigation()`/`useDrawerNavigation()` (or Angular's `injectStackNavigation()`/
+  `injectTabNavigation()`/`injectDrawerNavigation()`) instead of `useNavigation()`: each is
+  `useNavigation()` plus the narrowing check done once, inside the library, so the call site gets
+  a concretely-typed handle back with nothing to check — and a clear thrown error if it turns out
+  to be nested under the wrong kind.
+</Aside>
+
+<Tabs syncKey="framework">
+  <TabItem label="React">
+    ```tsx
+    import { useStackNavigation, useRoute } from '@symbiote-native/navigation/react';
+
+    function ProfileScreen() {
+      const navigation = useStackNavigation();
+      const route = useRoute();
+
+      return (
+        <ActionButton
+          title={`Push detail for ${route.name}`}
+          onPress={() => navigation.push('Detail', { id: route.params })}
+        />
+      );
+    }
+    ```
+  </TabItem>
+  <TabItem label="Vue">
+    ```vue
+    <script setup lang="ts">
+    import { useStackNavigation, useRoute } from '@symbiote-native/navigation/vue';
+
+    const navigation = useStackNavigation();
+    const route = useRoute();
+
+    function pushDetail() {
+      navigation.value.push('Detail', { id: route.value.params });
+    }
+    </script>
+
+    <template>
+      <ActionButton :title="`Push detail for ${route.value.name}`" @press="pushDetail" />
+    </template>
+    ```
+  </TabItem>
+  <TabItem label="Angular">
+    ```ts
+    import { Component } from '@angular/core';
+    import { ActionButton } from '../components/ActionButton';
+    import { injectStackNavigation, injectRoute } from '@symbiote-native/navigation/angular';
+
+    @Component({
+      standalone: true,
+      imports: [ActionButton],
+      template: `
+        <ActionButton [title]="'Push detail for ' + route().name" (press)="pushDetail()"></ActionButton>
+      `,
+    })
+    export class ProfileScreen {
+      private readonly navigation = injectStackNavigation();
+      readonly route = injectRoute();
+
+      pushDetail(): void {
+        this.navigation.push('Detail', { id: this.route().params });
+      }
+    }
+    ```
+  </TabItem>
+</Tabs>
+
+## Focus lifecycle
+
+`useIsFocused`/`injectIsFocused` reports whether the screen is focused right now.
+`useFocusEffect`/`injectFocusEffect` runs an effect while the screen is focused and runs its own
+returned cleanup on blur — the same shape as a plain effect, just re-armed on every focus/blur
+pair instead of once on mount.
+
+<Aside type="caution">
+  React's `useFocusEffect` must be given a **memoized** callback (wrap it in `useCallback`) — a
+  new function identity on every render re-subscribes the effect, same as any other
+  `useEffect` dependency. Vue's `useFocusEffect` and Angular's `injectFocusEffect` need no
+  memoization: `setup()` and a component constructor each run once, so the callback is captured a
+  single time by value.
+</Aside>
+
+`useIsFocused`/`injectIsFocused` always **starts `false`**. It never guesses focus from stack
+position — it only flips `true` once the route's real focus event fires, which can lag one
+microtask behind mount. That's intentional: it matches the async timing of a real native screen
+transition, not an instant JS-only mount.
+
+<Tabs syncKey="framework">
+  <TabItem label="React">
+
+    | Primitive | Signature |
+    | --- | --- |
+    | Is focused | `useIsFocused(): boolean` |
+    | Focus effect | `useFocusEffect(effect: EffectCallback): void` |
+
+  </TabItem>
+  <TabItem label="Vue">
+
+    | Primitive | Signature |
+    | --- | --- |
+    | Is focused | `useIsFocused(): Ref<boolean>` — read `.value` |
+    | Focus effect | `useFocusEffect(effect: () => (() => void) \| void): void` |
+
+  </TabItem>
+  <TabItem label="Angular">
+
+    | Primitive | Signature |
+    | --- | --- |
+    | Is focused | `injectIsFocused(): Signal<boolean>` — call as `isFocused()` |
+    | Focus effect | `injectFocusEffect(effect: () => (() => void) \| void): void` |
+
+  </TabItem>
+</Tabs>
+
+<Tabs syncKey="framework">
+  <TabItem label="React">
+    ```tsx
+    import { useCallback, useState } from 'react';
+    import { useFocusEffect } from '@symbiote-native/navigation/react';
+
+    function HooksDemoScreen() {
+      const [focusCount, setFocusCount] = useState(0);
+
+      useFocusEffect(
+        useCallback(() => {
+          setFocusCount(count => count + 1);
+          return () => {
+            /* runs on blur */
+          };
+        }, []),
+      );
+
+      return <Text>{`focus count: ${focusCount}`}</Text>;
+    }
+    ```
+  </TabItem>
+  <TabItem label="Vue">
+    ```vue
+    <script setup lang="ts">
+    import { ref } from 'vue';
+    import { useFocusEffect } from '@symbiote-native/navigation/vue';
+
+    const focusCount = ref(0);
+
+    useFocusEffect(() => {
+      focusCount.value += 1;
+      return () => {
+        /* runs on blur */
+      };
+    });
+    </script>
+
+    <template>
+      <Text>{{ `focus count: ${focusCount}` }}</Text>
+    </template>
+    ```
+  </TabItem>
+  <TabItem label="Angular">
+    ```ts
+    import { Component, signal } from '@angular/core';
+    import { Text } from '@symbiote-native/angular';
+    import { injectFocusEffect } from '@symbiote-native/navigation/angular';
+
+    @Component({
+      standalone: true,
+      imports: [Text],
+      template: `<Text>{{ 'focus count: ' + focusCount() }}</Text>`,
+    })
+    export class HooksDemoScreen {
+      readonly focusCount = signal(0);
+
+      constructor() {
+        injectFocusEffect(() => {
+          this.focusCount.update(count => count + 1);
+          return () => {
+            /* runs on blur */
+          };
+        });
+      }
+    }
+    ```
+  </TabItem>
+</Tabs>
+
+## Subscribing to navigator state
+
+`useNavigationState`/`injectNavigationState` takes a selector over the navigator's full
+`INavigatorState` and returns (a wrapper over) the selected value, updating whenever the
+navigator's state changes.
+
+<Tabs syncKey="framework">
+  <TabItem label="React">
+
+    | Primitive | Signature |
+    | --- | --- |
+    | Navigator state | `useNavigationState<T>(selector: (state) => T): T` |
+
+  </TabItem>
+  <TabItem label="Vue">
+
+    | Primitive | Signature |
+    | --- | --- |
+    | Navigator state | `useNavigationState<T>(selector): ShallowRef<T>` |
+
+  </TabItem>
+  <TabItem label="Angular">
+
+    | Primitive | Signature |
+    | --- | --- |
+    | Navigator state | `injectNavigationState<T>(selector): Signal<T>` |
+
+  </TabItem>
+</Tabs>
+
+<Aside type="note">
+  Only `<Stack>` currently broadcasts **live** state updates. Under `<Tab>` or `<Drawer>`, this
+  hook/composable/injector silently stays on its initial one-route snapshot — it never re-fires
+  after the first render, because `Tab`/`Drawer` don't emit the state event `Stack` does. This is
+  a real, documented scoping limitation of the current implementation, not a bug to route around.
+</Aside>
+
+<Tabs syncKey="framework">
+  <TabItem label="React">
+    ```tsx
+    import { useNavigationState } from '@symbiote-native/navigation/react';
+
+    function RouteStackList() {
+      const routeNames = useNavigationState(state => state.routes.map(route => route.name));
+      return routeNames.map((name, index) => <Text key={name}>{`${index}. ${name}`}</Text>);
+    }
+    ```
+  </TabItem>
+  <TabItem label="Vue">
+    ```vue
+    <script setup lang="ts">
+    import { useNavigationState } from '@symbiote-native/navigation/vue';
+
+    const routeNames = useNavigationState(state => state.routes.map(route => route.name));
+    </script>
+
+    <template>
+      <Text v-for="(name, index) in routeNames" :key="name">{{ `${index}. ${name}` }}</Text>
+    </template>
+    ```
+  </TabItem>
+  <TabItem label="Angular">
+    ```ts
+    import { Component } from '@angular/core';
+    import { Text } from '@symbiote-native/angular';
+    import { injectNavigationState } from '@symbiote-native/navigation/angular';
+
+    @Component({
+      standalone: true,
+      imports: [Text],
+      template: `
+        @for (name of routeNames(); track name + '-' + $index; let index = $index) {
+          <Text>{{ index + '. ' + name }}</Text>
+        }
+      `,
+    })
+    export class RouteStackList {
+      readonly routeNames = injectNavigationState(state => state.routes.map(route => route.name));
+    }
+    ```
+  </TabItem>
+</Tabs>
+
+## Nested navigators and `getParent()`
+
+`getParent()` walks exactly **one hop** up to the enclosing navigator when navigators are nested —
+for example a `Tab` navigator mounted as the content of a `Stack` screen. There's no multi-hop or
+named-ancestor lookup; a screen two levels deep needs to call `getParent()` on the handle
+`getParent()` already returned.
+
+```tsx
+import { isStackNavigatorHandle } from '@symbiote-native/navigation';
+import { useTabNavigation } from '@symbiote-native/navigation/react';
+
+function NestedTabHomeScreen() {
+  const navigation = useTabNavigation();
+  const parent = navigation.getParent();
+
+  return (
+    <ActionButton
+      title="Pop parent Stack"
+      onPress={() => {
+        if (parent !== undefined && isStackNavigatorHandle(parent)) parent.pop();
+      }}
+    />
+  );
+}
+```
+
+`navigation` here is the `Tab` screen's own handle (`jumpTo`/`setParams`, already concretely
+typed via `useTabNavigation()`); `getParent()` still returns the `IAnyNavigatorHandle` union
+though, since — unlike the navigator that mounted this screen — it doesn't statically know what
+kind of navigator is above it. This is the one place a raw guard is genuinely unavoidable, so
+`isStackNavigatorHandle()`/`isTabNavigatorHandle()`/`isDrawerNavigatorHandle()` live in the
+framework-agnostic core and are importable from the bare `@symbiote-native/navigation` package
+(the same place `IRoute`/`INavigatorState` come from), not from `/react`/`/vue`/`/angular`. Vue's
+equivalent reads `navigation.value.getParent()`; Angular's reads
+`injectTabNavigation().getParent()` — same one-hop semantics in both.
+
+## API
+
+### Navigation handle
+
+<Tabs syncKey="framework">
+  <TabItem label="React">
+
+    | Signature | Description |
+    | --- | --- |
+    | `useNavigation(): INavigationHandle` | The current screen's navigator handle (`IAnyNavigatorHandle` union) plus `addListener` and `getParent` |
+    | `useStackNavigation(): IStackNavigationHandle` | `useNavigation()` narrowed to a Stack handle; throws if the nearest navigator isn't a `Stack` |
+    | `useTabNavigation(): ITabNavigationHandle` | `useNavigation()` narrowed to a Tab handle; throws if the nearest navigator isn't a `Tab` |
+    | `useDrawerNavigation(): IDrawerNavigationHandle` | `useNavigation()` narrowed to a Drawer handle; throws if the nearest navigator isn't a `Drawer` |
+
+  </TabItem>
+  <TabItem label="Vue">
+
+    | Signature | Description |
+    | --- | --- |
+    | `useNavigation(): ComputedRef<INavigationHandle>` | The current screen's navigator handle (`IAnyNavigatorHandle` union) plus `addListener` and `getParent` |
+    | `useStackNavigation(): ComputedRef<IStackNavigationHandle>` | `useNavigation()` narrowed to a Stack handle; throws if the nearest navigator isn't a `Stack` |
+    | `useTabNavigation(): ComputedRef<ITabNavigationHandle>` | `useNavigation()` narrowed to a Tab handle; throws if the nearest navigator isn't a `Tab` |
+    | `useDrawerNavigation(): ComputedRef<IDrawerNavigationHandle>` | `useNavigation()` narrowed to a Drawer handle; throws if the nearest navigator isn't a `Drawer` |
+
+  </TabItem>
+  <TabItem label="Angular">
+
+    | Signature | Description |
+    | --- | --- |
+    | `injectNavigation(): INavigationHandle` | The current screen's navigator handle (`IAnyNavigatorHandle` union) plus `addListener` and `getParent` |
+    | `injectStackNavigation(): IStackNavigationHandle` | `injectNavigation()` narrowed to a Stack handle; throws if the nearest navigator isn't a `Stack` |
+    | `injectTabNavigation(): ITabNavigationHandle` | `injectNavigation()` narrowed to a Tab handle; throws if the nearest navigator isn't a `Tab` |
+    | `injectDrawerNavigation(): IDrawerNavigationHandle` | `injectNavigation()` narrowed to a Drawer handle; throws if the nearest navigator isn't a `Drawer` |
+
+  </TabItem>
+</Tabs>
+
+`isStackNavigatorHandle(handle)`/`isTabNavigatorHandle(handle)`/`isDrawerNavigatorHandle(handle)`
+are framework-agnostic type guards importable from the bare `@symbiote-native/navigation` package
+(not `/react`/`/vue`/`/angular`) — the same guards `useStackNavigation()`/etc. use internally,
+exposed for the one case they don't cover: narrowing a `getParent()` result, which is always a
+union since it doesn't statically know the enclosing navigator's kind. See
+[Nested navigators and `getParent()`](#nested-navigators-and-getparent) above.
+
+### Route
+
+<Tabs syncKey="framework">
+  <TabItem label="React">
+
+    | Signature | Description |
+    | --- | --- |
+    | `useRoute(): IRoute<unknown>` | The current screen's route (`name`, `key`, `params`) |
+
+  </TabItem>
+  <TabItem label="Vue">
+
+    | Signature | Description |
+    | --- | --- |
+    | `useRoute(): ComputedRef<IRoute<unknown>>` | The current screen's route (`name`, `key`, `params`) |
+
+  </TabItem>
+  <TabItem label="Angular">
+
+    | Signature | Description |
+    | --- | --- |
+    | `injectRoute(): Signal<IRoute<unknown>>` | The current screen's route (`name`, `key`, `params`); call as `route()` |
+
+  </TabItem>
+</Tabs>
+
+### IsFocused
+
+<Tabs syncKey="framework">
+  <TabItem label="React">
+
+    | Signature | Description |
+    | --- | --- |
+    | `useIsFocused(): boolean` | Whether this screen is focused right now; starts `false`, flips once the real focus event fires |
+
+  </TabItem>
+  <TabItem label="Vue">
+
+    | Signature | Description |
+    | --- | --- |
+    | `useIsFocused(): Ref<boolean>` | Whether this screen is focused right now; starts `false`, flips once the real focus event fires. Read `.value` |
+
+  </TabItem>
+  <TabItem label="Angular">
+
+    | Signature | Description |
+    | --- | --- |
+    | `injectIsFocused(): Signal<boolean>` | Whether this screen is focused right now; starts `false`, flips once the real focus event fires. Call as `isFocused()` |
+
+  </TabItem>
+</Tabs>
+
+### FocusEffect
+
+<Tabs syncKey="framework">
+  <TabItem label="React">
+
+    | Signature | Description |
+    | --- | --- |
+    | `useFocusEffect(effect: EffectCallback): void` | Runs `effect` on focus, runs its returned cleanup on blur. Memoize `effect` with `useCallback` — a fresh identity re-subscribes |
+
+  </TabItem>
+  <TabItem label="Vue">
+
+    | Signature | Description |
+    | --- | --- |
+    | `useFocusEffect(effect: () => (() => void) \| void): void` | Runs `effect` on focus, runs its returned cleanup on blur. No memoization needed |
+
+  </TabItem>
+  <TabItem label="Angular">
+
+    | Signature | Description |
+    | --- | --- |
+    | `injectFocusEffect(effect: () => (() => void) \| void): void` | Runs `effect` on focus, runs its returned cleanup on blur. No memoization needed |
+
+  </TabItem>
+</Tabs>
+
+### NavigationState
+
+<Tabs syncKey="framework">
+  <TabItem label="React">
+
+    | Signature | Description |
+    | --- | --- |
+    | `useNavigationState<T>(selector: (state: INavigatorState) => T): T` | Selects a value out of the navigator's live state; only `<Stack>` broadcasts live updates, `<Tab>`/`<Drawer>` stay on the initial snapshot |
+
+  </TabItem>
+  <TabItem label="Vue">
+
+    | Signature | Description |
+    | --- | --- |
+    | `useNavigationState<T>(selector: (state: INavigatorState) => T): ShallowRef<T>` | Selects a value out of the navigator's live state; only `<Stack>` broadcasts live updates, `<Tab>`/`<Drawer>` stay on the initial snapshot |
+
+  </TabItem>
+  <TabItem label="Angular">
+
+    | Signature | Description |
+    | --- | --- |
+    | `injectNavigationState<T>(selector: (state: INavigatorState) => T): Signal<T>` | Selects a value out of the navigator's live state; only `<Stack>` broadcasts live updates, `<Tab>`/`<Drawer>` stay on the initial snapshot |
+
+  </TabItem>
+</Tabs>

@@ -79,9 +79,4 @@ export { AnimatedProps } from './props';
 export { AnimatedStyle, AnimatedTransform } from './style';
 export { AnimatedMock } from './mock';
 // Framework-agnostic createAnimatedComponent helpers. Both adapters import them.
-export {
-  reduceProps,
-  isAnimatedNode,
-  readPassthroughStyle,
-  resolveHostNode,
-} from './animated-component-shared';
+export { reduceProps, isAnimatedNode, readPassthroughStyle, resolveHostNode } from './shared';

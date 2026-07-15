@@ -1,0 +1,215 @@
+{
+  "name": "@symbiote-native/navigation",
+  "version": "1.0.0",
+  "description": "Native stack navigator for SymbioteNative, built on react-native-screens' native view primitives (RNSScreen/RNSScreenStack) — one framework-agnostic core, reachable from the React, Vue, and Angular adapters.",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/OneEyed1366/symbiote-native.git",
+    "directory": "packages/navigation"
+  },
+  "homepage": "https://github.com/OneEyed1366/symbiote-native/tree/master/packages/navigation#readme",
+  "bugs": {
+    "url": "https://github.com/OneEyed1366/symbiote-native/issues"
+  },
+  "author": "Andrey Prokopenko <psevdoproger@gmail.com>",
+  "type": "module",
+  "main": "src/core/index.ts",
+  "module": "src/core/index.ts",
+  "types": "src/core/index.ts",
+  "exports": {
+    ".": "./src/core/index.ts",
+    "./react": "./src/react/index.ts",
+    "./vue": "./src/vue/index.ts",
+    "./angular": {
+      "types": "./build-ngc/angular/index.d.ts",
+      "react-native": "./build-ngc/angular/index.js",
+      "default": "./src/angular/index.ts"
+    }
+  },
+  "files": [
+    "src",
+    "build",
+    "build-ngc",
+    "codegen-specs",
+    "react-native.config.cjs",
+    "symbiote-navigation.podspec"
+  ],
+  "publishConfig": {
+    "access": "public",
+    "main": "./build/core/index.js",
+    "module": "./build/core/index.js",
+    "types": "./build/core/index.d.ts",
+    "exports": {
+      ".": {
+        "types": "./build/core/index.d.ts",
+        "default": "./build/core/index.js"
+      },
+      "./react": {
+        "types": "./build/react/index.d.ts",
+        "default": "./build/react/index.js"
+      },
+      "./vue": {
+        "types": "./build/vue/index.d.ts",
+        "default": "./build/vue/index.js"
+      },
+      "./angular": {
+        "types": "./build-ngc/angular/index.d.ts",
+        "default": "./build-ngc/angular/index.js"
+      }
+    }
+  },
+  "codegenConfig": {
+    "name": "rnscreens",
+    "type": "all",
+    "jsSrcsDir": "codegen-specs",
+    "android": {
+      "javaPackageName": "com.swmansion.rnscreens"
+    },
+    "ios": {
+      "components": {
+        "RNSFullWindowOverlay": {
+          "className": "RNSFullWindowOverlay"
+        },
+        "RNSModalScreen": {
+          "className": "RNSModalScreen"
+        },
+        "RNSScreenContainer": {
+          "className": "RNSScreenContainerView"
+        },
+        "RNSScreenContentWrapper": {
+          "className": "RNSScreenContentWrapper"
+        },
+        "RNSScreenFooter": {
+          "className": "RNSScreenFooter"
+        },
+        "RNSScreen": {
+          "className": "RNSScreenView"
+        },
+        "RNSScreenNavigationContainer": {
+          "className": "RNSScreenNavigationContainerView"
+        },
+        "RNSScreenStackHeaderConfig": {
+          "className": "RNSScreenStackHeaderConfig"
+        },
+        "RNSScreenStackHeaderSubview": {
+          "className": "RNSScreenStackHeaderSubview"
+        },
+        "RNSScreenStack": {
+          "className": "RNSScreenStackView"
+        },
+        "RNSSearchBar": {
+          "className": "RNSSearchBar"
+        },
+        "RNSStackScreen": {
+          "className": "RNSStackScreenComponentView"
+        },
+        "RNSStackHost": {
+          "className": "RNSStackHostComponentView"
+        },
+        "RNSStackHeaderConfigIOS": {
+          "className": "RNSStackHeaderConfigComponentView"
+        },
+        "RNSStackHeaderItemIOS": {
+          "className": "RNSStackHeaderItemComponentView"
+        },
+        "RNSStackHeaderItemSpacerIOS": {
+          "className": "RNSStackHeaderItemSpacerComponentView"
+        },
+        "RNSTabsScreenIOS": {
+          "className": "RNSTabsScreenComponentView"
+        },
+        "RNSTabsHostIOS": {
+          "className": "RNSTabsHostComponentView"
+        },
+        "RNSTabsBottomAccessory": {
+          "className": "RNSTabsBottomAccessoryComponentView"
+        },
+        "RNSTabsBottomAccessoryContent": {
+          "className": "RNSTabsBottomAccessoryContentComponentView"
+        },
+        "RNSSplitHost": {
+          "className": "RNSSplitHostComponentView"
+        },
+        "RNSSplitScreen": {
+          "className": "RNSSplitScreenComponentView"
+        },
+        "RNSSafeAreaView": {
+          "className": "RNSSafeAreaViewComponentView"
+        },
+        "RNSScrollViewMarker": {
+          "className": "RNSScrollViewMarkerComponentView"
+        },
+        "RNSFormSheetHost": {
+          "className": "RNSFormSheetHostComponentView"
+        },
+        "RNSFormSheetContentWrapper": {
+          "className": "RNSFormSheetContentWrapperComponentView"
+        }
+      }
+    }
+  },
+  "scripts": {
+    "prepare": "node ../../scripts/vendor-codegen-specs.cjs react-native-screens src/fabric && pnpm run ng:build",
+    "ng:build": "ngc -p tsconfig.angular.json",
+    "typecheck": "tsc --build",
+    "format": "prettier --write \"src/**/*.{ts,tsx}\""
+  },
+  "dependencies": {
+    "react-native-screens": "catalog:",
+    "@symbiote-native/components": "workspace:*"
+  },
+  "peerDependencies": {
+    "@angular/common": ">=20",
+    "@angular/core": ">=20",
+    "@symbiote-native/angular": "workspace:*",
+    "@symbiote-native/engine": ">=0.1.6",
+    "@symbiote-native/react": "workspace:*",
+    "@symbiote-native/vue": "workspace:*",
+    "@vue/runtime-core": "^3.5.13",
+    "react": ">=19.0.0",
+    "react-native": ">=0.86",
+    "vue": ">=3.5.0"
+  },
+  "peerDependenciesMeta": {
+    "@angular/common": {
+      "optional": true
+    },
+    "@angular/core": {
+      "optional": true
+    },
+    "@symbiote-native/angular": {
+      "optional": true
+    },
+    "@symbiote-native/react": {
+      "optional": true
+    },
+    "@symbiote-native/vue": {
+      "optional": true
+    },
+    "@vue/runtime-core": {
+      "optional": true
+    },
+    "react": {
+      "optional": true
+    },
+    "vue": {
+      "optional": true
+    }
+  },
+  "devDependencies": {
+    "@angular/common": "catalog:",
+    "@angular/compiler": "catalog:",
+    "@angular/compiler-cli": "catalog:",
+    "@angular/core": "catalog:",
+    "@symbiote-native/angular": "workspace:*",
+    "@symbiote-native/engine": "workspace:*",
+    "@symbiote-native/react": "workspace:*",
+    "@symbiote-native/test-utils": "workspace:*",
+    "@symbiote-native/vue": "workspace:*",
+    "@types/node": "catalog:",
+    "@types/react": "catalog:",
+    "@vue/runtime-core": "catalog:",
+    "react": "catalog:",
+    "typescript": "catalog:"
+  }
+}

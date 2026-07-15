@@ -12,6 +12,7 @@
 // build/**/*.js output, once, after `tsc --build` — src/*.ts is never touched.
 import fs from 'node:fs';
 import path from 'node:path';
+import { esmExtensionBuildDirs } from './lib/build-dirs.mjs';
 
 const STATIC_RE = /(\bfrom\s+)'(\.\.?\/[^']+)'/g;
 const DYNAMIC_RE = /(\bimport\(\s*)'(\.\.?\/[^']+)'(\s*\))/g;
@@ -91,11 +92,10 @@ export function fixEsmExtensions(buildDir) {
 }
 
 if (import.meta.url === `file://${process.argv[1]}`) {
-  const dirs = process.argv.slice(2);
-  if (dirs.length === 0) {
-    console.error('Usage: node scripts/fix-esm-extensions.mjs <build-dir> [<build-dir> ...]');
-    process.exit(1);
-  }
+  // No args → derive every publishable package's build/ dir from its own
+  // publishConfig (scripts/lib/build-dirs.mjs), so a new package is covered
+  // automatically instead of needing a hand-maintained arg list here.
+  const dirs = process.argv.slice(2).length > 0 ? process.argv.slice(2) : esmExtensionBuildDirs();
   let totalFiles = 0;
   let totalImports = 0;
   const allUnresolved = [];

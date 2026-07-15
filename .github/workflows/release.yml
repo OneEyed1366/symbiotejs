@@ -10,6 +10,10 @@ on:
         description: 'Cut a release: open a version-bump PR from this branch into master (run this dispatched from develop)'
         type: boolean
         default: false
+      # BEGIN GENERATED CANARY PACKAGE INPUTS — do not edit by hand, run
+      # `pnpm run sync:release-config` (derives this list from
+      # publishablePackageEntries(), the same package discovery
+      # `select-canary-dirs.mjs`/`trust-publishers.mjs` use).
       android:
         description: '@symbiote-native/android'
         type: boolean
@@ -28,6 +32,10 @@ on:
         default: false
       engine:
         description: '@symbiote-native/engine'
+        type: boolean
+        default: false
+      navigation:
+        description: '@symbiote-native/navigation'
         type: boolean
         default: false
       react:
@@ -50,6 +58,7 @@ on:
         description: '@symbiote-native/vue'
         type: boolean
         default: false
+      # END GENERATED CANARY PACKAGE INPUTS
 
 concurrency: ${{ github.workflow }}-${{ github.ref }}
 
@@ -82,6 +91,7 @@ jobs:
         with:
           node-version: 22
           registry-url: https://registry.npmjs.org
+          cache: pnpm
 
       - run: pnpm install --frozen-lockfile
 
@@ -142,6 +152,7 @@ jobs:
         with:
           node-version: 22
           registry-url: https://registry.npmjs.org
+          cache: pnpm
 
       - run: pnpm install --frozen-lockfile
 
@@ -177,6 +188,7 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
+          cache: pnpm
 
       - run: pnpm install --frozen-lockfile
 

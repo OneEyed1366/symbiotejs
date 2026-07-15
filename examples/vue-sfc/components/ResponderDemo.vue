@@ -12,22 +12,12 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import { View, Text, type ISymbioteEvent } from '@symbiote-native/vue'
+import { firstTouchX } from './event-utils'
 
 const RESPONDER_CHIPS = [0, 1, 2, 3, 4]
 // Horizontal travel (in the touch's page units: px on Android, pt on iOS, so the feel
 // differs a little per platform) after which the strip steals the gesture from the chip.
 const RESPONDER_STEAL_DX = 64
-
-function firstTouchX(event: ISymbioteEvent): number {
-  const touches = event.nativeEvent.touches
-  if (!Array.isArray(touches) || touches.length === 0) return 0
-  const first: unknown = touches[0]
-  if (typeof first === 'object' && first !== null && 'pageX' in first) {
-    const pageX = first.pageX
-    return typeof pageX === 'number' ? pageX : 0
-  }
-  return 0
-}
 
 const activeChip = ref<number | null>(null)
 const chipDx = ref(0)
@@ -81,13 +71,10 @@ const onChipRelease = (index: number): void => {
 <template>
   <View class="section-tight">
     <Text class="section-label">Responder · drag a chip vs hand-off to the strip</Text>
-    <Text testID="responder-status" class="info-text">{{ status }}</Text>
-    <!-- the separate transfer indicator, lit only when the strip steals the gesture. Only the
-         color is a runtime ternary with no stable on/off class semantics, so it stays :style
-         on top of the static fontSize class. -->
-    <Text testID="responder-transfer" class="transfer-text" :style="{ color: transfer ? '#f6ad55' : '#3b5266' }">{{ transfer || 'transfer: —' }}</Text>
+    <Text class="info-text">{{ status }}</Text>
+    <!-- the separate transfer indicator, lit only when the strip steals the gesture -->
+    <Text class="transfer-text" :style="{ color: transfer ? '#f6ad55' : '#41506a' }">{{ transfer || 'transfer: —' }}</Text>
     <View
-      testID="responder-strip"
       @move-should-set-responder="onStripMoveShouldSet"
       @responder-grant="onStripGrant"
       @responder-move="onStripMove"
@@ -106,8 +93,10 @@ const onChipRelease = (index: number): void => {
           @responder-terminate="onChipTerminate"
           @responder-release="() => onChipRelease(index)"
           class="chip"
-          :class="{ 'chip-active': activeChip === index }"
-          :style="{ transform: [{ translateX: activeChip === index ? chipDx : 0 }] }">
+          :style="{
+            borderColor: activeChip === index ? '#42b883' : 'transparent',
+            transform: [{ translateX: activeChip === index ? chipDx : 0 }],
+          }">
           <Text class="chip-text">{{ index }}</Text>
         </View>
       </View>
@@ -115,46 +104,5 @@ const onChipRelease = (index: number): void => {
   </View>
 </template>
 
-<style scoped>
-.section-tight {
-  gap: 8px;
-}
-.section-label {
-  color: #3b5266;
-  font-size: 13px;
-}
-.info-text {
-  color: #cbd5e1;
-  font-size: 14px;
-}
-.row-tight {
-  flex-direction: row;
-  gap: 8px;
-}
-.transfer-text {
-  font-size: 13px;
-}
-.strip-box {
-  padding: 12px;
-  border-radius: 12px;
-  background-color: #2c3e50;
-}
-.chip {
-  width: 56px;
-  height: 48px;
-  border-radius: 8px;
-  background-color: #369870;
-  border-width: 2px;
-  align-items: center;
-  justify-content: center;
-}
-/* the dynamic-class demonstration: swapped in via :class alongside the static class="chip" */
-.chip-active {
-  border-color: #42b883;
-}
-.chip-text {
-  color: #ffffff;
-  font-size: 16px;
-  font-weight: bold;
-}
-</style>
+<!-- No local <style> block here on purpose: every class this component references already
+     lives in App.css. -->

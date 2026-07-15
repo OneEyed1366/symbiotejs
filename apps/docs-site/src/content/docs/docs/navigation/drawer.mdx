@@ -1,0 +1,238 @@
+---
+title: Drawer navigator
+description: A pure-JS swipeable side-panel navigator that mounts only the focused route's screen.
+---
+
+import { Aside, Tabs, TabItem } from '@astrojs/starlight/components';
+
+`Drawer` renders a swipeable side panel that switches between a fixed set of screens declared
+as screen children, the same fixed-route-list shape as [Tab](/docs/navigation/tabs/). Unlike
+[Stack](/docs/navigation/stack/), which drives native `react-native-screens` push/pop
+transitions, Drawer paints its panel with ordinary `View`/`Text` primitives and drives the
+swipe gesture itself, built on `PanResponder` + `Animated` — not
+`react-native-gesture-handler`/`react-native-reanimated`. Only the focused route's screen is
+ever mounted at a time, exactly like Tab.
+
+<Aside type="caution">
+  Drawer reaches the same swipe-to-open/close and `front`/`back`/`slide`/`permanent` behavior
+  as `@react-navigation/drawer`, but not byte-for-byte parity with it. `PanResponder` +
+  `Animated` cover the gesture and the transform math; a few pieces of the real drawer's
+  surface are not ported: no `configureGestureHandler` escape hatch, no declarative
+  gesture-relationship composition against a nested `ScrollView` or another `PanResponder`, no
+  UI-thread `useDrawerProgress` `SharedValue` (`progress` here is a plain JS-thread value), and
+  `hideStatusBarOnOpen`/`keyboardDismissMode`/`statusBarAnimation`/`overlayStyle` are not wired
+  up. This is a deliberate scope boundary, not a bug.
+</Aside>
+
+## Usage
+
+Drawer ships **no built-in menu UI** — you supply the panel's contents yourself, reading the
+same `{ state, descriptors, navigation }` data in every adapter. How you supply it follows each
+framework's own idiom: a render prop in React, a scoped slot in Vue, a named `TemplateRef` in
+Angular.
+
+<Tabs syncKey="framework">
+  <TabItem label="React">
+    ```tsx
+    import { Drawer } from '@symbiote-native/navigation/react';
+    import type { IDrawerDescriptorMap, IDrawerNavigatorHandle, IDrawerRouterState } from '@symbiote-native/navigation';
+
+    function renderDrawerContent({ state, descriptors, navigation }: {
+      state: IDrawerRouterState;
+      descriptors: IDrawerDescriptorMap;
+      navigation: IDrawerNavigatorHandle;
+    }) {
+      return (
+        <SafeAreaView className="drawer-panel">
+          {state.routes.map(route => (
+            <Pressable key={route.key} onPress={() => navigation.jumpTo(route.name)}>
+              <Text>{descriptors[route.key]?.options.drawerLabel ?? route.name}</Text>
+            </Pressable>
+          ))}
+        </SafeAreaView>
+      );
+    }
+
+    export function DrawerDemoScreen() {
+      return (
+        <Drawer
+          initialRouteName="Home"
+          drawerPosition="right"
+          drawerType="slide"
+          renderDrawerContent={renderDrawerContent}
+        >
+          <Drawer.Screen name="Home" component={DrawerHomeScreen} options={{ title: 'Home', drawerLabel: 'Home' }} />
+          <Drawer.Screen name="Settings" component={DrawerSettingsScreen} options={{ title: 'Settings', drawerLabel: 'Settings' }} />
+        </Drawer>
+      );
+    }
+    ```
+  </TabItem>
+  <TabItem label="Vue">
+    ```vue
+    <script setup lang="ts">
+    import { Drawer, DrawerScreen } from '@symbiote-native/navigation/vue';
+    import HomeScreen from './HomeScreen.vue';
+    import SettingsScreen from './SettingsScreen.vue';
+    </script>
+
+    <template>
+      <Drawer initial-route-name="Home" drawer-position="right" drawer-type="slide">
+        <DrawerScreen name="Home" :component="HomeScreen" :options="{ title: 'Home', drawerLabel: 'Home' }" />
+        <DrawerScreen name="Settings" :component="SettingsScreen" :options="{ title: 'Settings', drawerLabel: 'Settings' }" />
+        <template #drawerContent="{ state, descriptors, navigation }">
+          <SafeAreaView class="drawer-panel">
+            <Pressable v-for="route in state.routes" :key="route.key" @press="() => navigation.jumpTo(route.name)">
+              <Text>{{ descriptors[route.key]?.options.drawerLabel ?? route.name }}</Text>
+            </Pressable>
+          </SafeAreaView>
+        </template>
+      </Drawer>
+    </template>
+    ```
+
+    `drawer-position`/`drawer-type` and their camelCase spellings are interchangeable in an SFC
+    template — Vue's `attrs` normalizes either form the same way.
+  </TabItem>
+  <TabItem label="Angular">
+    ```ts
+    import { Component } from '@angular/core';
+    import { Drawer, DrawerScreenDirective } from '@symbiote-native/navigation/angular';
+    import type { IDrawerContentContext, IRoute } from '@symbiote-native/navigation/angular';
+    import { HomeScreen } from './home-screen';
+    import { SettingsScreen } from './settings-screen';
+
+    @Component({
+      selector: 'DrawerDemoScreen',
+      standalone: true,
+      imports: [Drawer, DrawerScreenDirective, Pressable, SafeAreaView, Text],
+      template: `
+        <Drawer initialRouteName="Home" drawerPosition="right" drawerType="slide">
+          <ng-template symbioteDrawerScreen name="Home" [component]="homeScreen" [options]="homeOptions"></ng-template>
+          <ng-template symbioteDrawerScreen name="Settings" [component]="settingsScreen" [options]="settingsOptions"></ng-template>
+          <ng-template #drawerContent let-ctx>
+            <SafeAreaView class="drawer-panel">
+              @for (route of ctx.state.routes; track route.key) {
+                <Pressable (press)="ctx.navigation.jumpTo(route.name)">
+                  <Text>{{ drawerLabelFor(ctx.descriptors, route) }}</Text>
+                </Pressable>
+              }
+            </SafeAreaView>
+          </ng-template>
+        </Drawer>
+      `,
+    })
+    export class DrawerDemoScreen {
+      readonly homeScreen = HomeScreen;
+      readonly settingsScreen = SettingsScreen;
+      readonly homeOptions = { title: 'Home', drawerLabel: 'Home' };
+      readonly settingsOptions = { title: 'Settings', drawerLabel: 'Settings' };
+
+      drawerLabelFor(descriptors: IDrawerContentContext['$implicit']['descriptors'], route: IRoute<unknown>): string {
+        return descriptors[route.key]?.options.drawerLabel ?? route.name;
+      }
+    }
+    ```
+
+    Screens are declared with the `symbioteDrawerScreen` structural directive on `<ng-template>`
+    (`name`/`component` required, `options`/`initialParams` optional), Angular's twin of React's
+    `<Drawer.Screen>`/Vue's `<DrawerScreen>`. The custom-content template's ref variable **must**
+    be named exactly `drawerContent` — `Drawer` reads it via `@ContentChild('drawerContent', {
+    read: TemplateRef })` and looks for no other name. `let-ctx` destructures the
+    `{ state, descriptors, navigation }` context object, mirroring React's render-prop
+    parameter and Vue's scoped-slot props — this is the drawer-content callback, not a screen's
+    own navigation. `HomeScreen`/`SettingsScreen` (the actual `Drawer.Screen` content) read their
+    own `route`/`navigation` with `injectRoute()`/`injectDrawerNavigation()` the same way
+    [Stack's screens](/docs/navigation/stack/) do.
+  </TabItem>
+</Tabs>
+
+### Opening and closing programmatically
+
+Any component under the Drawer — the screen's own top-level component, or a button/menu action
+nested deeper in the tree — reads the drawer handle with `useDrawerNavigation()` in React/Vue or
+`injectDrawerNavigation()` in Angular: the narrowed twin of `useNavigation()`/`injectNavigation()`,
+returning a concretely-typed `IDrawerNavigatorHandle` with `openDrawer()`/`closeDrawer()`/
+`toggleDrawer()` directly, no union to narrow. See [Hooks](/docs/navigation/hooks/) for the full
+hook API.
+
+## API
+
+### Navigator handle
+
+`IDrawerNavigatorHandle` — the shape of the object every adapter exposes (a forwarded ref in
+React, `expose()` in Vue, the `Drawer` class itself in Angular), identical across all three:
+
+| Method | Signature | Description |
+| --- | --- | --- |
+| `openDrawer` | `() => void` | Opens the drawer, animating the panel/content/overlay to their open positions |
+| `closeDrawer` | `() => void` | Closes the drawer, animating back to closed |
+| `toggleDrawer` | `() => void` | Opens if closed, closes if open |
+| `jumpTo` | `(name: string) => void` | Focuses the route named `name` and closes the drawer — selecting a destination IS the dismissal gesture. Unlike Tab's `jumpTo`, takes no `params` argument |
+
+### Drawer options
+
+`IDrawerOptions` — passed as props/inputs on the navigator itself, there is no per-screen
+equivalent:
+
+| Option | Type | Default | Description |
+| --- | --- | --- | --- |
+| `drawerType` | `'front' \| 'back' \| 'slide' \| 'permanent'` | `'front'` | Panel/content movement style — `front`: panel slides over static content; `back`: content slides to reveal a stationary panel; `slide`: both move together; `permanent`: static sidebar, no gesture/animation |
+| `drawerPosition` | `'left' \| 'right'` | `'left'` | Which screen edge the drawer opens from |
+| `drawerWidth` | `number` | `280` | Panel width in px |
+| `overlayColor` | `string` | `'rgba(0, 0, 0, 0.5)'` | Dimming overlay color (`front`/`slide` only) |
+| `swipeEnabled` | `boolean` | `true` | Enables edge-swipe-to-open and anywhere-swipe-to-close |
+| `swipeEdgeWidth` | `number` | `32` | How close to the position edge a closed-drawer swipe must start |
+| `swipeMinDistance` | `number` | `60` | Minimum drag distance to snap open/closed on release |
+| `swipeMinVelocity` | `number` (px/ms) | `0.5` (= 500px/s) | Minimum release velocity that snaps regardless of distance |
+
+### Screen options
+
+`IDrawerScreenOptions` — passed as `options` on a single screen. Deliberately tiny: Drawer
+ships no built-in menu UI, so these fields exist purely for your own custom drawer-content UI
+to read off the descriptor map below.
+
+| Option | Type | Description |
+| --- | --- | --- |
+| `title` | `string` | Fallback label for your own custom drawer content to fall back to |
+| `drawerLabel` | `string` | Explicit label for your own custom drawer content to display |
+
+### Custom drawer content
+
+Every adapter hands your custom content the same data shape:
+
+```ts
+type IDrawerContentProps = {
+  state: IDrawerRouterState;
+  descriptors: IDrawerDescriptorMap;
+  navigation: IDrawerNavigatorHandle;
+};
+```
+
+`state.routes` is the ordered route list, and `descriptors` is keyed by `route.key`:
+
+```ts
+type IDrawerDescriptorMap = Record<
+  string,
+  { options: IDrawerScreenOptions; navigation: IDrawerNavigatorHandle }
+>;
+```
+
+How you supply the content differs by framework, matching each one's own idiom for
+"caller-supplied UI that needs live data":
+
+| Framework | Mechanism | Description |
+| --- | --- | --- |
+| React | `renderDrawerContent` render prop | A `(props) => ReactNode` function passed directly to `<Drawer>` |
+| Vue | `drawerContent` scoped slot | `<template #drawerContent="{ state, descriptors, navigation }">` in SFC, or a `{ drawerContent: (props) => ... }` slots object in TSX |
+| Angular | `TemplateRef` via `@ContentChild` | A projected `<ng-template #drawerContent let-ctx>` — the ref variable name **must** be exactly `drawerContent`, read via `@ContentChild('drawerContent', { read: TemplateRef })` |
+
+If you skip the render prop/slot/template entirely, the panel slot renders empty — Drawer never
+falls back to a default menu.
+
+---
+
+See [`useNavigation()`/`useRoute()`/`useIsFocused()`/`useFocusEffect()` (Angular:
+`injectNavigation()`/`injectRoute()`/`injectIsFocused()`/`injectFocusEffect()`)](/docs/navigation/hooks/)
+across all three adapters, including how to narrow a navigation handle down
+to `IDrawerNavigatorHandle`.

@@ -37,7 +37,7 @@ const SCROLL_DURATION_MS = 180;
   standalone: true,
   imports: [View, Text, Button, AnimatedView],
   template: `
-    <View class="section">
+    <View class="section-nested">
       <Text class="section-label">Animated · ValueXY / tracking / diffClamp</Text>
 
       <Text class="drag-hint">drag the purple box →</Text>
@@ -68,7 +68,7 @@ const SCROLL_DURATION_MS = 180;
         testID="track-btn"
         title="Move target (follower chases)"
         (press)="moveLead()"
-        color="#4299e1"
+        color="#dd0031"
       ></Button>
 
       <View class="collapse-frame">

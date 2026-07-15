@@ -10,7 +10,8 @@
 -->
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted, type Ref } from 'vue';
-import { View, Text, Animated, Button } from '@symbiote-native/vue';
+import { View, Text, Animated } from '@symbiote-native/vue';
+import ActionButton from './ActionButton.vue';
 
 const AnimatedView = Animated.View;
 
@@ -80,15 +81,10 @@ const freezeJs = (): void => {
     // Intentionally block the JS thread: no requestAnimationFrame can fire here.
   }
 };
-
-// Every static look lives in the <style scoped> block below. pulseDot/jsSlideDot/
-// nativeSlideDot split: their static width/height/borderRadius/backgroundColor move to a
-// class, the runtime opacity/transform interpolations stay :style on the same element
-// (style only for the values that actually change at runtime).
 </script>
 
 <template>
-  <View class="section">
+  <View class="section-nested">
     <Text class="section-label">Animated · JS vs native driver</Text>
 
     <!-- native-driven perpetual pulse -->
@@ -108,10 +104,10 @@ const freezeJs = (): void => {
         :style="{ transform: [{ translateX: jsX }] }"
       />
     </View>
-    <Button
+    <ActionButton
       testID="slide-js-btn"
       title="Slide (JS driver)"
-      @press="slideJsDriver"
+      :onPress="slideJsDriver"
       color="#f6ad55"
     />
 
@@ -123,56 +119,14 @@ const freezeJs = (): void => {
         :style="{ transform: [{ translateX: nativeX }] }"
       />
     </View>
-    <Button
+    <ActionButton
       testID="slide-native-btn"
       title="Slide (native driver)"
-      @press="slideNativeDriver"
+      :onPress="slideNativeDriver"
       color="#68d391"
     />
 
     <!-- Freeze the JS thread 1.5s: native (pulse + green) keep moving, JS (orange) stalls -->
-    <Button
-      testID="freeze-js-btn"
-      title="Freeze JS 1.5s"
-      @press="freezeJs"
-      color="#fc8181"
-    />
+    <ActionButton title="Freeze JS 1.5s" :onPress="freezeJs" color="#fc8181" />
   </View>
 </template>
-
-<style scoped>
-.section {
-  gap: 12px;
-}
-.section-label {
-  color: #3b5266;
-  font-size: 13px;
-}
-.pulse-frame {
-  height: 64px;
-  align-items: center;
-  justify-content: center;
-}
-.pulse-dot {
-  width: 48px;
-  height: 48px;
-  border-radius: 24px;
-  background-color: #42b883;
-}
-.slide-track {
-  height: 36px;
-  justify-content: center;
-}
-.js-slide-dot {
-  width: 28px;
-  height: 28px;
-  border-radius: 8px;
-  background-color: #f6ad55;
-}
-.native-slide-dot {
-  width: 28px;
-  height: 28px;
-  border-radius: 8px;
-  background-color: #68d391;
-}
-</style>

@@ -21,12 +21,16 @@ import { relative } from 'node:path';
 // Every top-level package with its own (composite) tsconfig.json, i.e. everything the
 // root tsconfig.json references. Keep in sync with that references list.
 const TS_PACKAGES = [
+  'core/test-utils',
   'core/engine',
   'core/components',
+  'core/css-parser',
   'adapters/react',
   'adapters/vue',
   'adapters/angular',
   'packages/slider',
+  'packages/splash-screen',
+  'packages/navigation',
 ];
 
 function tscBuildForStaged(files) {

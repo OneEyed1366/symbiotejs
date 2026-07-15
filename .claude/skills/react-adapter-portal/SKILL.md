@@ -230,20 +230,24 @@ reconciler drains its ENTIRE sync work queue in one flush, including updates
 scheduled from within its own commit phase, not just the update that triggered
 the call.
 
-See `adapters/react/src/create-portal.test.tsx` for the full test (parentage
-assertion via `fabric.committed`, plus guard-rejection tests built with
-`JSON.parse('{}')`/`JSON.parse('"body"')` to get untyped values without an `as`
-cast — this repo bans `as` in application code, tests included).
+See `adapters/react/src/create-portal/create-portal.test.tsx` for the full test
+(parentage assertion via `fabric.committed`, plus guard-rejection tests built
+with `JSON.parse('{}')`/`JSON.parse('"body"')` to get untyped values without an
+`as` cast — this repo bans `as` in application code, tests included).
 
-## Live example — `examples/react/App.tsx`
+## Live example — `examples/react/screens/CanaryScreen.tsx`
 
-A "Show toast (createPortal)" button near the Modal-open button. The overlay
-host is a persistent, empty `<View pointerEvents="box-none">` rendered as a
-SIBLING of the root `ScrollView` (both inside `SafeAreaView`) — the callback
-ref (`ref={setOverlayHost}`, `useState`, not `useRef`; see the ref-timing
-gotcha above) resolves on the FIRST commit. The toast card itself is authored
-deep inside the scroll content but portals out to sit above it, still
-repainting on the ONE commit the surface already does.
+A "Show toast (createPortal)" button near the Modal-open button (2026-07 — this
+demo previously lived nowhere in `examples/react`, despite `examples/angular`
+having its `*portal`/`*tunnelIn` twin all along; brought to parity here). The
+overlay host is a persistent, empty `<View pointerEvents="box-none">` rendered
+as a SIBLING of the root `ScrollView` (both inside `SafeAreaView`) — the
+callback ref (`ref={setOverlayHost}`, `useState`, not `useRef`; see the
+ref-timing gotcha above) resolves on the FIRST commit. The toast card itself is
+authored deep inside the scroll content but portals out to sit above it, still
+repainting on the ONE commit the surface already does. A second button, "Show
+toast (createTunnel)", demos `overlayTunnel.In`/`overlayTunnel.Out` right next
+to it — the same module-level-singleton pattern as the Angular/Vue twins.
 
 ## Common failure modes
 

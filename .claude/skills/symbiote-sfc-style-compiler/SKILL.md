@@ -919,3 +919,88 @@ Confirm current status by re-reading `core/engine/src/commit.ts`'s
 it was closed incrementally, in three passes, across one session, so an
 older "not built yet" claim (including an EARLIER version of this very
 section) can go stale within hours.
+
+### 9. Cross-file class-name collisions in one app: the registry is flat and global, last-registered wins
+
+`core/engine/src/style-registry/index.ts` is a single flat
+`Map<string, IResolvedStyle>` **shared across every CSS/SFC-style-block source
+in one app** — `App.css` plus every `components/*.css` (or `.vue`
+`<style>` block) all call `registerStyles()` into the SAME namespace. There is
+no per-file/per-component scoping unless the author explicitly opts into
+`<style scoped>`/CSS Modules (see §4-6 above). Two files that both happen to
+define `.pulse-dot` (or any other same-named unscoped class) silently
+collide, and whichever one's `registerStyles()` call runs LAST wins — decided
+by ES module import order (a module's own imports evaluate before its body,
+in declared order), not by file position or "more specific wins" intuition.
+
+**2026-07 incident (hit independently in `.examples/vue-sfc` AND
+`.examples/angular` the same session):** each app's shared `App.css` had a
+handful of stale duplicate rules (`.pulse-dot`, `.lead-dot`, `.ref-box`,
+`.section-header`) left over from before the per-component `.css`/`<style>`
+files existed, still carrying React's literal accent-blue hex instead of
+that framework's brand color. Both apps' PER-COMPONENT styles had already
+been correctly fixed to the right brand color — but `App.ts`/`App.vue`
+imports the full screen tree (which transitively imports every component's
+own CSS) BEFORE importing `./App.css` itself, so `App.css`'s stale rules
+registered last and silently overwrote the already-correct component colors
+at runtime. This produced a real, screenshot-confirmed visual bug (React's
+blue chips/borders/buttons showing through in the Vue/Angular canary) with
+zero build error, zero warning — `registerStyles()` has no duplicate-key
+diagnostic.
+
+**Lesson:** when fixing/porting a color or any other CSS property tied to a
+class name, grep the WHOLE app (`App.css` + every `components/*.css`/`<style>`
+block) for that class name, not just the component file you're editing — a
+same-named rule anywhere else in the app can silently win the cascade. This
+is not a one-off oversight; it can recur any time a shared top-level
+stylesheet (`App.css`) and per-component stylesheets both define the same
+class name.
+
+**2026-07-10 incident, much larger shape (`.examples/angular`):** the
+`.section` layout wrapper (`padding: 24px` in `App.css`'s top-level "shared /
+common" block, the class every non-scrolling demo screen's `<SafeAreaView>
+> <View class="section">` root uses) silently lost its padding on EVERY
+screen except `CanaryScreen` (which never uses `.section` at all — it wraps
+in `<ScrollView contentContainerStyle="scroll-content">` instead). Confirmed
+live on device (not just by reading source): `mobile_list_elements_on_screen`
+showed every direct-child `Text`/`TextInput` of `.section` at `x:0,
+width:402` (full device width, zero horizontal inset) while the SAME
+screen's `hero-card` (a nested `View`, one level deeper) sat correctly
+inset — proving `.section`'s OWN padding was gone, not a text-measurement
+quirk. Root cause: **`App.css` still carried a full pre-split legacy copy of
+every demo component's styles** (`/* AnimatedDemo */`, `/* ParityDemo */`,
+etc., ~230 lines, each with its own `.section`/`.section-label`
+re-declaration missing the `padding`) FROM BEFORE the `components/*.css`
+split existed — never deleted after the split, unlike the smaller 2026-07
+incident above which only left 4 stray rules behind. On top of that, ALL 8
+of that app's `components/*.css` files (`AccessibilityDemo`, `AnimatedDemo`,
+`AnimatedParityDemo`, `NativeModulesDemo`, `ParityDemo`, `PlatformColorDemo`,
+`RefApiDemo`, `ResponderDemo`) had ALSO independently re-declared the generic
+utility classes (`.section`, `.section-label`, `.info-text`, `.note-text`,
+`.row`) with narrower values (e.g. `.section {gap: 12px}`, no padding) —
+each demo author apparently reached for the obvious name instead of
+checking whether it already existed app-wide. Every static per-file audit
+(`grep` for "does this class exist in App.css" — yes, it does, just a second
+time with different values) passed clean; only a live device element-tree
+read surfaced it. **Why Vue/React don't have this failure mode**: React's
+canary has NO per-component `.css` files at all (every component reuses
+`App.css`'s classes directly, no local redeclaration possible); Vue's
+per-component styles live in each `.vue` file's own `<style scoped>` block,
+which Vue's SFC compiler scopes by construction, so a same-named class can't
+leak into the global registry. **Angular's plain `components/*.css` file
+convention has no such scoping** — it is the one adapter genuinely exposed
+to this bug shape, so an Angular `components/*.css` file should NEVER
+redeclare a class that already exists in `App.css`'s shared/common section,
+even if the values happen to currently match (a match today is not a
+guarantee against future drift). **Fix applied:** deleted the entire
+pre-split legacy block from `App.css` (every component-specific class now
+has exactly one source: its own `components/*.css` file) and deleted every
+generic-utility redeclaration from the 8 component files (now inheriting
+`App.css`'s single top-level definition). Verified via `ngc`/`tsc` (both
+blind to this class of bug) AND a live device re-check post-fix (padding
+correctly `x:24, width:354` everywhere). **Diagnostic for next time:** don't
+trust "the class exists in App.css" as proof a screen renders it correctly —
+grep for a SECOND definition of the same class name anywhere else in the
+app's CSS sources, and if the visual symptom is "padding/spacing missing but
+no build error", check the live device element tree (accessibility-tree
+`x`/`width` bounds), not just source.

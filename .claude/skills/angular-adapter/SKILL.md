@@ -405,6 +405,55 @@ needs its class-derived style merged back into the real inner primitive, or `cla
 it silently does nothing (a DIFFERENT, second-order failure of the exact same anchor
 mechanism). See §21.
 
+**§11a. The lookup itself was case-sensitive — every screen mounted by `Stack`/`Tab`/`Drawer`
+missed the allowlist entirely (found 2026-07-09, first real-device run of `@symbiote-native/navigation`'s
+Angular Stack).** A component used as a STATIC template tag (`<Stack>` in `App.ts`) reaches
+`createElement` with its authored selector case intact — the compiler just copies the source
+text. A component mounted DYNAMICALLY via `ViewContainerRef.createComponent`/`NgComponentOutlet`
+(exactly how `Stack`/`Tab`/`Drawer` mount every screen — see `packages/navigation/src/angular/
+stack.ts`'s `*ngComponentOutlet="componentFor(route)"`) does NOT: Angular derives the host tag
+from the component's runtime selector metadata, and its selector-matching internals lowercase it
+(Ivy assumes HTML-style case-insensitive tag names there). So `'MenuScreen'` in the Set never
+matched the runtime-supplied `'menuscreen'` — confirmed by comparing `DEBUG=1` device logs side
+by side: `createElement Stack -> anchor host` (static, case preserved) vs. `createElement
+menuscreen -> menuscreen` (dynamic, lowercased, fell through to a real unrecognized-viewName
+`createNode`). The renderer.ts comment above (§11's own source, written when the navigation
+demo screens were added) explicitly claimed the static and dynamic paths behave identically —
+untested on a real device, and wrong. Symptom was NOT the usual red "Unimplemented component"
+banner — the unrecognized host silently failed to size/paint at all, so its entire (correctly
+rendered, per the commit log — real geometry, real colors, real measured content height) subtree
+was simply invisible: a totally blank screen with a working native header, no error anywhere
+(no crash, no console output, no redbox), which took real device DEBUG logging plus a dlog
+diagnostic already in `core/engine/src/commit.ts` (`logScrollChildren`, unrelated but coincidentally
+present in the log) to rule out before finding the actual `createElement` log line mismatch.
+**Fixed at the root, not by dual-registering every entry**: `ANCHOR_HOST_COMPONENTS` now
+lowercases every entry at Set-construction time and `createElement`/`registerComposedComponent`
+both lowercase their lookup/insert key — closes this for every current AND future composed
+component without touching the (still-necessary, still manually maintained per §11) allowlist
+itself.
+
+**§11b. The §11a fix regressed — the Set literal drifted back to un-lowercased strings while
+this section still described the fix as done (found + refixed 2026-07-13).** `renderer/index.ts`
+had `const ANCHOR_HOST_COMPONENTS: Set<string> = new Set([...capitalized strings...])` with NO
+`.map(s => s.toLowerCase())` on the array — a plain `new Set([...])` does not normalize its own
+members, so `ANCHOR_HOST_COMPONENTS.has(engineName.toLowerCase())` was comparing a lowercased
+query against literal `'ActivityIndicator'`/`'Switch'`/`'ScrollView'`/`'StatusBar'`/`'Pressable'`/
+etc. entries and silently missing on all of them (only the handful already spelled lowercase in
+the literal — `symbiote-animated-view`, `tunnel-out`, `symbiote-descriptor-outlet`, … — ever
+matched). Surfaced as 8 headless `vitest` failures across 5 files after an unrelated
+folder-as-module file-layout pass touched `renderer.ts` — confirmed via `git stash` against the
+literal HEAD commit that the failures pre-existed the file move, so this was a real, already-
+committed regression, not caused by the move. It stayed masked in the other ~15 composed-
+component tests because most search by `testID`/style, which finds the real inner node
+regardless of an extra un-anchored ancestor; only tests asserting exact `viewName`, a strict
+serialized-tree string, `root.children.length`, or an exact event-fire count (activity-indicator,
+switch, status-bar, pressable, scroll-view-projection) actually broke. **Re-fixed identically**:
+`.map(selector => selector.toLowerCase())` on the array passed to `new Set(...)`. Lesson: this
+skill describing a fix as done is not proof the code still has it — the Set literal is a single
+array anyone editing `ANCHOR_HOST_COMPONENTS` (e.g. adding a new component) could accidentally
+retype without the `.map`, silently reintroducing this every time; if a future audit touches this
+file, verify the `.map(toLowerCase)` call is still there before trusting §11a/§11b's narrative.
+
 ## §16. `[style]="[a, b]"` (RN's array-composition idiom) crashes Angular's built-in `ɵɵstyleMap` — always flatten first (2026-07)
 
 Angular's template compiler special-cases the literal binding name `style` (and `class`,
@@ -594,6 +643,50 @@ apply there.
 is a real device/simulator render of a `class="..."`-styled instance of the component (or a
 headless test asserting the COMMITTED node's resolved `style` prop actually contains the
 class-derived value, mirroring `scroll-view-class-style.test.ts`'s pattern).
+
+## §22. `injectX()`, not `useX()`: the real Angular convention for an injection-context function, and why `this` is valid inside a template
+
+**The lifecycle-bucket naming `<adapter_src_follows_framework_idioms>` calls for is `injectors/`
++ `injectX()`, never `hooks/` + `useX()`.** A standalone function that calls `inject()` internally
+(so it must run in an injection context: a component/directive constructor or field initializer)
+is called an **"Injection Function"** in the Angular ecosystem, and the adopted naming convention
+is the `inject` prefix, not a borrowed React `use`/Vue-composable-flavored name. Confirmed 2026-07
+by an Angular Team member (`synalx`) in
+[angular/angular#59615](https://github.com/angular/angular/issues/59615): *"If a function uses
+inject internally... I think we should properly showcase that the function needs to be called in
+an injection context, that's why we went with `injectX` pattern."* ngxtension (`injectNetwork()`,
+folder `utilities/injectors/`) and TanStack Query Angular (`injectQuery()`) independently confirm
+the same convention. `useX` is the flagged-as-inferior alternative: it doesn't signal the injection-
+context requirement the way `injectX` does, and can't be linted for it. `@symbiote-native/navigation`'s
+Angular adapter had this backwards until a 2026-07 refactor: `packages/navigation/src/angular/hooks/`
+(`useNavigation`, `useRoute`, `useIsFocused`, `useFocusEffect`, `useNavigationState`) is now
+`injectors/` (`injectNavigation`, `injectRoute`, `injectIsFocused`, `injectFocusEffect`,
+`injectNavigationState`): the corrected reference shape for any future Angular-adapter injection
+function in this codebase. `services/` (real `@Injectable` classes like
+`ColorSchemeService`/`WindowDimensionsService`) stays a SEPARATE bucket, since those are DI
+singletons, not per-call injection functions.
+
+**A component's imperative API (reached via a template reference variable or `@ViewChild`) should
+be plain public methods directly on the class, never a nested wrapper object.** Angular
+Material's own components confirm this: `MatDrawer.open()`/`.close()`/`.toggle()`,
+`MatPaginator.nextPage()`, `MatSort` all expose their imperative surface as flat public methods on
+the instance, never behind a sub-property. A `readonly handle: ISomeHandle = { push: () => ..., ...
+}` field (forcing `nav.handle.push(...)` access) is a React `useImperativeHandle` habit leaking in:
+React needs that pattern because a function component has no stable instance identity across
+renders, but an Angular component **is** a real, persistent class instance, so the fix is simply:
+`class Stack implements INavigatorHandle { readonly push = (...) => this.dispatch(...); ... }`,
+reached as `nav.push(...)`. `@symbiote-native/navigation`'s `Stack`/`Tab`/`Drawer` were fixed this
+way in the same 2026-07 refactor as the injectX rename above.
+
+**`this` inside a component's own template is a legal, type-safe self-reference**, confirmed by
+reading the vendored compiler: `.vendors/angular/packages/compiler/src/expression_parser/
+{ast.ts,parser.ts}` parses it as `ThisReceiver`, distinct from the default `ImplicitReceiver`, and
+`.../template/pipeline/src/ingest.ts` compiles it straight to `ir.ContextExpr(job.root.xref)`,
+i.e. the component instance. So `[someInput]="this"` is valid, idiomatic Angular for handing a
+child/directive "the component itself" when it expects a value structurally matching an interface
+the component implements, with no extra wrapper field or getter needed. This is how `Stack`/`Tab`/
+`Drawer` pass themselves down to `NavigationScopeDirective` and to each mounted screen's
+`navigation` input post-refactor.
 
 ## Reference
 
