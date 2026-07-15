@@ -1,5 +1,34 @@
 # @symbiote-native/splash-screen
 
+## 2.0.0
+
+### Patch Changes
+
+- 6010442: Move `@symbiote-native/engine` from `dependencies` to `peerDependencies` (`>=0.1.0`) in every adapter and every package that imports engine internals, matching the existing `react`/`react-native` singleton-peer treatment. Engine holds module-scope singleton state — the node-identity `BRAND` symbol `isSymbioteNode`/`createElement` share, and the WeakMap-based commit mirror — that MUST be the same module instance everywhere it's touched. As a regular `dependencies` entry, each package independently resolved (and, once published via pkg.pr.new at a different point in the same session, independently pinned) its own copy of engine; inside a standalone `npm install` outside the pnpm workspace (`examples/*`), npm cannot dedupe distinct commit-pinned canary URLs, so multiple copies of engine landed side by side in `node_modules`, each with its own `BRAND` symbol.
+
+  This surfaced as Angular's `HeaderOptionsScreen` search-bar buttons (`focus`/`setText`/`clearText`/`cancelSearch`) silently no-op'ing: `SearchBarRefDirective` reads the native node via `ElementRef.nativeElement` (created by `@symbiote-native/angular`'s own copy of `createElement`) and checks it with `@symbiote-native/navigation`'s own copy of `isSymbioteNode` — a genuine cross-package identity check that only Angular's ref-attachment shape happens to make (React/Vue's search-bar ref is a callback-prop resolved inside the SAME `createElement` call, so it never crosses a package boundary). `isSymbioteNode` returned `false` despite the object being a real, correctly-shaped native node — a different engine module's `BRAND` symbol, not a missing one — so the ref's `.current` stayed `null` forever, silently.
+
+  Root-caused live via `mobile-mcp` device interaction (native search-bar tap fired `onFocus` correctly; imperative ref-driven buttons did not) plus a throwaway diagnostic patch of the installed `node_modules` copy dumping `Object.getOwnPropertySymbols(node).length` — confirmed exactly one (foreign) symbol present, not zero. `@symbiote-native/engine` now resolves to one singleton instance per consuming app, the same way `react`/`react-native` already do.
+
+- 6010442: Pin the wrapped native library (`@react-native-community/slider`, `react-native-bootsplash`) to an exact version instead of a caret range in the workspace catalog these packages publish with. Both vendor that library's codegen JS specs into a published `codegen-specs/` snapshot at `prepare` time (`scripts/vendor-codegen-specs.cjs`); a caret range let a standalone consumer's own `npm install` silently resolve a newer native side than whatever version the snapshot was baked from, risking the exact class of build failure already hit and fixed for `@symbiote-native/navigation`/`react-native-screens` (`error: no type named 'RNS...' in namespace 'facebook::react'`) — no drift observed yet for these two, but the pin closes the gap before it happens.
+- Updated dependencies [f9569fb]
+- Updated dependencies [a2cadf6]
+- Updated dependencies [09feeb9]
+- Updated dependencies [ad17e8f]
+- Updated dependencies [6010442]
+- Updated dependencies [1791d13]
+- Updated dependencies [1791d13]
+- Updated dependencies [1791d13]
+- Updated dependencies [6010442]
+- Updated dependencies [1791d13]
+- Updated dependencies [1791d13]
+- Updated dependencies [f43fe5b]
+  - @symbiote-native/angular@0.5.0
+  - @symbiote-native/engine@0.1.6
+  - @symbiote-native/components@0.2.5
+  - @symbiote-native/react@0.2.6
+  - @symbiote-native/vue@0.3.6
+
 ## 1.0.0
 
 ### Patch Changes

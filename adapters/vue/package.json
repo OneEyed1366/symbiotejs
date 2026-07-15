@@ -1,6 +1,6 @@
 {
   "name": "@symbiote-native/vue",
-  "version": "0.3.5",
+  "version": "0.3.6",
   "description": "SymbioteNative's Vue adapter — a @vue/runtime-core createRenderer driving real native iOS/Android views through the same engine as the React adapter.",
   "repository": {
     "type": "git",
@@ -63,7 +63,7 @@
     "typescript": "catalog:"
   },
   "peerDependencies": {
-    "@symbiote-native/engine": ">=0.1.0",
+    "@symbiote-native/engine": ">=0.1.6",
     "vue": ">=3.5.0",
     "react-native": ">=0.86"
   },

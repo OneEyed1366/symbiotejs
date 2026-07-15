@@ -1,0 +1,9 @@
+current_branch=$(git rev-parse --abbrev-ref HEAD)
+
+case "$current_branch" in
+  master|HEAD|changeset-release/*)
+    exit 0
+    ;;
+esac
+
+pnpm exec changeset status --since=master
