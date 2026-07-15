@@ -1,6 +1,6 @@
 ---
 name: symbiote-release-publishing
-description: "Symbiote npm publishing & versioning — read before touching .changeset/**, a publishable package's `publishConfig`/`files`/`exports`, .github/workflows/release.yml, or running `pnpm changeset`/`pnpm run release`. Versioning is Changesets (`pnpm changeset` → PR → 'Version Packages' PR → merge → CI publishes). Core trick: `main`/`exports` keep pointing at `src/index.ts` for in-repo dev (Metro/tsc resolve live TS, unchanged) — `publishConfig` overrides those to `build/` ONLY inside the tarball, never touching local resolution. No new bundler: `tsc --build` already emits `build/`, so `typecheck` IS the build. `@symbiote-native/angular`/`@symbiote-native/slider`'s `./angular` entry predate this, use a DIFFERENT mechanism (conditional `exports`, AOT build) — don't convert or copy that onto plain packages. Covers the mechanism table, the `files`-mandatory gotcha (`.gitignore` excludes `build/`), the `fix-esm-extensions` argument-list gotcha (a package missing from it ships an unimportable `build/` for every real npm consumer, invisible in-repo), changeset ignore list, release scripts, the `checks.yml` reusable-workflow CI gate (`ci.yml` + `release.yml` both call it, sequencing publish after lint/typecheck/test), and the manual canary release flow via pkg.pr.new (`workflow_dispatch` on `release.yml`, one checkbox per package, publishes a real packed tarball WITHOUT ever touching the npm registry — for e2e-testing packaging before the real release). Trigger: 'publish npm', 'release', 'changeset', 'version bump', 'publishConfig', 'canary release', 'CI publish', 'pkg.pr.new'."
+description: "Symbiote npm publishing & versioning — read before touching .changeset/**, a publishable package's `publishConfig`/`files`/`exports`, .github/workflows/release.yml, or running `pnpm changeset`/`pnpm run release`. Versioning is Changesets (`pnpm changeset` → PR → 'Version Packages' PR → merge → CI publishes). Core trick: `main`/`exports` keep pointing at `src/index.ts` for in-repo dev (Metro/tsc resolve live TS, unchanged) — `publishConfig` overrides those to `build/` ONLY inside the tarball, never touching local resolution. No new bundler: `tsc --build` already emits `build/`, so `typecheck` IS the build. `@symbiote-native/angular`/`@symbiote-native/slider`'s `./angular` entry predate this, use a DIFFERENT mechanism (conditional `exports`, AOT build) — don't convert or copy that onto plain packages. Covers the mechanism table, the `files`-mandatory gotcha (`.gitignore` excludes `build/`), the `fix-esm-extensions` argument-list gotcha (a package missing from it ships an unimportable `build/` for every real npm consumer, invisible in-repo), changeset ignore list, release scripts, the `checks.yml` reusable-workflow CI gate (`ci.yml` + `release.yml` both call it, sequencing publish after lint/typecheck/test), and the manual canary release flow via pkg.pr.new (`workflow_dispatch` on `release.yml`, one checkbox per package, publishes a real packed tarball WITHOUT ever touching the npm registry — for e2e-testing packaging before the real release), and why a 'pnpm cache is not found' + 'Failed to save ... another job may be creating this cache' pair across checks.yml's parallel lint/typecheck/test jobs is an expected first-run/same-key race, not a broken cache (diagnose via job logs, not the Actions UI summary). Trigger: 'publish npm', 'release', 'changeset', 'version bump', 'publishConfig', 'canary release', 'CI publish', 'pkg.pr.new', 'pnpm cache not found', 'actions cache'."
 ---
 
 # Symbiote npm publishing & versioning
@@ -214,6 +214,34 @@ by trigger:
   still works, only the actual `npm publish` call fails.
 - **`publish-canary`** (`if: github.event_name == 'workflow_dispatch'`, one
   boolean input per publishable package) — see "Canary releases" below.
+
+### pnpm store cache — a same-run save race is expected, not broken
+
+`checks.yml`'s `lint`/`typecheck`/`test` jobs (plus `release.yml`'s own
+`release`/`cut-release`/`publish-canary` jobs) each run `pnpm/action-setup` +
+`actions/setup-node@v4` with `cache: pnpm`. That cache key is built from
+**OS + package manager + `hash(pnpm-lock.yaml)` only** — it does NOT include
+the job name. Since `checks.yml`'s three jobs run in PARALLEL against the
+identical lockfile, they always compute the identical cache key.
+
+Two log lines are BOTH benign, not evidence of a broken cache:
+- `pnpm cache is not found` on a job's restore step — expected the very
+  first time a given lockfile hash runs after enabling/changing caching;
+  nothing has been saved under that key yet.
+- `Failed to save: Unable to reserve cache with key ..., another job may be
+  creating this cache` on a job's save step — expected whenever 2+ parallel
+  jobs share one key: only one wins the race and actually saves (its log
+  shows `Cache saved with the key: ...`), the rest lose harmlessly and still
+  report job `success`.
+
+Diagnosis method (don't guess from the Actions UI summary — read the actual
+job logs): `gh run view <runId> --json jobs -q '.jobs[].databaseId'` per job,
+then `gh api repos/<owner>/<repo>/actions/jobs/<jobId>/logs | grep -i "cache
+is not found\|Cache saved\|Failed to save"`. Confirm at least ONE parallel
+job shows `Cache saved with the key: ...` at the end — if so, caching is
+working and the NEXT run with an unchanged lockfile should show `Cache
+restored from key: ...` in all jobs instead of `not found`. Only worth
+digging further if the SAME lockfile hash still misses on a *second* run.
 
 ## Canary releases (manual, via pkg.pr.new — never touches the real npm registry)
 
