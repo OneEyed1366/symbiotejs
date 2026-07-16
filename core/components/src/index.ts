@@ -312,6 +312,23 @@ export type {
   IListPlanParams,
 } from './state/virtualized-list';
 
+// The orchestration reducer: the one pure state machine every list adapter drives, folding the
+// after-commit effect skeleton (window recompute -> edge -> viewability -> initial-scroll -> MVCP)
+// out of each adapter's reactive glue. The adapter maps events to actions and runs the effects.
+export {
+  reduceList,
+  createInitialListState,
+  listEffectSignature,
+} from './state/virtualized-list-reducer';
+export type {
+  IListState,
+  IListMetrics,
+  IListReducerInputs,
+  IListAction,
+  IListEffect,
+  IListReduceResult,
+} from './state/virtualized-list-reducer';
+
 export {
   SINGLE_COLUMN,
   chunkIntoRows,
