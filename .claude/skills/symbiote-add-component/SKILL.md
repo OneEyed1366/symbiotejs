@@ -1,6 +1,6 @@
 ---
 name: symbiote-add-component
-description: "Symbiote add-component workflow — 'add component X to adapter Y' at FULL P0 feature-parity via the three-layer split. Read BEFORE adding or porting ANY visual component (Switch, Modal, TextInput, ScrollView, the lists, a new primitive). The split, mirroring wolf-tui: (1) LOGIC — core/components/src/state/X.ts: a pure reducer (state, action) => state + createInitialXState factory + pure predicates, ZERO framework/render (Switch: switchReducer, shouldSnapBack, valueFromChange). (2) VIEW — core/components/src/view/render-X.ts: a pure renderX(view, platform) => Descriptor built with el()/txt(), PLUS the agnostic public IXProps (extends IAccessibilityProps, IAriaProps), the IXViewProps with its `passthrough` bag (ref + handlers + a11y ride here untouched), and IXPlatform (per-host prop-name mapping). (3) LIFECYCLE — the adapter: React useReducer/useRef/useLayoutEffect + dispatchViewCommand + descriptorToReact; Vue shallowRef(identity!)/ref/watch(flush:'post') + runtime guards (no `as`) + descriptorToVue. Switch is the canonical reference (state/switch.ts + view/render-switch.ts + adapters/{react,vue}/src/components/switch/{index,index.ios,index.android,shared}.ts). The P0 rule: parity is STRUCTURAL — extract the shared half into @symbiote-native/components so every adapter inherits the full surface; NEVER copy the prop surface into each adapter, NEVER ship a 'minimal'/'partial'/'stub' port. Covers per-component ADR 0026 folder, symbiote-X host-name registration, the prop-type split, and finishing with a parity-check. Trigger on adding/porting a component to any adapter."
+description: "Symbiote add-component workflow — 'add component X to adapter Y' at FULL P0 feature-parity via the three-layer split. Read BEFORE adding or porting ANY visual component (Switch, Modal, TextInput, ScrollView, the lists, a new primitive). The split, mirroring wolf-tui: (1) LOGIC — core/components/src/state/X.ts: a pure reducer (state, action) => state + createInitialXState factory + pure predicates, ZERO framework/render (Switch: switchReducer, shouldSnapBack, valueFromChange). (2) VIEW — core/components/src/view/render-X.ts: a pure renderX(view, platform) => Descriptor built with el()/txt(), PLUS the agnostic public IXProps (extends IAccessibilityProps, IAriaProps), the IXViewProps with its `passthrough` bag (ref + handlers + a11y ride here untouched), and IXPlatform (per-host prop-name mapping). (3) LIFECYCLE — the adapter: React useReducer/useRef/useLayoutEffect + dispatchViewCommand + descriptorToReact; Vue shallowRef(identity!)/ref/watch(flush:'post') + runtime guards (no `as`) + descriptorToVue. React's Switch lifecycle is a top-level useSwitchLogic hook + a top-level named Switch function per platform file (index.ios.ts/index.android.ts), NOT a createSwitch(platform) factory — Vue keeps the factory shape. Switch is the canonical reference (state/switch.ts + view/render-switch.ts + adapters/{react,vue}/src/components/switch/{index,index.ios,index.android,shared}.ts). The P0 rule: parity is STRUCTURAL — extract the shared half into @symbiote-native/components so every adapter inherits the full surface; NEVER copy the prop surface into each adapter, NEVER ship a 'minimal'/'partial'/'stub' port. Covers per-component ADR 0026 folder, symbiote-X host-name registration, the prop-type split, finishing with a parity-check, AND (§7) React Compiler compatibility for adapters/react — why a factory-returning-closure defeats its component/hook detection (fixed the same way for ActivityIndicator, its only other genuine case), and why passing a ref through passthrough into ANY function call — renderX(), createElement, a cross-package layout resolver, not just renderX() specifically — is a permanent, structural bail-out (tested: raw ref, callback ref, 'use no memo', removing an eslint-disable suppression, fixing an unrelated 'Todo'-category compiler gap — none unlock it) since the compiler can't verify a cross-package function is ref-safe. Full per-component survey results (which of the 18 React components are Finding-1 cases, Finding-2 dead ends, or already clean) in §7 Finding 3. Trigger on adding/porting a component to any adapter, or on 'react-compiler'/'babel-plugin-react-compiler'/'million.js' questions about adapters/react."
 ---
 
 # Symbiote add-component — full-parity three-layer split
@@ -168,16 +168,29 @@ host node verbatim — the render never names a framework type.
 
 ### Layer 3 — Lifecycle · the adapter
 
-React (`adapters/react/src/components/switch/shared.ts`) — `createSwitch(platform)
-=> FC<ISwitchProps>`:
+React (`adapters/react/src/components/switch/shared.ts`) — a plain hook
+`useSwitchLogic(rawProps, platform) => Descriptor`, NOT a factory returning a
+closure (see §7 — a factory-returned closure is invisible to React Compiler):
 
 ```ts
-const ref = useRef<ISymbioteNode | null>(null);                       // host node
-const [state, dispatch] = useReducer(switchReducer, undefined, createInitialSwitchState);
-useLayoutEffect(() => {                                               // snap-back
-  if (shouldSnapBack(state, fabricValue)) dispatchViewCommand(ref.current, platform.snapBackCommand, [fabricValue]);
-}, [fabricValue, state]);
-return descriptorToReact(renderSwitch({ …, passthrough: { ...rest, ref, onChange } }, platform));
+// shared.ts
+export function useSwitchLogic(rawProps: ISwitchProps, platform: ISwitchHostPlatform) {
+  const ref = useRef<ISymbioteNode | null>(null);                       // host node
+  const [state, dispatch] = useReducer(switchReducer, undefined, createInitialSwitchState);
+  useLayoutEffect(() => {                                               // snap-back
+    if (shouldSnapBack(state, fabricValue)) dispatchViewCommand(ref.current, platform.snapBackCommand, [fabricValue]);
+  }, [fabricValue, state]);
+  return renderSwitch({ …, passthrough: { ...rest, ref, onChange } }, platform);   // Descriptor out
+}
+```
+
+```ts
+// index.ios.ts / index.android.ts — a top-level named function per platform file,
+// each supplying its own PLATFORM const and bridging the Descriptor to React:
+const PLATFORM: ISwitchHostPlatform = { snapBackCommand: 'setValue', trackColorProps: … };
+export function Switch(rawProps: ISwitchProps) {
+  return descriptorToReact(useSwitchLogic(rawProps, PLATFORM));
+}
 ```
 
 Vue (`adapters/vue/src/components/switch/shared.ts`) — `createSwitch(platform) =>
@@ -207,12 +220,16 @@ core/components/src/
   component-names/{ios,android}.ts         ← map 'symbiote-switch' → Fabric 'Switch' / 'AndroidSwitch'
   index.ts                                 ← export all of the above
 
-adapters/react/src/components/switch/      (Vue identical, under adapters/vue/…)
-  shared.ts        createSwitch(platform) — the hook half
+adapters/react/src/components/switch/      Vue still uses createSwitch(platform) — React-only
+  shared.ts        useSwitchLogic(rawProps, platform) — the hook half (§7: NOT a factory)
   index.ts         re-exports ./index.ios (base, for tsx/headless)
-  index.ios.ts     createSwitch({ snapBackCommand: 'setValue',       trackColorProps: iOS names })
-  index.android.ts createSwitch({ snapBackCommand: 'setNativeValue',  trackColorProps: Android names })
+  index.ios.ts     top-level `function Switch(rawProps)`, PLATFORM = { snapBackCommand: 'setValue',      trackColorProps: iOS names }
+  index.android.ts top-level `function Switch(rawProps)`, PLATFORM = { snapBackCommand: 'setNativeValue', trackColorProps: Android names }
   switch.test.tsx  co-located (ADR 0025)
+
+adapters/vue/src/components/switch/        Vue keeps the factory shape (no React Compiler concern)
+  shared.ts        createSwitch(platform) => defineComponent — the hook half
+  index.ios.ts / index.android.ts   createSwitch({ snapBackCommand: …, trackColorProps: … })
 ```
 
 The platform file supplies the whole platform piece: `ISwitchHostPlatform =
@@ -260,9 +277,145 @@ Wire up and smoke-test every phase in the matching `.examples/<app>` (never
 `symbiote-dev-examples`). `examples/<app>` only picks up X later, deliberately,
 after `@symbiote-native/components`/adapter is actually published.
 
+**Device-smoke bar for a SHARED-CORE change (all adapters drive ONE core state
+machine).** When the logic being verified lives once in `@symbiote-native/components`
+and each adapter is only a thin lifecycle bridge over it (the whole point of the
+split — extreme case: the VirtualizedList `reduceList` refactor, 2026-07), you do
+NOT need all N adapters on a real device. Green headless proves the shared logic +
+each bridge identically; a device run of the REFERENCE adapter (React) then exercises
+the one thing headless fakes — the real native loop (scroll→window→recycle, real
+onLayout measure, visual MVCP anchor, imperative scroll-to). Reference-on-device +
+green headless = defensible "done"; the other adapters on device is extra rigor, not
+a gate — and it is gated on the `.examples/<app>` being relinked to `workspace:*` with
+the §5b metro fix (see `symbiote-dev-examples`), which most are NOT by default. This
+applies ONLY when the core half is genuinely shared; a per-adapter behavior (a
+framework-specific bridge quirk) still needs that adapter on device.
+
 Adding a component to a brand-new adapter that has no renderer yet? Do
 `symbiote-new-adapter` first. Touching the engine API in the process?
 `symbiote-engine-core`.
+
+## 7. React Compiler compatibility (React adapter only, 2026-07)
+
+Investigated whether `babel-plugin-react-compiler` (Meta's React Compiler) can
+optimize `adapters/react` component code, prompted by evaluating Million.js's
+"Block Virtual DOM" first — ruled out immediately and permanently: it's 100%
+real-DOM-bound (`cloneNode`, `innerHTML`, DOM `Text` nodes — see
+`.vendors/million/packages/million/dom.ts`), nothing in it is reusable against
+Fabric's shadow tree. React Compiler has no such DOM dependency and is a genuine
+candidate — confirmed working for plain app code (wired into `.examples/react`'s
+`babel.config.js`, first in `plugins`) — but two real findings when pointed at
+`adapters/react` itself:
+
+**Finding 1 — a `createX(platform)` factory defeats component/hook detection.**
+React Compiler's default `'infer'` mode only walks TOP-LEVEL declarations
+(function declarations / const-assigned arrows at Program scope). The OLD Switch
+shape — `createSwitch(platform)` returning an anonymous closure — is invisible to
+it: from the compiler's per-file view, `createSwitch` is just a lowercase factory
+function; the actual component is a NESTED closure with no name of its own in that
+scope. Renaming the closure (`return function Switch(rawProps) {…}`) does NOT fix
+it either — still nested, still invisible. The fix that DOES work (verified via
+the compiler's own `logger` option, not by grepping a minified bundle — React's own
+dispatcher always exports `useMemoCache`, so its bare presence in a bundle is not
+proof of anything): give each platform file its own TOP-LEVEL named function that
+calls a plain hook, per §2's Layer-3 code above. Confirmed `CompileSuccess` on the
+wrapper (`memoSlots: 3`) after this rewrite — this is why Switch's React lifecycle
+is a `useXLogic` hook + a top-level `function X` per platform file now, not a
+factory. Vue's `createSwitch(platform) => defineComponent` factory is UNCHANGED —
+this is a React Compiler-only concern, not a general anti-pattern.
+
+**Finding 2 — passing `ref` through `passthrough` into `renderX()` is a
+permanent, structural incompatibility, not fixable by code shape.** Even after
+Finding 1's fix, the actual hook body (`useSwitchLogic`) still fails to compile:
+`CompileError`, category `"Refs"`, `"Cannot access refs during render"` /
+`"Passing a ref to a function may read its value during render"`, pointing at
+exactly the `passthrough: { ...rest, ref, onChange }` line. Root cause: React
+Compiler analyzes ONE FILE at a time (Babel plugins don't do cross-file dataflow
+analysis); `renderX()` lives in a DIFFERENT PACKAGE (`@symbiote-native/components`),
+so the compiler can't verify it never reads `ref.current` synchronously and
+conservatively bails the whole containing function. Tried and confirmed NONE of
+these change the outcome: passing a ref CALLBACK instead of the raw `RefObject`
+(the compiler traces the closure and flags it anyway), and the `"use no memo"`
+directive (a no-op here because `panicThreshold: 'none'`, the default, already
+silently skips optimizing a function with a Rules-of-React violation — the
+directive only matters for suppressing the diagnostic, not for unlocking
+anything). There is no restructuring within `<components_split_logic_view_lifecycle>`
+that avoids this: `ref` flowing `useRef → passthrough → renderX() (cross-package)
+→ Descriptor → descriptorToReact → createElement` is exactly the shape every
+stateful/imperative component uses (measure, focus, `dispatchViewCommand` all need
+a host ref this same way) — so this isn't a Switch quirk, it recurs for every such
+component, and the only real fix would be to stop threading the live ref through
+`renderX()` at all (a cross-component architectural change, unproven payoff on
+mobile where Fabric/Yoga native layout — not JS reconciliation — is the actual
+cost center).
+
+**Net:** React Compiler on `adapters/react` gives a real but small win (the
+top-level wrapper memoizes) and cannot touch the part that matters (the stateful
+hook) without a bigger architectural change than a compiler adoption should
+require. Don't re-attempt Findings 1/2 from scratch — this is the answer.
+
+**Finding 3 — full-component survey (2026-07): only `ActivityIndicator` was a
+genuine Finding-1 twin; the Refs wall is bigger than `renderX()`.** Surveyed
+every `adapters/react/src/components/*` folder against Findings 1/2 (via the
+compiler's `logger`, real Metro bundle, not bundle-grepping):
+
+- **Applied the Finding-1 rewrite to `activity-indicator`** (`createActivity-
+  Indicator(platform) => closure` → top-level `useActivityIndicatorLogic` hook +
+  top-level `ActivityIndicator` per platform file, same shape as Switch). It had
+  no ref in its `passthrough` at all, so unlike Switch it compiles genuinely
+  clean end to end — `CompileSuccess` on the wrapper, and the logic hook has no
+  hook calls of its own to fail on. This is the one other component that was a
+  pure Finding-1 case (factory shape, zero ref) — done, verified, tests green.
+- **`text-input`** is a Switch twin, but its `forwardRef((props, ref) => {…})`
+  closure is ALREADY top-level-detected (a `forwardRef(fn)` call is not a custom
+  factory — the compiler special-cases it, unlike `createSwitch(platform)`'s
+  hand-rolled factory). Its real blocker is layered: first a `CompileError`
+  category `"Suppression"` (an `eslint-disable-next-line react-hooks/exhaustive-
+  deps` on the mount-only `autoFocus` effect trips an automatic bail-out — React
+  Compiler treats ANY disabled Rules-of-React lint rule as proof it can't trust
+  the function). Removing just that comment (tested, then reverted — it's a
+  deliberate, correct suppression for a legitimate mount-only effect and removing
+  it for real would need restructuring the effect, not just deleting a comment)
+  unmasks the SAME Finding-2 Refs error underneath, at its own `passthrough: {
+  ...rest, ref, onChange, onFocus, onBlur }` → `renderTextInput()` line. No
+  extraction needed or worth doing here — it is already at the Switch end-state
+  with one extra layer, not a case Finding 1's fix improves.
+- **The Refs wall is not specific to `renderX()` — it fires on ANY function call
+  that receives a ref**, cross-package or not: `pressable` and `touchable` (both
+  `CompileError`/`Refs`) pass their `viewRef` straight into `createElement(View,
+  viewProps)`, no `renderX()` involved at all, and still bail for the identical
+  reason (`createElement` is itself an opaque function call from the compiler's
+  point of view). `scroll-view` mixes both outcomes in the same file (some of its
+  hooks are ref-free and compile; the ones threading the scroll-node ref through
+  `createElement`/`dispatchViewCommand`-adjacent calls don't).
+- **Two components hit a DIFFERENT compiler limitation — category `"Todo"`
+  (an unsupported syntax shape, not a Rules-of-React violation) — and it's worth
+  telling apart from Findings 1/2 because it can look fixable at first glance:**
+  `virtualized-list` uses `stateRef.current ??= createInitialListState(...)`
+  (nullish-assignment lowering unsupported by the compiler's HIR builder), and
+  `keyboard-avoiding-view` declares `function renderWrapper(...)` textually AFTER
+  its own `return` statements (legal via hoisting, but the compiler's builder
+  flags code after a `return` as unreachable and won't look inside it for the
+  declaration). Both LOOK like a quick syntax tweak away from compiling. Tested
+  the `keyboard-avoiding-view` one for real: moved `renderWrapper`'s declaration
+  above its call sites (functionally identical, hoisting doesn't change
+  semantics) — the Todo error is gone, but it immediately reveals the same
+  Finding-2 Refs error underneath (`initialHeightRef.current` read into
+  `resolveKeyboardAvoidingLayout()`, and `renderWrapper` itself closes over a
+  ref). Reverted the edit — it fixed a cosmetic blocker only to hit the real,
+  permanent one, so it was a change with no compilation payoff, not worth
+  carrying. Treat any `"Todo"` category compiler error on a component that also
+  threads a ref through `passthrough`/`createElement` as very likely the same
+  dead end one layer down — verify with the logger before spending effort on the
+  syntax-level fix.
+- **Everything else surveyed either has no `renderX()`/ref involvement to begin
+  with** (`flat-list`, `section-list`, `virtualized-section-list`, `refresh-
+  control`, `safe-area-view`, `touchable-native-feedback`, `button.ts` — plain
+  top-level composition, nothing for Finding 1 to fix) **or was already top-level
+  with no ref in its render call** (`image`, `image-background`, `input-
+  accessory-view`, `modal` — confirmed `modal` compiles clean via the logger;
+  the other three weren't reachable from the canary's bundle graph to confirm
+  directly, but match the same shape).
 
 ## Reference
 
@@ -277,5 +430,8 @@ Adding a component to a brand-new adapter that has no renderer yet? Do
 - Layout / prop-split rules: `symbiote-file-layout`. Vue lifecycle landmines:
   `vue-adapter-reactivity`. Vue scoped slots + slot typing: `vue-adapter-slots`. Finishing gate:
   `symbiote-parity-check`.
+- React Compiler compatibility (React adapter only): §7. Trigger on "react-compiler",
+  "babel-plugin-react-compiler", "can we compile/memoize adapters/react", "million.js"/
+  "block virtual dom" (ruled out — DOM-bound, vendored at `.vendors/million` for reference only).
 - Invariants: `<components_split_logic_view_lifecycle>`, `<adapters_reach_full_feature_parity>`.
 </content>
