@@ -1,0 +1,274 @@
+---
+title: Sensors
+description: expo-sensors wrapped for every SymbioteNative adapter — accelerometer, gyroscope, magnetometer, barometer, light sensor, device motion, and step counting.
+---
+
+import { Aside, Tabs, TabItem } from '@astrojs/starlight/components';
+
+`@symbiote-native/sensors` wraps [`expo-sensors`](https://github.com/expo/expo/tree/main/packages/expo-sensors)
+— Accelerometer, Barometer, DeviceMotion, Gyroscope, LightSensor, Magnetometer,
+MagnetometerUncalibrated, and Pedometer — so every SymbioteNative adapter can use them. Unlike the
+[slider](/docs/packages/slider/) (a native **view**) or [splash screen](/docs/packages/splash-screen/)
+(one imperative **TurboModule**), `expo-sensors` is built on `expo-modules-core`: every sensor is a
+pure `EventEmitter` + async-function surface, with no Fabric view or `ViewConfig` involved at all.
+
+| OS platform | Support |
+| ----------- | ------- |
+| iOS         | ✅ live |
+| Android     | ✅ live |
+
+| Framework adapter | Support |
+| ------------------ | ------- |
+| React               | ✅ live |
+| Vue                 | ✅ live |
+| Angular             | ✅ live |
+
+## Installation
+
+```sh
+npm install @symbiote-native/sensors
+```
+
+`expo-sensors` and `expo-modules-core` come along as regular dependencies, pinned to exact
+versions — never install either yourself, and never add the `expo` meta-package to your project
+(it bundles its own Metro/Babel pipeline, which conflicts with this project's own).
+
+<Aside type="danger" title="Native setup is required before first use">
+  `expo-sensors`' native code is discovered by `expo-modules-autolinking`, a different mechanism
+  from the `react-native.config.cjs`/podspec autolinking every other SymbioteNative wrapper uses
+  — and it isn't the standard Expo setup flow either, since this project never installs the
+  `expo` meta-package. Follow [How to: wire up an Expo native
+  module](/docs/howtos/expo-native-module-setup/) once per app first; it covers this package and
+  every future `expo-modules-core` package with zero further native changes.
+</Aside>
+
+## Usage
+
+<Aside type="note">
+  Every hook/composable/`connect()` below returns `null` until the first native reading
+  arrives. Check `isAvailableAsync()` separately if you need to tell "not available on this
+  device" apart from "no reading yet" — see [Notes](#notes) below.
+</Aside>
+
+### A `DeviceSensor` (Accelerometer, Barometer, DeviceMotion, Gyroscope, LightSensor, Magnetometer, MagnetometerUncalibrated)
+
+<Tabs syncKey="framework">
+  <TabItem label="React">
+    ```tsx
+    import { Text } from '@symbiote-native/react';
+    import { useAccelerometer } from '@symbiote-native/sensors/react';
+
+    export default function AccelerometerReading() {
+      const accelerometer = useAccelerometer();
+
+      return (
+        <Text>
+          {accelerometer && `x ${accelerometer.x} · y ${accelerometer.y} · z ${accelerometer.z}`}
+        </Text>
+      );
+    }
+    ```
+  </TabItem>
+  <TabItem label="Vue">
+    ```vue
+    <script setup lang="ts">
+    import { useAccelerometer } from '@symbiote-native/sensors/vue';
+
+    const accelerometer = useAccelerometer();
+    </script>
+
+    <template>
+      <Text>{{ accelerometer && `x ${accelerometer.x} · y ${accelerometer.y} · z ${accelerometer.z}` }}</Text>
+    </template>
+    ```
+  </TabItem>
+  <TabItem label="Angular">
+    ```ts
+    import { Component, inject } from '@angular/core';
+    import { Text } from '@symbiote-native/angular';
+    import { AccelerometerService } from '@symbiote-native/sensors/angular';
+
+    @Component({
+      standalone: true,
+      imports: [Text],
+      template: `<Text>{{ accelerometer()?.x }} · {{ accelerometer()?.y }} · {{ accelerometer()?.z }}</Text>`,
+    })
+    export class AccelerometerReading {
+      readonly accelerometer = inject(AccelerometerService).connect();
+    }
+    ```
+  </TabItem>
+</Tabs>
+
+Every other `DeviceSensor` (Barometer, DeviceMotion, Gyroscope, LightSensor, Magnetometer,
+MagnetometerUncalibrated) follows the exact same shape — swap `Accelerometer`/`accelerometer` for
+the sensor's own name.
+
+### Pedometer — free functions, no shared instance
+
+Unlike every other sensor, upstream `Pedometer` has no shared instance to hang `addListener`/
+`setUpdateInterval` off — it ships as plain functions instead:
+
+<Tabs syncKey="framework">
+  <TabItem label="React">
+    ```tsx
+    import { Text } from '@symbiote-native/react';
+    import { usePedometer } from '@symbiote-native/sensors/react';
+
+    export default function StepCount() {
+      const pedometer = usePedometer(); // { steps: number } | null, live-subscribed
+
+      return <Text>{pedometer && `${pedometer.steps} steps`}</Text>;
+    }
+    ```
+  </TabItem>
+  <TabItem label="Vue">
+    ```vue
+    <script setup lang="ts">
+    import { usePedometer } from '@symbiote-native/sensors/vue';
+
+    const pedometer = usePedometer();
+    </script>
+
+    <template>
+      <Text>{{ pedometer && `${pedometer.steps} steps` }}</Text>
+    </template>
+    ```
+  </TabItem>
+  <TabItem label="Angular">
+    ```ts
+    import { Component, inject } from '@angular/core';
+    import { Text } from '@symbiote-native/angular';
+    import { PedometerService } from '@symbiote-native/sensors/angular';
+
+    @Component({
+      standalone: true,
+      imports: [Text],
+      template: `<Text>{{ pedometer()?.steps }} steps</Text>`,
+    })
+    export class StepCount {
+      readonly pedometer = inject(PedometerService).connect();
+    }
+    ```
+  </TabItem>
+</Tabs>
+
+The one-shot functions (`getStepCountAsync`, `isAvailableAsync`, the permission functions) are
+already framework-agnostic — import them straight from the package root, on any adapter:
+
+```ts
+import { getStepCountAsync, isAvailableAsync } from '@symbiote-native/sensors';
+
+const available = await isAvailableAsync();
+const { steps } = await getStepCountAsync(startDate, endDate); // iOS only in practice
+```
+
+## API
+
+### Sensor object (`Accelerometer`, `Barometer`, `DeviceMotion`, `Gyroscope`, `LightSensor`, `Magnetometer`, `MagnetometerUncalibrated`)
+
+Each is a shared singleton, importable from the package root, that every hook/composable/service
+subscribes to underneath.
+
+| Method | Signature | Description |
+| --- | --- | --- |
+| `addListener` | `(listener: (measurement) => void) => EventSubscription` | Subscribes to live readings; call `.remove()` on the returned subscription to unsubscribe |
+| `setUpdateInterval` | `(intervalMs: number) => void` | Requests a new native sampling interval; warns and no-ops where the platform/sensor doesn't support it |
+| `isAvailableAsync` | `() => Promise<boolean>` | Whether this sensor's hardware is present and enabled on the current device — always `false` on a simulator with no real IMU |
+| `getPermissionsAsync` / `requestPermissionsAsync` | `() => Promise<PermissionResponse>` | Reads/asks for the platform permission this sensor needs; a sensor needing none resolves already-granted |
+| `hasListeners` / `getListenerCount` / `removeAllListeners` | — | Inspect or clear this sensor's own subscriptions |
+
+### Hooks / composables / services
+
+| React (`/react`) | Vue (`/vue`) | Angular (`/angular`) | Signature | Returns |
+| --- | --- | --- | --- | --- |
+| `useAccelerometer` | `useAccelerometer` | `AccelerometerService.connect()` | `(updateIntervalMs?: number)` | Live `IAccelerometerMeasurement \| null` |
+| `useBarometer` | `useBarometer` | `BarometerService.connect()` | `(updateIntervalMs?: number)` | Live `IBarometerMeasurement \| null` |
+| `useDeviceMotion` | `useDeviceMotion` | `DeviceMotionService.connect()` | `(updateIntervalMs?: number)` | Live `IDeviceMotionMeasurement \| null` |
+| `useGyroscope` | `useGyroscope` | `GyroscopeService.connect()` | `(updateIntervalMs?: number)` | Live `IGyroscopeMeasurement \| null` |
+| `useLightSensor` | `useLightSensor` | `LightSensorService.connect()` | `(updateIntervalMs?: number)` | Live `ILightSensorMeasurement \| null` |
+| `useMagnetometer` | `useMagnetometer` | `MagnetometerService.connect()` | `(updateIntervalMs?: number)` | Live `IMagnetometerMeasurement \| null` |
+| `useMagnetometerUncalibrated` | `useMagnetometerUncalibrated` | `MagnetometerUncalibratedService.connect()` | `(updateIntervalMs?: number)` | Live `IMagnetometerUncalibratedMeasurement \| null` |
+| `usePedometer` | `usePedometer` | `PedometerService.connect()` | `()` — no interval, Pedometer has none | Live `IPedometerResult \| null` |
+
+React/Vue return the measurement directly; Angular's `connect()` returns a `Signal` — read it as
+`accelerometer()` in code or `accelerometer()` in a template. Passing `updateIntervalMs`
+re-subscribes with the new native sampling rate whenever it changes across renders.
+
+### Measurement shapes
+
+| Sensor | Fields | Units |
+| --- | --- | --- |
+| Accelerometer | `x`, `y`, `z`, `timestamp` | g-force (1g = 9.81 m/s²) |
+| Gyroscope | `x`, `y`, `z`, `timestamp` | rad/s |
+| Magnetometer / MagnetometerUncalibrated | `x`, `y`, `z`, `timestamp` | µT |
+| Barometer | `pressure`, `relativeAltitude?`, `timestamp` | hPa; `relativeAltitude` (meters) is iOS-only |
+| LightSensor | `illuminance`, `timestamp` | lux — Android-only, see [Notes](#notes) |
+| DeviceMotion | `acceleration`, `accelerationIncludingGravity`, `rotation`, `rotationRate`, `interval`, `orientation` | see below |
+| Pedometer | `steps` | count |
+
+`DeviceMotion`'s nested fields: `acceleration`/`accelerationIncludingGravity`/`rotationRate` are
+`{ x, y, z, timestamp }` (m/s² for acceleration, deg/s for `rotationRate`); `rotation` is
+`{ alpha, beta, gamma, timestamp }` in degrees; `interval` is milliseconds; `orientation` is a
+`DeviceMotionOrientation` enum (`Portrait`/`RightLandscape`/`UpsideDown`/`LeftLandscape`).
+
+### Pedometer free functions
+
+| Signature | Description |
+| --- | --- |
+| `watchStepCount(callback: (result) => void): EventSubscription` | Live step-count subscription — the same primitive `usePedometer` wraps |
+| `getStepCountAsync(start: Date, end: Date): Promise<{ steps: number }>` | One-shot historical step count between two dates — iOS only in practice, Android has no native equivalent |
+| `isAvailableAsync(): Promise<boolean>` | Whether step counting is available on this device |
+| `getPermissionsAsync` / `requestPermissionsAsync` | `() => Promise<PermissionResponse>` |
+
+## Notes
+
+<Aside type="note" title="Simulators have no real IMU or step-counter hardware">
+  `isAvailableAsync()` genuinely returns `false` on an iOS Simulator for every CoreMotion-backed
+  sensor and `CMPedometer`. On an Android emulator, readings drift on their own even at rest,
+  since the emulator synthesizes motion data instead of returning frozen zeros. Neither is a
+  wiring bug — verify sensor behavior on a real device.
+</Aside>
+
+<Aside type="caution" title="Guard DeviceMotion's nested fields, not just the top-level object">
+  `rotation`/`acceleration`/`accelerationIncludingGravity`/`rotationRate` can be absent from the
+  very first event — the underlying platform sensor hasn't reported yet. Guard the nested field
+  itself (`deviceMotion?.rotation && ...`), not just `deviceMotion && ...` — an unguarded nested
+  read throws, and in React Native that throw can silently blank the screen with no visible error
+  anywhere (no LogBox redbox, no logcat exception).
+</Aside>
+
+<Aside type="tip" title="rotation.beta can read NaN near pitch ±90°">
+  An inherent Euler-angle gimbal-lock singularity in the platform's device-attitude math (the
+  same one `DeviceOrientationEvent.beta` has on the web) — not a bug in this package. Check
+  `Number.isNaN(...)` if you display it directly.
+</Aside>
+
+`LightSensor` is Android-only — `expo-sensors` ships no iOS light-sensor implementation, so
+`isAvailableAsync()` always resolves `false` on iOS.
+
+## How the wrapper works
+
+`@symbiote-native/sensors` ships **zero React/Vue/Angular logic in `expo-sensors` itself** — that
+package's own JS hard-imports the `expo` meta-package (which this project never installs), so
+every sensor's `DeviceSensor` base class and per-sensor subclass is hand-ported, verbatim, into
+this package's own `core/`, changing only the one import line that now pulls
+`PermissionResponse`/`PermissionStatus` from `expo-modules-core` instead of `expo`:
+
+```
+packages/sensors/src/
+├── core/                DeviceSensor base class + one class per sensor; native/ resolves each
+│                        sensor's native module by name via expo-modules-core's
+│                        requireNativeModule. Pedometer is free functions instead — upstream
+│                        has no shared instance for it.
+├── react/hooks/         @symbiote-native/sensors/react   — useAccelerometer, useBarometer, ...
+├── vue/composables/     @symbiote-native/sensors/vue     — useAccelerometer, useBarometer, ... (same names)
+└── angular/services/    @symbiote-native/sensors/angular — AccelerometerService, BarometerService, ...
+```
+
+Each adapter's hook/composable/service is a thin lifecycle wrapper — subscribe on mount,
+unsubscribe on unmount — over the same `core` singleton; the subscription, permission, and
+update-interval logic is written once and shared by all three, the same logic/lifecycle split as
+every other SymbioteNative component (see [how it works](/docs/how-it-works/)). The native code
+itself is never vendored or copied — `expo-modules-autolinking` resolves it straight out of
+`node_modules` (see [the native setup guide](/docs/howtos/expo-native-module-setup/)).
