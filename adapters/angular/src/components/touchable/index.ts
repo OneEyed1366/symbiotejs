@@ -33,7 +33,9 @@ import {
   Output,
 } from '@angular/core';
 import {
-  computePressOutWait,
+  createTouchableFeedbackHandlers,
+  createTouchableFeedbackRuntime,
+  highlightPressedStyle,
   DEFAULT_ACTIVE_OPACITY,
   DEFAULT_HIGHLIGHT_CHILD_OPACITY,
   DEFAULT_MIN_PRESS_DURATION_MS,
@@ -48,13 +50,9 @@ import {
   type IPressState,
   type IPressTimingProps,
   type IRectOffset,
+  type ITouchableFeedbackHandlers,
 } from '@symbiote-native/components';
-import {
-  dlog,
-  type ISymbioteEvent,
-  type IStyleProp,
-  type IViewStyle,
-} from '@symbiote-native/engine';
+import { type ISymbioteEvent, type IStyleProp, type IViewStyle } from '@symbiote-native/engine';
 import { anchorHostStyle, anchorStyleProp } from '../../primitives';
 import { Pressable, type IAngularPressableInputs } from '../pressable';
 import { Animated, AnimatedView } from '../../modules/animated';
@@ -79,6 +77,13 @@ export type IAngularTouchableHighlightProps = IAngularTouchableBaseProps & {
 };
 
 export type IAngularTouchableWithoutFeedbackProps = IAngularTouchableBaseProps;
+
+// The real setTimeout the shared feedback machine schedules its deferred activation/deactivation on
+// (core/components has no timer globals). Returns a canceller so an early release flushes the timer.
+function scheduleTimeout(callback: () => void, ms: number): () => void {
+  const id = setTimeout(callback, ms);
+  return () => clearTimeout(id);
+}
 
 @Component({
   selector: 'TouchableOpacity',
@@ -232,10 +237,9 @@ export class TouchableOpacity implements IAngularTouchableOpacityProps {
   // engine object, never an @Input / reactive wrap); the <symbiote-animated-view> leaf rasterizes
   // it for the first paint and drives it through setNativeProps every frame.
   private readonly opacity = new Animated.Value(RESTING_OPACITY);
-  // The pending delayPressIn timer, so a release before it fires can flush it.
-  private pressInTimer: ReturnType<typeof setTimeout> | undefined;
-  // When the active visual actually started, to floor onPressOut by minPressDuration.
-  private activatedAt: number | undefined;
+  // The shared press-scheduling cell (delayPressIn timer + activation clock), persisted on the
+  // instance; the machine's handlers are rebuilt per event over live @Input()s.
+  private readonly runtime = createTouchableFeedbackRuntime();
   // This component's OWN host — the non-painting anchor `class="..."` at the use site resolves
   // onto (see anchorHostStyle's doc comment) — NOT the <symbiote-animated-view> leaf one level down.
   private readonly elementRef = inject(ElementRef);
@@ -257,61 +261,43 @@ export class TouchableOpacity implements IAngularTouchableOpacityProps {
     }).start();
   }
 
-  private clearPressInTimer(): void {
-    if (this.pressInTimer !== undefined) {
-      clearTimeout(this.pressInTimer);
-      this.pressInTimer = undefined;
-    }
-  }
-
-  private activate(event: ISymbioteEvent): void {
-    this.activatedAt = Date.now();
-    this.setOpacityTo(this.activeOpacity ?? DEFAULT_ACTIVE_OPACITY, OPACITY_ACTIVE_DURATION_MS);
-    this.pressIn.emit(event);
-  }
-
-  private deactivate(event: ISymbioteEvent): void {
-    this.activatedAt = undefined;
-    this.setOpacityTo(RESTING_OPACITY, OPACITY_INACTIVE_DURATION_MS);
-    this.pressOut.emit(event);
+  // Built per event so the machine reads live @Input()s (delay/opacity); the runtime persists across
+  // calls. The shared machine owns the scheduling — the adapter supplies only the native seam: the
+  // Animated opacity fade + the @Output() emit, as activate/deactivate.
+  private feedbackHandlers(): ITouchableFeedbackHandlers {
+    return createTouchableFeedbackHandlers(
+      {
+        delayPressIn: this.delayPressIn ?? 0,
+        delayPressOut: this.delayPressOut ?? 0,
+        minPressDuration: this.minPressDuration ?? DEFAULT_MIN_PRESS_DURATION_MS,
+        schedule: scheduleTimeout,
+        now: Date.now,
+      },
+      this.runtime,
+      {
+        activate: (event: ISymbioteEvent): void => {
+          this.setOpacityTo(
+            this.activeOpacity ?? DEFAULT_ACTIVE_OPACITY,
+            OPACITY_ACTIVE_DURATION_MS,
+          );
+          this.pressIn.emit(event);
+        },
+        deactivate: (event: ISymbioteEvent): void => {
+          this.setOpacityTo(RESTING_OPACITY, OPACITY_INACTIVE_DURATION_MS);
+          this.pressOut.emit(event);
+        },
+      },
+    );
   }
 
   // Arrow fields (stable identity for OnPush, `this` intact when Pressable's `(pressIn)` invokes
-  // them). RN's _createPressabilityConfig forwards delayPressIn — defer the active visual and
-  // pressIn behind the delay (a release before it elapses flushes it synchronously).
+  // them). The delayPressIn defer + minPressDuration/delayPressOut hold live in the shared machine.
   handlePressIn = (event: ISymbioteEvent): void => {
-    const delayPressIn = this.delayPressIn ?? 0;
-    if (delayPressIn > 0) {
-      dlog(`TouchableOpacity pressIn deferred ${delayPressIn}ms`);
-      this.pressInTimer = setTimeout(() => {
-        this.pressInTimer = undefined;
-        this.activate(event);
-      }, delayPressIn);
-      return;
-    }
-    this.activate(event);
+    this.feedbackHandlers().handlePressIn(event);
   };
 
-  // delayPressOut + minPressDuration (RN _deactivate): the press-out waits at least minPressDuration
-  // past activation (so a fast tap holds the active visual) and at least delayPressOut, whichever is
-  // longer.
   handlePressOut = (event: ISymbioteEvent): void => {
-    if (this.pressInTimer !== undefined) {
-      this.clearPressInTimer();
-      this.activate(event);
-    }
-    const heldFor = this.activatedAt === undefined ? 0 : Date.now() - this.activatedAt;
-    const wait = computePressOutWait(
-      heldFor,
-      this.minPressDuration ?? DEFAULT_MIN_PRESS_DURATION_MS,
-      this.delayPressOut ?? 0,
-    );
-    if (wait > 0) {
-      dlog(`TouchableOpacity pressOut deferred ${wait}ms`);
-      setTimeout(() => this.deactivate(event), wait);
-      return;
-    }
-    this.deactivate(event);
+    this.feedbackHandlers().handlePressOut(event);
   };
 }
 
@@ -473,13 +459,13 @@ export class TouchableHighlight implements IAngularTouchableHighlightProps {
   // child opacity (RN drives this with setState, not Animated, so we mirror that faithfully
   // through Pressable's pressed flag, no tween) — the overlay always goes last so it wins.
   pressedStyle = (state: IPressState): IStyleProp<IViewStyle> => {
-    const anchorStyle = anchorStyleProp<IViewStyle>(this.elementRef);
-    if (!state.pressed) return [anchorStyle, this.style];
-    const overlay: IViewStyle = {
-      backgroundColor: this.underlayColor ?? DEFAULT_UNDERLAY_COLOR,
-      opacity: this.activeOpacity ?? DEFAULT_HIGHLIGHT_CHILD_OPACITY,
-    };
-    return [anchorStyle, this.style, overlay];
+    const base: IStyleProp<IViewStyle> = [anchorStyleProp<IViewStyle>(this.elementRef), this.style];
+    return highlightPressedStyle(
+      state.pressed,
+      base,
+      this.underlayColor ?? DEFAULT_UNDERLAY_COLOR,
+      this.activeOpacity ?? DEFAULT_HIGHLIGHT_CHILD_OPACITY,
+    );
   };
 }
 

@@ -4,7 +4,7 @@
 // feedback itself is framework (each adapter's Animated namespace), so it stays in the adapter;
 // only the timing constants + the pure wait computation live here.
 
-import type { ISymbioteEvent } from '@symbiote-native/engine';
+import { dlog, type ISymbioteEvent } from '@symbiote-native/engine';
 
 // TouchableOpacity.js: _opacityActive(150)/_opacityInactive(250), activeOpacity 0.2.
 export const DEFAULT_ACTIVE_OPACITY = 0.2;
@@ -38,4 +38,117 @@ export function computePressOutWait(
   delayPressOut: number,
 ): number {
   return Math.max(minPressDuration - heldFor, delayPressOut);
+}
+
+// ---- the TouchableOpacity press-feedback machine ----------------------------------------------
+
+// The mutable runtime the adapter holds across renders (React: refs; Vue: setup scope; Angular:
+// class fields). Exactly the two cells TouchableOpacity carried per-adapter, now in one object so
+// the shared handlers can mutate them. Twin of Pressable's createPressRuntime.
+export interface ITouchableFeedbackRuntime {
+  // Cancels the in-flight delayPressIn timer (armed while the active visual is deferred), or
+  // undefined when none is pending. A canceller (not a raw handle) so the timer SCHEDULING stays in
+  // the adapter — core/components has no DOM/Node timer globals.
+  pressInTimerCancel: (() => void) | undefined;
+  // When the active visual actually started, to floor onPressOut by minPressDuration. Undefined
+  // when the press never activated.
+  activatedAt: number | undefined;
+}
+
+export function createTouchableFeedbackRuntime(): ITouchableFeedbackRuntime {
+  return { pressInTimerCancel: undefined, activatedAt: undefined };
+}
+
+// The lifecycle seam the adapter fills: the imperative Animated animation + the framework's own
+// event emit. `activate` fires the press-in opacity fade and onPressIn; `deactivate` fires the
+// press-out fade and onPressOut. The native seam (Animated.timing) and the emit shape (React
+// callback vs Vue emit vs Angular EventEmitter) both stay in the adapter — the machine only decides
+// WHEN each runs. Twin of Pressable's IPressHost.
+export interface ITouchableFeedbackCallbacks {
+  activate: (event: ISymbioteEvent) => void;
+  deactivate: (event: ISymbioteEvent) => void;
+}
+
+export interface ITouchableFeedbackConfig {
+  delayPressIn: number;
+  delayPressOut: number;
+  minPressDuration: number;
+  // Schedule a one-shot timer, returning its canceller. The adapter owns the real setTimeout /
+  // clearTimeout (timer scheduling is lifecycle); tests inject a fake clock.
+  schedule: (callback: () => void, ms: number) => () => void;
+  // The activation clock (RN reads Date.now()). Injected so the min-press-duration hold is testable
+  // without real time.
+  now: () => number;
+}
+
+export interface ITouchableFeedbackHandlers {
+  handlePressIn: ITouchableHandler;
+  handlePressOut: ITouchableHandler;
+}
+
+// Build the two press handlers over config + runtime + the adapter's activate/deactivate callbacks.
+// The whole TouchableOpacity press-scheduling dance (delayPressIn defer, flush-on-early-release,
+// activatedAt tracking, the minPressDuration/delayPressOut hold) lives here, shared by every
+// adapter. The adapter rebuilds/holds the callbacks (they capture live config + the Animated Value)
+// while the runtime persists across renders. Twin of Pressable's createPressHandlers.
+export function createTouchableFeedbackHandlers(
+  config: ITouchableFeedbackConfig,
+  runtime: ITouchableFeedbackRuntime,
+  callbacks: ITouchableFeedbackCallbacks,
+): ITouchableFeedbackHandlers {
+  const { delayPressIn, delayPressOut, minPressDuration, schedule, now } = config;
+  const { activate, deactivate } = callbacks;
+
+  function clearPressInTimer(): void {
+    if (runtime.pressInTimerCancel !== undefined) {
+      runtime.pressInTimerCancel();
+      runtime.pressInTimerCancel = undefined;
+    }
+  }
+
+  // The real activation: stamp the activation clock (for the press-out floor) then run the adapter's
+  // opacity fade + onPressIn. Split out so delayPressIn can defer it behind a timer that an early
+  // release still flushes.
+  function doActivate(event: ISymbioteEvent): void {
+    runtime.activatedAt = now();
+    activate(event);
+  }
+
+  function doDeactivate(event: ISymbioteEvent): void {
+    runtime.activatedAt = undefined;
+    deactivate(event);
+  }
+
+  return {
+    // RN's _createPressabilityConfig forwards delayPressIn: defer the active visual and onPressIn
+    // behind the delay (a release before it elapses flushes it synchronously).
+    handlePressIn(event: ISymbioteEvent): void {
+      if (delayPressIn > 0) {
+        dlog(`TouchableOpacity pressIn deferred ${delayPressIn}ms`);
+        runtime.pressInTimerCancel = schedule(() => {
+          runtime.pressInTimerCancel = undefined;
+          doActivate(event);
+        }, delayPressIn);
+        return;
+      }
+      doActivate(event);
+    },
+    // delayPressOut + minPressDuration (RN _deactivate): the press-out waits at least
+    // minPressDuration past activation (so a fast tap holds the active visual) and at least
+    // delayPressOut, whichever is longer.
+    handlePressOut(event: ISymbioteEvent): void {
+      if (runtime.pressInTimerCancel !== undefined) {
+        clearPressInTimer();
+        doActivate(event);
+      }
+      const heldFor = runtime.activatedAt === undefined ? 0 : now() - runtime.activatedAt;
+      const wait = computePressOutWait(heldFor, minPressDuration, delayPressOut);
+      if (wait > 0) {
+        dlog(`TouchableOpacity pressOut deferred ${wait}ms`);
+        schedule(() => doDeactivate(event), wait);
+        return;
+      }
+      doDeactivate(event);
+    },
+  };
 }

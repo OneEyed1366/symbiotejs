@@ -1,11 +1,12 @@
-// VirtualizedList, the Vue lifecycle half. The windowing engine (offset table, window
-// compute, batch throttle, viewability, edge-reached, the child PLAN, the imperative-handle
-// surface) lives in @symbiote-native/components/state, shared verbatim with the React adapter. Here
-// Vue supplies only the reactivity: refs for scroll offset / viewport / measurement bumps, a
-// `computed` that runs the shared windowing math, post-flush watchers for the after-commit
-// work (batch fill, onEndReached/onStartReached, viewability, initialScroll, MVCP), and the
-// imperative handle via expose(). This is the Vue twin of the React adapter's
-// useState/useRef/useEffect over the same shared functions. It drives the Vue ScrollView,
+// VirtualizedList, the Vue lifecycle half. The orchestration — window recompute, batch throttle,
+// viewability, edge-reached, initial-scroll, MVCP, the imperative scrolls — is the framework-agnostic
+// `reduceList` state machine in @symbiote-native/components (state/virtualized-list-reducer), shared verbatim
+// with React and Angular. Here Vue supplies only the reactivity: it turns native events into ACTIONS,
+// holds ONE plain state cell (listState), runs the returned EFFECTS with Vue primitives (a native
+// scrollTo, an emit, a setTimeout, a version bump), and builds the cell/spacer VNodes off the plan.
+// A single `metrics` computed derives the window once per render (refresh-metrics); a single
+// post-flush watcher on the windowing signature runs the after-commit `commit` pass. This is the Vue
+// twin of the React adapter's one-state-cell + dispatch + runEffects. It drives the Vue ScrollView,
 // exactly as the React list drives the React ScrollView.
 //
 // Typed-emits generic component (mirrors FlatList): a GENERIC setup function
@@ -23,7 +24,8 @@
 //
 // Reactivity gotcha: the ScrollView's exposed handle is held in a shallowRef so the engine
 // node it closes over is reached by identity; a deep ref would proxy it and the imperative
-// scroll commands would silently no-op.
+// scroll commands would silently no-op. The folded listState is a PLAIN object (not reactive) —
+// mutating it never triggers Vue; the `version` ref is bumped when a transition changes render state.
 
 import {
   computed,
@@ -49,27 +51,22 @@ import {
   FIRST_INDEX,
   INVERTED_X_STYLE,
   INVERTED_Y_STYLE,
-  NO_CONTENT_LENGTH_SENT,
-  averageMeasuredLength,
   buildListPlan,
-  buildOffsets,
   buildViewabilityPairs,
-  computeEndReached,
-  computeStartReached,
-  computeViewableSet,
-  computeWindow,
-  diffViewable,
-  highestMeasuredIndex,
-  maxMinimumViewTime,
-  offsetForIndex,
+  createInitialListState,
+  isSeparatorGapInRange,
+  listEffectSignature,
   readLayoutLength,
   readScrollOffset,
-  throttleWindow,
-  type ICellLayout,
+  reduceList,
+  resolveItemKey,
+  type IListAction,
+  type IListEffect,
+  type IListReducerInputs,
+  type IListState,
   type IScrollViewHandle,
   type ISeparatorProps,
   type ISeparators,
-  type IViewToken,
   type IViewabilityConfig,
   type IViewabilityConfigCallbackPair,
   type IViewableItemsChangedInfo,
@@ -350,17 +347,13 @@ export const VirtualizedList = defineComponent(
       slots,
     }: ICtx<IVirtualizedListEmits<ItemT>, IVirtualizedListSlots<ItemT>>,
   ) => {
-    // Reactive lifecycle state (the Vue twin of React's useState): a change in any of these
-    // re-runs the windowing `computed` and the render fn.
-    const scrollOffset = ref(EMPTY_OFFSET);
-    const viewportLength = ref(EMPTY_OFFSET);
+    // Bumped when a transition changes render-relevant state, so the `metrics` computed and the
+    // render fn re-run (listState is plain, non-reactive, so mutating it triggers nothing itself).
+    const version = ref(EMPTY_OFFSET);
+    const separatorVersion = ref(EMPTY_OFFSET);
     // The offset we are imperatively driving native to. A fresh object identity each push so the
     // commit path re-applies it even when the numeric value repeats. undefined = none pending.
     const commandedOffset = ref<{ x: number; y: number } | undefined>(undefined);
-    // Bumped when a NEW cell measurement lands or a batch tick fires, to request a re-render
-    // without thrashing on already-known cells (React's measuredRef + setMeasureVersion).
-    const measureVersion = ref(EMPTY_OFFSET);
-    const separatorVersion = ref(EMPTY_OFFSET);
 
     // shallowRef, NOT ref: the ScrollView handle closes over the engine scroll node, reached by
     // identity through the engine's WeakMap mirror. A deep ref would proxy the object and every
@@ -380,20 +373,12 @@ export const VirtualizedList = defineComponent(
       return vnodeProps != null && typeof vnodeProps[onName] === 'function';
     };
 
-    // Non-reactive setup-scope state (the Vue twin of React's refs that never trigger a render):
-    const measured = new Map<number, number>();
-    // The previously committed window, so throttleWindow grows it by at most maxToRenderPerBatch
-    // per tick instead of snapping.
-    let committedWindow: { first: number; last: number } = { first: FIRST_INDEX, last: -1 };
-    let sentEndForContentLength = NO_CONTENT_LENGTH_SENT;
-    let sentStartForContentLength = NO_CONTENT_LENGTH_SENT;
-    let lastViewable = new Map<string, IViewToken<ItemT>>();
+    // The one folded state cell (the Vue twin of React's stateRef); plus the per-gap separator
+    // overrides + the adapter-owned debounce/fill timers.
+    const listState: IListState<ItemT> = createInitialListState<ItemT>();
+    const separatorOverrides = new Map<number, Partial<ISeparatorProps<unknown>>>();
     let viewableTimer: ReturnType<typeof setTimeout> | null = null;
     let batchTimer: ReturnType<typeof setTimeout> | null = null;
-    let hasInteracted = false;
-    const separatorOverrides = new Map<number, Partial<ISeparatorProps<unknown>>>();
-    let appliedInitialScroll = false;
-    let firstVisibleKey: string | null = null;
 
     const narrowed = computed<INarrowedProps<ItemT>>(() => {
       // extraData has no field of its own; reading it tracks it so a change forces a re-render
@@ -462,58 +447,39 @@ export const VirtualizedList = defineComponent(
       };
     });
 
-    const keyFor = (index: number): string => {
+    // The reducer inputs, folded off `narrowed`. Rebuilt per call (cheap); the viewability pairs are
+    // rebuilt here so the reduce and the effect fire against the same set.
+    const buildInputs = (): IListReducerInputs<ItemT> => {
       const p = narrowed.value;
-      const item = p.getItem(p.data, index);
-      return p.keyExtractor ? p.keyExtractor(item, index) : String(index);
+      return {
+        data: p.data,
+        getItem: p.getItem,
+        getItemCount: p.getItemCount,
+        keyExtractor: p.keyExtractor,
+        getItemLayout: p.getItemLayout,
+        horizontal: p.horizontal,
+        windowSize: p.windowSize,
+        initialNumToRender: p.initialNumToRender,
+        maxToRenderPerBatch: p.maxToRenderPerBatch,
+        updateCellsBatchingPeriod: p.updateCellsBatchingPeriod,
+        onEndReachedThreshold: p.onEndReachedThreshold,
+        onStartReachedThreshold: p.onStartReachedThreshold,
+        onEndReachedActive: p.onEndReached !== undefined,
+        onStartReachedActive: p.onStartReached !== undefined,
+        viewabilityPairs: buildViewabilityPairs(
+          p.onViewableItemsChanged,
+          p.viewabilityConfig,
+          p.viewabilityConfigCallbackPairs,
+        ),
+        maintainVisibleContentPosition: p.maintainVisibleContentPosition,
+        initialScrollIndex: p.initialScrollIndex,
+      };
     };
 
-    // The windowing math, run through the shared @symbiote-native/components functions. It mutates the
-    // non-reactive committedWindow as it throttles (the controlled side effect React runs during
-    // render): committedWindow is plain state, so the write triggers no reactivity loop.
-    const metrics = computed(() => {
+    const keyFor = (index: number): string => {
       const p = narrowed.value;
-      void measureVersion.value;
-      const count = p.getItemCount(p.data);
-      const gil = p.getItemLayout;
-      const data = p.data;
-      const fixedLayout =
-        gil !== undefined
-          ? (index: number): ICellLayout => {
-              const layout = gil(data, index);
-              return { length: layout.length, offset: layout.offset };
-            }
-          : undefined;
-      const averageLength =
-        fixedLayout !== undefined
-          ? count > FIRST_INDEX
-            ? fixedLayout(FIRST_INDEX).length
-            : EMPTY_OFFSET
-          : averageMeasuredLength(measured);
-      const { offsets, lengths, total } = buildOffsets(count, measured, fixedLayout, averageLength);
-      const target = computeWindow(
-        count,
-        offsets,
-        lengths,
-        scrollOffset.value,
-        viewportLength.value,
-        p.windowSize,
-        p.initialNumToRender,
-      );
-      const throttled = throttleWindow(target, committedWindow, p.maxToRenderPerBatch);
-      committedWindow = throttled;
-      return {
-        count,
-        offsets,
-        lengths,
-        total,
-        first: throttled.first,
-        last: throttled.last,
-        target,
-        fixedLayout,
-        averageLength,
-      };
-    });
+      return resolveItemKey(p.getItem(p.data, index), index, p.keyExtractor);
+    };
 
     const scrollToPixel = (offset: number, animated: boolean): void => {
       const p = narrowed.value;
@@ -533,33 +499,91 @@ export const VirtualizedList = defineComponent(
       commandedOffset.value = targetOffset;
     };
 
-    const offsetForIndexLocal = (
-      index: number,
-      viewPosition: number,
-      viewOffset: number,
-    ): number => {
-      const m = metrics.value;
-      return offsetForIndex(
-        index,
-        viewPosition,
-        viewOffset,
-        m.count,
-        m.offsets,
-        m.lengths,
-        viewportLength.value,
-      );
+    // Execute the reducer's effects with Vue primitives. `inputs` is threaded through so a
+    // fire-viewable fires against the same pairs the reduce used.
+    const runEffects = (effects: IListEffect<ItemT>[], inputs: IListReducerInputs<ItemT>): void => {
+      const p = narrowed.value;
+      for (const effect of effects) {
+        switch (effect.kind) {
+          case 'scroll-to':
+            scrollToPixel(effect.offset, effect.animated);
+            break;
+          case 'fire-end-reached':
+            p.onEndReached?.({ distanceFromEnd: effect.distanceFromEnd });
+            break;
+          case 'fire-start-reached':
+            p.onStartReached?.({ distanceFromStart: effect.distanceFromStart });
+            break;
+          case 'fire-scroll-to-index-failed':
+            p.onScrollToIndexFailed?.({
+              index: effect.index,
+              highestMeasuredFrameIndex: effect.highestMeasuredFrameIndex,
+              averageItemLength: effect.averageItemLength,
+            });
+            break;
+          case 'schedule-refill': {
+            if (batchTimer !== null) clearTimeout(batchTimer);
+            batchTimer = setTimeout(() => {
+              batchTimer = null;
+              dispatch({ kind: 'batch-tick' });
+            }, effect.delay);
+            break;
+          }
+          case 'fire-viewable': {
+            const pairs = inputs.viewabilityPairs;
+            const info = effect.info;
+            const map = effect.map;
+            const fire = (): void => {
+              for (const pair of pairs) pair.onViewableItemsChanged(info);
+              dispatch({ kind: 'viewable-fired', map });
+            };
+            if (viewableTimer !== null) {
+              clearTimeout(viewableTimer);
+              viewableTimer = null;
+            }
+            if (effect.delay > EMPTY_OFFSET) {
+              viewableTimer = setTimeout(() => {
+                viewableTimer = null;
+                fire();
+              }, effect.delay);
+            } else {
+              fire();
+            }
+            break;
+          }
+        }
+      }
     };
+
+    const dispatch = (action: IListAction<ItemT>): void => {
+      const inputs = buildInputs();
+      const result = reduceList(listState, action, inputs);
+      runEffects(result.effects, inputs);
+      if (result.changed) version.value += 1;
+    };
+
+    // The single derive-per-render: the window is recomputed once here (refresh-metrics) and cached
+    // by the computed until `version` or the narrowed props change, so the render fn and the commit
+    // signature both read it without re-deriving (which would double-advance the throttle).
+    const metrics = computed(() => {
+      void version.value;
+      reduceList(listState, { kind: 'refresh-metrics' }, buildInputs());
+      return listState.metrics;
+    });
+
+    const commitSignature = computed(() => {
+      void metrics.value;
+      return listEffectSignature(listState);
+    });
 
     const onScroll = (event: ISymbioteEvent): void => {
       const p = narrowed.value;
       const offset = readScrollOffset(event, p.horizontal);
       if (offset === undefined) return;
       dlog(`Vue VirtualizedList onScroll offset=${offset}`);
-      // First scroll is the interaction that ungates waitForInteraction configs.
-      hasInteracted = true;
-      scrollOffset.value = offset;
       // A real native scroll supersedes any pending commanded offset.
       commandedOffset.value = undefined;
+      dispatch({ kind: 'scroll', offset });
       // Compose, don't clobber: internal windowing ran first, now the user's onScroll.
       if (p.userOnScroll !== undefined) p.userOnScroll(event);
     };
@@ -568,25 +592,20 @@ export const VirtualizedList = defineComponent(
       const length = readLayoutLength(event, narrowed.value.horizontal);
       if (length === undefined) return;
       dlog(`Vue VirtualizedList onLayout viewport=${length}`);
-      viewportLength.value = length;
+      dispatch({ kind: 'layout', length });
     };
 
     const makeCellMeasure =
       (index: number) =>
       (event: ISymbioteEvent): void => {
-        const p = narrowed.value;
-        if (p.getItemLayout !== undefined) return;
-        const length = readLayoutLength(event, p.horizontal);
+        const length = readLayoutLength(event, narrowed.value.horizontal);
         if (length === undefined) return;
-        if (measured.get(index) === length) return;
-        measured.set(index, length);
         dlog(`Vue VirtualizedList cell ${index} measured length=${length}`);
-        measureVersion.value += 1;
+        dispatch({ kind: 'measure', index, length });
       };
 
     const mergeSeparator = (gapIndex: number, patch: Partial<ISeparatorProps<unknown>>): void => {
-      const count = metrics.value.count;
-      if (gapIndex < FIRST_INDEX || gapIndex > count - 2) return;
+      if (!isSeparatorGapInRange(gapIndex, listState.metrics.count)) return;
       separatorOverrides.set(gapIndex, { ...separatorOverrides.get(gapIndex), ...patch });
       separatorVersion.value += 1;
     };
@@ -610,53 +629,31 @@ export const VirtualizedList = defineComponent(
     // ---- imperative handle (the shared IVirtualizedListHandle surface) ------
     const handle: IVirtualizedListHandle = {
       scrollToOffset: (params): void => {
-        scrollToPixel(params.offset, params.animated ?? true);
+        dispatch({
+          kind: 'scroll-to-offset',
+          offset: params.offset,
+          animated: params.animated ?? true,
+        });
       },
       scrollToIndex: (params): void => {
-        const p = narrowed.value;
-        const m = metrics.value;
-        // No getItemLayout AND the target is past the last measured cell: report the failure
-        // instead of scrolling to a fabricated estimate (RN VirtualizedList.js:179-195).
-        if (p.getItemLayout === undefined && params.index > highestMeasuredIndex(measured)) {
-          dlog(
-            `Vue VirtualizedList onScrollToIndexFailed index=${params.index} ` +
-              `highestMeasured=${highestMeasuredIndex(measured)} (no getItemLayout)`,
-          );
-          p.onScrollToIndexFailed?.({
-            index: params.index,
-            highestMeasuredFrameIndex: highestMeasuredIndex(measured),
-            averageItemLength: m.averageLength,
-          });
-          return;
-        }
-        scrollToPixel(
-          offsetForIndexLocal(
-            params.index,
-            params.viewPosition ?? FIRST_INDEX,
-            params.viewOffset ?? EMPTY_OFFSET,
-          ),
-          params.animated ?? true,
-        );
+        dispatch({
+          kind: 'scroll-to-index',
+          index: params.index,
+          animated: params.animated ?? true,
+          viewPosition: params.viewPosition ?? FIRST_INDEX,
+          viewOffset: params.viewOffset ?? EMPTY_OFFSET,
+        });
       },
       scrollToItem: (params): void => {
-        const p = narrowed.value;
-        const count = metrics.value.count;
-        for (let index = FIRST_INDEX; index < count; index += 1) {
-          if (p.getItem(p.data, index) === params.item) {
-            scrollToPixel(
-              offsetForIndexLocal(index, params.viewPosition ?? FIRST_INDEX, EMPTY_OFFSET),
-              params.animated ?? true,
-            );
-            return;
-          }
-        }
-        dlog('Vue VirtualizedList scrollToItem: item not found');
+        dispatch({
+          kind: 'scroll-to-item',
+          item: params.item,
+          animated: params.animated ?? true,
+          viewPosition: params.viewPosition ?? FIRST_INDEX,
+        });
       },
       scrollToEnd: (params): void => {
-        scrollToPixel(
-          Math.max(EMPTY_OFFSET, metrics.value.total - viewportLength.value),
-          params?.animated ?? true,
-        );
+        dispatch({ kind: 'scroll-to-end', animated: params?.animated ?? true });
       },
       flashScrollIndicators: (): void => {
         scrollHandle.value?.flashScrollIndicators();
@@ -666,215 +663,20 @@ export const VirtualizedList = defineComponent(
       getScrollResponder: (): IScrollViewHandle | null => scrollHandle.value,
       getScrollNode: (): ISymbioteNode | null => scrollHandle.value?.getScrollNode() ?? null,
       recordInteraction: (): void => {
-        hasInteracted = true;
+        dispatch({ kind: 'record-interaction' });
       },
     };
     expose(handle);
 
-    // ---- after-commit effects (post-flush watchers, the Vue twin of useEffect) ----
-
-    // Batch fill: when the throttled window has not reached the target, schedule a re-render so
-    // the window keeps filling toward target over successive ticks (React's batch effect).
+    // ---- after-commit pass (one post-flush watcher, the Vue twin of the layout effect) ----
+    // Runs the deferred effects (batch fill, edge-reached, viewability, initial-scroll, MVCP)
+    // whenever the windowing signature changes — the same dedup key every adapter shares.
     watch(
-      metrics,
-      m => {
-        if (batchTimer !== null) {
-          clearTimeout(batchTimer);
-          batchTimer = null;
-        }
-        if (m.first <= m.target.first && m.last >= m.target.last) return;
-        batchTimer = setTimeout(() => {
-          batchTimer = null;
-          measureVersion.value += 1;
-        }, narrowed.value.updateCellsBatchingPeriod);
-      },
-      { flush: 'post' },
-    );
-
-    // onEndReached: fire only when the actual last cell is rendered AND within threshold; dedup by
-    // content length; re-arm on scroll away from the end (RN _maybeCallOnEdgeReached).
-    watch(
-      () => [narrowed.value, scrollOffset.value, viewportLength.value, metrics.value],
+      commitSignature,
       () => {
-        const p = narrowed.value;
-        if (p.onEndReached === undefined || viewportLength.value <= EMPTY_OFFSET) return;
-        const m = metrics.value;
-        const { distanceFromEnd, withinThreshold } = computeEndReached(
-          m.total,
-          scrollOffset.value,
-          viewportLength.value,
-          p.onEndReachedThreshold,
-        );
-        const lastCellRendered = m.last === m.count - 1;
-        if (withinThreshold && lastCellRendered && sentEndForContentLength !== m.total) {
-          sentEndForContentLength = m.total;
-          dlog(
-            `Vue VirtualizedList onEndReached distanceFromEnd=${distanceFromEnd} ` +
-              `(last=${m.last} of ${m.count}, contentLength=${m.total})`,
-          );
-          p.onEndReached({ distanceFromEnd });
-        }
-        if (!withinThreshold) sentEndForContentLength = NO_CONTENT_LENGTH_SENT;
-      },
-      { flush: 'post' },
-    );
-
-    // onStartReached: the top-edge twin of onEndReached.
-    watch(
-      () => [narrowed.value, scrollOffset.value, viewportLength.value, metrics.value],
-      () => {
-        const p = narrowed.value;
-        if (p.onStartReached === undefined || viewportLength.value <= EMPTY_OFFSET) return;
-        const m = metrics.value;
-        const { distanceFromStart, withinThreshold } = computeStartReached(
-          scrollOffset.value,
-          viewportLength.value,
-          p.onStartReachedThreshold,
-        );
-        const firstCellRendered = m.first === FIRST_INDEX;
-        if (withinThreshold && firstCellRendered && sentStartForContentLength !== m.total) {
-          sentStartForContentLength = m.total;
-          dlog(
-            `Vue VirtualizedList onStartReached distanceFromStart=${distanceFromStart} ` +
-              `(first=${m.first}, contentLength=${m.total})`,
-          );
-          p.onStartReached({ distanceFromStart });
-        }
-        if (!withinThreshold) sentStartForContentLength = NO_CONTENT_LENGTH_SENT;
-      },
-      { flush: 'post' },
-    );
-
-    // Viewability: recompute which rendered cells clear the threshold and, if the viewable set
-    // changed, fire onViewableItemsChanged + every config/callback pair, honoring minimumViewTime.
-    watch(
-      () => [narrowed.value, scrollOffset.value, viewportLength.value, metrics.value],
-      () => {
-        const p = narrowed.value;
-        const m = metrics.value;
-        const pairs = buildViewabilityPairs(
-          p.onViewableItemsChanged,
-          p.viewabilityConfig,
-          p.viewabilityConfigCallbackPairs,
-        );
-        if (pairs.length === EMPTY_OFFSET || viewportLength.value <= EMPTY_OFFSET) return;
-        if (m.count === FIRST_INDEX) return;
-
-        const { tokens, map } = computeViewableSet({
-          first: m.first,
-          last: m.last,
-          count: m.count,
-          offsets: m.offsets,
-          lengths: m.lengths,
-          scrollOffset: scrollOffset.value,
-          viewportLength: viewportLength.value,
-          data: p.data,
-          getItem: p.getItem,
-          keyExtractor: p.keyExtractor,
-          pairs,
-          hasInteracted,
-        });
-        const diff = diffViewable(lastViewable, map, tokens);
-        if (!diff.hasChanged) return;
-
-        const commitAndFire = (): void => {
-          lastViewable = map;
-          dlog(
-            `Vue VirtualizedList viewable=${tokens.length} changed=${diff.changed.length} ` +
-              `(window [${m.first}, ${m.last}])`,
-          );
-          const info: IViewableItemsChangedInfo<ItemT> = {
-            viewableItems: tokens,
-            changed: diff.changed,
-          };
-          for (const pair of pairs) pair.onViewableItemsChanged(info);
-        };
-
-        const minimumViewTime = maxMinimumViewTime(pairs);
-        if (viewableTimer !== null) {
-          clearTimeout(viewableTimer);
-          viewableTimer = null;
-        }
-        if (minimumViewTime > EMPTY_OFFSET) {
-          dlog(
-            `Vue VirtualizedList viewability debounce ${minimumViewTime}ms (window [${m.first}, ${m.last}])`,
-          );
-          viewableTimer = setTimeout(() => {
-            viewableTimer = null;
-            commitAndFire();
-          }, minimumViewTime);
-          return;
-        }
-        commitAndFire();
-      },
-      { flush: 'post' },
-    );
-
-    // initialScrollIndex: once the first viewport is known, jump to that index a single time.
-    watch(
-      () => [narrowed.value, viewportLength.value, metrics.value],
-      () => {
-        const p = narrowed.value;
-        if (p.initialScrollIndex === undefined || appliedInitialScroll) return;
-        if (viewportLength.value <= EMPTY_OFFSET || metrics.value.count === FIRST_INDEX) return;
-        appliedInitialScroll = true;
-        // The initial jump is instant (RN does not animate initialScrollIndex).
-        scrollToPixel(offsetForIndexLocal(p.initialScrollIndex, FIRST_INDEX, EMPTY_OFFSET), false);
-      },
-      { flush: 'post' },
-    );
-
-    // maintainVisibleContentPosition JS anchor adjustment: track the key of the item at
-    // minIndexForVisible; when a prepend moves it down, add the inserted extent in the leading
-    // SPACER (the off-window items native MVCP cannot see) to scrollOffset so the anchored item
-    // does not jump (RN getDerivedStateFromProps). Runs post-flush so the correction lands fast.
-    watch(
-      () => [narrowed.value, metrics.value, scrollOffset.value],
-      () => {
-        const p = narrowed.value;
-        const m = metrics.value;
-        if (p.maintainVisibleContentPosition === undefined || m.count === FIRST_INDEX) {
-          firstVisibleKey = null;
-          return;
-        }
-        const minIndexForVisible = p.maintainVisibleContentPosition.minIndexForVisible;
-        const newFirstVisibleKey = m.count > minIndexForVisible ? keyFor(minIndexForVisible) : null;
-        const prevKey = firstVisibleKey;
-
-        if (prevKey !== null && newFirstVisibleKey !== null && prevKey !== newFirstVisibleKey) {
-          let anchorIndex = -1;
-          for (let index = minIndexForVisible; index < m.count; index += 1) {
-            if (keyFor(index) === prevKey) {
-              anchorIndex = index;
-              break;
-            }
-          }
-          if (anchorIndex > minIndexForVisible) {
-            const spacerEnd = Math.min(anchorIndex, committedWindow.first);
-            const insertedExtent =
-              spacerEnd > minIndexForVisible
-                ? m.offsets[spacerEnd] - m.offsets[minIndexForVisible]
-                : EMPTY_OFFSET;
-            if (insertedExtent > EMPTY_OFFSET) {
-              const autoThreshold = p.maintainVisibleContentPosition.autoscrollToTopThreshold;
-              const anchoredNearTop =
-                autoThreshold !== undefined && scrollOffset.value <= autoThreshold;
-              if (anchoredNearTop) {
-                dlog(
-                  `Vue VirtualizedList MVCP autoscroll-to-top (offset=${scrollOffset.value} <= ${autoThreshold})`,
-                );
-                scrollToPixel(EMPTY_OFFSET, true);
-              } else {
-                dlog(
-                  `Vue VirtualizedList MVCP adjust +${insertedExtent}px ` +
-                    `(anchor "${prevKey}" moved ${minIndexForVisible}->${anchorIndex})`,
-                );
-                scrollToPixel(scrollOffset.value + insertedExtent, false);
-              }
-            }
-          }
-        }
-        firstVisibleKey = newFirstVisibleKey;
+        const inputs = buildInputs();
+        const result = reduceList(listState, { kind: 'commit' }, inputs);
+        runEffects(result.effects, inputs);
       },
       { flush: 'post' },
     );
@@ -895,7 +697,7 @@ export const VirtualizedList = defineComponent(
 
       dlog(
         `Vue VirtualizedList window [${m.first}, ${m.last}] of ${m.count} ` +
-          `(offset=${scrollOffset.value}, viewport=${viewportLength.value}, rendered=${Math.max(0, m.last - m.first + 1)})`,
+          `(offset=${listState.scrollOffset}, viewport=${listState.viewportLength}, rendered=${Math.max(0, m.last - m.first + 1)})`,
       );
 
       const children: VNode[] = [];

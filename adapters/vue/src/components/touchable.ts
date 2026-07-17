@@ -13,7 +13,9 @@
 
 import { defineComponent, h, type VNode } from '@vue/runtime-core';
 import {
-  computePressOutWait,
+  createTouchableFeedbackHandlers,
+  createTouchableFeedbackRuntime,
+  highlightPressedStyle,
   DEFAULT_ACTIVE_OPACITY,
   DEFAULT_HIGHLIGHT_CHILD_OPACITY,
   DEFAULT_MIN_PRESS_DURATION_MS,
@@ -24,12 +26,7 @@ import {
   type IPressState,
   type IPressTimingProps,
 } from '@symbiote-native/components';
-import {
-  dlog,
-  type ISymbioteEvent,
-  type IStyleProp,
-  type IViewStyle,
-} from '@symbiote-native/engine';
+import { type ISymbioteEvent, type IStyleProp, type IViewStyle } from '@symbiote-native/engine';
 import {
   Pressable,
   emitPressableEvents,
@@ -66,6 +63,13 @@ function numberOr(value: unknown, fallback: number): number {
   return typeof value === 'number' ? value : fallback;
 }
 
+// The real setTimeout the shared feedback machine schedules its deferred activation/deactivation on
+// (core/components has no timer globals). Returns a canceller so an early release flushes the timer.
+function scheduleTimeout(callback: () => void, ms: number): () => void {
+  const id = setTimeout(callback, ms);
+  return () => clearTimeout(id);
+}
+
 function forwardExcept(
   attrs: Record<string, unknown>,
   handled: readonly string[],
@@ -93,8 +97,9 @@ export const TouchableOpacity = defineComponent<ITouchableOpacityProps, IPressab
     // One Animated.Value per mount, resting at full opacity. Held by identity in setup scope (an
     // engine object, never a reactive ref). The Animated.View leaf commits it every frame.
     const opacity = new Animated.Value(RESTING_OPACITY);
-    let pressInTimer: ReturnType<typeof setTimeout> | undefined;
-    let activatedAt: number | undefined;
+    // The shared press-scheduling cell (delayPressIn timer + activation clock), persisted across
+    // renders in setup scope; the handlers are rebuilt each render over live attrs.
+    const runtime = createTouchableFeedbackRuntime();
 
     function setOpacityTo(toValue: number, duration: number): void {
       Animated.timing(opacity, {
@@ -105,63 +110,34 @@ export const TouchableOpacity = defineComponent<ITouchableOpacityProps, IPressab
       }).start();
     }
 
-    function clearPressInTimer(): void {
-      if (pressInTimer !== undefined) {
-        clearTimeout(pressInTimer);
-        pressInTimer = undefined;
-      }
-    }
-
-    function activate(event: ISymbioteEvent): void {
-      activatedAt = Date.now();
-      setOpacityTo(
-        numberOr(rawAttrs.activeOpacity, DEFAULT_ACTIVE_OPACITY),
-        OPACITY_ACTIVE_DURATION_MS,
-      );
-      emit('pressIn', event);
-    }
-
-    function deactivate(event: ISymbioteEvent): void {
-      activatedAt = undefined;
-      setOpacityTo(RESTING_OPACITY, OPACITY_INACTIVE_DURATION_MS);
-      emit('pressOut', event);
-    }
-
-    function handlePressIn(event: ISymbioteEvent): void {
-      const delayPressIn = numberOr(rawAttrs.delayPressIn, 0);
-      if (delayPressIn > 0) {
-        dlog(`TouchableOpacity pressIn deferred ${delayPressIn}ms`);
-        pressInTimer = setTimeout(() => {
-          pressInTimer = undefined;
-          activate(event);
-        }, delayPressIn);
-        return;
-      }
-      activate(event);
-    }
-
-    function handlePressOut(event: ISymbioteEvent): void {
-      if (pressInTimer !== undefined) {
-        clearPressInTimer();
-        activate(event);
-      }
-      const heldFor = activatedAt === undefined ? 0 : Date.now() - activatedAt;
-      const wait = computePressOutWait(
-        heldFor,
-        numberOr(rawAttrs.minPressDuration, DEFAULT_MIN_PRESS_DURATION_MS),
-        numberOr(rawAttrs.delayPressOut, 0),
-      );
-      if (wait > 0) {
-        dlog(`TouchableOpacity pressOut deferred ${wait}ms`);
-        setTimeout(() => deactivate(event), wait);
-        return;
-      }
-      deactivate(event);
-    }
-
     return () => {
       const attrs = normalizeVueAttrs(rawAttrs);
       const style = attrs.style;
+      // Rebuilt each render so a re-supplied delay/opacity is honored (Vue's live-attr idiom); the
+      // shared machine owns the scheduling, the adapter supplies the Animated fade + emit.
+      const { handlePressIn, handlePressOut } = createTouchableFeedbackHandlers(
+        {
+          delayPressIn: numberOr(attrs.delayPressIn, 0),
+          delayPressOut: numberOr(attrs.delayPressOut, 0),
+          minPressDuration: numberOr(attrs.minPressDuration, DEFAULT_MIN_PRESS_DURATION_MS),
+          schedule: scheduleTimeout,
+          now: Date.now,
+        },
+        runtime,
+        {
+          activate(event: ISymbioteEvent): void {
+            setOpacityTo(
+              numberOr(attrs.activeOpacity, DEFAULT_ACTIVE_OPACITY),
+              OPACITY_ACTIVE_DURATION_MS,
+            );
+            emit('pressIn', event);
+          },
+          deactivate(event: ISymbioteEvent): void {
+            setOpacityTo(RESTING_OPACITY, OPACITY_INACTIVE_DURATION_MS);
+            emit('pressOut', event);
+          },
+        },
+      );
       const pressableProps: Record<string, unknown> = {
         ...forwardExcept(attrs, TOUCHABLE_OPACITY_HANDLED),
         ...emitPressableEvents(emit),
@@ -196,9 +172,7 @@ export const TouchableHighlight = defineComponent<ITouchableHighlightProps, IPre
       const style = attrs.style;
 
       function pressedStyle({ pressed }: IPressState): unknown {
-        if (!pressed) return style;
-        const overlay: IViewStyle = { backgroundColor: underlayColor, opacity: activeOpacity };
-        return [style, overlay];
+        return highlightPressedStyle(pressed, style, underlayColor, activeOpacity);
       }
 
       const pressableProps: Record<string, unknown> = {

@@ -26,6 +26,7 @@ import {
 } from '@vue/runtime-core';
 import {
   flattenSections,
+  resolveStickySectionHeaders,
   scrollLocationToFlatIndex,
   sectionEntryKey,
   unwrapEntryItem,
@@ -237,9 +238,11 @@ export const VirtualizedSectionList = defineComponent(
       headerIndices = indices;
 
       // RN sticks section headers by default only on iOS; Android does not unless asked.
-      const stickyDefault = Platform.OS === 'ios';
-      const stickyEnabled = props.stickySectionHeadersEnabled ?? stickyDefault;
-      const stickyHeaderIndices = stickyEnabled ? indices : undefined;
+      const stickyHeaderIndices = resolveStickySectionHeaders(
+        props.stickySectionHeadersEnabled,
+        indices,
+        Platform.OS,
+      );
 
       dlog(
         `Vue VirtualizedSectionList: ${sections.length} sections flattened to ${entries.length} entries`,

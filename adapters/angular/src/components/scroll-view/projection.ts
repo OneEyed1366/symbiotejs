@@ -15,10 +15,13 @@ import {
   type ISymbioteNode,
 } from '@symbiote-native/engine';
 import {
-  computeStickyInterpolation,
+  createInitialStickyState,
   readLayoutNumber,
-  stickyDebounceMs,
+  reduceSticky,
   STICKY_HEADER_Z_INDEX,
+  type IStickyAction,
+  type IStickyEffect,
+  type IStickyReducerInputs,
 } from '@symbiote-native/components';
 import { descriptorFor } from '@symbiote-native/components';
 import { Platform } from '@symbiote-native/engine';
@@ -64,17 +67,20 @@ function isProjectedRefreshControl(node: ISymbioteNode): boolean {
   return isAnchor(node) && node.children.some(isProjectedRefreshControl);
 }
 
+// The SECOND Angular sticky effect-runner (auto-projected children can't be arbitrary Angular
+// component classes, so the controller drives engine nodes directly). It shares the ONE
+// reduceSticky state machine with ScrollViewStickyHeader — the DECISIONS (zero-swallow gate, debounce
+// delay, rebuild ranges, cross-talk record) live there; this runner only EXECUTES the effects on the
+// engine node (build interpolation + wire listener, hold the debounce timer, re-apply the node props).
+// Because it owns the child index, it consumes the reducer's record-header-y effect for cross-talk.
 class StickyProjectionWrapper {
-  private measured = false;
-  private layoutY = 0;
-  private layoutHeight = 0;
+  private readonly state = createInitialStickyState();
   private animatedTranslateY: AnimatedInterpolation;
+  private interpolation: AnimatedInterpolation | undefined;
   private animatedProps: AnimatedProps | undefined;
   private cancelBind: (() => void) | undefined;
   private listenerId: string | undefined;
   private debounceTimer: ReturnType<typeof setTimeout> | undefined;
-  private translateY: number | null = null;
-  private haveReceivedInitialZeroTranslateY = true;
 
   constructor(
     private readonly controller: ScrollViewProjectionController,
@@ -85,14 +91,14 @@ class StickyProjectionWrapper {
       inputRange: [-1, 0],
       outputRange: [0, 0],
     });
-    this.rebuild();
+    this.dispatch({ kind: 'inputs-changed' });
   }
 
   destroy(): void {
     this.cancelBind?.();
     this.cancelBind = undefined;
-    if (this.listenerId !== undefined) {
-      this.animatedTranslateY.removeListener(this.listenerId);
+    if (this.interpolation !== undefined && this.listenerId !== undefined) {
+      this.interpolation.removeListener(this.listenerId);
       this.listenerId = undefined;
     }
     if (this.debounceTimer !== undefined) {
@@ -105,53 +111,77 @@ class StickyProjectionWrapper {
     }
   }
 
+  // The controller calls this when a cross-talk input changed (a sibling recorded its y): rebuild the
+  // ranges off the new nextStickyHeaderY.
   rebuild(): void {
-    if (this.listenerId !== undefined) {
-      this.animatedTranslateY.removeListener(this.listenerId);
-      this.listenerId = undefined;
-    }
+    this.dispatch({ kind: 'inputs-changed' });
+  }
 
-    const { inputRange, outputRange } = computeStickyInterpolation({
-      measured: this.measured,
+  private inputs(): IStickyReducerInputs {
+    return {
+      os: Platform.OS,
       inverted: this.controller.config.invertStickyHeaders,
       scrollViewHeight: this.controller.config.scrollViewHeight,
-      layoutY: this.layoutY,
-      layoutHeight: this.layoutHeight,
       nextHeaderLayoutY: this.controller.nextStickyHeaderY(this.childIndex),
-    });
-    this.animatedTranslateY = this.controller.config.scrollAnimatedValue.interpolate({
-      inputRange,
-      outputRange,
-    });
-    this.listenerId = this.animatedTranslateY.addListener(this.animatedValueListener);
-    this.applyProps();
-    dlog(
-      `Angular ScrollView projection sticky index=${this.childIndex} measured=${this.measured} y=${this.layoutY}`,
-    );
+      index: this.childIndex,
+    };
+  }
+
+  private dispatch(action: IStickyAction): void {
+    this.runEffects(reduceSticky(this.state, action, this.inputs()).effects);
+  }
+
+  private runEffects(effects: IStickyEffect[]): void {
+    for (const effect of effects) {
+      switch (effect.kind) {
+        case 'rebuild-interpolation': {
+          if (this.interpolation !== undefined && this.listenerId !== undefined) {
+            this.interpolation.removeListener(this.listenerId);
+            this.listenerId = undefined;
+          }
+          const next = this.controller.config.scrollAnimatedValue.interpolate({
+            inputRange: effect.inputRange,
+            outputRange: effect.outputRange,
+          });
+          this.listenerId = next.addListener(this.animatedValueListener);
+          this.interpolation = next;
+          this.animatedTranslateY = next;
+          this.applyProps();
+          dlog(
+            `Angular ScrollView projection sticky index=${this.childIndex} measured=${this.state.measured} y=${this.state.layoutY}`,
+          );
+          break;
+        }
+        case 'schedule-debounce':
+          if (this.debounceTimer !== undefined) clearTimeout(this.debounceTimer);
+          this.debounceTimer = setTimeout(() => {
+            this.debounceTimer = undefined;
+            this.dispatch({ kind: 'debounce-fired', value: effect.value });
+          }, effect.delay);
+          break;
+        case 'apply-passthrough':
+          this.applyProps();
+          break;
+        case 'record-header-y':
+          this.controller.recordHeaderLayoutY(effect.index, effect.y);
+          break;
+      }
+    }
   }
 
   private readonly onLayout = (event: ISymbioteEvent): void => {
     const y = readLayoutNumber(event, 'y');
     const height = readLayoutNumber(event, 'height');
-    if (y !== undefined) this.layoutY = y;
-    if (height !== undefined) this.layoutHeight = height;
-    this.measured = true;
-    this.controller.recordHeaderLayoutY(this.childIndex, this.layoutY);
-    this.rebuild();
+    // Keep the previous value when a field is absent (RN sets state only on a defined read).
+    this.dispatch({
+      kind: 'layout',
+      y: y ?? this.state.layoutY,
+      height: height ?? this.state.layoutHeight,
+    });
   };
 
   private readonly animatedValueListener = ({ value }: { value: number | string }): void => {
-    if (typeof value !== 'number') return;
-    if (value === 0 && !this.haveReceivedInitialZeroTranslateY) {
-      this.haveReceivedInitialZeroTranslateY = true;
-      return;
-    }
-    if (this.debounceTimer !== undefined) clearTimeout(this.debounceTimer);
-    this.debounceTimer = setTimeout(() => {
-      this.translateY = value;
-      if (value !== 0) this.haveReceivedInitialZeroTranslateY = false;
-      this.applyProps();
-    }, stickyDebounceMs(Platform.OS));
+    if (typeof value === 'number') this.dispatch({ kind: 'animated-tick', value });
   };
 
   private props(): Record<string, unknown> {
@@ -160,9 +190,9 @@ class StickyProjectionWrapper {
       zIndex: STICKY_HEADER_Z_INDEX,
     };
     const passthrough =
-      this.translateY === null
+      this.state.translateY === null
         ? undefined
-        : { transform: [{ translateY: this.translateY }], zIndex: STICKY_HEADER_Z_INDEX };
+        : { transform: [{ translateY: this.state.translateY }], zIndex: STICKY_HEADER_Z_INDEX };
     return {
       style: passthrough === undefined ? style : [style, passthrough],
       onLayout: this.onLayout,

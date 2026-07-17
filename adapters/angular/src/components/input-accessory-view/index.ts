@@ -1,9 +1,11 @@
-// InputAccessoryView, the Angular lifecycle half (iOS). A real Fabric host node
-// (RCTInputAccessoryView) that docks its content above the keyboard; a TextInput points at it by
-// nativeID through its inputAccessoryViewID. There is no JS-side translation — style / nativeID /
-// backgroundColor map straight onto the intrinsic, children via <ng-content> — so this folds
-// aria/role through the shared resolveAccessibilityProps and binds the rest onto the host. The
-// Angular twin of the React/Vue InputAccessoryView. No platform branch, so this stays flat.
+// InputAccessoryView, the Angular lifecycle half (iOS). RCTInputAccessoryView is a real Fabric
+// host node that docks its content above the keyboard; a TextInput points at it by nativeID through
+// its inputAccessoryViewID. The host-node assembly (nativeID / backgroundColor / style /
+// accessibility forwarding) lives framework-agnostic in
+// @symbiote-native/components/renderInputAccessoryView and is shared verbatim with React/Vue; here
+// Angular supplies only the lifecycle — it folds aria/role, reads the resolved props off the
+// Descriptor, and nests the user children under the host via <ng-content>. The Angular twin of the
+// React/Vue InputAccessoryView. No platform branch, so this stays flat.
 
 import {
   CUSTOM_ELEMENTS_SCHEMA,
@@ -16,6 +18,7 @@ import {
   Output,
 } from '@angular/core';
 import {
+  renderInputAccessoryView,
   resolveAccessibilityProps,
   type IAccessibilityProps,
   type IAccessibilityStateValue,
@@ -121,42 +124,30 @@ export class InputAccessoryView implements IAngularInputAccessoryViewInputs {
     if (isSymbioteEvent(event)) emitter.emit(event);
   }
 
-  // Folds every host-bound prop into one record for `symbioteHostProps` — the same fields the
-  // template used to bind one-by-one, assembled locally (no shared renderX for this component yet).
-  // The anchor's class-derived style goes FIRST, this component's own explicit `style` @Input
-  // SECOND — flattenStyle's later-wins collapse keeps an explicit [style] winning over its class.
-  get hostProps(): Record<string, unknown> {
-    const folded = this.folded;
-    return {
-      style: [anchorHostStyle(this.elementRef), this.style],
+  // renderInputAccessoryView owns the host-node assembly (shared with React/Vue); the adapter reads
+  // the resolved host props off the Descriptor it returns.
+  private get descriptor() {
+    return renderInputAccessoryView({
       nativeID: this.nativeID,
       backgroundColor: this.backgroundColor,
-      testID: this.testID,
-      accessible: this.accessible,
-      accessibilityLabel: folded.accessibilityLabel,
-      accessibilityHint: folded.accessibilityHint,
-      accessibilityRole: folded.accessibilityRole,
-      accessibilityState: folded.accessibilityState,
-      accessibilityValue: folded.accessibilityValue,
-      accessibilityActions: folded.accessibilityActions,
-      accessibilityLabelledBy: folded.accessibilityLabelledBy,
-      importantForAccessibility: folded.importantForAccessibility,
-      accessibilityLiveRegion: folded.accessibilityLiveRegion,
-      screenReaderFocusable: folded.screenReaderFocusable,
-      accessibilityViewIsModal: folded.accessibilityViewIsModal,
-      accessibilityElementsHidden: folded.accessibilityElementsHidden,
-      accessibilityIgnoresInvertColors: folded.accessibilityIgnoresInvertColors,
-      accessibilityLanguage: folded.accessibilityLanguage,
-      accessibilityRespondsToUserInteraction: folded.accessibilityRespondsToUserInteraction,
-      accessibilityShowsLargeContentViewer: folded.accessibilityShowsLargeContentViewer,
-      accessibilityLargeContentTitle: folded.accessibilityLargeContentTitle,
-    };
+      style: this.style,
+      passthrough: resolveAccessibilityProps(this.accessibilityInputs()),
+    });
   }
 
-  // Fold the web aria-*/role aliases into the canonical accessibility* props once per render, so
-  // the host node never sees an aria-* key (native ignores them) — the shared transform.
-  get folded(): Partial<IAngularInputAccessoryViewProps> {
-    return resolveAccessibilityProps({
+  // The anchor's class-derived style goes FIRST, the Descriptor's resolved style SECOND —
+  // flattenStyle's later-wins collapse keeps an explicit [style] winning over its ambient class.
+  get hostProps(): Record<string, unknown> {
+    const descriptorProps = this.descriptor.props;
+    return { ...descriptorProps, style: [anchorHostStyle(this.elementRef), descriptorProps.style] };
+  }
+
+  // Typed as the a11y intersection WITH the string index (the bag renderInputAccessoryView spreads
+  // into the host props), so resolveAccessibilityProps's result stays assignable to passthrough.
+  private accessibilityInputs(): IAccessibilityProps & IAriaProps & Record<string, unknown> {
+    return {
+      testID: this.testID,
+      accessible: this.accessible,
       accessibilityLabel: this.accessibilityLabel,
       accessibilityHint: this.accessibilityHint,
       accessibilityRole: this.accessibilityRole,
@@ -189,6 +180,6 @@ export class InputAccessoryView implements IAngularInputAccessoryViewInputs {
       'aria-valuemin': this.ariaValueMin,
       'aria-valuenow': this.ariaValueNow,
       'aria-valuetext': this.ariaValueText,
-    });
+    };
   }
 }

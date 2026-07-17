@@ -20,6 +20,7 @@
 // Descriptor render fn for a list - the shared layer for lists is this STATE/logic
 // module, not a view/render-*.ts.
 
+import { dlog } from '@symbiote-native/engine';
 import type { IViewStyle } from '@symbiote-native/engine';
 import type { ISymbioteEvent } from '@symbiote-native/engine';
 import type { IScrollRoutingHandle } from './scroll-routing-handle';
@@ -483,4 +484,179 @@ export function buildListPlan(params: IListPlanParams): IListPlan {
     if (params.hasSeparators && index < params.last) childPosition += 1;
   }
   return { leadingExtent, trailingExtent, cells, stickyChildPositions };
+}
+
+// maintainVisibleContentPosition JS anchor adjustment (RN getDerivedStateFromProps): native MVCP
+// cannot see prepended items collapsed into the leading SPACER above the window, so JS replicates
+// the shift for exactly those. This is the pure DECISION: track the key at minIndexForVisible; when
+// a prepend moves it down, return the inserted extent to add to scrollOffset (or an autoscroll-to-top
+// when the anchor sits within autoscrollToTopThreshold). The adapter owns the timing (layout effect /
+// post-flush watch) and the imperative scroll — this returns only WHAT to do, framework-agnostic.
+export type IMvcpAction =
+  { kind: 'none' } | { kind: 'autoscroll-top' } | { kind: 'shift'; offset: number };
+
+export interface IMvcpAdjustmentParams {
+  // undefined when maintainVisibleContentPosition is off; the adapter unwraps the prop.
+  minIndexForVisible: number | undefined;
+  autoscrollToTopThreshold: number | undefined;
+  count: number;
+  committedFirst: number;
+  offsets: number[];
+  scrollOffset: number;
+  prevFirstVisibleKey: string | null;
+  keyFor: (index: number) => string;
+}
+
+export interface IMvcpAdjustmentResult {
+  // the new firstVisibleKey the adapter stores back after acting.
+  firstVisibleKey: string | null;
+  action: IMvcpAction;
+}
+
+export function computeMvcpAdjustment(params: IMvcpAdjustmentParams): IMvcpAdjustmentResult {
+  const { minIndexForVisible, count, keyFor } = params;
+  if (minIndexForVisible === undefined || count === FIRST_INDEX) {
+    return { firstVisibleKey: null, action: { kind: 'none' } };
+  }
+  const newFirstVisibleKey = count > minIndexForVisible ? keyFor(minIndexForVisible) : null;
+  const prevKey = params.prevFirstVisibleKey;
+  const settled: IMvcpAdjustmentResult = {
+    firstVisibleKey: newFirstVisibleKey,
+    action: { kind: 'none' },
+  };
+
+  if (prevKey === null || newFirstVisibleKey === null || prevKey === newFirstVisibleKey) {
+    return settled;
+  }
+
+  let anchorIndex = NO_INDEX;
+  for (let index = minIndexForVisible; index < count; index += 1) {
+    if (keyFor(index) === prevKey) {
+      anchorIndex = index;
+      break;
+    }
+  }
+  if (anchorIndex <= minIndexForVisible) return settled;
+
+  // Native MVCP shifts in-window cells itself; the JS shift covers ONLY the inserted items in the
+  // leading SPACER (above the first rendered index). Counting the full inserted extent would
+  // double-correct.
+  const spacerEnd = Math.min(anchorIndex, params.committedFirst);
+  const insertedExtent =
+    spacerEnd > minIndexForVisible
+      ? params.offsets[spacerEnd] - params.offsets[minIndexForVisible]
+      : EMPTY_OFFSET;
+  if (insertedExtent <= EMPTY_OFFSET) return settled;
+
+  const autoThreshold = params.autoscrollToTopThreshold;
+  const anchoredNearTop = autoThreshold !== undefined && params.scrollOffset <= autoThreshold;
+  if (anchoredNearTop) {
+    dlog(
+      `VirtualizedList MVCP autoscroll-to-top (offset=${params.scrollOffset} <= ${autoThreshold})`,
+    );
+    return { firstVisibleKey: newFirstVisibleKey, action: { kind: 'autoscroll-top' } };
+  }
+  dlog(
+    `VirtualizedList MVCP adjust +${insertedExtent}px ` +
+      `(anchor "${prevKey}" moved ${minIndexForVisible}->${anchorIndex})`,
+  );
+  return {
+    firstVisibleKey: newFirstVisibleKey,
+    action: { kind: 'shift', offset: params.scrollOffset + insertedExtent },
+  };
+}
+
+// The default key extractor: the caller's keyExtractor when set, else the index as a string (RN's
+// default). Centralized so every adapter's keyForIndex resolves keys identically.
+export function resolveItemKey<ItemT>(
+  item: ItemT,
+  index: number,
+  keyExtractor: ((item: ItemT, index: number) => string) | undefined,
+): string {
+  return keyExtractor ? keyExtractor(item, index) : String(index);
+}
+
+// Linear item -> index lookup for scrollToItem (RN scans by reference identity). NO_INDEX when the
+// item is not in data.
+export function indexOfItem(
+  data: unknown,
+  getItem: (data: unknown, index: number) => unknown,
+  count: number,
+  item: unknown,
+): number {
+  for (let index = FIRST_INDEX; index < count; index += 1) {
+    if (getItem(data, index) === item) return index;
+  }
+  return NO_INDEX;
+}
+
+// The pixel offset that scrolls the last content to the bottom edge (scrollToEnd). Never negative
+// when the content is shorter than the viewport.
+export function offsetForEnd(total: number, viewportLength: number): number {
+  return Math.max(EMPTY_OFFSET, total - viewportLength);
+}
+
+// A gap index addresses a real separator only inside [0, count-2]; outside it there is no gap and
+// the write is a no-op (RN bails on the same bounds).
+export function isSeparatorGapInRange(gapIndex: number, count: number): boolean {
+  return gapIndex >= FIRST_INDEX && gapIndex <= count - 2;
+}
+
+// onEndReached / onStartReached fire decision + content-length dedup (RN _maybeCallOnEdgeReached).
+// The geometry (withinThreshold) comes from computeEndReached/computeStartReached; this folds in the
+// "edge cell actually rendered" gate, the dedup against the last-fired content length, and the
+// re-arm once scrolled away from the edge. Returns whether to fire plus the next dedup sentinel.
+export function decideEdgeReached(params: {
+  withinThreshold: boolean;
+  edgeCellRendered: boolean;
+  total: number;
+  sentForContentLength: number;
+}): { shouldFire: boolean; nextSentForContentLength: number } {
+  const { withinThreshold, edgeCellRendered, total, sentForContentLength } = params;
+  if (withinThreshold && edgeCellRendered && sentForContentLength !== total) {
+    return { shouldFire: true, nextSentForContentLength: total };
+  }
+  // Re-arm once out of threshold so the next approach can fire again.
+  if (!withinThreshold) {
+    return { shouldFire: false, nextSentForContentLength: NO_CONTENT_LENGTH_SENT };
+  }
+  return { shouldFire: false, nextSentForContentLength: sentForContentLength };
+}
+
+// Section headers stick by default only on iOS (RN); the explicit prop overrides. Returns the
+// header indices to stick, or undefined when sticking is off.
+export function resolveStickySectionHeaders(
+  enabled: boolean | undefined,
+  headerIndices: number[],
+  platformOS: string,
+): number[] | undefined {
+  const stickyEnabled = enabled ?? platformOS === 'ios';
+  return stickyEnabled ? headerIndices : undefined;
+}
+
+// Wrap the user's getItemLayout into an (index) => ICellLayout resolver (dropping the `index` field
+// RN's getItemLayout returns), or undefined when there is no getItemLayout.
+export function wrapFixedLayout(
+  data: unknown,
+  getItemLayout:
+    | ((data: unknown, index: number) => { length: number; offset: number; index: number })
+    | undefined,
+): ((index: number) => ICellLayout) | undefined {
+  if (getItemLayout === undefined) return undefined;
+  return (index: number): ICellLayout => {
+    const layout = getItemLayout(data, index);
+    return { length: layout.length, offset: layout.offset };
+  };
+}
+
+// The average cell length that sizes unmeasured cells and the trailing spacer: the fixed layout's
+// first cell length when getItemLayout is set (guarded against an empty list so it never calls
+// fixedLayout on a non-existent cell), else the running average of the measured cells.
+export function resolveAverageLength(
+  fixedLayout: ((index: number) => ICellLayout) | undefined,
+  count: number,
+  measured: Map<number, number>,
+): number {
+  if (fixedLayout === undefined) return averageMeasuredLength(measured);
+  return count > FIRST_INDEX ? fixedLayout(FIRST_INDEX).length : EMPTY_OFFSET;
 }

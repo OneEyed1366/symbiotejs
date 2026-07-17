@@ -16,9 +16,9 @@ import {
   defineComponent,
   h,
   isVNode,
+  onBeforeUnmount,
   ref,
   shallowRef,
-  watch,
   watchEffect,
   markRaw,
   type Component,
@@ -33,12 +33,15 @@ import {
   type ISymbioteEvent,
 } from '@symbiote-native/engine';
 import {
-  computeStickyInterpolation,
+  createInitialStickyState,
   nextStickyHeaderY,
   readLayoutNumber,
-  stickyDebounceMs,
+  reduceSticky,
   STICKY_HEADER_Z_INDEX,
+  type IStickyAction,
+  type IStickyEffect,
   type IStickyHeaderProps,
+  type IStickyReducerInputs,
 } from '@symbiote-native/components';
 import { Animated } from '../../modules/animated';
 
@@ -88,81 +91,103 @@ export const ScrollViewStickyHeader = defineComponent({
       ? attrs.scrollAnimatedValue
       : markRaw(new AnimatedValue(0));
 
-    const measured = ref(false);
-    const layoutY = ref(0);
-    const layoutHeight = ref(0);
-    // The animated node that drives the transform (RN's animatedTranslateY). When the scroll value
-    // is native (attachStickyScroll), this interpolation runs on the UI thread: the smooth pin.
-    // Engine node → shallowRef (held by identity, the reactivity rule); the un-measured identity
-    // stub until the effect below rebuilds it.
+    // The one folded state cell, mutated in place by reduceSticky. A plain object (NOT a ref /
+    // reactive): the render reads it gated by the reactive `version` bump + `animatedTranslateY`
+    // shallowRef below, so it never needs Vue to proxy it. The DECISIONS — zero-swallow gate,
+    // debounce delay, rebuild ranges — all live in reduceSticky.
+    const state = createInitialStickyState();
+    // A reactive tick bumped when the reducer commits a new translateY, forcing the render to re-read
+    // state.translateY (the debounced committed value).
+    const version = ref(0);
+    // The animated node that drives the transform (RN's animatedTranslateY). Engine node →
+    // shallowRef (held by identity, the reactivity rule); the un-measured identity stub until the
+    // rebuild-interpolation effect below replaces it.
     const animatedTranslateY = shallowRef<AnimatedInterpolation>(
       scrollAnimatedValue.interpolate({ inputRange: [-1, 0], outputRange: [0, 0] }),
     );
-    // The debounced EXPLICIT translateY pushed to the committed transform via
-    // passthroughAnimatedPropExplicitValues, so the Fabric ShadowTree (hit-testing) knows the pinned
-    // position while the native driver animates. null until the listener first fires.
-    const translateY = ref<number | null>(null);
-    let haveReceivedInitialZeroTranslateY = true;
-    let debounceTimer: ReturnType<typeof setTimeout> | undefined;
 
-    watch(translateY, value => {
-      if (value !== 0 && value !== null) haveReceivedInitialZeroTranslateY = false;
+    let debounceTimer: ReturnType<typeof setTimeout> | undefined;
+    // The current interpolation node + its listener id, held so the next rebuild detaches the old
+    // listener (an engine call the reducer does not own) and onBeforeUnmount cleans up.
+    let interpolation: AnimatedInterpolation | undefined;
+    let listenerId: string | undefined;
+
+    const inputs = (): IStickyReducerInputs => ({
+      os: Platform.OS,
+      inverted: typeof attrs.inverted === 'boolean' ? attrs.inverted : undefined,
+      scrollViewHeight:
+        typeof attrs.scrollViewHeight === 'number' ? attrs.scrollViewHeight : undefined,
+      nextHeaderLayoutY:
+        typeof attrs.nextHeaderLayoutY === 'number' ? attrs.nextHeaderLayoutY : undefined,
     });
 
-    // The animated value updates several times per frame during scroll; debounce it and push the
-    // settled value into the committed transform so hit detection stays current (RN: a Fabric-only
-    // issue; symbiote is always Fabric, and worse on Android).
-    const animatedValueListener = ({ value }: { value: number | string }): void => {
-      if (typeof value !== 'number') return;
-      const timeout = stickyDebounceMs(Platform.OS);
-      // A freshly-rebuilt interpolation re-emits 0 to its listeners; swallow that first zero (RN).
-      if (value === 0 && !haveReceivedInitialZeroTranslateY) {
-        haveReceivedInitialZeroTranslateY = true;
-        return;
+    const runEffects = (effects: IStickyEffect[]): void => {
+      for (const effect of effects) {
+        switch (effect.kind) {
+          case 'rebuild-interpolation': {
+            // Detach the old listener, build a fresh interpolation onto the shared scroll value, and
+            // wire the settled-value listener (symbiote is always Fabric; RN attaches it only there).
+            if (interpolation !== undefined && listenerId !== undefined) {
+              interpolation.removeListener(listenerId);
+              listenerId = undefined;
+            }
+            const next = scrollAnimatedValue.interpolate({
+              inputRange: effect.inputRange,
+              outputRange: effect.outputRange,
+            });
+            listenerId = next.addListener(({ value }: { value: number | string }): void => {
+              if (typeof value === 'number') dispatch({ kind: 'animated-tick', value });
+            });
+            interpolation = next;
+            animatedTranslateY.value = next;
+            break;
+          }
+          case 'schedule-debounce':
+            // The animated value updates several times per frame; debounce the settled value into the
+            // committed transform so hit detection stays current (a Fabric issue, worse on Android).
+            if (debounceTimer !== undefined) clearTimeout(debounceTimer);
+            debounceTimer = setTimeout(() => {
+              debounceTimer = undefined;
+              dispatch({ kind: 'debounce-fired', value: effect.value });
+            }, effect.delay);
+            break;
+          case 'apply-passthrough':
+            version.value += 1;
+            break;
+          case 'record-header-y':
+            // Vue records through attrs.onLayout (the wrapper closure), which honors the public
+            // IStickyHeaderProps contract; the reducer emits no index for it.
+            break;
+        }
       }
-      if (debounceTimer !== undefined) clearTimeout(debounceTimer);
-      debounceTimer = setTimeout(() => {
-        translateY.value = value;
-      }, timeout);
     };
 
-    // Rebuild the interpolation whenever the layout / collision inputs change (the Vue twin of RN's
-    // effect, deps [measured, layoutY, layoutHeight, scrollViewHeight, nextHeaderLayoutY, inverted]).
-    // symbiote is always Fabric: listen to the settled value to keep the ShadowTree transform current
-    // for hit-testing (RN attaches this listener only under Fabric). scrollAnimatedValue is the stable
-    // const (RN lists it in deps; it never changes for one ScrollView, so the const is faithful).
-    watchEffect(onCleanup => {
-      const inverted = typeof attrs.inverted === 'boolean' ? attrs.inverted : undefined;
-      const scrollViewHeight =
-        typeof attrs.scrollViewHeight === 'number' ? attrs.scrollViewHeight : undefined;
-      const nextHeaderLayoutY =
-        typeof attrs.nextHeaderLayoutY === 'number' ? attrs.nextHeaderLayoutY : undefined;
-      const { inputRange, outputRange } = computeStickyInterpolation({
-        measured: measured.value,
-        inverted,
-        scrollViewHeight,
-        layoutY: layoutY.value,
-        layoutHeight: layoutHeight.value,
-        nextHeaderLayoutY,
-      });
-      const interpolation = scrollAnimatedValue.interpolate({ inputRange, outputRange });
-      const listenerId = interpolation.addListener(animatedValueListener);
-      animatedTranslateY.value = interpolation;
-      onCleanup(() => {
-        interpolation.removeListener(listenerId);
-        if (debounceTimer !== undefined) clearTimeout(debounceTimer);
-      });
+    const dispatch = (action: IStickyAction): void => {
+      runEffects(reduceSticky(state, action, inputs()).effects);
+    };
+
+    // Rebuild whenever the collision/viewport inputs change (the Vue twin of React's inputs-changed
+    // effect, tracking [inverted, scrollViewHeight, nextHeaderLayoutY] via inputs()); also the initial
+    // build on mount. scrollAnimatedValue is the stable const (never changes for one ScrollView).
+    watchEffect(() => {
+      dispatch({ kind: 'inputs-changed' });
     });
 
-    // Stable function ref (defined once, not re-created per render): record own y/height, mark
-    // measured, fire the wrapper's recorder (onHeaderLayoutY, in attrs.onLayout), then the child's
-    // own onLayout. Matches RN ScrollViewStickyHeader.js._onLayout order.
+    onBeforeUnmount(() => {
+      if (interpolation !== undefined && listenerId !== undefined) {
+        interpolation.removeListener(listenerId);
+      }
+      if (debounceTimer !== undefined) clearTimeout(debounceTimer);
+    });
+
+    // Stable function ref (defined once, not re-created per render): dispatch the layout (record
+    // own y/height, mark measured, rebuild), fire the wrapper's recorder (onHeaderLayoutY, in
+    // attrs.onLayout), then the child's own onLayout. Matches RN ScrollViewStickyHeader.js._onLayout.
     const onLayout = (event: ISymbioteEvent): void => {
       const y = readLayoutNumber(event, 'y');
       const height = readLayoutNumber(event, 'height');
-      if (y !== undefined) layoutY.value = y;
-      if (height !== undefined) layoutHeight.value = height;
-      measured.value = true;
+      // Keep the previous value when a field is absent (RN sets state only on a defined read).
+      dispatch({ kind: 'layout', y: y ?? state.layoutY, height: height ?? state.layoutHeight });
       const recorder = attrs.onLayout;
       if (isHandler(recorder)) recorder(event);
       const children = slots.default !== undefined ? slots.default() : [];
@@ -172,11 +197,13 @@ export const ScrollViewStickyHeader = defineComponent({
     };
 
     return () => {
+      // Read the version bump so a committed translateY re-runs render.
+      void version.value;
       // The EXPLICIT debounced translateY overrides the committed transform for hit-testing, while
       // `animatedTranslateY` does the smooth (native-driven) pin. See RN ScrollViewStickyHeader.js.
       const passthroughAnimatedPropExplicitValues =
-        translateY.value !== null
-          ? { style: { transform: [{ translateY: translateY.value }] } }
+        state.translateY !== null
+          ? { style: { transform: [{ translateY: state.translateY }] } }
           : null;
 
       // collapsable:false keeps the wrapper a real Yoga node; zIndex makes the pinned header paint

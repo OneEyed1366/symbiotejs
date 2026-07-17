@@ -6,11 +6,19 @@
 // device-verify-pending: prop names mirror RN's AndroidProgressBar, proven on a real
 // host by the absence of the "setStyle() not called" red box.
 
-import { createActivityIndicator } from './shared';
+import { descriptorToReact } from '../../descriptor-to-react';
+import { useActivityIndicatorLogic } from './shared';
+import type { IActivityIndicatorPlatform, IActivityIndicatorProps } from './shared';
 export type { IActivityIndicatorProps } from './shared';
 
-export const ActivityIndicator = createActivityIndicator({
+const PLATFORM: IActivityIndicatorPlatform = {
   // RN: `color = Platform.OS === 'ios' ? GRAY : null`; Android lets the theme color it.
   defaultColor: null,
   nativeExtras: { styleAttr: 'Normal', indeterminate: true },
-});
+};
+
+// A top-level named function, not a factory-returned closure: React Compiler's
+// component detection only walks top-level declarations (see shared.ts).
+export function ActivityIndicator(rawProps: IActivityIndicatorProps) {
+  return descriptorToReact(useActivityIndicatorLogic(rawProps, PLATFORM));
+}

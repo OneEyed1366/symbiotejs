@@ -51,31 +51,26 @@ import {
   FIRST_INDEX,
   INVERTED_X_STYLE,
   INVERTED_Y_STYLE,
-  NO_CONTENT_LENGTH_SENT,
-  averageMeasuredLength,
   buildListPlan,
-  buildOffsets,
   buildViewabilityPairs,
-  computeEndReached,
-  computeStartReached,
-  computeViewableSet,
-  computeWindow,
-  diffViewable,
-  highestMeasuredIndex,
-  maxMinimumViewTime,
-  offsetForIndex,
+  createInitialListState,
+  isSeparatorGapInRange,
+  listEffectSignature,
   readLayoutLength,
   readScrollOffset,
+  reduceList,
   resolveAccessibilityProps,
-  throttleWindow,
+  resolveItemKey,
   type IAccessibilityProps,
   type IAccessibilityStateValue,
   type IAriaProps,
-  type ICellLayout,
+  type IListAction,
+  type IListEffect,
+  type IListReducerInputs,
+  type IListState,
   type ISeparatorProps,
   type ISeparators,
   type IScrollViewHandle,
-  type IViewToken,
   type IViewabilityConfig,
   type IViewabilityConfigCallbackPair,
   type IViewableItemsChangedInfo,
@@ -192,19 +187,6 @@ export type IVirtualizedListInputs<ItemT> = Omit<
   | 'onMagicTap'
   | 'onAccessibilityEscape'
 >;
-
-// The windowing snapshot recomputed once per CD in ngDoCheck. Plain object (not a signal/computed):
-// the OnPush + markForCheck cycle re-runs ngDoCheck whenever scroll / layout / measure change.
-interface IMetricsCore {
-  count: number;
-  offsets: number[];
-  lengths: number[];
-  total: number;
-  first: number;
-  last: number;
-  target: { first: number; last: number };
-  averageLength: number;
-}
 
 // One in-window cell, assembled in ngDoCheck and stamped by the template's @for. The
 // context object is fresh each pass; VListOutletDirective folds it onto the live embedded view, so
@@ -460,35 +442,19 @@ export class VirtualizedList<ItemT = unknown>
   // as contentOffset). A fresh object identity each push so the commit re-applies a repeated value.
   commandedOffset: { x: number; y: number } | undefined = undefined;
 
-  // --- reactive scalars (mutated by the native callbacks; markForCheck re-runs the CD) ---
-  private scrollOffset = EMPTY_OFFSET;
-  private viewportLength = EMPTY_OFFSET;
-  private measureVersion = EMPTY_OFFSET;
+  // The one folded state cell (the Angular twin of React's stateRef): scroll offset, viewport,
+  // measured lengths, committed window, edge/viewability dedup, MVCP anchor — all in IListState,
+  // driven by the shared reduceList. `renderVersion` bumps whenever a transition changes render
+  // state, so ngDoCheck's recompute-dedup can detect it (listState is a plain object, not tracked).
+  private readonly listState: IListState<ItemT> = createInitialListState<ItemT>();
+  private renderVersion = EMPTY_OFFSET;
 
-  // --- non-render state (the Angular twin of refs that never trigger a render) ---
-  private metricsCore: IMetricsCore = {
-    count: EMPTY_OFFSET,
-    offsets: [],
-    lengths: [],
-    total: EMPTY_OFFSET,
-    first: FIRST_INDEX,
-    last: -1,
-    target: { first: FIRST_INDEX, last: -1 },
-    averageLength: EMPTY_OFFSET,
-  };
-  private readonly measured = new Map<number, number>();
   private readonly cellMeasures = new Map<number, (event: ISymbioteEvent) => void>();
   private readonly separatorOverrides = new Map<number, Partial<ISeparatorProps<unknown>>>();
-  // The previously committed window, grown by at most maxToRenderPerBatch per tick (no snap).
-  private committedWindow: { first: number; last: number } = { first: FIRST_INDEX, last: -1 };
-  private sentEndForContentLength = NO_CONTENT_LENGTH_SENT;
-  private sentStartForContentLength = NO_CONTENT_LENGTH_SENT;
-  private lastViewable = new Map<string, IViewToken<ItemT>>();
+  // The adapter-owned debounce (minimumViewTime) and incremental-fill timers; the reducer only
+  // hands back a delay.
   private viewableTimer: ReturnType<typeof setTimeout> | null = null;
   private batchTimer: ReturnType<typeof setTimeout> | null = null;
-  private hasInteracted = false;
-  private appliedInitialScroll = false;
-  private firstVisibleKey: string | null = null;
   // Dedupes the after-commit effects: they run only when the windowing signature changed.
   private lastEffectSignature = '';
   // Dedupes ngDoCheck's own recompute. WITHOUT this, recomputeView() unconditionally rebuilds
@@ -586,22 +552,18 @@ export class VirtualizedList<ItemT = unknown>
     const offset = readScrollOffset(event, this.isHorizontal);
     if (offset === undefined) return;
     dlog(`Angular VirtualizedList onScroll offset=${offset}`);
-    // First scroll is the interaction that ungates waitForInteraction configs.
-    this.hasInteracted = true;
-    this.scrollOffset = offset;
     // A real native scroll supersedes any pending commanded offset.
     this.commandedOffset = undefined;
+    this.dispatch({ kind: 'scroll', offset });
     // Compose, don't clobber: internal windowing ran first, now the user's onScroll.
     this.onScroll?.(event);
-    this.cdr.markForCheck();
   };
 
   onLayoutTick = (event: ISymbioteEvent): void => {
     const length = readLayoutLength(event, this.isHorizontal);
     if (length === undefined) return;
     dlog(`Angular VirtualizedList onLayout viewport=${length}`);
-    this.viewportLength = length;
-    this.cdr.markForCheck();
+    this.dispatch({ kind: 'layout', length });
   };
 
   // RefreshControl's refresh and ScrollView's accessibility events are real @Output()s now, bound
@@ -629,14 +591,110 @@ export class VirtualizedList<ItemT = unknown>
 
   private keyFor = (index: number): string => {
     const item = this.getItem(this.data, index);
-    return this.keyExtractor ? this.keyExtractor(item, index) : String(index);
+    return resolveItemKey(item, index, this.keyExtractor);
   };
+
+  // The reducer inputs, folded off the @Input()s each call. The edge/viewability listeners map to
+  // `.observed` (Angular's "is anyone bound to this @Output()"), so the reducer emits only when the
+  // consumer listens — the same on-demand gating the prop-callback era had.
+  private buildInputs(): IListReducerInputs<ItemT> {
+    return {
+      data: this.data,
+      getItem: this.getItem,
+      getItemCount: this.getItemCount,
+      keyExtractor: this.keyExtractor,
+      getItemLayout: this.getItemLayout,
+      horizontal: this.isHorizontal,
+      windowSize: this.windowSizeValue,
+      initialNumToRender: this.initialNumToRenderValue,
+      maxToRenderPerBatch: this.maxToRenderPerBatchValue,
+      updateCellsBatchingPeriod: this.updateCellsBatchingPeriodValue,
+      onEndReachedThreshold: this.onEndReachedThresholdValue,
+      onStartReachedThreshold: this.onStartReachedThresholdValue,
+      onEndReachedActive: this.endReached.observed,
+      onStartReachedActive: this.startReached.observed,
+      viewabilityPairs: buildViewabilityPairs(
+        this.viewableItemsChanged.observed
+          ? (info: IViewableItemsChangedInfo<ItemT>): void => this.viewableItemsChanged.emit(info)
+          : undefined,
+        this.viewabilityConfig,
+        this.viewabilityConfigCallbackPairs,
+      ),
+      maintainVisibleContentPosition: this.maintainVisibleContentPosition,
+      initialScrollIndex: this.initialScrollIndex,
+    };
+  }
+
+  // Map a native event / imperative call to an action, run the returned effects, and mark the view
+  // dirty when render state changed (the native callbacks fire outside Angular's own bindings).
+  private dispatch(action: IListAction<ItemT>): void {
+    const inputs = this.buildInputs();
+    const result = reduceList(this.listState, action, inputs);
+    this.runEffects(result.effects, inputs);
+    if (result.changed) {
+      this.renderVersion += 1;
+      this.cdr.markForCheck();
+    }
+  }
+
+  private runEffects(effects: IListEffect<ItemT>[], inputs: IListReducerInputs<ItemT>): void {
+    for (const effect of effects) {
+      switch (effect.kind) {
+        case 'scroll-to':
+          this.scrollToPixel(effect.offset, effect.animated);
+          break;
+        case 'fire-end-reached':
+          this.endReached.emit({ distanceFromEnd: effect.distanceFromEnd });
+          break;
+        case 'fire-start-reached':
+          this.startReached.emit({ distanceFromStart: effect.distanceFromStart });
+          break;
+        case 'fire-scroll-to-index-failed':
+          this.scrollToIndexFailed.emit({
+            index: effect.index,
+            highestMeasuredFrameIndex: effect.highestMeasuredFrameIndex,
+            averageItemLength: effect.averageItemLength,
+          });
+          break;
+        case 'schedule-refill': {
+          if (this.batchTimer !== null) clearTimeout(this.batchTimer);
+          this.batchTimer = setTimeout(() => {
+            this.batchTimer = null;
+            this.dispatch({ kind: 'batch-tick' });
+          }, effect.delay);
+          break;
+        }
+        case 'fire-viewable': {
+          const pairs = inputs.viewabilityPairs;
+          const info = effect.info;
+          const map = effect.map;
+          const fire = (): void => {
+            for (const pair of pairs) pair.onViewableItemsChanged(info);
+            this.dispatch({ kind: 'viewable-fired', map });
+          };
+          if (this.viewableTimer !== null) {
+            clearTimeout(this.viewableTimer);
+            this.viewableTimer = null;
+          }
+          if (effect.delay > EMPTY_OFFSET) {
+            this.viewableTimer = setTimeout(() => {
+              this.viewableTimer = null;
+              fire();
+            }, effect.delay);
+          } else {
+            fire();
+          }
+          break;
+        }
+      }
+    }
+  }
 
   // Once-per-CD recompute, BEFORE the template bindings are read (so the freshly computed
   // template-bound fields render this pass — computing them in ngAfterContentChecked instead would
-  // trip ExpressionChangedAfterItHasBeenChecked). recomputeMetrics owns the controlled committedWindow
-  // throttle (the side effect React runs during render); ngDoCheck is its single evaluation point, so
-  // the window grows exactly one step per CD. The projected templates (ContentChild) are resolved
+  // trip ExpressionChangedAfterItHasBeenChecked). The dedup guard runs refresh-metrics (which owns
+  // the controlled committedWindow throttle) only when something relevant changed, so the window
+  // grows exactly one step per meaningful CD. The projected templates (ContentChild) are resolved
   // from the second CD on; the first paint (count/viewport still 0) corrects on the layout-driven CD.
   ngDoCheck(): void {
     const recomputeInputs: unknown[] = [
@@ -653,9 +711,8 @@ export class VirtualizedList<ItemT = unknown>
       this.maintainVisibleContentPosition,
       this.style,
       this.contentContainerStyle,
-      this.scrollOffset,
-      this.viewportLength,
-      this.measureVersion,
+      // Folds scroll / layout / measure / batch-tick: dispatch bumps renderVersion on any change.
+      this.renderVersion,
       this.headerDir !== undefined,
       this.footerDir !== undefined,
       this.emptyDir !== undefined,
@@ -670,21 +727,18 @@ export class VirtualizedList<ItemT = unknown>
     ) {
       return;
     }
-    this.recomputeMetrics();
+    // The single derive-per-CD: recompute the window off the current state before the view reads it.
+    reduceList(this.listState, { kind: 'refresh-metrics' }, this.buildInputs());
     this.recomputeView();
   }
 
   ngAfterViewChecked(): void {
-    const m = this.metricsCore;
-    const signature = `${this.scrollOffset}|${this.viewportLength}|${m.first}|${m.last}|${m.count}|${m.total}|${this.measureVersion}`;
+    const signature = listEffectSignature(this.listState);
     if (signature === this.lastEffectSignature) return;
     this.lastEffectSignature = signature;
-    this.effectBatchFill();
-    this.effectEndReached();
-    this.effectStartReached();
-    this.effectViewability();
-    this.effectInitialScroll();
-    this.effectMaintainVisibleContentPosition();
+    const inputs = this.buildInputs();
+    const result = reduceList(this.listState, { kind: 'commit' }, inputs);
+    this.runEffects(result.effects, inputs);
   }
 
   ngOnDestroy(): void {
@@ -692,54 +746,8 @@ export class VirtualizedList<ItemT = unknown>
     if (this.batchTimer !== null) clearTimeout(this.batchTimer);
   }
 
-  private recomputeMetrics(): void {
-    const count = this.getItemCount(this.data);
-    const gil = this.getItemLayout;
-    const data = this.data;
-    const fixedLayout =
-      gil !== undefined
-        ? (index: number): ICellLayout => {
-            const layout = gil(data, index);
-            return { length: layout.length, offset: layout.offset };
-          }
-        : undefined;
-    const averageLength =
-      fixedLayout !== undefined
-        ? count > FIRST_INDEX
-          ? fixedLayout(FIRST_INDEX).length
-          : EMPTY_OFFSET
-        : averageMeasuredLength(this.measured);
-    const { offsets, lengths, total } = buildOffsets(
-      count,
-      this.measured,
-      fixedLayout,
-      averageLength,
-    );
-    const target = computeWindow(
-      count,
-      offsets,
-      lengths,
-      this.scrollOffset,
-      this.viewportLength,
-      this.windowSizeValue,
-      this.initialNumToRenderValue,
-    );
-    const throttled = throttleWindow(target, this.committedWindow, this.maxToRenderPerBatchValue);
-    this.committedWindow = throttled;
-    this.metricsCore = {
-      count,
-      offsets,
-      lengths,
-      total,
-      first: throttled.first,
-      last: throttled.last,
-      target,
-      averageLength,
-    };
-  }
-
   private recomputeView(): void {
-    const m = this.metricsCore;
+    const m = this.listState.metrics;
     this.itemCount = m.count;
     const hasHeader = this.headerDir !== undefined;
     const hasSeparators = this.separatorDir !== undefined;
@@ -774,7 +782,7 @@ export class VirtualizedList<ItemT = unknown>
       this.leadingSpacerStyle = null;
       this.trailingSpacerStyle = null;
       this.renderedStickyIndices = undefined;
-      dlog(`Angular VirtualizedList empty (viewport=${this.viewportLength})`);
+      dlog(`Angular VirtualizedList empty (viewport=${this.listState.viewportLength})`);
       return;
     }
 
@@ -823,7 +831,7 @@ export class VirtualizedList<ItemT = unknown>
 
     dlog(
       `Angular VirtualizedList window [${m.first}, ${m.last}] of ${m.count} ` +
-        `(offset=${this.scrollOffset}, viewport=${this.viewportLength}, rendered=${cells.length})`,
+        `(offset=${this.listState.scrollOffset}, viewport=${this.listState.viewportLength}, rendered=${cells.length})`,
     );
   }
 
@@ -855,14 +863,12 @@ export class VirtualizedList<ItemT = unknown>
     const existing = this.cellMeasures.get(index);
     if (existing !== undefined) return existing;
     const measure = (event: ISymbioteEvent): void => {
-      if (this.getItemLayout !== undefined) return;
       const length = readLayoutLength(event, this.isHorizontal);
       if (length === undefined) return;
-      if (this.measured.get(index) === length) return;
-      this.measured.set(index, length);
       dlog(`Angular VirtualizedList cell ${index} measured length=${length}`);
-      this.measureVersion += 1;
-      this.cdr.markForCheck();
+      // The reducer guards a fixed getItemLayout and a repeated length; a no-op leaves state and the
+      // view untouched (dispatch marks for check only when something changed).
+      this.dispatch({ kind: 'measure', index, length });
     };
     this.cellMeasures.set(index, measure);
     return measure;
@@ -879,8 +885,8 @@ export class VirtualizedList<ItemT = unknown>
   }
 
   private mergeSeparator(gapIndex: number, patch: Partial<ISeparatorProps<unknown>>): void {
-    const count = this.metricsCore.count;
-    if (gapIndex < FIRST_INDEX || gapIndex > count - 2) return;
+    const count = this.listState.metrics.count;
+    if (!isSeparatorGapInRange(gapIndex, count)) return;
     this.separatorOverrides.set(gapIndex, { ...this.separatorOverrides.get(gapIndex), ...patch });
     this.cdr.markForCheck();
   }
@@ -904,9 +910,15 @@ export class VirtualizedList<ItemT = unknown>
   }
 
   // ---- imperative handle (the shared IVirtualizedListHandle surface) ----
+  // Each scroll resolves to an offset (or a scroll-to-index failure) inside the reducer, then rides
+  // the scroll-to effect through scrollToPixel.
 
   scrollToOffset(params: { offset: number; animated?: boolean }): void {
-    this.scrollToPixel(params.offset, params.animated ?? true);
+    this.dispatch({
+      kind: 'scroll-to-offset',
+      offset: params.offset,
+      animated: params.animated ?? true,
+    });
   }
 
   scrollToIndex(params: {
@@ -915,50 +927,26 @@ export class VirtualizedList<ItemT = unknown>
     viewOffset?: number;
     viewPosition?: number;
   }): void {
-    const m = this.metricsCore;
-    // No getItemLayout AND the target is past the last measured cell: report the failure instead of
-    // scrolling to a fabricated estimate (RN VirtualizedList.js).
-    if (this.getItemLayout === undefined && params.index > highestMeasuredIndex(this.measured)) {
-      dlog(
-        `Angular VirtualizedList onScrollToIndexFailed index=${params.index} ` +
-          `highestMeasured=${highestMeasuredIndex(this.measured)} (no getItemLayout)`,
-      );
-      this.scrollToIndexFailed.emit({
-        index: params.index,
-        highestMeasuredFrameIndex: highestMeasuredIndex(this.measured),
-        averageItemLength: m.averageLength,
-      });
-      return;
-    }
-    this.scrollToPixel(
-      this.offsetForIndexLocal(
-        params.index,
-        params.viewPosition ?? FIRST_INDEX,
-        params.viewOffset ?? EMPTY_OFFSET,
-      ),
-      params.animated ?? true,
-    );
+    this.dispatch({
+      kind: 'scroll-to-index',
+      index: params.index,
+      animated: params.animated ?? true,
+      viewPosition: params.viewPosition ?? FIRST_INDEX,
+      viewOffset: params.viewOffset ?? EMPTY_OFFSET,
+    });
   }
 
   scrollToItem(params: { item: unknown; animated?: boolean; viewPosition?: number }): void {
-    const count = this.metricsCore.count;
-    for (let index = FIRST_INDEX; index < count; index += 1) {
-      if (this.getItem(this.data, index) === params.item) {
-        this.scrollToPixel(
-          this.offsetForIndexLocal(index, params.viewPosition ?? FIRST_INDEX, EMPTY_OFFSET),
-          params.animated ?? true,
-        );
-        return;
-      }
-    }
-    dlog('Angular VirtualizedList scrollToItem: item not found');
+    this.dispatch({
+      kind: 'scroll-to-item',
+      item: params.item,
+      animated: params.animated ?? true,
+      viewPosition: params.viewPosition ?? FIRST_INDEX,
+    });
   }
 
   scrollToEnd(params?: { animated?: boolean }): void {
-    this.scrollToPixel(
-      Math.max(EMPTY_OFFSET, this.metricsCore.total - this.viewportLength),
-      params?.animated ?? true,
-    );
+    this.dispatch({ kind: 'scroll-to-end', animated: params?.animated ?? true });
   }
 
   flashScrollIndicators(): void {
@@ -982,7 +970,7 @@ export class VirtualizedList<ItemT = unknown>
   }
 
   recordInteraction(): void {
-    this.hasInteracted = true;
+    this.dispatch({ kind: 'record-interaction' });
   }
 
   private scrollToPixel(offset: number, animated: boolean): void {
@@ -1000,204 +988,5 @@ export class VirtualizedList<ItemT = unknown>
     dlog(`Angular VirtualizedList scrollTo offset=${clamped} pending-ref`);
     this.commandedOffset = target;
     this.cdr.markForCheck();
-  }
-
-  private offsetForIndexLocal(index: number, viewPosition: number, viewOffset: number): number {
-    const m = this.metricsCore;
-    return offsetForIndex(
-      index,
-      viewPosition,
-      viewOffset,
-      m.count,
-      m.offsets,
-      m.lengths,
-      this.viewportLength,
-    );
-  }
-
-  // ---- after-commit effects (run in ngAfterViewChecked, the post-render seam) ----
-
-  // Batch fill: when the throttled window has not reached the target, schedule a re-render so the
-  // window keeps filling toward target over successive ticks (RN's incremental fill).
-  private effectBatchFill(): void {
-    const m = this.metricsCore;
-    if (this.batchTimer !== null) {
-      clearTimeout(this.batchTimer);
-      this.batchTimer = null;
-    }
-    if (m.first <= m.target.first && m.last >= m.target.last) return;
-    this.batchTimer = setTimeout(() => {
-      this.batchTimer = null;
-      this.measureVersion += 1;
-      this.cdr.markForCheck();
-    }, this.updateCellsBatchingPeriodValue);
-  }
-
-  // onEndReached: fire only when the actual last cell is rendered AND within threshold; dedup by
-  // content length; re-arm on scroll away from the end (RN _maybeCallOnEdgeReached).
-  private effectEndReached(): void {
-    if (!this.endReached.observed || this.viewportLength <= EMPTY_OFFSET) return;
-    const m = this.metricsCore;
-    const { distanceFromEnd, withinThreshold } = computeEndReached(
-      m.total,
-      this.scrollOffset,
-      this.viewportLength,
-      this.onEndReachedThresholdValue,
-    );
-    const lastCellRendered = m.last === m.count - 1;
-    if (withinThreshold && lastCellRendered && this.sentEndForContentLength !== m.total) {
-      this.sentEndForContentLength = m.total;
-      dlog(
-        `Angular VirtualizedList endReached distanceFromEnd=${distanceFromEnd} ` +
-          `(last=${m.last} of ${m.count}, contentLength=${m.total})`,
-      );
-      this.endReached.emit({ distanceFromEnd });
-    }
-    if (!withinThreshold) this.sentEndForContentLength = NO_CONTENT_LENGTH_SENT;
-  }
-
-  // startReached: the top-edge twin of endReached.
-  private effectStartReached(): void {
-    if (!this.startReached.observed || this.viewportLength <= EMPTY_OFFSET) return;
-    const m = this.metricsCore;
-    const { distanceFromStart, withinThreshold } = computeStartReached(
-      this.scrollOffset,
-      this.viewportLength,
-      this.onStartReachedThresholdValue,
-    );
-    const firstCellRendered = m.first === FIRST_INDEX;
-    if (withinThreshold && firstCellRendered && this.sentStartForContentLength !== m.total) {
-      this.sentStartForContentLength = m.total;
-      dlog(
-        `Angular VirtualizedList startReached distanceFromStart=${distanceFromStart} ` +
-          `(first=${m.first}, contentLength=${m.total})`,
-      );
-      this.startReached.emit({ distanceFromStart });
-    }
-    if (!withinThreshold) this.sentStartForContentLength = NO_CONTENT_LENGTH_SENT;
-  }
-
-  // Viewability: recompute which rendered cells clear the threshold and, if the viewable set
-  // changed, fire viewableItemsChanged + every config/callback pair, honoring minimumViewTime.
-  private effectViewability(): void {
-    const m = this.metricsCore;
-    const pairs = buildViewabilityPairs(
-      this.viewableItemsChanged.observed
-        ? (info: IViewableItemsChangedInfo<ItemT>): void => this.viewableItemsChanged.emit(info)
-        : undefined,
-      this.viewabilityConfig,
-      this.viewabilityConfigCallbackPairs,
-    );
-    if (pairs.length === EMPTY_OFFSET || this.viewportLength <= EMPTY_OFFSET) return;
-    if (m.count === FIRST_INDEX) return;
-
-    const { tokens, map } = computeViewableSet({
-      first: m.first,
-      last: m.last,
-      count: m.count,
-      offsets: m.offsets,
-      lengths: m.lengths,
-      scrollOffset: this.scrollOffset,
-      viewportLength: this.viewportLength,
-      data: this.data,
-      getItem: this.getItem,
-      keyExtractor: this.keyExtractor,
-      pairs,
-      hasInteracted: this.hasInteracted,
-    });
-    const diff = diffViewable(this.lastViewable, map, tokens);
-    if (!diff.hasChanged) return;
-
-    const commitAndFire = (): void => {
-      this.lastViewable = map;
-      dlog(
-        `Angular VirtualizedList viewable=${tokens.length} changed=${diff.changed.length} ` +
-          `(window [${m.first}, ${m.last}])`,
-      );
-      const info: IViewableItemsChangedInfo<ItemT> = {
-        viewableItems: tokens,
-        changed: diff.changed,
-      };
-      for (const pair of pairs) pair.onViewableItemsChanged(info);
-    };
-
-    const minimumViewTime = maxMinimumViewTime(pairs);
-    if (this.viewableTimer !== null) {
-      clearTimeout(this.viewableTimer);
-      this.viewableTimer = null;
-    }
-    if (minimumViewTime > EMPTY_OFFSET) {
-      dlog(
-        `Angular VirtualizedList viewability debounce ${minimumViewTime}ms (window [${m.first}, ${m.last}])`,
-      );
-      this.viewableTimer = setTimeout(() => {
-        this.viewableTimer = null;
-        commitAndFire();
-      }, minimumViewTime);
-      return;
-    }
-    commitAndFire();
-  }
-
-  // initialScrollIndex: once the first viewport is known, jump to that index a single time.
-  private effectInitialScroll(): void {
-    if (this.initialScrollIndex === undefined || this.appliedInitialScroll) return;
-    if (this.viewportLength <= EMPTY_OFFSET || this.metricsCore.count === FIRST_INDEX) return;
-    this.appliedInitialScroll = true;
-    // The initial jump is instant (RN does not animate initialScrollIndex).
-    this.scrollToPixel(
-      this.offsetForIndexLocal(this.initialScrollIndex, FIRST_INDEX, EMPTY_OFFSET),
-      false,
-    );
-  }
-
-  // maintainVisibleContentPosition JS anchor adjustment: track the key of the item at
-  // minIndexForVisible; when a prepend moves it down, add the inserted extent in the leading SPACER
-  // (the off-window items native MVCP cannot see) to scrollOffset so the anchored item does not jump
-  // (RN getDerivedStateFromProps).
-  private effectMaintainVisibleContentPosition(): void {
-    const m = this.metricsCore;
-    if (this.maintainVisibleContentPosition === undefined || m.count === FIRST_INDEX) {
-      this.firstVisibleKey = null;
-      return;
-    }
-    const minIndexForVisible = this.maintainVisibleContentPosition.minIndexForVisible;
-    const newFirstVisibleKey =
-      m.count > minIndexForVisible ? this.keyFor(minIndexForVisible) : null;
-    const prevKey = this.firstVisibleKey;
-
-    if (prevKey !== null && newFirstVisibleKey !== null && prevKey !== newFirstVisibleKey) {
-      let anchorIndex = -1;
-      for (let index = minIndexForVisible; index < m.count; index += 1) {
-        if (this.keyFor(index) === prevKey) {
-          anchorIndex = index;
-          break;
-        }
-      }
-      if (anchorIndex > minIndexForVisible) {
-        const spacerEnd = Math.min(anchorIndex, this.committedWindow.first);
-        const insertedExtent =
-          spacerEnd > minIndexForVisible
-            ? m.offsets[spacerEnd] - m.offsets[minIndexForVisible]
-            : EMPTY_OFFSET;
-        if (insertedExtent > EMPTY_OFFSET) {
-          const autoThreshold = this.maintainVisibleContentPosition.autoscrollToTopThreshold;
-          const anchoredNearTop = autoThreshold !== undefined && this.scrollOffset <= autoThreshold;
-          if (anchoredNearTop) {
-            dlog(
-              `Angular VirtualizedList MVCP autoscroll-to-top (offset=${this.scrollOffset} <= ${autoThreshold})`,
-            );
-            this.scrollToPixel(EMPTY_OFFSET, true);
-          } else {
-            dlog(
-              `Angular VirtualizedList MVCP adjust +${insertedExtent}px ` +
-                `(anchor "${prevKey}" moved ${minIndexForVisible}->${anchorIndex})`,
-            );
-            this.scrollToPixel(this.scrollOffset + insertedExtent, false);
-          }
-        }
-      }
-    }
-    this.firstVisibleKey = newFirstVisibleKey;
   }
 }

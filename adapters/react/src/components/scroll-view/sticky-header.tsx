@@ -16,6 +16,7 @@ import {
   isValidElement,
   useCallback,
   useEffect,
+  useReducer,
   useRef,
   useState,
   type ComponentType,
@@ -30,12 +31,16 @@ import {
   type ISymbioteEvent,
 } from '@symbiote-native/engine';
 import {
-  computeStickyInterpolation,
+  createInitialStickyState,
   nextStickyHeaderY,
   readLayoutNumber,
-  stickyDebounceMs,
+  reduceSticky,
   STICKY_HEADER_Z_INDEX,
+  type IStickyAction,
+  type IStickyEffect,
   type IStickyHeaderProps,
+  type IStickyHeaderState,
+  type IStickyReducerInputs,
 } from '@symbiote-native/components';
 import { Animated } from '../../modules/animated';
 
@@ -63,79 +68,122 @@ function firstChild(children: ReactNode): ReactElement | undefined {
 // One sticky header. Measures its own y/height via onLayout, interpolates the shared scroll
 // offset into a translateY that keeps it pinned to the top (or bottom, inverted) until the next
 // header collides with it, and drives that translate through the native driver when available so
-// the pin tracks scroll on the UI thread (no JS jitter). Ported from
-// ScrollViewStickyHeader.js, including the Fabric ShadowTree debounce path.
+// the pin tracks scroll on the UI thread (no JS jitter). The DECISIONS — the zero-swallow gate, the
+// debounce delay, the rebuild-on-input-change ranges — live in `reduceSticky`
+// (@symbiote-native/components); this component supplies only the React lifecycle: the ONE folded
+// state cell, the interpolation-node + listener wiring, the debounce setTimeout, and the re-render.
 export const ScrollViewStickyHeader: IStickyHeaderComponentType = props => {
   const { inverted, scrollViewHeight, scrollAnimatedValue, nextHeaderLayoutY, children } = props;
-  const [measured, setMeasured] = useState(false);
-  const [layoutY, setLayoutY] = useState(0);
-  const [layoutHeight, setLayoutHeight] = useState(0);
-  // The animated node that drives the transform (RN's animatedTranslateY). When the scroll value
-  // is native (attachNativeEvent), this interpolation runs on the UI thread: the smooth pin.
+
+  // The one folded state cell (RN's scattered useState/useRef collapsed into IStickyHeaderState),
+  // mutated in place by reduceSticky. Lazily created once.
+  const stateRef = useRef<IStickyHeaderState | null>(null);
+  const state = (stateRef.current ??= createInitialStickyState());
+  const [, forceRender] = useReducer((tick: number): number => tick + 1, 0);
+
+  // The animated node that drives the transform (RN's animatedTranslateY), rebuilt by the
+  // rebuild-interpolation effect. When the scroll value is native, this interpolation runs on the
+  // UI thread: the smooth pin.
   const [animatedTranslateY, setAnimatedTranslateY] = useState<AnimatedInterpolation>(() =>
     scrollAnimatedValue.interpolate({ inputRange: [-1, 0], outputRange: [0, 0] }),
   );
-  // The debounced EXPLICIT translateY pushed to the committed transform via
-  // passthroughAnimatedPropExplicitValues, so the Fabric ShadowTree (hit-testing) knows the pinned
-  // position while the native driver animates. null until the listener first fires.
-  const [translateY, setTranslateY] = useState<number | null>(null);
-  const haveReceivedInitialZeroTranslateY = useRef(true);
+
   const debounceTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // The current interpolation node + its settled-value listener id, held so the next rebuild can
+  // detach the old listener (engine calls the reducer does NOT own) and unmount can clean up.
+  const interpolationRef = useRef<AnimatedInterpolation | null>(null);
+  const listenerIdRef = useRef<string | null>(null);
 
-  useEffect(() => {
-    if (translateY !== 0 && translateY !== null) haveReceivedInitialZeroTranslateY.current = false;
-  }, [translateY]);
-
-  // The animated value updates several times per frame during scroll; debounce it and push the
-  // settled value into the committed transform so hit detection stays current (RN: a Fabric-only
-  // issue, symbiote is always Fabric, and worse on Android).
-  const animatedValueListener = useCallback(({ value }: { value: number | string }): void => {
-    if (typeof value !== 'number') return;
-    const timeout = stickyDebounceMs(Platform.OS);
-    // A freshly-rebuilt interpolation re-emits 0 to its listeners; swallow that first zero (RN).
-    if (value === 0 && !haveReceivedInitialZeroTranslateY.current) {
-      haveReceivedInitialZeroTranslateY.current = true;
-      return;
-    }
-    if (debounceTimer.current !== null) clearTimeout(debounceTimer.current);
-    debounceTimer.current = setTimeout(() => setTranslateY(value), timeout);
-  }, []);
-
-  useEffect(() => {
-    const { inputRange, outputRange } = computeStickyInterpolation({
-      measured,
-      inverted,
-      scrollViewHeight,
-      layoutY,
-      layoutHeight,
-      nextHeaderLayoutY,
-    });
-    const newAnimatedTranslateY = scrollAnimatedValue.interpolate({ inputRange, outputRange });
-    // symbiote is always Fabric: listen to the settled value to keep the ShadowTree transform
-    // current for hit-testing (RN attaches this listener only under Fabric).
-    const listenerId = newAnimatedTranslateY.addListener(animatedValueListener);
-    setAnimatedTranslateY(newAnimatedTranslateY);
-    return () => {
-      newAnimatedTranslateY.removeListener(listenerId);
-      if (debounceTimer.current !== null) clearTimeout(debounceTimer.current);
-    };
-  }, [
-    measured,
-    layoutY,
-    layoutHeight,
+  const inputsRef = useRef<IStickyReducerInputs>({
+    os: Platform.OS,
+    inverted,
     scrollViewHeight,
     nextHeaderLayoutY,
-    inverted,
-    scrollAnimatedValue,
-    animatedValueListener,
-  ]);
+  });
+  inputsRef.current = { os: Platform.OS, inverted, scrollViewHeight, nextHeaderLayoutY };
+
+  // dispatch reaches through a ref because the effect executors dispatch follow-up actions
+  // (the listener -> animated-tick, the debounce timer -> debounce-fired).
+  const dispatchRef = useRef<(action: IStickyAction) => void>(() => {});
+
+  const runEffects = useCallback(
+    (effects: IStickyEffect[]): void => {
+      for (const effect of effects) {
+        switch (effect.kind) {
+          case 'rebuild-interpolation': {
+            // Detach the old listener, build a fresh interpolation onto the shared scroll value, and
+            // wire the settled-value listener (symbiote is always Fabric; RN attaches it only there).
+            const previous = interpolationRef.current;
+            if (previous !== null && listenerIdRef.current !== null) {
+              previous.removeListener(listenerIdRef.current);
+              listenerIdRef.current = null;
+            }
+            const next = scrollAnimatedValue.interpolate({
+              inputRange: effect.inputRange,
+              outputRange: effect.outputRange,
+            });
+            listenerIdRef.current = next.addListener(({ value }): void => {
+              if (typeof value === 'number') dispatchRef.current({ kind: 'animated-tick', value });
+            });
+            interpolationRef.current = next;
+            setAnimatedTranslateY(next);
+            break;
+          }
+          case 'schedule-debounce': {
+            // The animated value updates several times per frame; debounce the settled value into the
+            // committed transform so hit detection stays current (a Fabric issue, worse on Android).
+            if (debounceTimer.current !== null) clearTimeout(debounceTimer.current);
+            debounceTimer.current = setTimeout(() => {
+              debounceTimer.current = null;
+              dispatchRef.current({ kind: 'debounce-fired', value: effect.value });
+            }, effect.delay);
+            break;
+          }
+          case 'apply-passthrough':
+            forceRender();
+            break;
+          case 'record-header-y':
+            // React records through the wrapper's onLayout closure (props.onLayout, below), which
+            // honors the public IStickyHeaderProps contract; the reducer emits no index for it.
+            break;
+        }
+      }
+    },
+    [scrollAnimatedValue],
+  );
+
+  const dispatch = useCallback(
+    (action: IStickyAction): void => {
+      const current = stateRef.current;
+      if (current === null) return;
+      runEffects(reduceSticky(current, action, inputsRef.current).effects);
+    },
+    [runEffects],
+  );
+  dispatchRef.current = dispatch;
+
+  // Rebuild when the collision/viewport inputs change (RN effect deps minus the layout state, which
+  // dispatches 'layout' itself); also does the initial identity build on mount.
+  useEffect(() => {
+    dispatchRef.current({ kind: 'inputs-changed' });
+  }, [inverted, scrollViewHeight, nextHeaderLayoutY, scrollAnimatedValue]);
+
+  // Detach the listener + clear the debounce on unmount.
+  useEffect(
+    () => (): void => {
+      const previous = interpolationRef.current;
+      if (previous !== null && listenerIdRef.current !== null)
+        previous.removeListener(listenerIdRef.current);
+      if (debounceTimer.current !== null) clearTimeout(debounceTimer.current);
+    },
+    [],
+  );
 
   const onLayout = (event: ISymbioteEvent): void => {
     const y = readLayoutNumber(event, 'y');
     const height = readLayoutNumber(event, 'height');
-    if (y !== undefined) setLayoutY(y);
-    if (height !== undefined) setLayoutHeight(height);
-    setMeasured(true);
+    // Keep the previous value when a field is absent (RN sets state only on a defined read).
+    dispatch({ kind: 'layout', y: y ?? state.layoutY, height: height ?? state.layoutHeight });
     props.onLayout(event);
     const child = firstChild(children);
     const childOnLayout = child === undefined ? undefined : readChildOnLayout(child);
@@ -145,7 +193,7 @@ export const ScrollViewStickyHeader: IStickyHeaderComponentType = props => {
   // The EXPLICIT debounced translateY overrides the committed transform for hit-testing, while
   // `animatedTranslateY` does the smooth (native-driven) pin, per RN ScrollViewStickyHeader.js.
   const passthroughAnimatedPropExplicitValues =
-    translateY !== null ? { style: { transform: [{ translateY }] } } : null;
+    state.translateY !== null ? { style: { transform: [{ translateY: state.translateY }] } } : null;
 
   // collapsable:false keeps the wrapper a real Yoga node; zIndex makes the pinned header paint
   // OVER the rows scrolling under it. `style` is `unknown` on Animated.View, so the interpolation

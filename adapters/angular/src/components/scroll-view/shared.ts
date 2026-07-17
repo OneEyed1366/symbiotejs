@@ -38,6 +38,7 @@ import {
   readLayoutDimension,
   resolveAccessibilityProps,
   resolveDecelerationRate,
+  resolveScrollForwarding,
   selectScrollIntrinsics,
   splitLayoutProps,
   type IAccessibilityProps,
@@ -566,27 +567,34 @@ export abstract class ScrollViewBase implements IAngularScrollViewInputs, AfterV
     // by the post-commit attach below, so onScroll forwards to the user with throttle 1
     // (ScrollView.js:1798). Without it, Animated.event drives the value each frame (the JS jitter)
     // and forwards the user handler as the listener passthrough.
+    // The scroll-forwarding DECISIONS (which onScroll path, the 1/16 throttle defaults, whether to
+    // capture the viewport height) are folded out to the shared resolveScrollForwarding; here Angular
+    // only EXECUTES them, keeping its stable-reference handlers (stickyOnScrollHandler /
+    // handleInvertedStickyLayout / emitterCallback) so a fresh closure never forces a re-clone cascade.
     const nativeStickyAvailable = this.hasStickyHeaders && isNativeAnimatedAvailable();
-    if (this.hasStickyHeaders) {
-      if (nativeStickyAvailable) {
-        if (this.onScroll !== undefined) bag.onScroll = this.onScroll;
-        bag.scrollEventThrottle = this.scrollEventThrottle ?? 1;
-      } else {
-        bag.onScroll = this.stickyOnScrollHandler(this.onScroll);
-        bag.scrollEventThrottle = this.scrollEventThrottle ?? 16;
-      }
-      // Inverted sticky headers need the viewport height (RN _handleLayout): capture it on the
-      // scroll-view onLayout, then call the user's handler. Non-inverted forwards onLayout as-is.
-      if (this.invertStickyHeaders === true) {
-        bag.onLayout = this.handleInvertedStickyLayout;
-      } else {
-        const layoutCallback = this.emitterCallback(this.layout);
-        if (layoutCallback !== undefined) bag.onLayout = layoutCallback;
-      }
+    const forwarding = resolveScrollForwarding({
+      hasStickyHeaders: this.hasStickyHeaders,
+      nativeStickyAvailable,
+      invertStickyHeaders: this.invertStickyHeaders,
+      scrollEventThrottle: this.scrollEventThrottle,
+      maintainVisibleContentPosition: this.maintainVisibleContentPosition,
+      snapToAlignment: this.snapToAlignment,
+    });
+    // onScroll: the JS-fallback path uses the cached Animated.event handler; the native + plain paths
+    // forward the user handler as-is (the native driver attaches the value on the UI thread).
+    if (forwarding.mode === 'sticky-js') {
+      bag.onScroll = this.stickyOnScrollHandler(this.onScroll);
+    } else if (this.onScroll !== undefined) {
+      bag.onScroll = this.onScroll;
+    }
+    if (forwarding.scrollEventThrottle !== undefined) {
+      bag.scrollEventThrottle = forwarding.scrollEventThrottle;
+    }
+    // Inverted sticky headers need the viewport height (RN _handleLayout): capture it on the
+    // scroll-view onLayout, then call the user's handler. Otherwise forward the layout emitter.
+    if (forwarding.capturesViewportHeight) {
+      bag.onLayout = this.handleInvertedStickyLayout;
     } else {
-      if (this.onScroll !== undefined) bag.onScroll = this.onScroll;
-      if (this.scrollEventThrottle !== undefined)
-        bag.scrollEventThrottle = this.scrollEventThrottle;
       const layoutCallback = this.emitterCallback(this.layout);
       if (layoutCallback !== undefined) bag.onLayout = layoutCallback;
     }

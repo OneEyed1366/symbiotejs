@@ -19,8 +19,16 @@ const noop = (): void => {};
 // A native event runs the listener (which may call setState) outside React's
 // loop. Run it at discrete priority so the update takes the sync lane, then
 // flush that work synchronously to paint the result.
+//
+// Diagnostic seam (gated, perf investigation): every native event forces its own
+// synchronous flush here, with no continuous-vs-discrete split (unlike DOM React,
+// which lets high-frequency continuous events like drag/scroll coalesce). This
+// dlog counts how many forced flushes one gesture (e.g. a Slider drag) produces,
+// to compare against Vue/Angular's microtask-coalesced requestCommit(). Kept
+// behind DEBUG per <keep_logs_gate_behind_DEBUG>, never removed.
 setEventDispatcher(run => {
   withDiscretePriority(run);
+  dlog('react event-dispatch: forced flushSyncWork');
   // @ts-expect-error flushSyncWork exists at runtime in react-reconciler 0.33
   reconciler.flushSyncWork();
 });

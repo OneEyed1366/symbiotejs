@@ -33,6 +33,7 @@ import {
 } from '@angular/core';
 import {
   flattenSections,
+  resolveStickySectionHeaders,
   scrollLocationToFlatIndex,
   sectionEntryKey,
   unwrapEntryItem,
@@ -442,9 +443,11 @@ export class VirtualizedSectionList<ItemT = unknown>
     this.headerIndices = headerIndices;
 
     // RN sticks section headers by default only on iOS; Android does not unless asked.
-    const stickyDefault = Platform.OS === 'ios';
-    const stickyEnabled = this.stickySectionHeadersEnabled ?? stickyDefault;
-    this.stickyHeaderIndices = stickyEnabled ? headerIndices : undefined;
+    this.stickyHeaderIndices = resolveStickySectionHeaders(
+      this.stickySectionHeadersEnabled,
+      headerIndices,
+      Platform.OS,
+    );
 
     dlog(
       `Angular VirtualizedSectionList: ${sections.length} sections flattened to ${entries.length} entries`,

@@ -70,10 +70,17 @@ export {
   selectScrollIntrinsics,
   readLayoutDimension,
   didContentSizeChange,
+  resolveScrollForwarding,
   SCROLL_VIEW_BASE_HORIZONTAL,
   SCROLL_VIEW_BASE_VERTICAL,
 } from './view/render-scroll-view';
-export type { IScrollIntrinsics, IContentSize } from './view/render-scroll-view';
+export type {
+  IScrollIntrinsics,
+  IContentSize,
+  IScrollForwarding,
+  IScrollForwardingInputs,
+  IScrollForwardMode,
+} from './view/render-scroll-view';
 
 export {
   buildScrollViewHandle,
@@ -92,6 +99,23 @@ export {
   STICKY_HEADER_Z_INDEX,
 } from './view/render-scroll-sticky';
 export type { IStickyHeaderProps, IStickyInterpolationParams } from './view/render-scroll-sticky';
+
+// The per-header sticky effect machine: the one pure state machine every sticky-header consumer drives
+// (React/Vue header component, Angular header component, Angular projection wrapper), folding the
+// zero-swallow gate + debounce-delay pick + rebuild-on-input-change decision out of each adapter's
+// reactive glue. The adapter maps events to actions and executes the effects with its own primitives.
+export {
+  reduceSticky,
+  createInitialStickyState,
+  stickyEffectSignature,
+} from './state/sticky-header-reducer';
+export type {
+  IStickyHeaderState,
+  IStickyReducerInputs,
+  IStickyAction,
+  IStickyEffect,
+  IStickyReduceResult,
+} from './state/sticky-header-reducer';
 
 export type {
   IImageSource,
@@ -187,6 +211,8 @@ export {
 // itself stays per-adapter), and TouchableNativeFeedback's pure static factories + background map.
 export {
   computePressOutWait,
+  createTouchableFeedbackRuntime,
+  createTouchableFeedbackHandlers,
   DEFAULT_ACTIVE_OPACITY,
   OPACITY_ACTIVE_DURATION_MS,
   OPACITY_INACTIVE_DURATION_MS,
@@ -195,7 +221,15 @@ export {
   DEFAULT_UNDERLAY_COLOR,
   DEFAULT_MIN_PRESS_DURATION_MS,
 } from './state/touchable';
-export type { IPressTimingProps, ITouchableHandler } from './state/touchable';
+export type {
+  IPressTimingProps,
+  ITouchableHandler,
+  ITouchableFeedbackRuntime,
+  ITouchableFeedbackConfig,
+  ITouchableFeedbackCallbacks,
+  ITouchableFeedbackHandlers,
+} from './state/touchable';
+export { highlightPressedStyle } from './view/render-touchable-highlight';
 export {
   backgroundProps,
   canUseNativeForeground,
@@ -284,8 +318,20 @@ export {
   diffViewable,
   maxMinimumViewTime,
   buildListPlan,
+  computeMvcpAdjustment,
+  resolveItemKey,
+  indexOfItem,
+  offsetForEnd,
+  isSeparatorGapInRange,
+  decideEdgeReached,
+  resolveStickySectionHeaders,
+  wrapFixedLayout,
+  resolveAverageLength,
 } from './state/virtualized-list';
 export type {
+  IMvcpAction,
+  IMvcpAdjustmentParams,
+  IMvcpAdjustmentResult,
   ICellLayout,
   ISeparators,
   ISeparatorProps,
@@ -299,6 +345,23 @@ export type {
   IListPlan,
   IListPlanParams,
 } from './state/virtualized-list';
+
+// The orchestration reducer: the one pure state machine every list adapter drives, folding the
+// after-commit effect skeleton (window recompute -> edge -> viewability -> initial-scroll -> MVCP)
+// out of each adapter's reactive glue. The adapter maps events to actions and runs the effects.
+export {
+  reduceList,
+  createInitialListState,
+  listEffectSignature,
+} from './state/virtualized-list-reducer';
+export type {
+  IListState,
+  IListMetrics,
+  IListReducerInputs,
+  IListAction,
+  IListEffect,
+  IListReduceResult,
+} from './state/virtualized-list-reducer';
 
 export {
   SINGLE_COLUMN,

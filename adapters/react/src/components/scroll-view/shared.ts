@@ -36,6 +36,7 @@ import {
   forwardScrollEvent,
   readLayoutDimension,
   resolveDecelerationRate,
+  resolveScrollForwarding,
   selectScrollIntrinsics,
   type ISymbioteIntrinsic,
 } from '@symbiote-native/components';
@@ -260,38 +261,39 @@ export function usePreparedScrollView(rawProps: IScrollViewProps): IPreparedScro
     outerProps.decelerationRate = resolveDecelerationRate(decelerationRate);
   }
 
-  // onScroll: when sticky headers are active, the offset must reach the AnimatedValue, so
-  // we wrap the user's handler with Animated.event (it fires the listener passthrough). RN
-  // does the same with _scrollAnimatedValueAttachment. Without sticky headers, forward as-is.
+  // The scroll-forwarding DECISIONS (which onScroll path, the 1/16 throttle defaults, whether to
+  // capture the viewport height for inverted sticky, whether to keep cells un-flattened) are folded
+  // out to the shared resolveScrollForwarding; here React only EXECUTES them with its own primitives.
   const nativeStickyAvailable = hasStickyHeaders && isNativeAnimatedAvailable();
-  if (hasStickyHeaders) {
-    if (nativeStickyAvailable) {
-      // Native path (RN attachNativeEvent): the scroll value is driven on the UI thread by the
-      // imperative attach in the platform component's effect (useNativeStickyScrollAttach), so
-      // onScroll only forwards to the user, zero JS per frame. RN uses throttle 1 when sticky
-      // (ScrollView.js:1798); the native driver can afford it.
-      if (onScroll !== undefined) outerProps.onScroll = onScroll;
-      outerProps.scrollEventThrottle = scrollEventThrottle ?? 1;
-    } else {
-      // JS fallback (no native module): Animated.event drives the value each frame and forwards
-      // the user's handler as the listener passthrough. Correct, but lags a frame under fast
-      // scroll (the jitter), which the native path above removes on a real host.
-      outerProps.onScroll = animatedEvent(
-        [{ nativeEvent: { contentOffset: { y: scrollAnimatedValue } } }],
-        onScroll === undefined
-          ? undefined
-          : { listener: (...args) => forwardScrollEvent(onScroll, args) },
-      );
-      outerProps.scrollEventThrottle = scrollEventThrottle ?? 16;
-    }
-  } else {
-    if (onScroll !== undefined) outerProps.onScroll = onScroll;
-    if (scrollEventThrottle !== undefined) outerProps.scrollEventThrottle = scrollEventThrottle;
+  const forwarding = resolveScrollForwarding({
+    hasStickyHeaders,
+    nativeStickyAvailable,
+    invertStickyHeaders,
+    scrollEventThrottle,
+    maintainVisibleContentPosition: props.maintainVisibleContentPosition,
+    snapToAlignment: props.snapToAlignment,
+  });
+
+  // onScroll: the JS-fallback path wraps the user's handler in Animated.event so the offset drives
+  // the AnimatedValue each frame (RN _scrollAnimatedValueAttachment); the native + plain paths
+  // forward the user's handler as-is (the native driver attaches the value on the UI thread).
+  if (forwarding.mode === 'sticky-js') {
+    outerProps.onScroll = animatedEvent(
+      [{ nativeEvent: { contentOffset: { y: scrollAnimatedValue } } }],
+      onScroll === undefined
+        ? undefined
+        : { listener: (...args) => forwardScrollEvent(onScroll, args) },
+    );
+  } else if (onScroll !== undefined) {
+    outerProps.onScroll = onScroll;
+  }
+  if (forwarding.scrollEventThrottle !== undefined) {
+    outerProps.scrollEventThrottle = forwarding.scrollEventThrottle;
   }
 
   // onLayout on the scroll-view node: capture the viewport height for inverted sticky headers
   // (RN _handleLayout), then call the user's handler. Pass through unchanged otherwise.
-  if (hasStickyHeaders && invertStickyHeaders === true) {
+  if (forwarding.capturesViewportHeight) {
     outerProps.onLayout = (layoutEvent: ISymbioteEvent): void => {
       const height = readLayoutDimension(layoutEvent, 'height');
       if (height !== undefined) setViewportHeight(height);
@@ -315,7 +317,7 @@ export function usePreparedScrollView(rawProps: IScrollViewProps): IPreparedScro
   // MaintainVisibleScrollPositionHelper has nothing to anchor to and the list jumps on prepend.
   // RN keeps the cells as real views via collapsableChildren={false} on the content container
   // (ScrollView.js:1731-1748 `preserveChildren`). iOS never flattens, so it is a no-op there.
-  if (props.maintainVisibleContentPosition !== undefined || props.snapToAlignment !== undefined) {
+  if (forwarding.collapsableChildren) {
     contentProps.collapsableChildren = false;
   }
   if (onContentSizeChange !== undefined) {

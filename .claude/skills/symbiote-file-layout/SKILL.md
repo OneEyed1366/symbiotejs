@@ -66,6 +66,28 @@ level up is `../debug` / `../node`. Real folder-form groups in `core/engine/src/
 `platform/`, `app-state/`, `dimensions/`. Platform selection is by **filename**, never
 a `Platform.OS` read (ADR 0020).
 
+### Migrating flat → folder leaves STALE build artifacts (prune them, or `pnpm build` fails)
+
+`tsc --build` is incremental and **never deletes** outputs whose source moved. When you
+migrate `src/X.ts` → `src/X/index.ts`, the old `build/X.js` (+`.d.ts`/`.map`) is orphaned —
+it lingers indefinitely because nothing regenerates that path. Two ways it bites, both
+non-obvious because the error never points at the real cause:
+
+- **`fix-esm-extensions.mjs` reported `UNRESOLVED … -> ./Something.css`** (2026-07, css-parser).
+  The script used to regex-scan EVERY `build/**/*.js` **including comments and string literals**,
+  so a stale flat file whose doc-comment held `import styles from './Card.module.css'` was flagged
+  as an unresolved import and exited 1 — the `.css` a red herring, the "import" a comment. FIXED
+  2026-07: it now walks the source with a string/comment/regex-aware scanner and only rewrites real
+  specifiers (see `scripts/fix-esm-extensions.test.mjs`). So a stale file no longer false-positives
+  on comments/strings — but it can still error on a REAL dead import, and it is pure garbage either
+  way. Prune it.
+- Diagnostic: a top-level `build/X.js` that ALSO has `build/X/index.js` beside it, with an
+  OLD mtime, and NO `src/X.ts` (only `src/X/index.ts`) → it's stale.
+
+Fix: prune the stale flat outputs (`rm build/X.js build/X.d.ts build/X.js.map build/X.d.ts.map`)
+or nuke+rebuild the package's `build/`. `build/` is gitignored and regenerated, so this is safe.
+Do this as PART OF any flat→folder migration — don't leave it for `pnpm build` to trip over later.
+
 ## 3. Adapter `src/` buckets
 
 Two kinds of bucket: framework-AGNOSTIC ones carry the **same** name in every

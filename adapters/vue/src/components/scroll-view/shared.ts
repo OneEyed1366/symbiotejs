@@ -39,6 +39,7 @@ import {
   readLayoutDimension,
   resolveAccessibilityProps,
   resolveDecelerationRate,
+  resolveScrollForwarding,
   selectScrollIntrinsics,
   type IAccessibilityProps,
   type IAriaProps,
@@ -382,34 +383,41 @@ export function createScrollView(platform: IScrollViewPlatform) {
 
         // onScroll: when sticky headers are active, the offset must reach the AnimatedValue. RN does
         // the same with _scrollAnimatedValueAttachment. forwardAttrs already put the user's onScroll /
-        // onLayout / scrollEventThrottle on outerProps; here we override them for the sticky branch.
+        // onLayout / scrollEventThrottle on outerProps; here we override them per the shared
+        // resolveScrollForwarding DECISIONS (which path, the 1/16 throttle defaults, inverted capture).
         const nativeStickyAvailable = hasStickyHeaders && isNativeAnimatedAvailable();
         nativeStickyWanted = nativeStickyAvailable;
+        const userThrottle =
+          typeof attrs.scrollEventThrottle === 'number' ? attrs.scrollEventThrottle : undefined;
+        const forwarding = resolveScrollForwarding({
+          hasStickyHeaders,
+          nativeStickyAvailable,
+          invertStickyHeaders,
+          scrollEventThrottle: userThrottle,
+          maintainVisibleContentPosition: attrs.maintainVisibleContentPosition,
+          snapToAlignment: attrs.snapToAlignment,
+        });
         if (hasStickyHeaders) {
           const userOnScroll = isHandler(attrs.onScroll) ? attrs.onScroll : undefined;
-          const userThrottle =
-            typeof attrs.scrollEventThrottle === 'number' ? attrs.scrollEventThrottle : undefined;
-          if (nativeStickyAvailable) {
-            // Native path (RN attachNativeEvent): the scroll value is driven on the UI thread by the
-            // post-commit watch above, so onScroll only forwards to the user: zero JS per frame. RN
-            // uses throttle 1 when sticky (ScrollView.js:1798); the native driver can afford it. The
-            // user onScroll is already on outerProps via forwardAttrs.
-            outerProps.scrollEventThrottle = userThrottle ?? 1;
-          } else {
+          if (forwarding.mode === 'sticky-js') {
             // JS fallback (no native module): Animated.event drives the value each frame and forwards
             // the user's handler as the listener passthrough. Correct, but lags a frame under fast
-            // scroll (the jitter), which the native path above removes on a real host.
+            // scroll (the jitter), which the native path removes on a real host.
             outerProps.onScroll = animatedEvent(
               [{ nativeEvent: { contentOffset: { y: scrollAnimatedValue } } }],
               userOnScroll === undefined
                 ? undefined
                 : { listener: (...args) => forwardScrollEvent(userOnScroll, args) },
             );
-            outerProps.scrollEventThrottle = userThrottle ?? 16;
+          }
+          // Native path: the value is driven on the UI thread by the post-commit watch above, so the
+          // user onScroll (already on outerProps via forwardAttrs) forwards untouched, zero JS/frame.
+          if (forwarding.scrollEventThrottle !== undefined) {
+            outerProps.scrollEventThrottle = forwarding.scrollEventThrottle;
           }
           // onLayout on the scroll-view node: capture the viewport height for inverted sticky headers
           // (RN _handleLayout), then call the user's handler. Non-inverted leaves onLayout as forwarded.
-          if (invertStickyHeaders === true) {
+          if (forwarding.capturesViewportHeight) {
             const userOnLayout = isHandler(attrs.onLayout) ? attrs.onLayout : undefined;
             outerProps.onLayout = (event: ISymbioteEvent): void => {
               const height = readLayoutDimension(event, 'height');
@@ -429,10 +437,7 @@ export function createScrollView(platform: IScrollViewPlatform) {
         // false also preserves the cell views maintainVisibleContentPosition / snapToAlignment
         // anchor against (RN preserveChildren). iOS never flattens; both are no-ops there.
         const contentProps: Record<string, unknown> = { style: contentStyle, collapsable: false };
-        if (
-          attrs.maintainVisibleContentPosition !== undefined ||
-          attrs.snapToAlignment !== undefined
-        ) {
+        if (forwarding.collapsableChildren) {
           contentProps.collapsableChildren = false;
         }
         // contentSizeChange is synthesized from the content view's own onLayout (RN
