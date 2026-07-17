@@ -27,7 +27,15 @@ const PRIMITIVE_SELECTORS = new Set([
   'symbiote-input-accessory-view',
 ]);
 
-const PACKAGE_NAME = '@symbiote-native/angular';
+// Inject from the package barrel — the ONE resolution route every consumer already uses, so the
+// leaf's registry Set stays a single module instance. `registerComposedComponent` is re-exported
+// from the barrel straight off the dependency-free leaf `anchor-host-registry.ts`, so importing it
+// here does NOT drag in the cyclic renderer graph, yet resolves to the same leaf Set that
+// `createElement` reads. (An earlier attempt injected a dedicated `.../anchor-host-registry`
+// subpath instead; under pnpm symlinks that gave the leaf a SECOND resolved path — a second Set —
+// so navigation-package registrations and createElement's lookup desynced. See the leaf header +
+// angular-adapter §11c.)
+const IMPORT_SOURCE = '@symbiote-native/angular';
 const HELPER_NAME = 'registerComposedComponent';
 
 function isNgDeclareComponentCall(node) {
@@ -65,7 +73,7 @@ function hasComposedImport(programNode) {
   return programNode.body.some(
     node =>
       node.type === 'ImportDeclaration' &&
-      node.source.value === PACKAGE_NAME &&
+      node.source.value === IMPORT_SOURCE &&
       node.specifiers.some(
         spec =>
           spec.type === 'ImportSpecifier' &&
@@ -103,7 +111,7 @@ module.exports = function registerComposedPlugin({ types: t }) {
           statements.unshift(
             t.importDeclaration(
               [t.importSpecifier(t.identifier(HELPER_NAME), t.identifier(HELPER_NAME))],
-              t.stringLiteral(PACKAGE_NAME),
+              t.stringLiteral(IMPORT_SOURCE),
             ),
           );
         }

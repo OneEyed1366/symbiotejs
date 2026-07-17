@@ -14,7 +14,8 @@ import {
   registerStyles,
 } from '@symbiote-native/engine';
 import { installFabric } from '@symbiote-native/test-utils';
-import { registerComposedComponent, SymbioteRenderer, SymbioteRendererFactory } from './index';
+import { SymbioteRenderer, SymbioteRendererFactory } from './index';
+import { registerComposedComponent } from '../anchor-host-registry';
 
 const ROOT_TAG = 707;
 const PROBE_ID = 'probe';

@@ -135,7 +135,12 @@ export { DescriptorOutlet } from './descriptor-to-angular';
 // call.
 export { PortalDirective, PortalOutletDirective } from './create-portal';
 export { createTunnel, TunnelInDirective, TunnelOut, type ITunnelStore } from './create-tunnel';
-export { registerComposedComponent, SymbioteRenderer, SymbioteRendererFactory } from './renderer';
+export { SymbioteRenderer, SymbioteRendererFactory } from './renderer';
+// registerComposedComponent lives in the dependency-free leaf ./anchor-host-registry, NOT in the
+// require-cyclic ./renderer — see the leaf header. The babel-register-composed plugin injects the
+// import straight from that subpath so app-screen registration never routes through this cyclic
+// barrel.
+export { registerComposedComponent } from './anchor-host-registry';
 export { findNodeHandle } from './host-instance';
 export type { IHostInstance } from './host-instance';
 export { StatusBar } from './modules/status-bar';
