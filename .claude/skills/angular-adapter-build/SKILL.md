@@ -470,6 +470,37 @@ reruns every workspace package's `prepare` in topological order) — then relaun
 Generalizes to any Angular-shipping dependency (`packages/slider`, a future wrapper): rebuild
 THAT package, not the app that consumes it.
 
+## 4a. `ngc -p` NEVER deletes orphaned outputs — clean `build/` before every build, or a stale file SHADOWS the current one
+
+**Incident (2026-07-17, device-verified):** app-authored composed screens and even a statically-tagged
+`Stack` rendered blank on iOS / redboxed on Android (`Can't find ViewManager '<selector>'`) under
+`.examples/angular` (`workspace:*`), while the freshly-built npm/canary `examples/angular` worked. That
+split — local workspace build broken, fresh pack fine — is the signature of stale local artifacts.
+
+`ngc -p tsconfig.angular.json` (and plain `tsc -p`, i.e. NON-`--build` mode) emits new outputs but NEVER
+prunes ones whose source disappeared. When the adapter renderer moved `src/renderer.ts` →
+`src/renderer/index.ts` (a `symbiote-file-layout` folder-as-module pass), ngc wrote
+`build/angular/renderer/index.js` and left the now-orphaned `build/angular/renderer.js` behind. **In
+Node/Metro resolution a FILE beats a directory**, so `require.resolve('./renderer')` (the barrel's
+`export … from './renderer'`) picked the stale flat `renderer.js` — which still carried an old inline copy
+of `ANCHOR_HOST_COMPONENTS`. Result: the bundle had TWO registry modules, `registerComposedComponent` wrote
+one Set and `createElement` read the stale other, and every composed selector fell through to a raw native
+view name.
+
+**Headless diagnostic (no device needed):** ngc the app, then
+`react-native bundle --platform ios --dev true --reset-cache --bundle-output <tmp>.js`, then grep the bundle
+— `grep -c 'function isAnchorHostComponent'` (or any distinctive singleton definition) should be 1; a count
+of 2 means a duplicate/stale module got bundled. Cross-check on disk with
+`node -e "console.log(require.resolve('./build/angular/renderer'))"` — if it returns `…/renderer.js` while
+the live source is `renderer/index.ts`, that flat file is a stale shadow.
+
+**Fix / rule:** every Angular-shipping package (`adapters/angular`, `packages/{slider,navigation,splash-screen}`)
+has `"clean": "rm -rf build"` and `"ng:build": "pnpm run clean && ngc …"`. Do NOT drop the clean prefix, and
+add it to any NEW `ngc -p`/`tsc -p`-built package. The general lesson beyond Angular: after ANY source
+file/folder rename in a package whose build tool doesn't prune (`ngc -p`, `tsc -p`, most transpilers),
+`rm -rf` the output dir before rebuilding — an incremental build over a renamed layout is a latent
+wrong-module bug that headless `tsc`/unit tests never catch (they read `src`, not the shadowed `build/`).
+
 ## 5. The ROOT `prepublish-build`/`build` script needs every Angular-shipping package too — a hand-maintained `--filter` list silently drifts
 
 **Incident (2026-07):** a Tab/Drawer focus-synthesis fix in `packages/navigation/src/angular/{tabs,drawer}.ts`

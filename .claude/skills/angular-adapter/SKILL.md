@@ -454,6 +454,56 @@ array anyone editing `ANCHOR_HOST_COMPONENTS` (e.g. adding a new component) coul
 retype without the `.map`, silently reintroducing this every time; if a future audit touches this
 file, verify the `.map(toLowerCase)` call is still there before trusting §11a/§11b's narrative.
 
+**§11c. The real root cause of the `.examples/angular` composed-component blank/redbox was STALE ngc
+BUILD ARTIFACTS, not the require cycle (found + proven via bundle inspection 2026-07-17).** Symptom:
+an app-authored composed screen (`MenuScreen`, mounted via `NgComponentOutlet`) did NOT anchor-host under
+`.examples/angular` on `workspace:*` — `createElement menuscreen -> menuscreen` (raw native path) → iOS
+blank body under a working native header, Android `Can't find ViewManager 'menuscreen'` redbox. ONLY the
+pnpm `workspace:*` harness — the published/canary `examples/angular` (fresh `npm` build) rendered it
+correctly. That divergence was the tell: **canary builds `build/` from a clean pack, the workspace reuses a
+LOCAL `build/` that ngc had incrementally polluted.**
+
+`ngc -p tsconfig.angular.json` (like `tsc -p`, non-`--build`) NEVER deletes orphaned outputs. When the
+renderer moved `src/renderer.ts` → `src/renderer/index.ts` (folder-as-module), ngc emitted
+`build/angular/renderer/index.js` but left the orphaned `build/angular/renderer.js` behind. **A file beats
+a folder in Node/Metro resolution**, so the barrel's `export … from './renderer'` resolved to the STALE
+flat `renderer.js` — which still carried its own inline `ANCHOR_HOST_COMPONENTS` Set. The bundle ended up
+with TWO registry modules: the stale renderer's inline Set (what `createElement` read) and the live one
+(what registrations wrote). Proven by `react-native bundle` + grep: `grep -c 'function isAnchorHostComponent'`
+= 1 but `grep -c 'function registerComposedComponent'` = 2, and `node -e "require.resolve('./build/angular/renderer')"`
+returned `…/renderer.js`, not `…/renderer/index.js`. After `rm -rf build && ngc`, the bundle had exactly ONE
+registry and `Stack`/`menuscreen` registered into the same Set `createElement` reads.
+
+**Fix (two parts):** (1) every Angular-shipping package (`adapters/angular`, `packages/{slider,navigation,
+splash-screen}`) now has `"clean": "rm -rf build"` and `"ng:build": "pnpm run clean && ngc …"`, so a stale
+output can never shadow again — this is the DECISIVE fix. (2) the registry
+(`ANCHOR_HOST_COMPONENTS` + `registerComposedComponent` + `isAnchorHostComponent`) also moved OUT of
+`renderer/index.ts` into the dependency-free leaf `adapters/angular/src/anchor-host-registry.ts` — retained
+as cheap cycle-safety hygiene (renderer imports it, barrel re-exports `registerComposedComponent` off it,
+both by RELATIVE path → one Metro instance; `babel-register-composed.cjs` keeps injecting the **barrel**).
+The require-cycle init-order theory (below) was the original hypothesis but was NEVER confirmed — it may
+have been a full misdiagnosis of the stale-shadow; the leaf is kept because it's harmless insurance, not
+because the cycle was proven to bite. A realpath-canonicalizing Metro `resolveRequest` dedup was also tried
+early and is a NO-OP (there was only ever one *resolution route*; the duplication was on DISK, not in
+resolution) — do not re-attempt it.
+
+**Two traps discovered while fixing this, both worth not repeating:**
+- **One-resolution-route rule (2026-07-17).** A first cut gave the leaf a dedicated
+  `@symbiote-native/angular/anchor-host-registry` `exports` subpath and injected THAT into app/nav code while
+  the renderer kept its relative import — TWO specifiers for one file. Under pnpm symlinks Metro made TWO
+  instances → two Sets → device redbox `Can't find ViewManager 'Stack'` (a navigation selector that worked
+  before). A module that must be a singleton is imported through ONE specifier everywhere (all-relative here);
+  a subpath alongside a relative import silently duplicates it, same class as the `@symbiote-native/engine`
+  peerDep/BRAND case. Reverted to the barrel route.
+- **ngc never cleans.** The general lesson beyond this bug: after ANY source file/folder rename in a package
+  built by `ngc -p`/`tsc -p`, the old output lingers in `build/` and can shadow the new one. Clean before build.
+
+**Device-verified 2026-07-17** on `.examples/angular` (Metro `--reset-cache`, since both the build and the
+injected transform changed; a warm Metro serves a stale mix): every composed selector now logs
+`createElement <selector> -> anchor host` and paints correctly on iOS + Android. Full harness-side record:
+`symbiote-dev-examples` §5e; changeset `.changeset/angular-anchor-host-leaf-module.md`. The build-hygiene
+angle also lives in the `angular-adapter-build` skill.
+
 ## §16. `[style]="[a, b]"` (RN's array-composition idiom) crashes Angular's built-in `ɵɵstyleMap` — always flatten first (2026-07)
 
 Angular's template compiler special-cases the literal binding name `style` (and `class`,

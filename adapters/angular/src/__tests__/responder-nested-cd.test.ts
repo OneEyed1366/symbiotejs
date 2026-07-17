@@ -13,7 +13,7 @@ import { installFabric, type IFakeNode } from '@symbiote-native/test-utils';
 
 import { mount, unmount } from '../render';
 import { ViewHost as View, TextHost as Text, SymbioteHostPropsDirective } from '../primitives';
-import { registerComposedComponent } from '../renderer';
+import { registerComposedComponent } from '../anchor-host-registry';
 
 const ROOT_TAG = 972;
 const TOUCH_START = 'topTouchStart';

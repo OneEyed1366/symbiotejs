@@ -52,7 +52,8 @@
   },
   "scripts": {
     "prepare": "pnpm run ng:build",
-    "ng:build": "ngc -p tsconfig.angular.json",
+    "clean": "rm -rf build",
+    "ng:build": "pnpm run clean && ngc -p tsconfig.angular.json",
     "typecheck": "tsc --build",
     "format": "prettier --write \"src/**/*.{ts,tsx}\""
   },
