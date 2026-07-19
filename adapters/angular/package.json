@@ -51,7 +51,7 @@
     "access": "public"
   },
   "scripts": {
-    "prepare": "pnpm run ng:build",
+    "prepare": "node -e \"require('node:fs').existsSync('build/angular/index.js')||process.exit(1)\" || pnpm run ng:build",
     "clean": "rm -rf build",
     "ng:build": "pnpm run clean && ngc -p tsconfig.angular.json",
     "typecheck": "tsc --build",
