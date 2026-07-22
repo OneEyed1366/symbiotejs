@@ -27,6 +27,13 @@ const symbiotes = [
     <meta property="og:title" content="SymbioteNative — native apps for every framework" />
     <meta property="og:description" content={description} />
     <meta name="twitter:card" content="summary" />
+    <!--
+      Yandex.Webmaster verification. This landing page has its OWN <head>, separate
+      from Starlight's — the meta tag in astro.config.mjs only injects into Starlight
+      pages (/docs/*), NOT here. Yandex verifies by fetching the root URL, so the tag
+      must live on this page too. (Google verifies via the apex DNS TXT record.)
+    -->
+    <meta name="yandex-verification" content="2c452926a06c3852" />
     <title>SymbioteNative — native apps for every framework</title>
 
     <link rel="preconnect" href="https://fonts.googleapis.com" />
