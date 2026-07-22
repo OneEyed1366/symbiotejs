@@ -151,7 +151,7 @@ const symbiotes = [
               </linearGradient>
               <!-- metaball goo: nearby blobs fuse into one liquid mass -->
               <filter id="goo" x="-40%" y="-30%" width="180%" height="170%">
-                <feGaussianBlur in="SourceGraphic" stdDeviation="7" result="b" />
+                <feGaussianBlur in="SourceGraphic" stdDeviation="5" result="b" />
                 <feColorMatrix
                   in="b"
                   type="matrix"
@@ -639,14 +639,51 @@ const symbiotes = [
         // how agitated each symbiote is — its personality in motion
         const MOOD = { react: 0.72, vue: 0.6, svelte: 1.3, solid: 0.66, angular: 1.35 };
 
+        // Safari's feGaussianBlur re-rasterizes the whole #goo filter region on every
+        // geometry change underneath it (unlike Chrome/Firefox, which are cheap here —
+        // see webkit bug 283156). requestAnimationFrame keeps running at 60fps even
+        // while this section is scrolled out of view or the page is mid-scroll, so we
+        // gate the expensive part: only touch the goo geometry when the creature is
+        // actually on screen, not mid-scroll, and at most ~30 times a second.
+        let onScreen = true;
+        new IntersectionObserver(([entry]) => (onScreen = entry.isIntersecting), {
+          threshold: 0,
+        }).observe(svg);
+
+        let scrolling = false;
+        let scrollEndTimer;
+        addEventListener(
+          'scroll',
+          () => {
+            scrolling = true;
+            clearTimeout(scrollEndTimer);
+            scrollEndTimer = setTimeout(() => (scrolling = false), 150);
+          },
+          { passive: true },
+        );
+
+        const STEP = 1 / 30;
         let t = 0;
         let last = 0;
+        let acc = 0;
         function frame(now) {
-          const mood = MOOD[document.documentElement.dataset.symbiote] || 0.8;
-          const dt = last ? Math.min((now - last) / 1000, 0.05) : 0.016;
+          const dtReal = last ? Math.min((now - last) / 1000, 0.05) : 0.016;
           last = now;
-          t += dt * mood;
 
+          if (onScreen && !scrolling) {
+            acc += dtReal;
+          }
+          if (acc >= STEP) {
+            const mood = MOOD[document.documentElement.dataset.symbiote] || 0.8;
+            t += acc * mood;
+            acc = 0;
+            update(t, mood);
+          }
+
+          if (!reduceMotion.matches) requestAnimationFrame(frame);
+        }
+
+        function update(t, mood) {
           let fx = 0;
           let fy = 0;
           core.forEach((n) => {
@@ -707,8 +744,6 @@ const symbiotes = [
                 ' Z',
             );
           });
-
-          if (!reduceMotion.matches) requestAnimationFrame(frame);
         }
         requestAnimationFrame(frame);
       })();
