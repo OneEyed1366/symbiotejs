@@ -300,6 +300,55 @@ from the actual config files; this paragraph exists so a future session doesn't 
 
 </details>
 
+### 2b. `@symbiote-native/angular`'s publish-time `prepare` must NOT `rm -rf build` — it races every consumer's concurrent `ngc` (2026-07)
+
+**Incident (release CI, actions run 29695746666):** `pnpm run release`
+(`pnpm run build && changeset publish`) published `@symbiote-native/{angular,react,vue,components,splash-screen}`
+fine, then crashed publishing `@symbiote-native/{navigation,slider}` with the EXACT `TS500: Cannot
+destructure property 'pos' of 'file.referencedFiles[index]'` this section's fixes are about —
+even though `pnpm run build`'s own `prepublish-build` (which runs `ng:build` for every package)
+had just succeeded on all of them seconds earlier.
+
+The delta is CONCURRENCY, not a bad `exports` map (angular's `exports` `types` condition was
+already correct per §2). `changeset publish` runs every package's `pnpm publish` **concurrently**
+(all "🦋 info Publishing …" lines log at the same second, then the failures ~12s later), and
+each `pnpm publish` re-runs that package's `prepare`. `@symbiote-native/angular`'s `prepare` was
+`pnpm run ng:build` = `clean && ngc`, and its `clean` is `rm -rf build` — which deletes
+`build/angular/index.d.ts`, the file EVERY consumer package's `ngc` resolves via angular's `types`
+export condition. While angular's `prepare` sat in that `rm -rf` → rebuild window, navigation's and
+slider's concurrent `ngc` resolved angular's import, found no prebuilt `.d.ts`, fell through to the
+raw decorated `src/index.ts` (the `default` condition), and hit the same TS500 as §2. splash-screen
+survived only by timing luck. `prepublish-build` never hits this because `pnpm --filter … run ng:build`
+is **topologically ordered** (angular fully builds before any consumer starts — the log confirms
+`adapters/angular ng:build: Done` before the leaves begin); only `changeset publish`'s per-package
+concurrency races.
+
+Reproduce deterministically: `rm -rf adapters/angular/build && (cd packages/slider && pnpm run ng:build)`
+→ TS500 verbatim. Restore `adapters/angular/build` → slider/navigation `ng:build` both pass.
+
+**Fix — angular's `prepare` skips the rebuild when the artifact already exists** (it always does at
+publish time: `release` runs `pnpm run build` → `prepublish-build` → angular's `ng:build`
+topologically FIRST, before `changeset publish`):
+
+```jsonc
+// adapters/angular/package.json — ONLY the shared-dependency package needs this
+"prepare": "node -e \"require('node:fs').existsSync('build/angular/index.js')||process.exit(1)\" || pnpm run ng:build",
+"clean": "rm -rf build",                              // unchanged
+"ng:build": "pnpm run clean && ngc -p tsconfig.angular.json"  // unchanged — §4a's clean stays for dev/prepublish-build
+```
+
+So on a fresh `pnpm install` (build absent) prepare builds as before; during the concurrent
+`changeset publish` (build present from `prepublish-build`) prepare is a no-op → `build/angular/`
+is never `rm -rf`'d → consumers always resolve the prebuilt `.d.ts`. Only `@symbiote-native/angular`
+needs the guard: it is the sole package whose `clean` deletes an output another package's `ngc`
+reads. The leaf wrappers (`slider`/`navigation`/`splash-screen`) emit to `build-ngc/`, their `clean`
+(`rm -rf build`) removes only their unrelated plain-tsc output, and nothing reads their build
+concurrently — so their `prepare` is left untouched and may re-run `ngc` freely (it reads angular's
+now-stable `.d.ts`). Do NOT "fix" this by widening a consumer's `rootDir` or adding a `paths`
+override (§2's standing warning) — the crash is a transient missing FILE, not a resolution-map bug.
+Verify by running all four Angular packages' `prepare` concurrently (`… & … & wait`) and grepping
+the logs for `TS500`.
+
 ## 3. `dev`/`start` need `ngc --watch` running alongside Metro — and it must NOT wrap Metro's stdin
 
 `index.js` imports the COMPILED `./build/angular/src/App` (§3a explains the `src/` segment),
@@ -592,6 +641,7 @@ error in a scratch check without first proving it isn't already there on the bas
 | Failure | Cause | Fix |
 |---|---|---|
 | `ngc` crashes with `TS500: Cannot destructure property 'pos' of 'file.referencedFiles[index]'` | ngc resolved a dependency's raw decorated source instead of its prebuilt `.d.ts` | Add/fix that dependency's `"types"` condition in `exports` |
+| Same `TS500` crash, but ONLY during `changeset publish` on a consumer package (`slider`/`navigation`) while `prepublish-build` just passed | `changeset publish` runs prepares CONCURRENTLY; `@symbiote-native/angular`'s `prepare` `clean` (`rm -rf build`) transiently deletes `build/angular/index.d.ts` mid-build, so the consumer's concurrent `ngc` falls through to angular's raw `src` | §2b: guard angular's `prepare` to skip the rebuild when `build/angular/index.js` already exists — never widen `rootDir` |
 | Metro throws `SyntaxError: decorators isn't currently enabled` | Metro resolved a package's raw decorated `src/` instead of the linked `build/angular` output | Add/fix that dependency's `"react-native"` condition in `exports`, ensure its `prepare` ran |
 | Fast Refresh reloads but shows old code | `symbiote-angular-dev`'s `ngc --watch` isn't running (crashed, or `dev`/`start` bypassed it), so `build/angular/` is stale | Confirm `ngc --watch` is still alive in the process list; if it crashed, see §3a for EMFILE/TS500 |
 | Metro's `r`/`j`/`d` keypresses do nothing during `dev` | `concurrently`/`npm-run-all` (or similar) is wrapping stdin and breaking raw TTY passthrough to Metro | Run the watcher as a plain background child process (not a process-manager package), keep `react-native start` the sole foreground process — see `symbiote-angular-dev.cjs` |

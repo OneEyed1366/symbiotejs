@@ -1,5 +1,66 @@
 # @symbiote-native/angular
 
+## 0.6.1
+
+### Patch Changes
+
+- 465c9e8: Clean the ngc output dir before every Angular build, and move the anchor-host registry into a leaf module.
+
+  Composed Angular components (app screens mounted via `NgComponentOutlet`, and statically-tagged
+  navigation components like `Stack`) rendered blank on iOS / redboxed on Android
+  (`Can't find ViewManager '<selector>'`) under the `.examples/angular` workspace harness, while the
+  freshly-built npm/canary `examples/angular` worked. Root cause: `ngc -p` never deletes orphaned outputs,
+  so after the renderer moved `src/renderer.ts` → `src/renderer/index.ts` the stale `build/angular/renderer.js`
+  lingered and — because a file shadows a folder in Node/Metro resolution — was loaded instead of
+  `build/angular/renderer/index.js`. It carried its own inline `ANCHOR_HOST_COMPONENTS` Set, so the bundle had
+  two registry modules: `registerComposedComponent` wrote one, `createElement` read the stale other, and every
+  composed selector fell through to a raw native view name.
+
+  Every Angular-shipping package (`@symbiote-native/angular`, `@symbiote-native/slider`,
+  `@symbiote-native/navigation`, `@symbiote-native/splash-screen`) now runs `rm -rf build` before `ngc`, so a
+  stale output can never shadow the current one again. The anchor-host registry
+  (`ANCHOR_HOST_COMPONENTS` + `registerComposedComponent` + `isAnchorHostComponent`) also moved out of
+  `renderer/index.ts` into a dependency-free leaf module `anchor-host-registry.ts`, reached by a single relative
+  import route, as cheap cycle-safety hygiene. Public API unchanged.
+
+- 465c9e8: Extract two triplicated component machines into shared, framework-agnostic logic in
+  `@symbiote-native/components`, completing the enriched three-layer split for the last two
+  components that still re-implemented decision logic per adapter.
+
+  Touchable: the TouchableOpacity press-scheduling machine (delayPressIn defer, early-release
+  flush, activatedAt tracking, min-press-duration hold) and the TouchableHighlight underlay
+  gating were re-implemented line-for-line in React, Vue, and Angular. They now live once as
+  `createTouchableFeedbackRuntime` + `createTouchableFeedbackHandlers` (clock and scheduler
+  injected, so the machine is testable and timer globals stay out of core) and
+  `highlightPressedStyle`. Each adapter keeps only the `Animated.timing` opacity call, injected
+  via `activate`/`deactivate`.
+
+  ScrollView sticky headers: the per-header effect state machine (zero-swallow gate,
+  rebuild-interpolation-on-input-change, debounce pick, cross-talk feed-forward) was hand-written
+  in every adapter, and twice in Angular (component plus projection wrapper). It is now one
+  `reduceSticky(state, action, inputs)` enriched reducer plus a `resolveScrollForwarding` decision
+  helper that absorbs the onScroll branch, throttle defaults, inverted-height capture, and the
+  collapsableChildren predicate. Angular's projection wrapper collapses to a thin effect-runner
+  over the same reducer. Adapters keep only effect execution: the debounce timer, the
+  interpolate/listener wiring, and the re-render trigger.
+
+  Adapter prop surfaces and runtime behavior are unchanged; the rewrite is structural.
+
+- 465c9e8: Extract the VirtualizedList orchestration into a shared, framework-agnostic `reduceList` state
+  machine in `@symbiote-native/components`. Every list adapter (React, Vue, Angular) previously
+  re-implemented the same after-commit effect skeleton — window recompute, `onEndReached`/
+  `onStartReached` gating, viewability, batch fill, `maintainVisibleContentPosition`, the imperative
+  scrolls — in its own reactive dialect, so the decision predicates (`last === count - 1`,
+  `first === 0`, the batch-fill catch-up test, the viewability guards) lived three times and could
+  drift. That logic is now one pure `reduceList(state, action) -> { state, effects }`; each adapter
+  only maps native events to actions, holds one state cell, and executes the returned effects. Adds
+  `reduceList`, `createInitialListState`, and `listEffectSignature` (plus their types) to the public
+  `@symbiote-native/components` surface. Adapter prop surfaces and runtime behavior are unchanged —
+  the rewrite is structural.
+- Updated dependencies [465c9e8]
+- Updated dependencies [465c9e8]
+  - @symbiote-native/components@0.3.0
+
 ## 0.6.0
 
 ### Minor Changes

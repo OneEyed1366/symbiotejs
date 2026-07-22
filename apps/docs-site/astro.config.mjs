@@ -17,6 +17,14 @@ export default defineConfig({
       customCss: ['./src/styles/tokens.css', './src/styles/starlight.css'],
       head: [
         {
+          // Yandex.Webmaster site verification. The `docs` subdomain is a CNAME to
+          // GitHub Pages, so a `yandex-verification` DNS TXT record can't coexist with
+          // the CNAME — the meta-tag method is used instead. (Google verifies via a
+          // TXT record on the apex, where there is no CNAME.)
+          tag: 'meta',
+          attrs: { name: 'yandex-verification', content: '2c452926a06c3852' },
+        },
+        {
           tag: 'link',
           attrs: { rel: 'preconnect', href: 'https://fonts.googleapis.com' },
         },

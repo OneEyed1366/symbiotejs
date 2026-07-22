@@ -8,7 +8,7 @@
 
 **Beta** · iOS + Android · React + Vue + Angular · one native core, N framework adapters
 
-[Architecture](#how-it-works) · [Testing](#testing) · [Milestones](#milestones) · [React adapter](./adapters/react) · [Vue adapter](./adapters/vue) · [Angular adapter](./adapters/angular)
+[**Docs**](https://docs.symbiote-native.dev) · [Why SymbioteNative](#why-not-nativescript-lynx-or-just-react-native) · [Architecture](#how-it-works) · [Testing](#testing) · [Milestones](#milestones) · [React adapter](./adapters/react) · [Vue adapter](./adapters/vue) · [Angular adapter](./adapters/angular)
 
 </div>
 
@@ -37,6 +37,34 @@ core, N thin adapters.
 > The shape is a shared retained tree plus a thin per-framework reconciler — the same pattern
 > that already drives a terminal layout engine across five UI frameworks, retargeted here from
 > ANSI terminal output to native iOS/Android views.
+
+---
+
+## Why Not NativeScript, Lynx, or Just React Native?
+
+Every existing answer to "native UI without React lock-in" forces a trade this project
+doesn't. The demand is real — ByteDance built an entire rendering engine (Lynx) around
+exactly this promise — but each option gives up something structural:
+
+| | Native layer | Frameworks | Native-module ecosystem | The trade you make |
+|---|---|---|---|---|
+| **React Native** | Fabric / Yoga / Hermes — the most battle-tested stack, maintained by Meta | React only | Thousands of packages: payments, maps, analytics are an `npm install` | React lock-in |
+| **NativeScript** | Its own runtime + its own JS↔native bindings, carried by the NS team alone | Vue, Angular, Svelte, React — flavors historically lag the core | Its own, far smaller and shrinking | You leave the RN ecosystem behind entirely |
+| **Lynx** (ByteDance) | Its own new engine (PrimJS, dual-thread) | Framework-agnostic on paper; ReactLynx is the only mature layer | Minimal — common integrations mean hand-written native bridging | A ~1-year-old ecosystem and evolving APIs |
+| **SymbioteNative** | **Stock, unforked React Native** — Meta keeps maintaining it, you keep upstream merges | React, Vue 3, Angular shipping today; Svelte / Solid are the same thin-adapter recipe | RN's own, inherited at the native-view level | Beta APIs (we're honest about it) |
+
+Read the table by its empty cell: NativeScript gives you multi-framework *without* RN's
+ecosystem. Lynx gives you a new engine *without* an ecosystem at all. React Native gives
+you the ecosystem — *only if you write React*. SymbioteNative is the only project sitting in the
+intersection: **any framework × React Native's proven native stack and ecosystem.** And
+because the native core is never forked, everything that hooks RN's internals — Detox,
+the debugger, native modules, the whole toolchain — works unchanged for every adapter
+(see [Testing](#testing)).
+
+One honest caveat: a third-party RN package's *JS component* is React-only by nature (it
+calls hooks internally), so non-React adapters reach third-party *native views* through
+thin wrappers like [`@symbiote-native/slider`](./packages/slider) — the native view is
+framework-agnostic, the React wrapper around it is not.
 
 ---
 
@@ -141,6 +169,9 @@ live in the per-adapter READMEs:
 ---
 
 ## Try It In Your Own App
+
+Full guides, per-framework setup, and package API references live at
+**[docs.symbiote-native.dev](https://docs.symbiote-native.dev)**.
 
 Every adapter is [published to npm](https://www.npmjs.com/org/symbiote-native) at `0.1.x`. Pick your framework and add it to an existing React Native app:
 
@@ -350,6 +381,12 @@ decision, not a drift:
 
 **Is this a fork of React Native?** No. `react-native` is consumed as an ordinary dependency;
 its native C++/Obj-C++/JNI sources are never touched. SymbioteNative replaces only the JS renderer.
+
+**How is this different from NativeScript or Lynx?** Both answer "native UI without React
+lock-in" by maintaining their *own* native layer — NativeScript its runtime and bindings, Lynx a
+whole new engine — which means their own (much smaller) ecosystems. SymbioteNative keeps stock React
+Native underneath, so Meta maintains the native layer and the RN ecosystem comes along. The full
+comparison is [above](#why-not-nativescript-lynx-or-just-react-native).
 
 **Why React first if the goal is framework independence?** React is a known-good driver. Using
 it to validate the native pipe and the commit engine first means that when Vue/Svelte/Solid/
