@@ -1,8 +1,20 @@
 ---
 import '../styles/landing.css';
 
+// ~150 chars, leads with the value prop and names every shipping adapter —
+// meta descriptions truncate around 160, and this feeds og:/twitter: too.
 const description =
-  'SymbioteNative lets Vue, React, and future framework adapters drive real native iOS and Android views through stock React Native Fabric.';
+  "SymbioteNative lets React, Vue, or Angular drive real native iOS and Android views through stock React Native's Fabric renderer — one core, N adapters.";
+
+// Single source of truth for the title so <title>, og:title and twitter:title
+// never drift apart.
+const pageTitle = 'SymbioteNative — native apps for every framework';
+
+// Absolute canonical URL for the home page. Self-referencing canonicals are a
+// 2026 baseline (not just for duplicates), and og:url / canonical must be
+// absolute HTTPS — relative URLs are ignored by crawlers and social platforms.
+const site = 'https://docs.symbiote-native.dev';
+const canonical = `${site}/`;
 
 const base = import.meta.env.BASE_URL.replace(/\/$/, '');
 
@@ -22,12 +34,32 @@ const symbiotes = [
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <link rel="icon" href={`${base}/symbiote.svg`} type="image/svg+xml" />
     <meta name="theme-color" content="#08090d" />
+
+    <title>{pageTitle}</title>
     <meta name="description" content={description} />
+    <link rel="canonical" href={canonical} />
+
+    <!-- Open Graph — read by Facebook, LinkedIn, Slack, Discord, iMessage, Telegram… -->
     <meta property="og:type" content="website" />
-    <meta property="og:title" content="SymbioteNative — native apps for every framework" />
+    <meta property="og:site_name" content="SymbioteNative" />
+    <meta property="og:title" content={pageTitle} />
     <meta property="og:description" content={description} />
+    <meta property="og:url" content={canonical} />
+    <meta property="og:locale" content="en_US" />
+
+    <!-- Twitter/X. Set explicitly (not via OG fallback) since this custom page
+         bypasses Starlight. Bump to summary_large_image once an og:image exists. -->
     <meta name="twitter:card" content="summary" />
-    <title>SymbioteNative — native apps for every framework</title>
+    <meta name="twitter:title" content={pageTitle} />
+    <meta name="twitter:description" content={description} />
+
+    <!--
+      Yandex.Webmaster verification. This landing page has its OWN <head>, separate
+      from Starlight's — the meta tag in astro.config.mjs only injects into Starlight
+      pages (/docs/*), NOT here. Yandex verifies by fetching the root URL, so the tag
+      must live on this page too. (Google verifies via the apex DNS TXT record.)
+    -->
+    <meta name="yandex-verification" content="2c452926a06c3852" />
 
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -119,7 +151,7 @@ const symbiotes = [
               </linearGradient>
               <!-- metaball goo: nearby blobs fuse into one liquid mass -->
               <filter id="goo" x="-40%" y="-30%" width="180%" height="170%">
-                <feGaussianBlur in="SourceGraphic" stdDeviation="7" result="b" />
+                <feGaussianBlur in="SourceGraphic" stdDeviation="5" result="b" />
                 <feColorMatrix
                   in="b"
                   type="matrix"
@@ -607,14 +639,51 @@ const symbiotes = [
         // how agitated each symbiote is — its personality in motion
         const MOOD = { react: 0.72, vue: 0.6, svelte: 1.3, solid: 0.66, angular: 1.35 };
 
+        // Safari's feGaussianBlur re-rasterizes the whole #goo filter region on every
+        // geometry change underneath it (unlike Chrome/Firefox, which are cheap here —
+        // see webkit bug 283156). requestAnimationFrame keeps running at 60fps even
+        // while this section is scrolled out of view or the page is mid-scroll, so we
+        // gate the expensive part: only touch the goo geometry when the creature is
+        // actually on screen, not mid-scroll, and at most ~30 times a second.
+        let onScreen = true;
+        new IntersectionObserver(([entry]) => (onScreen = entry.isIntersecting), {
+          threshold: 0,
+        }).observe(svg);
+
+        let scrolling = false;
+        let scrollEndTimer;
+        addEventListener(
+          'scroll',
+          () => {
+            scrolling = true;
+            clearTimeout(scrollEndTimer);
+            scrollEndTimer = setTimeout(() => (scrolling = false), 150);
+          },
+          { passive: true },
+        );
+
+        const STEP = 1 / 30;
         let t = 0;
         let last = 0;
+        let acc = 0;
         function frame(now) {
-          const mood = MOOD[document.documentElement.dataset.symbiote] || 0.8;
-          const dt = last ? Math.min((now - last) / 1000, 0.05) : 0.016;
+          const dtReal = last ? Math.min((now - last) / 1000, 0.05) : 0.016;
           last = now;
-          t += dt * mood;
 
+          if (onScreen && !scrolling) {
+            acc += dtReal;
+          }
+          if (acc >= STEP) {
+            const mood = MOOD[document.documentElement.dataset.symbiote] || 0.8;
+            t += acc * mood;
+            acc = 0;
+            update(t, mood);
+          }
+
+          if (!reduceMotion.matches) requestAnimationFrame(frame);
+        }
+
+        function update(t, mood) {
           let fx = 0;
           let fy = 0;
           core.forEach((n) => {
@@ -675,8 +744,6 @@ const symbiotes = [
                 ' Z',
             );
           });
-
-          if (!reduceMotion.matches) requestAnimationFrame(frame);
         }
         requestAnimationFrame(frame);
       })();

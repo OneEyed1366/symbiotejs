@@ -1,5 +1,47 @@
 # @symbiote-native/vue
 
+## 0.3.8
+
+### Patch Changes
+
+- 465c9e8: Extract two triplicated component machines into shared, framework-agnostic logic in
+  `@symbiote-native/components`, completing the enriched three-layer split for the last two
+  components that still re-implemented decision logic per adapter.
+
+  Touchable: the TouchableOpacity press-scheduling machine (delayPressIn defer, early-release
+  flush, activatedAt tracking, min-press-duration hold) and the TouchableHighlight underlay
+  gating were re-implemented line-for-line in React, Vue, and Angular. They now live once as
+  `createTouchableFeedbackRuntime` + `createTouchableFeedbackHandlers` (clock and scheduler
+  injected, so the machine is testable and timer globals stay out of core) and
+  `highlightPressedStyle`. Each adapter keeps only the `Animated.timing` opacity call, injected
+  via `activate`/`deactivate`.
+
+  ScrollView sticky headers: the per-header effect state machine (zero-swallow gate,
+  rebuild-interpolation-on-input-change, debounce pick, cross-talk feed-forward) was hand-written
+  in every adapter, and twice in Angular (component plus projection wrapper). It is now one
+  `reduceSticky(state, action, inputs)` enriched reducer plus a `resolveScrollForwarding` decision
+  helper that absorbs the onScroll branch, throttle defaults, inverted-height capture, and the
+  collapsableChildren predicate. Angular's projection wrapper collapses to a thin effect-runner
+  over the same reducer. Adapters keep only effect execution: the debounce timer, the
+  interpolate/listener wiring, and the re-render trigger.
+
+  Adapter prop surfaces and runtime behavior are unchanged; the rewrite is structural.
+
+- 465c9e8: Extract the VirtualizedList orchestration into a shared, framework-agnostic `reduceList` state
+  machine in `@symbiote-native/components`. Every list adapter (React, Vue, Angular) previously
+  re-implemented the same after-commit effect skeleton — window recompute, `onEndReached`/
+  `onStartReached` gating, viewability, batch fill, `maintainVisibleContentPosition`, the imperative
+  scrolls — in its own reactive dialect, so the decision predicates (`last === count - 1`,
+  `first === 0`, the batch-fill catch-up test, the viewability guards) lived three times and could
+  drift. That logic is now one pure `reduceList(state, action) -> { state, effects }`; each adapter
+  only maps native events to actions, holds one state cell, and executes the returned effects. Adds
+  `reduceList`, `createInitialListState`, and `listEffectSignature` (plus their types) to the public
+  `@symbiote-native/components` surface. Adapter prop surfaces and runtime behavior are unchanged —
+  the rewrite is structural.
+- Updated dependencies [465c9e8]
+- Updated dependencies [465c9e8]
+  - @symbiote-native/components@0.3.0
+
 ## 0.3.7
 
 ### Patch Changes
