@@ -1,6 +1,6 @@
 ---
 name: symbiote-dev-examples
-description: "Symbiote examples/ vs .examples/ split — read BEFORE wiring up, smoke-testing, or demoing ANY new component/adapter/package/third-party wrapper in an example app, or before editing any example app's package.json dependency versions, metro.config.js, or react-native.config.js. `examples/{react,vue-sfc,vue-tsx,angular}` are PUBLIC canary apps and, since 2026-07-14, are OUTSIDE the pnpm workspace entirely (removed from pnpm-workspace.yaml's `packages:`) — a standalone npm-installable tree with NO `catalog:`/`workspace:*` specifiers (those only resolve inside a pnpm workspace); every dependency is a literal version, and every `@symbiote-native/*` is a pkg.pr.new canary URL until each package has a real npm release. Install with plain `npm install` INSIDE the example directory, never `pnpm install` from repo root. `.examples/{react,vue-sfc,vue-tsx,angular}` (dot-prefixed, gitignored) is UNCHANGED — the ONLY place package/feature/adapter development happens, still inside the pnpm workspace on `workspace:*` for live local-source edits. Covers WHY examples/* left the workspace (pnpm 10.26+'s `blockExoticSubdeps` blocks any transitive URL/git subdependency in a shared pnpm lockfile — a pkg.pr.new preview's own internal @symbiote-native/* cross-deps are URL-based, so a pkg.pr.new dependency anywhere in examples/* poisoned .examples/*'s install too via the single shared lockfile), the metro.config.js/react-native.config.js implications (no more watchFolders/extraNodeModules reaching into monorepo source — @symbiote-native/* resolve from the app's own node_modules like a real consumer; react-native.config.js's manual @symbiote-native/android monorepo-path link is gone now that android is a real npm dep), and the diagnostic for confirming an app's actual dependency source. Also covers a distinct gotcha (§5b): `.examples/*`'s own `metro.config.js` files are themselves stale copies of the public template and lack `watchFolders`/`resolver.unstable_enableSymlinks`/`resolver.nodeModulesPaths` — switching a dep to `workspace:*` there then breaks Metro with 'Unable to resolve module @babel/runtime/helpers/interopRequireDefault' even though the file exists on disk. Trigger on 'add a new example app', 'where do I test/demo this component', 'workspace vs catalog in examples', 'is this app on published or local deps', 'pkg.pr.new canary testing', 'blockExoticSubdeps', 'unable to resolve module @babel/runtime', 'switched .examples dep to workspace:* and metro broke', or any symbiote-add-component/symbiote-new-adapter/symbiote-third-party-native-view task's verify step."
+description: "Symbiote examples/ vs .examples/ split — read BEFORE wiring up, smoke-testing, or demoing ANY new component/adapter/package/third-party wrapper in an example app, or before editing any example app's package.json dependency versions, metro.config.js, or react-native.config.js. `examples/{react,vue-sfc,vue-tsx,angular}` are PUBLIC canary apps and, since 2026-07-14, are OUTSIDE the pnpm workspace entirely (removed from pnpm-workspace.yaml's `packages:`) — a standalone npm-installable tree with NO `catalog:`/`workspace:*` specifiers (those only resolve inside a pnpm workspace); every dependency is a literal version, and every `@symbiote-native/*` is a pkg.pr.new canary URL until each package has a real npm release. Install with plain `npm install` INSIDE the example directory, never `pnpm install` from repo root; run its scripts with plain `npm run` too. `.examples/{react,vue-sfc,vue-tsx,angular}` (dot-prefixed, gitignored) is UNCHANGED — the ONLY place package/feature/adapter development happens, still inside the pnpm workspace on `workspace:*` for live local-source edits — same split applies to running scripts, not just install: `pnpm --filter <app-name> run <script>`, never bare `npm run`. Covers WHY examples/* left the workspace (pnpm 10.26+'s `blockExoticSubdeps` blocks any transitive URL/git subdependency in a shared pnpm lockfile — a pkg.pr.new preview's own internal @symbiote-native/* cross-deps are URL-based, so a pkg.pr.new dependency anywhere in examples/* poisoned .examples/*'s install too via the single shared lockfile), the metro.config.js/react-native.config.js implications (no more watchFolders/extraNodeModules reaching into monorepo source — @symbiote-native/* resolve from the app's own node_modules like a real consumer; react-native.config.js's manual @symbiote-native/android monorepo-path link is gone now that android is a real npm dep), and the diagnostic for confirming an app's actual dependency source. Trigger on 'add a new example app', 'where do I test/demo this component', 'workspace vs catalog in examples', 'is this app on published or local deps', 'pkg.pr.new canary testing', 'blockExoticSubdeps', or any symbiote-add-component/symbiote-new-adapter/symbiote-third-party-native-view task's verify step."
 ---
 
 # Symbiote examples/ vs .examples/ — public canary vs dev harness
@@ -24,11 +24,26 @@ examples/{react,vue-sfc,vue-tsx,angular}      .examples/{react,vue-sfc,vue-tsx,a
   the example dir, never `pnpm install` at root (part of the shared workspace lockfile)
   demonstrates the real npm install experience  tracked in git? NO — never committed
   tracked in git, ships in the repo
+  run scripts with `npm run <script>` (or       run scripts with `pnpm --filter <app-name>
+  `npm run ios`/`npm run android`) INSIDE the   run <script>` from repo root, or `cd
+  example dir                                   .examples/<app> && pnpm run <script>` — NOT
+                                                 `npm run`, even though the script already
+                                                 exists and "just runs a shell command":
+                                                 npm spawns its OWN module-resolution pass
+                                                 over a pnpm-managed node_modules tree of
+                                                 symlinks, the same class of confusion the
+                                                 whole split exists to avoid
 ```
 
 Both trees carry the SAME full native scaffolding (`ios/` + `android/` projects) —
 `.examples/` is not a stripped-down sandbox, it's a full copy of the public app
 wired to local source instead of npm.
+
+**The package-manager split applies to every command, not just install.** `pnpm
+--filter <app-name> run <script>` (`<app-name>` is that app's own `package.json`
+`"name"` field, e.g. `Canary` for `.examples/react` — NOT the directory name) is the
+one to reach for by reflex once you're inside `.examples/*`, exactly the same as
+`pnpm install` from repo root — `dev`/`start`/`ios`/`android`/`test` included.
 
 ## 1b. Why examples/* left the pnpm workspace (2026-07-14)
 

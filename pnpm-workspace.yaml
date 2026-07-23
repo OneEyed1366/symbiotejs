@@ -31,7 +31,7 @@ allowBuilds:
   sharp: true
 minimumReleaseAgeExclude:
   - prettier@3.9.1
-  - '@symbiote-native/angular@0.3.3'
+  - '@symbiote-native/angular@0.3.3 || 0.5.0'
   - '@symbiote-native/components@0.2.3 || 0.2.5'
   - '@symbiote-native/css-parser@0.2.1 || 0.2.2'
   - '@symbiote-native/engine@0.1.4 || 0.1.6'
@@ -41,6 +41,10 @@ minimumReleaseAgeExclude:
   - '@symbiote-native/test-utils@0.1.5'
   - '@symbiote-native/splash-screen@0.1.3 || 2.0.0'
   - '@symbiote-native/navigation@1.0.0'
+  - expo-modules-core@57.0.5
+  - expo-modules-jsi@57.0.3
+  - expo-sensors@57.0.2
+  - expo-modules-autolinking@57.0.8
 
 # Single source of truth for dependency versions (pnpm catalogs).
 # A package references a version with `catalog:` (default) or `catalog:<name>`
@@ -116,6 +120,7 @@ catalog:
   '@symbiote-native/css-parser': latest
   '@symbiote-native/slider': latest
   '@symbiote-native/splash-screen': latest
+  '@symbiote-native/sensors': latest
   '@symbiote-native/test-utils': latest
 
   # React Native app toolchain — single-versioned. examples/* left the workspace (see above);
@@ -158,6 +163,21 @@ catalog:
   # permanently in lockstep — see .claude/rules/native-proxy-package-files.md.
   react-native-screens: 4.26.0
   react-native-safe-area-context: ^5.5.2
+  # Exact pins: packages/sensors depends on expo-sensors ONLY for its native ios/android folders
+  # (its JS is hand-ported into our own core, never imported — see the
+  # symbiote-expo-native-module skill and .claude/rules/expo-native-module-packaging.md). A caret
+  # range on expo-sensors could resolve a newer native module than the one our hand-ported core
+  # was written against, silently drifting the two apart the same way the codegen-specs libraries
+  # above do. expo-modules-core is expo-sensors' own peer/runtime and must match the same sdk-57
+  # line (expo-sensors 57.0.2 / expo-modules-core 57.0.5, verified against .vendors/expo at
+  # origin/sdk-57).
+  expo-sensors: 57.0.2
+  expo-modules-core: 57.0.5
+  # Autolinking CLI only (never resolved via the `expo` package) — each native host app needs
+  # it as a direct devDependency so its Podfile/settings.gradle can `require.resolve` it; see
+  # apps/docs-site's expo-native-module-setup howto. Version verified against .vendors/expo at
+  # origin/sdk-57.
+  expo-modules-autolinking: 57.0.8
   '@babel/core': ^7.25.2
   '@types/babel__core': ^7.20.5
   '@babel/preset-env': ^7.25.3

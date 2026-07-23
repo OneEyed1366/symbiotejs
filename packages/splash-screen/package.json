@@ -1,6 +1,6 @@
 {
   "name": "@symbiote-native/splash-screen",
-  "version": "3.0.1",
+  "version": "3.0.2",
   "description": "Third-party splash-screen native module wrapped for SymbioteNative — one framework-agnostic core, built once and reachable from the React, Vue, and Angular adapters.",
   "license": "MIT",
   "repository": {
@@ -75,7 +75,7 @@
   "scripts": {
     "prepare": "node ../../scripts/vendor-codegen-specs.cjs react-native-bootsplash src/specs && pnpm run ng:build",
     "typecheck": "tsc --build",
-    "clean": "rm -rf build",
+    "clean": "rm -rf build-ngc",
     "ng:build": "pnpm run clean && ngc -p tsconfig.angular.json",
     "format": "prettier --write \"src/**/*.{ts,tsx}\""
   },

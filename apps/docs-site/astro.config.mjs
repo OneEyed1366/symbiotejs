@@ -177,6 +177,7 @@ export default defineConfig({
             { label: 'Share content across surfaces', slug: 'docs/howtos/portals-and-tunnels' },
             { label: 'Write platform-specific code', slug: 'docs/howtos/platform-code' },
             { label: 'Wrap a third-party native view', slug: 'docs/howtos/third-party-views' },
+            { label: 'Wire up an Expo native module', slug: 'docs/howtos/expo-native-module-setup' },
             { label: 'Add a native splash screen', slug: 'docs/howtos/splash-screen' },
             { label: 'Turn on diagnostic logging', slug: 'docs/howtos/debugging' },
           ],
@@ -222,6 +223,7 @@ export default defineConfig({
           items: [
             { label: 'Slider', slug: 'docs/packages/slider' },
             { label: 'Splash screen', slug: 'docs/packages/splash-screen' },
+            { label: 'Sensors', slug: 'docs/packages/sensors' },
           ],
         },
         {

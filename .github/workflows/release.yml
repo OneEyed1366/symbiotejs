@@ -42,6 +42,10 @@ on:
         description: '@symbiote-native/react'
         type: boolean
         default: false
+      sensors:
+        description: '@symbiote-native/sensors'
+        type: boolean
+        default: false
       slider:
         description: '@symbiote-native/slider'
         type: boolean

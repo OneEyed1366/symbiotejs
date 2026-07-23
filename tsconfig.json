@@ -10,6 +10,7 @@
     { "path": "adapters/angular" },
     { "path": "packages/slider" },
     { "path": "packages/splash-screen" },
-    { "path": "packages/navigation" }
+    { "path": "packages/navigation" },
+    { "path": "packages/sensors" }
   ]
 }
