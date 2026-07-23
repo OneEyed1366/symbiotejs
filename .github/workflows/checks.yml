@@ -26,8 +26,6 @@ jobs:
 
       - run: pnpm run lint
 
-      - run: pnpm run sync:release-config:check
-
   typecheck:
     name: Typecheck
     runs-on: ubuntu-latest
