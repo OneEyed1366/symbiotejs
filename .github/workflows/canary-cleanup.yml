@@ -1,0 +1,41 @@
+name: Canary Cleanup
+
+# Retires stale canary snapshot versions (0.0.0-canary-<timestamp>...) that
+# Changesets snapshot-mode publishing accumulates on real npm. Runs every 2
+# days; also dispatchable manually for testing. See
+# scripts/cleanup-canary-versions.mjs for the retention logic.
+on:
+  schedule:
+    - cron: '0 3 */2 * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  cleanup:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          registry-url: https://registry.npmjs.org
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      # npm's OIDC trusted-publisher exchange (the mechanism the `release`
+      # job's `changeset publish` step relies on via `id-token: write`) only
+      # covers `npm publish` / `npm stage publish` — `npm view`, `npm
+      # unpublish`, and `npm deprecate` all still need a real token. NPM_TOKEN
+      # should be a granular access token scoped to exactly this repo's
+      # publishable packages, with the unpublish/deprecate permissions the
+      # OIDC config intentionally doesn't grant.
+      - name: Clean up stale canary versions
+        run: node scripts/cleanup-canary-versions.mjs
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
