@@ -13,6 +13,7 @@ export const NAV_LINE = {
   Structure: 'structure',
   Introspection: 'introspection',
   Routing: 'routing',
+  Sensors: 'sensors',
 } as const;
 
 export type INavLine = (typeof NAV_LINE)[keyof typeof NAV_LINE];
@@ -28,6 +29,9 @@ export const LINE_COLOR: Record<INavLine, string> = {
   [NAV_LINE.Structure]: '#4fd1a5',
   [NAV_LINE.Introspection]: '#b18cf5',
   [NAV_LINE.Routing]: '#f2789a',
+  // @symbiote-native/sensors demo — not one of the navigation package's 5 tour lines, given its
+  // own warm amber so it reads as a distinct package showcase rather than a 6th navigation line.
+  [NAV_LINE.Sensors]: '#f6ad55',
 };
 
 export type INavLineInfo = {
@@ -50,4 +54,5 @@ export const ROUTE_LINE_INFO: Record<ITourRouteName, INavLineInfo> = {
   [ROUTE_NAME.HooksDemo]: { line: NAV_LINE.Introspection, code: 'HK', label: 'INTROSPECTION LINE' },
   [ROUTE_NAME.DeepLinking]: { line: NAV_LINE.Routing, code: 'DL', label: 'ROUTING LINE' },
   [ROUTE_NAME.StatePersistence]: { line: NAV_LINE.Routing, code: 'SP', label: 'ROUTING LINE' },
+  [ROUTE_NAME.Sensors]: { line: NAV_LINE.Sensors, code: 'SN', label: 'SENSORS DEMO' },
 };

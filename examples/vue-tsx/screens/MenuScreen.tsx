@@ -21,6 +21,7 @@ const MENU_ITEMS: readonly IMenuItem[] = [
   { label: 'Hooks', route: ROUTE_NAME.HooksDemo, hint: 'useFocusEffect / useIsFocused / useNavigationState' },
   { label: 'Deep linking', route: ROUTE_NAME.DeepLinking, hint: 'resolveRouteFromUrl against a typed URL' },
   { label: 'State persistence', route: ROUTE_NAME.StatePersistence, hint: 'serialize/deserialize the Stack state' },
+  { label: 'Sensors', route: ROUTE_NAME.Sensors, hint: 'Accelerometer, Gyroscope, Magnetometer, DeviceMotion, Pedometer' },
 ];
 
 /**

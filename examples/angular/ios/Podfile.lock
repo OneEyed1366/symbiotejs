@@ -1,4 +1,36 @@
 PODS:
+  - ExpoModulesCore (57.0.5):
+    - ExpoModulesJSI
+    - hermes-engine
+    - RCTRequired
+    - RCTTypeSafety
+    - React-Core
+    - React-Core-prebuilt
+    - React-debug
+    - React-Fabric
+    - React-featureflags
+    - React-graphics
+    - React-ImageManager
+    - React-jsi
+    - React-jsinspector
+    - React-NativeModulesApple
+    - React-RCTFabric
+    - React-renderercss
+    - React-rendererdebug
+    - React-utils
+    - ReactCodegen
+    - ReactCommon/turbomodule/bridging
+    - ReactCommon/turbomodule/core
+    - ReactNativeDependencies
+    - Yoga
+  - ExpoModulesJSI (57.0.4):
+    - React-Core
+    - ReactCommon
+  - ExpoModulesWorklets (57.0.5):
+    - ExpoModulesCore
+    - ExpoModulesJSI
+  - ExpoSensors (57.0.2):
+    - ExpoModulesCore
   - FBLazyVector (0.86.0)
   - hermes-engine (250829098.0.14):
     - hermes-engine/Pre-built (= 250829098.0.14)
@@ -1823,7 +1855,7 @@ PODS:
     - React-utils (= 0.86.0)
     - ReactNativeDependencies
   - ReactNativeDependencies (0.86.0)
-  - symbiote-navigation (1.0.0):
+  - symbiote-navigation (2.0.0):
     - hermes-engine
     - RCTRequired
     - RCTTypeSafety
@@ -1845,9 +1877,9 @@ PODS:
     - ReactCommon/turbomodule/bridging
     - ReactCommon/turbomodule/core
     - ReactNativeDependencies
-    - symbiote-navigation/common (= 1.0.0)
+    - symbiote-navigation/common (= 2.0.0)
     - Yoga
-  - symbiote-navigation/common (1.0.0):
+  - symbiote-navigation/common (2.0.0):
     - hermes-engine
     - RCTRequired
     - RCTTypeSafety
@@ -1870,7 +1902,7 @@ PODS:
     - ReactCommon/turbomodule/core
     - ReactNativeDependencies
     - Yoga
-  - symbiote-slider (4.0.0):
+  - symbiote-slider (5.0.0):
     - hermes-engine
     - RCTRequired
     - RCTTypeSafety
@@ -1891,9 +1923,9 @@ PODS:
     - ReactCommon/turbomodule/bridging
     - ReactCommon/turbomodule/core
     - ReactNativeDependencies
-    - symbiote-slider/common (= 4.0.0)
+    - symbiote-slider/common (= 5.0.0)
     - Yoga
-  - symbiote-slider/common (4.0.0):
+  - symbiote-slider/common (5.0.0):
     - hermes-engine
     - RCTRequired
     - RCTTypeSafety
@@ -1915,7 +1947,7 @@ PODS:
     - ReactCommon/turbomodule/core
     - ReactNativeDependencies
     - Yoga
-  - symbiote-splash-screen (2.0.0):
+  - symbiote-splash-screen (3.0.0):
     - hermes-engine
     - RCTRequired
     - RCTTypeSafety
@@ -1940,6 +1972,10 @@ PODS:
   - Yoga (0.0.0)
 
 DEPENDENCIES:
+  - ExpoModulesCore (from `../node_modules/expo-modules-core`)
+  - ExpoModulesJSI (from `../node_modules/expo-modules-jsi/apple`)
+  - ExpoModulesWorklets (from `../node_modules/expo-modules-core`)
+  - "ExpoSensors (from `../node_modules/@symbiote-native/sensors/node_modules/expo-sensors/ios`)"
   - FBLazyVector (from `../node_modules/react-native/Libraries/FBLazyVector`)
   - hermes-engine (from `../node_modules/react-native/sdks/hermes-engine/hermes-engine.podspec`)
   - RCTDeprecation (from `../node_modules/react-native/ReactApple/Libraries/RCTFoundation/RCTDeprecation`)
@@ -2021,6 +2057,14 @@ DEPENDENCIES:
   - Yoga (from `../node_modules/react-native/ReactCommon/yoga`)
 
 EXTERNAL SOURCES:
+  ExpoModulesCore:
+    :path: "../node_modules/expo-modules-core"
+  ExpoModulesJSI:
+    :path: "../node_modules/expo-modules-jsi/apple"
+  ExpoModulesWorklets:
+    :path: "../node_modules/expo-modules-core"
+  ExpoSensors:
+    :path: "../node_modules/@symbiote-native/sensors/node_modules/expo-sensors/ios"
   FBLazyVector:
     :path: "../node_modules/react-native/Libraries/FBLazyVector"
   hermes-engine:
@@ -2180,6 +2224,10 @@ EXTERNAL SOURCES:
     :path: "../node_modules/react-native/ReactCommon/yoga"
 
 SPEC CHECKSUMS:
+  ExpoModulesCore: 9df645bbfcfe4fec54e6597aee756f7820ac8e0e
+  ExpoModulesJSI: b20fefa4cdd9097e7e6b715466d1900b8c5d4711
+  ExpoModulesWorklets: 18419b65da3b14a8df484baccec7dd6dad15387a
+  ExpoSensors: e71c7b6cb0c09d3427ef6ae29c69532a10c86b05
   FBLazyVector: b3e7ad108f0d882e30445c5527d774e3fd432f3d
   hermes-engine: d6a8bb60366800eaa048d4652d3a098725a101af
   RCTDeprecation: 2a74a2c57675e64419bd89078efde81f7c1de90b
@@ -2254,11 +2302,11 @@ SPEC CHECKSUMS:
   ReactCodegen: afe0d436ee089d7bea6418429d8312b1d23a6801
   ReactCommon: d5c1bb4427bf51c443de5926aac332c89ddd9363
   ReactNativeDependencies: fa0a54b3f5319ae0e3b9aff32bfee7a424b88e66
-  symbiote-navigation: f83f7cc984f80408c106418e3d7214245aad34ab
-  symbiote-slider: dea238370b774a6a5eeaf5eb410cce1f71acf1af
-  symbiote-splash-screen: 6c2c1e807477d45c3c8f7f3d4a5bda678688ef25
+  symbiote-navigation: fbed1453537991999a898fd37096f7d0bef4667d
+  symbiote-slider: 2e3dc7145306ac0931821cda2621eca03648d0b3
+  symbiote-splash-screen: da3689b0d47fb0860b7818063b9d178059ee634a
   Yoga: fe50ab299e578f397fef753cf309c6703a4db29b
 
-PODFILE CHECKSUM: ddf13891f62870be6b0c3449faaeb28213eb5efc
+PODFILE CHECKSUM: 90732961e8a798c2f4154be5ff0927325c9ff3fc
 
 COCOAPODS: 1.16.2

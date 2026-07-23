@@ -5,7 +5,81 @@ require Pod::Executable.execute_command('node', ['-p',
     {paths: [process.argv[1]]},
   )', __dir__]).strip
 
-platform :ios, min_ios_version_supported
+# Resolve expo-modules-autolinking's Ruby integration directly — normally provided by the
+# `expo` package's own scripts/autolinking.rb, which this project never installs.
+autolinking_root = File.dirname(`node --print "require.resolve('expo-modules-autolinking/package.json', { paths: ['#{__dir__}'] })"`)
+require File.join(autolinking_root, 'scripts/ios/autolinking_manager')
+require File.join(autolinking_root, 'scripts/ios/xcode_env_generator')
+
+# expo-modules-autolinking's own Ruby integration hardcodes `require('expo/bin/autolinking')`
+# in three call sites, assuming the `expo` package provides that resolution anchor. Point all
+# three at expo-modules-autolinking's real entry file instead.
+module ::Expo
+  class AutolinkingManager
+    private def node_command_args(command_name)
+      ['node', '--no-warnings', '--eval',
+       'require(\'expo-modules-autolinking/bin/expo-modules-autolinking\')',
+       'expo-modules-autolinking', command_name, '--platform', 'apple']
+        .concat(base_command_args())
+    end
+  end
+
+  module PrecompiledModules
+    class << self
+      private def invoke_autolinking(subcommand, platform:)
+        args = ['node', '--no-warnings', '--eval',
+                "require('expo-modules-autolinking/bin/expo-modules-autolinking')",
+                'expo-modules-autolinking', subcommand, '--platform', platform, '--json']
+        JSON.parse(IO.popen(args, &:read))
+      rescue => error
+        raise "Failed to invoke `expo-modules-autolinking #{subcommand}`: #{error}"
+      end
+    end
+  end
+
+  module ProjectIntegrator
+    # Renders the "[Expo] Configure project" Xcode build-phase script — regenerated on every
+    # `pod install` but executed on every build, so this needs the same fix as above or every
+    # build fails at that phase, even after a green `pod install`. Signature/body match
+    # expo-modules-autolinking 57.0.8's own scripts/ios/project_integrator.rb exactly (it grew a
+    # `target_name` 2nd param + `--target-name` flag vs. the 57.0.5-era 3-arg shape the docs-site
+    # howto still shows) — the call site (integrate_build_script) is compiled into the gem and not
+    # something a Podfile can override, so this override's arity must track it.
+    def self.generate_support_script(autolinking_manager, target_name, modules_provider_path, entitlement_path)
+      args = autolinking_manager.base_command_args.map { |a| "\"#{a}\"" }
+      package_names = autolinking_manager.packages_to_generate.map { |p| "\"#{p.name}\"" }
+      entitlement_param = entitlement_path.nil? ? '' : "--entitlement \"#{entitlement_path}\""
+      app_root_param = autolinking_manager.custom_app_root.nil? ? '' : "--app-root \"#{autolinking_manager.custom_app_root}\""
+      podfile_properties_param = "--podfile-properties-file-path \"#{autolinking_manager.get_podfile_properties_path()}\""
+
+      <<~SCRIPT
+        #!/usr/bin/env bash
+        set -eo pipefail
+        NODE_BINARY=$(command -v node)
+        "$NODE_BINARY" --no-warnings --eval "require('expo-modules-autolinking/bin/expo-modules-autolinking')" \\
+          expo-modules-autolinking generate-modules-provider #{args.join(' ')} \\
+          --target "#{modules_provider_path}" --target-name "#{target_name}" \\
+          #{entitlement_param} #{app_root_param} \\
+          #{podfile_properties_param} --platform "apple" --packages #{package_names.join(' ')}
+      SCRIPT
+    end
+  end
+end
+
+def use_expo_modules!(options = {})
+  return if @current_target_definition.autolinking_manager.present?
+
+  @current_target_definition.autolinking_manager =
+    ::Expo::AutolinkingManager.new(self, @current_target_definition, options).use_expo_modules!
+  maybe_generate_xcode_env_file!()
+  generate_or_remove_xcode_env_updates_file!()
+end
+
+# expo-sensors pins a higher iOS deployment target than react-native's own minimum. CocoaPods
+# checks pod-vs-target compatibility against this line specifically (not just the Xcode
+# project's own setting) — skip it and every Expo pod is silently dropped with a
+# "requires iOS 16.4 but app targets 15.1"-style warning, easy to miss.
+platform :ios, [min_ios_version_supported.to_f, 16.4].max.to_s
 prepare_react_native_project!
 
 linkage = ENV['USE_FRAMEWORKS']
@@ -16,6 +90,13 @@ end
 
 target 'Canary' do
   config = use_native_modules!
+
+  use_expo_modules!(
+    exclude: [
+      'expo', 'expo-asset', 'expo-constants', 'expo-file-system',
+      'expo-font', 'expo-keep-awake', '@expo/dom-webview', '@expo/log-box',
+    ]
+  )
 
   use_react_native!(
     :path => config[:reactNativePath],

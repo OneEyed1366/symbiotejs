@@ -15,6 +15,7 @@ export const ROUTE_NAME = {
   HooksDemo: 'HooksDemo',
   DeepLinking: 'DeepLinking',
   StatePersistence: 'StatePersistence',
+  Sensors: 'Sensors',
 } as const;
 
 export type IRouteName = (typeof ROUTE_NAME)[keyof typeof ROUTE_NAME];

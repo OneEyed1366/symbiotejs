@@ -1,18 +1,19 @@
 import { ROUTE_NAME } from './routes';
 import type { IRouteName } from './routes';
 
-// The @symbiote-native/navigation demo suite groups its 9 tour screens into 5 thematic "lines" —
-// which part of the package each screen exercises — carried through MenuScreen's row badges, each
-// demo screen's own line tag, and (where the native header/tab bar already takes a tint color) the
-// OS chrome itself. One color per line replaces the single flat accent every row/button used to
-// share. Kept in sync by hand with App.css's `:root` `--line-*` tokens — CSS custom properties and
-// this module are different runtimes with no shared import path.
+// The demo suite groups its tour screens into thematic "lines" — which part of the package (or,
+// for Sensors, which native-module wrapper) each screen exercises — carried through MenuScreen's
+// row badges, each demo screen's own line tag, and (where the native header/tab bar already takes
+// a tint color) the OS chrome itself. One color per line replaces the single flat accent every
+// row/button used to share. Kept in sync by hand with App.css's `:root` `--line-*` tokens — CSS
+// custom properties and this module are different runtimes with no shared import path.
 export const NAV_LINE = {
   Primitives: 'primitives',
   Presentation: 'presentation',
   Structure: 'structure',
   Introspection: 'introspection',
   Routing: 'routing',
+  Sensors: 'sensors',
 } as const;
 
 export type INavLine = (typeof NAV_LINE)[keyof typeof NAV_LINE];
@@ -28,6 +29,10 @@ export const LINE_COLOR: Record<INavLine, string> = {
   [NAV_LINE.Structure]: '#4fd1a5',
   [NAV_LINE.Introspection]: '#b18cf5',
   [NAV_LINE.Routing]: '#f2789a',
+  // Warm amber — the one line here that isn't @symbiote-native/navigation at all
+  // (@symbiote-native/sensors, a different package's canary demo), deliberately the warmest color
+  // in the set so it reads apart from the other 5's cool blues/greens/purples/pinks at a glance.
+  [NAV_LINE.Sensors]: '#f5a623',
 };
 
 export type INavLineInfo = {
@@ -50,4 +55,5 @@ export const ROUTE_LINE_INFO: Record<ITourRouteName, INavLineInfo> = {
   [ROUTE_NAME.HooksDemo]: { line: NAV_LINE.Introspection, code: 'HK', label: 'INTROSPECTION LINE' },
   [ROUTE_NAME.DeepLinking]: { line: NAV_LINE.Routing, code: 'DL', label: 'ROUTING LINE' },
   [ROUTE_NAME.StatePersistence]: { line: NAV_LINE.Routing, code: 'SP', label: 'ROUTING LINE' },
+  [ROUTE_NAME.Sensors]: { line: NAV_LINE.Sensors, code: 'SN', label: 'SENSORS LINE' },
 };

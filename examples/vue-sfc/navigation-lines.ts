@@ -13,6 +13,7 @@ export const NAV_LINE = {
   Structure: 'structure',
   Introspection: 'introspection',
   Routing: 'routing',
+  Sensors: 'sensors',
 } as const;
 
 export type INavLine = (typeof NAV_LINE)[keyof typeof NAV_LINE];
@@ -29,6 +30,9 @@ export const LINE_COLOR: Record<INavLine, string> = {
   [NAV_LINE.Structure]: '#4fd1a5',
   [NAV_LINE.Introspection]: '#b18cf5',
   [NAV_LINE.Routing]: '#f2789a',
+  // Amber — @symbiote-native/sensors' own tour stop (Accelerometer/Gyroscope/Magnetometer/
+  // DeviceMotion/Pedometer over expo-modules-core), distinct from every line color above.
+  [NAV_LINE.Sensors]: '#f6ad55',
 };
 
 export type INavLineInfo = {
@@ -43,6 +47,7 @@ export type ITourRouteName = Exclude<IRouteName, typeof ROUTE_NAME.Menu | typeof
 
 export const ROUTE_LINE_INFO: Record<ITourRouteName, INavLineInfo> = {
   [ROUTE_NAME.Canary]: { line: NAV_LINE.Primitives, code: 'CN', label: 'PRIMITIVES LINE' },
+  [ROUTE_NAME.Sensors]: { line: NAV_LINE.Sensors, code: 'SN', label: 'SENSORS LINE' },
   [ROUTE_NAME.HeaderOptions]: { line: NAV_LINE.Presentation, code: 'HD', label: 'PRESENTATION LINE' },
   [ROUTE_NAME.SheetDemo]: { line: NAV_LINE.Presentation, code: 'SH', label: 'PRESENTATION LINE' },
   [ROUTE_NAME.TabsDemo]: { line: NAV_LINE.Structure, code: 'TB', label: 'STRUCTURE LINE' },

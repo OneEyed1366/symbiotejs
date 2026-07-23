@@ -18,6 +18,13 @@ buildscript {
         classpath("com.android.tools.build:gradle")
         classpath("com.facebook.react:react-native-gradle-plugin")
         classpath("org.jetbrains.kotlin:kotlin-gradle-plugin")
+        // expo-modules-core's and expo-sensors' own android/build.gradle both `apply plugin:
+        // 'expo-module-gradle-plugin'` (old-style) and `import` its ExpoModuleExtension directly —
+        // old-style `apply plugin:` only resolves an external plugin's classes via this classic
+        // shared root-buildscript-classpath convention, not via pluginManagement's composite-build
+        // substitution alone (settings.gradle handles the composite-build inclusion; this line is
+        // separate and both are required).
+        classpath("expo.modules:expo-module-gradle-plugin")
     }
 }
 

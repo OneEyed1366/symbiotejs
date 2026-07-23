@@ -20,14 +20,17 @@ const MENU_ITEMS: readonly IMenuItem[] = [
   { label: 'Hooks', route: ROUTE_NAME.HooksDemo, hint: 'useFocusEffect / useIsFocused / useNavigationState' },
   { label: 'Deep linking', route: ROUTE_NAME.DeepLinking, hint: 'resolveRouteFromUrl against a typed URL' },
   { label: 'State persistence', route: ROUTE_NAME.StatePersistence, hint: 'serialize/deserialize the Stack state' },
+  { label: 'Sensors', route: ROUTE_NAME.Sensors, hint: '@symbiote-native/sensors — accelerometer, gyroscope, magnetometer, device motion, pedometer' },
 ];
 
 /**
  * Root menu for the @symbiote-native/navigation demo surface: one row per navigator/feature,
  * each pushing its own dedicated demo screen onto the same root Stack. Replaces Canary as the
- * initial route; Canary itself is unchanged and reachable from the first row.
+ * initial route; Canary itself is unchanged and reachable from the first row. The Sensors row is
+ * a different package's canary demo entirely (@symbiote-native/sensors) — folded into the same
+ * menu/Stack rather than a second app, since this is the one canary app both packages share.
  *
- * Rows are grouped into 5 thematic "lines" (navigation-lines.ts's ROUTE_LINE_INFO) — a color +
+ * Rows are grouped into 6 thematic "lines" (navigation-lines.ts's ROUTE_LINE_INFO) — a color +
  * 2-letter badge per line, carried through onto each demo screen's own line tag — so the tour
  * reads as one system instead of a flat bag of unrelated test screens.
  */

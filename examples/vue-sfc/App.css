@@ -37,6 +37,7 @@
   --line-structure: #4fd1a5;
   --line-introspection: #b18cf5;
   --line-routing: #f2789a;
+  --line-sensors: #f6ad55;
 }
 
 /* shared / common. .section is the outermost content wrapper directly inside a demo screen's
@@ -681,6 +682,9 @@
 .line-tag-routing {
   background-color: var(--line-routing);
 }
+.line-tag-sensors {
+  background-color: var(--line-sensors);
+}
 .line-tag-text {
   color: var(--ink);
   font-size: 11px;
@@ -725,6 +729,10 @@
   border-left-width: 3px;
   border-left-color: var(--line-routing);
 }
+.menu-row-sensors {
+  border-left-width: 3px;
+  border-left-color: var(--line-sensors);
+}
 
 .menu-badge {
   width: 34px;
@@ -747,6 +755,9 @@
 }
 .menu-badge-routing {
   background-color: var(--line-routing);
+}
+.menu-badge-sensors {
+  background-color: var(--line-sensors);
 }
 .menu-badge-text {
   color: var(--ink);
@@ -781,4 +792,79 @@
 }
 .menu-row-hint-routing {
   color: var(--line-routing);
+}
+.menu-row-hint-sensors {
+  color: var(--line-sensors);
+}
+
+/* SensorsScreen — one card per @symbiote-native/sensors hook, each rendering its own
+   checking/unavailable/waiting/live state distinctly (see the sensor-status-* badges below). */
+.sensor-card {
+  gap: 10px;
+  padding: 16px;
+  border-radius: 16px;
+  background-color: var(--paper);
+}
+.sensor-card-header {
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+}
+.sensor-card-title {
+  color: var(--chalk-bright);
+  font-size: 16px;
+  font-weight: bold;
+}
+.sensor-status-badge {
+  padding-top: 4px;
+  padding-bottom: 4px;
+  padding-left: 10px;
+  padding-right: 10px;
+  border-radius: 999px;
+}
+/* still resolving isAvailableAsync() */
+.sensor-status-badge-checking {
+  background-color: var(--mist);
+}
+/* isAvailableAsync() resolved false — a real state, not an error (the iOS Simulator reports
+   this for every CoreMotion/CMPedometer-backed sensor, see the symbiote-expo-native-module
+   skill) */
+.sensor-status-badge-unavailable {
+  background-color: #6b4a4a;
+}
+/* available, subscribed, no reading has arrived yet */
+.sensor-status-badge-waiting {
+  background-color: var(--line-sensors);
+}
+/* at least one live reading rendered below */
+.sensor-status-badge-live {
+  background-color: var(--line-structure);
+}
+.sensor-status-text {
+  color: var(--ink);
+  font-size: 11px;
+  font-weight: bold;
+  letter-spacing: 0.5px;
+}
+.sensor-reading-row {
+  flex-direction: row;
+  gap: 8px;
+}
+.sensor-reading-chip {
+  flex: 1;
+  align-items: center;
+  padding-top: 8px;
+  padding-bottom: 8px;
+  border-radius: 10px;
+  background-color: var(--ink);
+}
+.sensor-reading-label {
+  color: var(--mist);
+  font-size: 11px;
+  letter-spacing: 0.5px;
+}
+.sensor-reading-value {
+  color: var(--chalk-bright);
+  font-size: 14px;
+  font-weight: bold;
 }

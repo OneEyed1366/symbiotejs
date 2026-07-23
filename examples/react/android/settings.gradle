@@ -1,6 +1,38 @@
-pluginManagement { includeBuild("../node_modules/@react-native/gradle-plugin") }
+// pluginManagement {} must stay the file's first statement — Gradle enforces this at parse
+// time, even ahead of a plain `def`.
+pluginManagement {
+  includeBuild("../node_modules/@react-native/gradle-plugin")
+
+  def resolvedExpoModulesJson = providers.exec {
+    workingDir(new File(settingsDir, ".."))
+    // The real entry file, not the `.bin/` shim (a shell script `node` can't parse as JS).
+    commandLine("node", "./node_modules/expo-modules-autolinking/bin/expo-modules-autolinking.js",
+                "resolve", "--platform", "android", "--json")
+  }.standardOutput.asText.get()
+
+  def resolvedExpoModules = new groovy.json.JsonSlurper().parseText(resolvedExpoModulesJson)
+
+  // auto-install-peers pulls in the whole phantom `expo` tree too (same unmet-peer cause as
+  // the iOS Podfile exclude list) — filter down to exactly the packages you actually want.
+  def wantedExpoModules = resolvedExpoModules.modules
+    .findAll { ["expo-modules-core", "expo-sensors"].contains(it.packageName) }
+
+  wantedExpoModules.collect { it.plugins ?: [] }.flatten()
+    .each { plugin -> includeBuild(new File(plugin.sourceDir as String)) }
+
+  gradle.ext.wantedExpoModules = wantedExpoModules
+}
 plugins { id("com.facebook.react.settings") }
 extensions.configure(com.facebook.react.ReactSettingsExtension){ ex -> ex.autolinkLibrariesFromCommand() }
 rootProject.name = 'Canary'
 include ':app'
 includeBuild('../node_modules/@react-native/gradle-plugin')
+
+gradle.ext.wantedExpoModules.each { module ->
+  // `proj`, not `project` — a closure param named `project` would shadow Settings' own
+  // `project(path)` lookup used below.
+  module.projects.each { proj ->
+    include(":${proj.name}")
+    project(":${proj.name}").projectDir = new File(proj.sourceDir as String)
+  }
+}
