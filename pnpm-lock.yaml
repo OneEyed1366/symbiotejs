@@ -204,32 +204,26 @@ importers:
         specifier: ^22
         version: 22.0.5(@angular/compiler@22.0.5)(rxjs@7.8.2)
       '@symbiote-native/android':
-        specifier: ^0.1.1
-        version: 0.1.1(react-native@0.86.0(@babel/core@7.29.7)(@react-native-community/cli@20.1.0(typescript@6.0.3))(@react-native/metro-config@0.86.0(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3))
-      '@symbiote-native/angular':
-        specifier: ^0.6.0
-        version: 0.6.0(@angular/compiler@22.0.5)(@angular/core@22.0.5(@angular/compiler@22.0.5)(rxjs@7.8.2))(@babel/core@7.29.7)(@symbiote-native/engine@0.1.6(react-native@0.86.0(@babel/core@7.29.7)(@react-native-community/cli@20.1.0(typescript@6.0.3))(@react-native/metro-config@0.86.0(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3)))(react-native@0.86.0(@babel/core@7.29.7)(@react-native-community/cli@20.1.0(typescript@6.0.3))(@react-native/metro-config@0.86.0(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3))(typescript@6.0.3)
-      '@symbiote-native/components':
-        specifier: ^0.2.5
-        version: 0.2.5(@symbiote-native/engine@0.1.6(react-native@0.86.0(@babel/core@7.29.7)(@react-native-community/cli@20.1.0(typescript@6.0.3))(@react-native/metro-config@0.86.0(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3)))(react-native@0.86.0(@babel/core@7.29.7)(@react-native-community/cli@20.1.0(typescript@6.0.3))(@react-native/metro-config@0.86.0(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3))
-      '@symbiote-native/engine':
-        specifier: ^0.1.6
-        version: 0.1.6(react-native@0.86.0(@babel/core@7.29.7)(@react-native-community/cli@20.1.0(typescript@6.0.3))(@react-native/metro-config@0.86.0(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3))
-      '@symbiote-native/navigation':
-        specifier: ^1.0.0
-        version: 1.0.0(164a1f1fb0e279d1603eb695b348d8fe)
-      '@symbiote-native/react':
-        specifier: ^0.2.6
-        version: 0.2.6(@babel/core@7.29.7)(@symbiote-native/engine@0.1.6(react-native@0.86.0(@babel/core@7.29.7)(@react-native-community/cli@20.1.0(typescript@6.0.3))(@react-native/metro-config@0.86.0(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3)))(react-native@0.86.0(@babel/core@7.29.7)(@react-native-community/cli@20.1.0(typescript@6.0.3))(@react-native/metro-config@0.86.0(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3))(react@19.2.3)(typescript@6.0.3)
-      '@symbiote-native/sensors':
         specifier: workspace:*
-        version: link:../../packages/sensors
+        version: link:../../packages/android
+      '@symbiote-native/angular':
+        specifier: workspace:*
+        version: link:../../adapters/angular
+      '@symbiote-native/components':
+        specifier: workspace:*
+        version: link:../../core/components
+      '@symbiote-native/engine':
+        specifier: workspace:*
+        version: link:../../core/engine
+      '@symbiote-native/navigation':
+        specifier: workspace:*
+        version: link:../../packages/navigation
       '@symbiote-native/slider':
-        specifier: ^4.0.0
-        version: 4.0.0(40183050cfd1b18f15a72be12c99ac0d)
+        specifier: workspace:*
+        version: link:../../packages/slider
       '@symbiote-native/splash-screen':
-        specifier: ^2.0.0
-        version: 2.0.0(2ca1fc64fb06481d649a77fb88945f9b)
+        specifier: workspace:*
+        version: link:../../packages/splash-screen
       react:
         specifier: 19.2.3
         version: 19.2.3
@@ -277,8 +271,8 @@ importers:
         specifier: 0.86.0
         version: 0.86.0
       '@symbiote-native/css-parser':
-        specifier: ^0.2.2
-        version: 0.2.2(@babel/core@7.29.7)(typescript@6.0.3)
+        specifier: workspace:*
+        version: link:../../core/css-parser
       '@types/jest':
         specifier: ^29.5.12
         version: 29.5.14
@@ -294,9 +288,6 @@ importers:
       eslint:
         specifier: ^8.19.0
         version: 8.57.1
-      expo-modules-autolinking:
-        specifier: 57.0.5
-        version: 57.0.5(typescript@6.0.3)
       jest:
         specifier: ^29.7.0
         version: 29.7.0(@types/node@26.1.0)
@@ -333,9 +324,6 @@ importers:
       '@symbiote-native/react':
         specifier: workspace:*
         version: link:../../adapters/react
-      '@symbiote-native/sensors':
-        specifier: workspace:*
-        version: link:../../packages/sensors
       '@symbiote-native/slider':
         specifier: workspace:*
         version: link:../../packages/slider
@@ -403,15 +391,15 @@ importers:
       '@types/react':
         specifier: ^19.2.0
         version: 19.2.17
+      babel-plugin-react-compiler:
+        specifier: ^1.0.0
+        version: 1.0.0
       detox:
         specifier: ^20.51.4
         version: 20.51.4(@jest/environment@29.7.0)(@jest/types@29.6.3)(expect@29.7.0)(jest-environment-node@29.7.0)(jest@29.7.0(@types/node@26.1.0))
       eslint:
         specifier: ^8.19.0
         version: 8.57.1
-      expo-modules-autolinking:
-        specifier: 57.0.5
-        version: 57.0.5(typescript@6.0.3)
       jest:
         specifier: ^29.7.0
         version: 29.7.0(@types/node@26.1.0)
@@ -434,29 +422,26 @@ importers:
   .examples/vue-sfc:
     dependencies:
       '@symbiote-native/android':
-        specifier: ^0.1.1
-        version: 0.1.1(react-native@0.86.0(@babel/core@7.29.7)(@react-native-community/cli@20.1.0(typescript@6.0.3))(@react-native/metro-config@0.86.0(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3))
-      '@symbiote-native/components':
-        specifier: ^0.2.5
-        version: 0.2.5(@symbiote-native/engine@0.1.6(react-native@0.86.0(@babel/core@7.29.7)(@react-native-community/cli@20.1.0(typescript@6.0.3))(@react-native/metro-config@0.86.0(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3)))(react-native@0.86.0(@babel/core@7.29.7)(@react-native-community/cli@20.1.0(typescript@6.0.3))(@react-native/metro-config@0.86.0(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3))
-      '@symbiote-native/engine':
-        specifier: ^0.1.6
-        version: 0.1.6(react-native@0.86.0(@babel/core@7.29.7)(@react-native-community/cli@20.1.0(typescript@6.0.3))(@react-native/metro-config@0.86.0(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3))
-      '@symbiote-native/navigation':
-        specifier: ^1.0.0
-        version: 1.0.0(93314d05db759b28e7a15a9a576c629f)
-      '@symbiote-native/sensors':
         specifier: workspace:*
-        version: link:../../packages/sensors
+        version: link:../../packages/android
+      '@symbiote-native/components':
+        specifier: workspace:*
+        version: link:../../core/components
+      '@symbiote-native/engine':
+        specifier: workspace:*
+        version: link:../../core/engine
+      '@symbiote-native/navigation':
+        specifier: workspace:*
+        version: link:../../packages/navigation
       '@symbiote-native/slider':
-        specifier: ^4.0.0
-        version: 4.0.0(c54e1f43cfc05bb4cf7ef98042ae2597)
+        specifier: workspace:*
+        version: link:../../packages/slider
       '@symbiote-native/splash-screen':
-        specifier: ^2.0.0
-        version: 2.0.0(c6d60f0834fd4baf495fc081792ea271)
+        specifier: workspace:*
+        version: link:../../packages/splash-screen
       '@symbiote-native/vue':
-        specifier: ^0.3.6
-        version: 0.3.6(@babel/core@7.29.7)(@symbiote-native/engine@0.1.6(react-native@0.86.0(@babel/core@7.29.7)(@react-native-community/cli@20.1.0(typescript@6.0.3))(@react-native/metro-config@0.86.0(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3)))(react-native@0.86.0(@babel/core@7.29.7)(@react-native-community/cli@20.1.0(typescript@6.0.3))(@react-native/metro-config@0.86.0(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3))(vue@3.5.39(typescript@6.0.3))
+        specifier: workspace:*
+        version: link:../../adapters/vue
       '@vue/runtime-core':
         specifier: ^3.5.13
         version: 3.5.39
@@ -504,8 +489,8 @@ importers:
         specifier: 0.86.0
         version: 0.86.0
       '@symbiote-native/css-parser':
-        specifier: ^0.2.2
-        version: 0.2.2(@babel/core@7.29.7)(typescript@6.0.3)
+        specifier: workspace:*
+        version: link:../../core/css-parser
       '@types/jest':
         specifier: ^29.5.12
         version: 29.5.14
@@ -521,9 +506,6 @@ importers:
       eslint:
         specifier: ^8.19.0
         version: 8.57.1
-      expo-modules-autolinking:
-        specifier: 57.0.5
-        version: 57.0.5(typescript@6.0.3)
       jest:
         specifier: ^29.7.0
         version: 29.7.0(@types/node@26.1.0)
@@ -549,29 +531,26 @@ importers:
   .examples/vue-tsx:
     dependencies:
       '@symbiote-native/android':
-        specifier: ^0.1.1
-        version: 0.1.1(react-native@0.86.0(@babel/core@7.29.7)(@react-native-community/cli@20.1.0(typescript@6.0.3))(@react-native/metro-config@0.86.0(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3))
-      '@symbiote-native/components':
-        specifier: ^0.2.5
-        version: 0.2.5(@symbiote-native/engine@0.1.6(react-native@0.86.0(@babel/core@7.29.7)(@react-native-community/cli@20.1.0(typescript@6.0.3))(@react-native/metro-config@0.86.0(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3)))(react-native@0.86.0(@babel/core@7.29.7)(@react-native-community/cli@20.1.0(typescript@6.0.3))(@react-native/metro-config@0.86.0(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3))
-      '@symbiote-native/engine':
-        specifier: ^0.1.6
-        version: 0.1.6(react-native@0.86.0(@babel/core@7.29.7)(@react-native-community/cli@20.1.0(typescript@6.0.3))(@react-native/metro-config@0.86.0(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3))
-      '@symbiote-native/navigation':
-        specifier: ^1.0.0
-        version: 1.0.0(93314d05db759b28e7a15a9a576c629f)
-      '@symbiote-native/sensors':
         specifier: workspace:*
-        version: link:../../packages/sensors
+        version: link:../../packages/android
+      '@symbiote-native/components':
+        specifier: workspace:*
+        version: link:../../core/components
+      '@symbiote-native/engine':
+        specifier: workspace:*
+        version: link:../../core/engine
+      '@symbiote-native/navigation':
+        specifier: workspace:*
+        version: link:../../packages/navigation
       '@symbiote-native/slider':
-        specifier: ^4.0.0
-        version: 4.0.0(c54e1f43cfc05bb4cf7ef98042ae2597)
+        specifier: workspace:*
+        version: link:../../packages/slider
       '@symbiote-native/splash-screen':
-        specifier: ^2.0.0
-        version: 2.0.0(c6d60f0834fd4baf495fc081792ea271)
+        specifier: workspace:*
+        version: link:../../packages/splash-screen
       '@symbiote-native/vue':
-        specifier: ^0.3.6
-        version: 0.3.6(@babel/core@7.29.7)(@symbiote-native/engine@0.1.6(react-native@0.86.0(@babel/core@7.29.7)(@react-native-community/cli@20.1.0(typescript@6.0.3))(@react-native/metro-config@0.86.0(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3)))(react-native@0.86.0(@babel/core@7.29.7)(@react-native-community/cli@20.1.0(typescript@6.0.3))(@react-native/metro-config@0.86.0(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3))(vue@3.5.39(typescript@6.0.3))
+        specifier: workspace:*
+        version: link:../../adapters/vue
       '@vue/runtime-core':
         specifier: ^3.5.13
         version: 3.5.39
@@ -619,11 +598,11 @@ importers:
         specifier: 0.86.0
         version: 0.86.0
       '@symbiote-native/css-parser':
-        specifier: ^0.2.2
-        version: 0.2.2(@babel/core@7.29.7)(typescript@6.0.3)
+        specifier: workspace:*
+        version: link:../../core/css-parser
       '@symbiote-native/test-utils':
-        specifier: ^0.1.5
-        version: 0.1.5
+        specifier: workspace:*
+        version: link:../../core/test-utils
       '@types/jest':
         specifier: ^29.5.12
         version: 29.5.14
@@ -642,9 +621,6 @@ importers:
       eslint:
         specifier: ^8.19.0
         version: 8.57.1
-      expo-modules-autolinking:
-        specifier: 57.0.5
-        version: 57.0.5(typescript@6.0.3)
       jest:
         specifier: ^29.7.0
         version: 29.7.0(@types/node@26.1.0)
@@ -2419,6 +2395,14 @@ packages:
       typescript:
         optional: true
 
+  '@expo/require-utils@57.0.3':
+    resolution: {integrity: sha512-ns05X1K8tM+Qtzp6dNloUFOopSdh3J+HC61BtOR8WHhgtPFyX8TKuO2diqZUqVg9K8yfkWug7g8tBS0qRniSTA==}
+    peerDependencies:
+      typescript: ^5.0.0 || ^5.0.0-0 || ^6.0.0
+    peerDependenciesMeta:
+      typescript:
+        optional: true
+
   '@expo/router-server@57.0.2':
     resolution: {integrity: sha512-hu9qhnq2PKuwMXIoRMAa2+HUeqSut9HwiQf3a62tfGTIxPN3rKUZ10TozEEB+Pd/7WIa238sXMS5v1YhTuC9gA==}
     peerDependencies:
@@ -3254,167 +3238,6 @@ packages:
 
   '@standard-schema/spec@1.1.0':
     resolution: {integrity: sha512-l2aFy5jALhniG5HgqrD6jXLi/rUWrKvqN/qJx6yoJsgKhblVd+iqqU4RCXavm/jPityDo5TCvKMnpjKnOriy0w==}
-
-  '@symbiote-native/android@0.1.1':
-    resolution: {integrity: sha512-8v34XkUytBVNIFYtSVgeSTdHakeD2rqdRygP8tdyMKRg9WbEc9RF/abnIhwK4FrmvNPW1+ATvrLrS1w4BJbIdA==}
-    peerDependencies:
-      react-native: '>=0.86'
-
-  '@symbiote-native/angular@0.5.0':
-    resolution: {integrity: sha512-QlcUU5A82jykQkTSNyD0rK7TcLfha/OI+azns8USv08sQKIncqfpl/KgS64pCXRm2+vwDXcNVsYTjPNAD9ZS4Q==}
-    hasBin: true
-    peerDependencies:
-      '@angular/core': '>=20'
-      '@symbiote-native/engine': '>=0.1.6'
-      react-native: '>=0.86'
-
-  '@symbiote-native/angular@0.6.0':
-    resolution: {integrity: sha512-p8uAlGH1ZpqQAF1qyXAnEbJ4ObqZte/CuvR2NUo33Izw4ghLEgkXiNlchawOT48zB3at+zRZqdduQXVsDfP9Mg==}
-    hasBin: true
-    peerDependencies:
-      '@angular/core': '>=20'
-      '@symbiote-native/engine': '>=0.1.7'
-      react-native: '>=0.86'
-
-  '@symbiote-native/components@0.2.5':
-    resolution: {integrity: sha512-W4kd/Qdd3K0HtSRqeolWwNd8TABH/RAc7zOt6bzPCtLUg9rSo2U8rcJZsh4IQBu5u8/wK2PaeBY/u0LMy+k3Xw==}
-    peerDependencies:
-      '@symbiote-native/engine': '>=0.1.6'
-      react-native: '>=0.86'
-
-  '@symbiote-native/components@0.2.6':
-    resolution: {integrity: sha512-Cn7tPXJRt9PpERedwxHW4pUhWIrx6Fo4XBVCjOO9zseaS2vKWjhdz7qk0+MfepY2UCykXavVOzjWNajWmbcqnQ==}
-    peerDependencies:
-      '@symbiote-native/engine': '>=0.1.7'
-      react-native: '>=0.86'
-
-  '@symbiote-native/css-parser@0.2.2':
-    resolution: {integrity: sha512-CGyBczjMq5+ApNHf3RXvxqYJUMIOBog3GRvpLNxK281n24CuS/qrHPp3wi13xim7B29wrMV8hrZHOIb6M4e9Lg==}
-    hasBin: true
-    peerDependencies:
-      typescript: '>=5.0'
-    peerDependenciesMeta:
-      typescript:
-        optional: true
-
-  '@symbiote-native/css-parser@0.2.3':
-    resolution: {integrity: sha512-0v01oMjQ71JBarFYQKjs5nmUSuNFvt7O6CCBuiTwynso90MJ63SbqHWFVdMC9Aas/BwvKbkM/Z1bdVC2Aw2+0g==}
-    hasBin: true
-    peerDependencies:
-      typescript: '>=5.0'
-    peerDependenciesMeta:
-      typescript:
-        optional: true
-
-  '@symbiote-native/engine@0.1.6':
-    resolution: {integrity: sha512-oly71Sii4O3pRkyuRuTYknxWwOr4eVUY8A4DfUmbOxbIJVq4sQSm53ABGpBHo0u9Zf3fTWln9O20QXZhkV0dLw==}
-    peerDependencies:
-      react-native: '>=0.86'
-
-  '@symbiote-native/navigation@1.0.0':
-    resolution: {integrity: sha512-f6QXCDNZgn/62um13pyQ1jDCEKWX+WKqsjsm6ciVYS22Mo5LzVomxIKcgrl8C0JZIvtpQPL2OV2mczBk4kULCQ==}
-    peerDependencies:
-      '@angular/common': '>=20'
-      '@angular/core': '>=20'
-      '@symbiote-native/angular': 0.5.0
-      '@symbiote-native/engine': '>=0.1.6'
-      '@symbiote-native/react': 0.2.6
-      '@symbiote-native/vue': 0.3.6
-      '@vue/runtime-core': ^3.5.13
-      react: 19.2.3
-      react-native: '>=0.86'
-      vue: '>=3.5.0'
-    peerDependenciesMeta:
-      '@angular/common':
-        optional: true
-      '@angular/core':
-        optional: true
-      '@symbiote-native/angular':
-        optional: true
-      '@symbiote-native/react':
-        optional: true
-      '@symbiote-native/vue':
-        optional: true
-      '@vue/runtime-core':
-        optional: true
-      react:
-        optional: true
-      vue:
-        optional: true
-
-  '@symbiote-native/react@0.2.6':
-    resolution: {integrity: sha512-8VzafzK+avagwDY+52gFFAGAPdOs30/neEIGZw32zyNWmO2l70OrUi8Db8bzhsdNh+hS0OqEsXB0ke3pD4H4yw==}
-    peerDependencies:
-      '@symbiote-native/engine': '>=0.1.6'
-      react: 19.2.3
-      react-native: '>=0.86'
-
-  '@symbiote-native/slider@4.0.0':
-    resolution: {integrity: sha512-vHbz9KEX6BWowlSIlxZMmSCh1pV7+XkycLad/kUjO0zLLHB3epljqDpPLFBmpI5RyXDzOUlr2Wjj7W/f4E8B+g==}
-    peerDependencies:
-      '@angular/core': '>=20'
-      '@symbiote-native/angular': 0.5.0
-      '@symbiote-native/engine': '>=0.1.6'
-      '@symbiote-native/react': 0.2.6
-      '@symbiote-native/vue': 0.3.6
-      '@vue/runtime-core': ^3.5.13
-      react: 19.2.3
-      react-native: '>=0.86'
-      vue: '>=3.5.0'
-    peerDependenciesMeta:
-      '@angular/core':
-        optional: true
-      '@symbiote-native/angular':
-        optional: true
-      '@symbiote-native/react':
-        optional: true
-      '@symbiote-native/vue':
-        optional: true
-      '@vue/runtime-core':
-        optional: true
-      react:
-        optional: true
-      vue:
-        optional: true
-
-  '@symbiote-native/splash-screen@2.0.0':
-    resolution: {integrity: sha512-4inIoWf1U6PvFF2dfn2jVL+YZezBU3cX8KVqUlbXVafH6m6FiDawNSQ4ZXy70gkfG0+FLABvcKSR1nvBePCcdw==}
-    hasBin: true
-    peerDependencies:
-      '@angular/core': '>=20'
-      '@symbiote-native/angular': 0.5.0
-      '@symbiote-native/engine': '>=0.1.6'
-      '@symbiote-native/react': 0.2.6
-      '@symbiote-native/vue': 0.3.6
-      '@vue/runtime-core': ^3.5.13
-      react: 19.2.3
-      react-native: '>=0.86'
-      vue: '>=3.5.0'
-    peerDependenciesMeta:
-      '@angular/core':
-        optional: true
-      '@symbiote-native/angular':
-        optional: true
-      '@symbiote-native/react':
-        optional: true
-      '@symbiote-native/vue':
-        optional: true
-      '@vue/runtime-core':
-        optional: true
-      react:
-        optional: true
-      vue:
-        optional: true
-
-  '@symbiote-native/test-utils@0.1.5':
-    resolution: {integrity: sha512-j8SkNKF8Ryl88uNJI71l/0RAA1LO9NIqdU1a6yUKI5Q67T1ONaFcXtPXk2YJ+hJqNxjtz6q6sb5oGNJqHxvG6w==}
-
-  '@symbiote-native/vue@0.3.6':
-    resolution: {integrity: sha512-zpooeyXgqM7rBSVc2dalSjUr1wkzyK7o7fA6tDgqbOAdEX2lfflbiYYK9a2xKHag7G4C9umOQuZPuy0oeiVn6A==}
-    peerDependencies:
-      '@symbiote-native/engine': '>=0.1.6'
-      react-native: '>=0.86'
-      vue: '>=3.5.0'
 
   '@tybys/wasm-util@0.10.3':
     resolution: {integrity: sha512-F3fo1MYrRJYL3zER0OUOmkutjr1Vp23m7OsSgp7nq4SP6OqX6C/56XFIPAl5bt3zaBRjmW7SGz3u/6LwFpYcOg==}
@@ -5000,8 +4823,8 @@ packages:
       expo: '*'
       react: 19.2.3
 
-  expo-modules-autolinking@57.0.5:
-    resolution: {integrity: sha512-Vv2PVeEUN0/VW19ItkVA8LxAuH8SV8cjui0MKhJxCKrNyCAGGZU6sRsBJciYXR4uVxuXWKiepGW6E3k/c+Ytdg==}
+  expo-modules-autolinking@57.0.8:
+    resolution: {integrity: sha512-YBDgbJHlhhhr3JaKErW6znsIL8zQsh206LaDpWrLHV/WluRwhYfZuF/fhkVN7b/DsRxIu0UeCPExaEPMxlC2Hw==}
     hasBin: true
 
   expo-modules-core@57.0.5:
@@ -10139,7 +9962,7 @@ snapshots:
       '@expo/package-manager': 1.13.0
       '@expo/plist': 0.8.0
       '@expo/prebuild-config': 57.0.5(typescript@6.0.3)
-      '@expo/require-utils': 57.0.1(typescript@6.0.3)
+      '@expo/require-utils': 57.0.3(typescript@6.0.3)
       '@expo/router-server': 57.0.2(expo-constants@57.0.3(expo@57.0.4)(react-native@0.86.0(@babel/core@7.29.7)(@react-native-community/cli@20.1.0(typescript@6.0.3))(@react-native/metro-config@0.86.0(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3)))(expo-font@57.0.0(expo@57.0.4)(react-native@0.86.0(@babel/core@7.29.7)(@react-native-community/cli@20.1.0(typescript@6.0.3))(@react-native/metro-config@0.86.0(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3))(react@19.2.3))(expo-server@57.0.0)(expo@57.0.4)(react@19.2.3)
       '@expo/schema-utils': 57.0.1
       '@expo/spawn-async': 1.8.0
@@ -10225,7 +10048,7 @@ snapshots:
       '@expo/config-types': 57.0.1
       '@expo/json-file': 11.0.0
       '@expo/plist': 0.8.0
-      '@expo/require-utils': 57.0.1(typescript@6.0.3)
+      '@expo/require-utils': 57.0.3(typescript@6.0.3)
       '@expo/sdk-runtime-versions': 1.0.0
       chalk: 4.1.2
       debug: 4.4.3
@@ -10246,7 +10069,7 @@ snapshots:
       '@expo/config-plugins': 57.0.3(typescript@6.0.3)
       '@expo/config-types': 57.0.1
       '@expo/json-file': 11.0.0
-      '@expo/require-utils': 57.0.1(typescript@6.0.3)
+      '@expo/require-utils': 57.0.3(typescript@6.0.3)
       deepmerge: 4.3.1
       getenv: 2.0.0
       glob: 13.0.6
@@ -10305,7 +10128,7 @@ snapshots:
 
   '@expo/image-utils@0.11.1(typescript@6.0.3)':
     dependencies:
-      '@expo/require-utils': 57.0.1(typescript@6.0.3)
+      '@expo/require-utils': 57.0.3(typescript@6.0.3)
       '@expo/spawn-async': 1.8.0
       chalk: 4.1.2
       getenv: 2.0.0
@@ -10354,7 +10177,7 @@ snapshots:
       '@expo/env': 2.4.1
       '@expo/json-file': 11.0.0
       '@expo/metro': 56.0.0
-      '@expo/require-utils': 57.0.1(typescript@6.0.3)
+      '@expo/require-utils': 57.0.3(typescript@6.0.3)
       '@expo/spawn-async': 1.8.0
       '@jridgewell/gen-mapping': 0.3.13
       '@jridgewell/remapping': 2.3.5
@@ -10438,7 +10261,7 @@ snapshots:
       '@expo/json-file': 11.0.0
       '@react-native/normalize-colors': 0.86.0
       debug: 4.4.3
-      expo-modules-autolinking: 57.0.5(typescript@6.0.3)
+      expo-modules-autolinking: 57.0.8(typescript@6.0.3)
       resolve-from: 5.0.0
       semver: 7.8.5
     transitivePeerDependencies:
@@ -10446,6 +10269,16 @@ snapshots:
       - typescript
 
   '@expo/require-utils@57.0.1(typescript@6.0.3)':
+    dependencies:
+      '@babel/code-frame': 7.29.7
+      '@babel/core': 7.29.7
+      '@babel/plugin-transform-modules-commonjs': 7.29.7(@babel/core@7.29.7)
+    optionalDependencies:
+      typescript: 6.0.3
+    transitivePeerDependencies:
+      - supports-color
+
+  '@expo/require-utils@57.0.3(typescript@6.0.3)':
     dependencies:
       '@babel/code-frame': 7.29.7
       '@babel/core': 7.29.7
@@ -11456,209 +11289,6 @@ snapshots:
       text-hex: 1.0.0
 
   '@standard-schema/spec@1.1.0': {}
-
-  '@symbiote-native/android@0.1.1(react-native@0.86.0(@babel/core@7.29.7)(@react-native-community/cli@20.1.0(typescript@6.0.3))(@react-native/metro-config@0.86.0(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3))':
-    dependencies:
-      react-native: 0.86.0(@babel/core@7.29.7)(@react-native-community/cli@20.1.0(typescript@6.0.3))(@react-native/metro-config@0.86.0(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3)
-
-  '@symbiote-native/angular@0.5.0(@angular/compiler@22.0.5)(@angular/core@22.0.5(@angular/compiler@22.0.5)(rxjs@7.8.2))(@babel/core@7.29.7)(@symbiote-native/engine@0.1.6(react-native@0.86.0(@babel/core@7.29.7)(@react-native-community/cli@20.1.0(typescript@6.0.3))(@react-native/metro-config@0.86.0(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3)))(react-native@0.86.0(@babel/core@7.29.7)(@react-native-community/cli@20.1.0(typescript@6.0.3))(@react-native/metro-config@0.86.0(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3))(typescript@6.0.3)':
-    dependencies:
-      '@angular/compiler-cli': 22.0.5(@angular/compiler@22.0.5)(typescript@6.0.3)
-      '@angular/core': 22.0.5(@angular/compiler@22.0.5)(rxjs@7.8.2)
-      '@react-native/typescript-config': 0.86.0
-      '@symbiote-native/components': 0.2.5(@symbiote-native/engine@0.1.6(react-native@0.86.0(@babel/core@7.29.7)(@react-native-community/cli@20.1.0(typescript@6.0.3))(@react-native/metro-config@0.86.0(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3)))(react-native@0.86.0(@babel/core@7.29.7)(@react-native-community/cli@20.1.0(typescript@6.0.3))(@react-native/metro-config@0.86.0(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3))
-      '@symbiote-native/css-parser': 0.2.2(@babel/core@7.29.7)(typescript@6.0.3)
-      '@symbiote-native/engine': 0.1.6(react-native@0.86.0(@babel/core@7.29.7)(@react-native-community/cli@20.1.0(typescript@6.0.3))(@react-native/metro-config@0.86.0(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3))
-      react-native: 0.86.0(@babel/core@7.29.7)(@react-native-community/cli@20.1.0(typescript@6.0.3))(@react-native/metro-config@0.86.0(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3)
-    transitivePeerDependencies:
-      - '@angular/compiler'
-      - '@babel/core'
-      - supports-color
-      - typescript
-    optional: true
-
-  '@symbiote-native/angular@0.6.0(@angular/compiler@22.0.5)(@angular/core@22.0.5(@angular/compiler@22.0.5)(rxjs@7.8.2))(@babel/core@7.29.7)(@symbiote-native/engine@0.1.6(react-native@0.86.0(@babel/core@7.29.7)(@react-native-community/cli@20.1.0(typescript@6.0.3))(@react-native/metro-config@0.86.0(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3)))(react-native@0.86.0(@babel/core@7.29.7)(@react-native-community/cli@20.1.0(typescript@6.0.3))(@react-native/metro-config@0.86.0(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3))(typescript@6.0.3)':
-    dependencies:
-      '@angular/compiler-cli': 22.0.5(@angular/compiler@22.0.5)(typescript@6.0.3)
-      '@angular/core': 22.0.5(@angular/compiler@22.0.5)(rxjs@7.8.2)
-      '@react-native/typescript-config': 0.86.0
-      '@symbiote-native/components': 0.2.6(@symbiote-native/engine@0.1.6(react-native@0.86.0(@babel/core@7.29.7)(@react-native-community/cli@20.1.0(typescript@6.0.3))(@react-native/metro-config@0.86.0(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3)))(react-native@0.86.0(@babel/core@7.29.7)(@react-native-community/cli@20.1.0(typescript@6.0.3))(@react-native/metro-config@0.86.0(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3))
-      '@symbiote-native/css-parser': 0.2.3(@babel/core@7.29.7)(typescript@6.0.3)
-      '@symbiote-native/engine': 0.1.6(react-native@0.86.0(@babel/core@7.29.7)(@react-native-community/cli@20.1.0(typescript@6.0.3))(@react-native/metro-config@0.86.0(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3))
-      react-native: 0.86.0(@babel/core@7.29.7)(@react-native-community/cli@20.1.0(typescript@6.0.3))(@react-native/metro-config@0.86.0(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3)
-    transitivePeerDependencies:
-      - '@angular/compiler'
-      - '@babel/core'
-      - supports-color
-      - typescript
-
-  '@symbiote-native/components@0.2.5(@symbiote-native/engine@0.1.6(react-native@0.86.0(@babel/core@7.29.7)(@react-native-community/cli@20.1.0(typescript@6.0.3))(@react-native/metro-config@0.86.0(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3)))(react-native@0.86.0(@babel/core@7.29.7)(@react-native-community/cli@20.1.0(typescript@6.0.3))(@react-native/metro-config@0.86.0(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3))':
-    dependencies:
-      '@symbiote-native/engine': 0.1.6(react-native@0.86.0(@babel/core@7.29.7)(@react-native-community/cli@20.1.0(typescript@6.0.3))(@react-native/metro-config@0.86.0(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3))
-      react-native: 0.86.0(@babel/core@7.29.7)(@react-native-community/cli@20.1.0(typescript@6.0.3))(@react-native/metro-config@0.86.0(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3)
-
-  '@symbiote-native/components@0.2.6(@symbiote-native/engine@0.1.6(react-native@0.86.0(@babel/core@7.29.7)(@react-native-community/cli@20.1.0(typescript@6.0.3))(@react-native/metro-config@0.86.0(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3)))(react-native@0.86.0(@babel/core@7.29.7)(@react-native-community/cli@20.1.0(typescript@6.0.3))(@react-native/metro-config@0.86.0(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3))':
-    dependencies:
-      '@symbiote-native/engine': 0.1.6(react-native@0.86.0(@babel/core@7.29.7)(@react-native-community/cli@20.1.0(typescript@6.0.3))(@react-native/metro-config@0.86.0(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3))
-      react-native: 0.86.0(@babel/core@7.29.7)(@react-native-community/cli@20.1.0(typescript@6.0.3))(@react-native/metro-config@0.86.0(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3)
-
-  '@symbiote-native/css-parser@0.2.2(@babel/core@7.29.7)(typescript@6.0.3)':
-    dependencies:
-      '@react-native/metro-babel-transformer': 0.86.0(@babel/core@7.29.7)
-      postcss: 8.5.16
-      postcss-value-parser: 4.2.0
-    optionalDependencies:
-      typescript: 6.0.3
-    transitivePeerDependencies:
-      - '@babel/core'
-      - supports-color
-
-  '@symbiote-native/css-parser@0.2.3(@babel/core@7.29.7)(typescript@6.0.3)':
-    dependencies:
-      '@react-native/metro-babel-transformer': 0.86.0(@babel/core@7.29.7)
-      postcss: 8.5.16
-      postcss-value-parser: 4.2.0
-    optionalDependencies:
-      typescript: 6.0.3
-    transitivePeerDependencies:
-      - '@babel/core'
-      - supports-color
-
-  '@symbiote-native/engine@0.1.6(react-native@0.86.0(@babel/core@7.29.7)(@react-native-community/cli@20.1.0(typescript@6.0.3))(@react-native/metro-config@0.86.0(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3))':
-    dependencies:
-      react-native: 0.86.0(@babel/core@7.29.7)(@react-native-community/cli@20.1.0(typescript@6.0.3))(@react-native/metro-config@0.86.0(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3)
-
-  '@symbiote-native/navigation@1.0.0(164a1f1fb0e279d1603eb695b348d8fe)':
-    dependencies:
-      '@symbiote-native/components': 0.2.5(@symbiote-native/engine@0.1.6(react-native@0.86.0(@babel/core@7.29.7)(@react-native-community/cli@20.1.0(typescript@6.0.3))(@react-native/metro-config@0.86.0(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3)))(react-native@0.86.0(@babel/core@7.29.7)(@react-native-community/cli@20.1.0(typescript@6.0.3))(@react-native/metro-config@0.86.0(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3))
-      '@symbiote-native/engine': 0.1.6(react-native@0.86.0(@babel/core@7.29.7)(@react-native-community/cli@20.1.0(typescript@6.0.3))(@react-native/metro-config@0.86.0(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3))
-      react-native: 0.86.0(@babel/core@7.29.7)(@react-native-community/cli@20.1.0(typescript@6.0.3))(@react-native/metro-config@0.86.0(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3)
-      react-native-screens: 4.26.0(react-native@0.86.0(@babel/core@7.29.7)(@react-native-community/cli@20.1.0(typescript@6.0.3))(@react-native/metro-config@0.86.0(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3))(react@19.2.3)
-    optionalDependencies:
-      '@angular/common': 22.0.6(@angular/core@22.0.5(@angular/compiler@22.0.5)(rxjs@7.8.2))(rxjs@7.8.2)
-      '@angular/core': 22.0.5(@angular/compiler@22.0.5)(rxjs@7.8.2)
-      '@symbiote-native/angular': 0.6.0(@angular/compiler@22.0.5)(@angular/core@22.0.5(@angular/compiler@22.0.5)(rxjs@7.8.2))(@babel/core@7.29.7)(@symbiote-native/engine@0.1.6(react-native@0.86.0(@babel/core@7.29.7)(@react-native-community/cli@20.1.0(typescript@6.0.3))(@react-native/metro-config@0.86.0(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3)))(react-native@0.86.0(@babel/core@7.29.7)(@react-native-community/cli@20.1.0(typescript@6.0.3))(@react-native/metro-config@0.86.0(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3))(typescript@6.0.3)
-      '@symbiote-native/react': 0.2.6(@babel/core@7.29.7)(@symbiote-native/engine@0.1.6(react-native@0.86.0(@babel/core@7.29.7)(@react-native-community/cli@20.1.0(typescript@6.0.3))(@react-native/metro-config@0.86.0(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3)))(react-native@0.86.0(@babel/core@7.29.7)(@react-native-community/cli@20.1.0(typescript@6.0.3))(@react-native/metro-config@0.86.0(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3))(react@19.2.3)(typescript@6.0.3)
-      '@symbiote-native/vue': 0.3.6(@babel/core@7.29.7)(@symbiote-native/engine@0.1.6(react-native@0.86.0(@babel/core@7.29.7)(@react-native-community/cli@20.1.0(typescript@6.0.3))(@react-native/metro-config@0.86.0(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3)))(react-native@0.86.0(@babel/core@7.29.7)(@react-native-community/cli@20.1.0(typescript@6.0.3))(@react-native/metro-config@0.86.0(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3))(vue@3.5.39(typescript@6.0.3))
-      '@vue/runtime-core': 3.5.39
-      react: 19.2.3
-      vue: 3.5.39(typescript@6.0.3)
-
-  '@symbiote-native/navigation@1.0.0(93314d05db759b28e7a15a9a576c629f)':
-    dependencies:
-      '@symbiote-native/components': 0.2.5(@symbiote-native/engine@0.1.6(react-native@0.86.0(@babel/core@7.29.7)(@react-native-community/cli@20.1.0(typescript@6.0.3))(@react-native/metro-config@0.86.0(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3)))(react-native@0.86.0(@babel/core@7.29.7)(@react-native-community/cli@20.1.0(typescript@6.0.3))(@react-native/metro-config@0.86.0(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3))
-      '@symbiote-native/engine': 0.1.6(react-native@0.86.0(@babel/core@7.29.7)(@react-native-community/cli@20.1.0(typescript@6.0.3))(@react-native/metro-config@0.86.0(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3))
-      react-native: 0.86.0(@babel/core@7.29.7)(@react-native-community/cli@20.1.0(typescript@6.0.3))(@react-native/metro-config@0.86.0(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3)
-      react-native-screens: 4.26.0(react-native@0.86.0(@babel/core@7.29.7)(@react-native-community/cli@20.1.0(typescript@6.0.3))(@react-native/metro-config@0.86.0(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3))(react@19.2.3)
-    optionalDependencies:
-      '@angular/common': 22.0.6(@angular/core@22.0.5(@angular/compiler@22.0.5)(rxjs@7.8.2))(rxjs@7.8.2)
-      '@angular/core': 22.0.5(@angular/compiler@22.0.5)(rxjs@7.8.2)
-      '@symbiote-native/angular': 0.5.0(@angular/compiler@22.0.5)(@angular/core@22.0.5(@angular/compiler@22.0.5)(rxjs@7.8.2))(@babel/core@7.29.7)(@symbiote-native/engine@0.1.6(react-native@0.86.0(@babel/core@7.29.7)(@react-native-community/cli@20.1.0(typescript@6.0.3))(@react-native/metro-config@0.86.0(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3)))(react-native@0.86.0(@babel/core@7.29.7)(@react-native-community/cli@20.1.0(typescript@6.0.3))(@react-native/metro-config@0.86.0(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3))(typescript@6.0.3)
-      '@symbiote-native/react': 0.2.6(@babel/core@7.29.7)(@symbiote-native/engine@0.1.6(react-native@0.86.0(@babel/core@7.29.7)(@react-native-community/cli@20.1.0(typescript@6.0.3))(@react-native/metro-config@0.86.0(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3)))(react-native@0.86.0(@babel/core@7.29.7)(@react-native-community/cli@20.1.0(typescript@6.0.3))(@react-native/metro-config@0.86.0(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3))(react@19.2.3)(typescript@6.0.3)
-      '@symbiote-native/vue': 0.3.6(@babel/core@7.29.7)(@symbiote-native/engine@0.1.6(react-native@0.86.0(@babel/core@7.29.7)(@react-native-community/cli@20.1.0(typescript@6.0.3))(@react-native/metro-config@0.86.0(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3)))(react-native@0.86.0(@babel/core@7.29.7)(@react-native-community/cli@20.1.0(typescript@6.0.3))(@react-native/metro-config@0.86.0(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3))(vue@3.5.39(typescript@6.0.3))
-      '@vue/runtime-core': 3.5.39
-      react: 19.2.3
-      vue: 3.5.39(typescript@6.0.3)
-
-  '@symbiote-native/react@0.2.6(@babel/core@7.29.7)(@symbiote-native/engine@0.1.6(react-native@0.86.0(@babel/core@7.29.7)(@react-native-community/cli@20.1.0(typescript@6.0.3))(@react-native/metro-config@0.86.0(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3)))(react-native@0.86.0(@babel/core@7.29.7)(@react-native-community/cli@20.1.0(typescript@6.0.3))(@react-native/metro-config@0.86.0(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3))(react@19.2.3)(typescript@6.0.3)':
-    dependencies:
-      '@symbiote-native/components': 0.2.5(@symbiote-native/engine@0.1.6(react-native@0.86.0(@babel/core@7.29.7)(@react-native-community/cli@20.1.0(typescript@6.0.3))(@react-native/metro-config@0.86.0(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3)))(react-native@0.86.0(@babel/core@7.29.7)(@react-native-community/cli@20.1.0(typescript@6.0.3))(@react-native/metro-config@0.86.0(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3))
-      '@symbiote-native/css-parser': 0.2.2(@babel/core@7.29.7)(typescript@6.0.3)
-      '@symbiote-native/engine': 0.1.6(react-native@0.86.0(@babel/core@7.29.7)(@react-native-community/cli@20.1.0(typescript@6.0.3))(@react-native/metro-config@0.86.0(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3))
-      react: 19.2.3
-      react-native: 0.86.0(@babel/core@7.29.7)(@react-native-community/cli@20.1.0(typescript@6.0.3))(@react-native/metro-config@0.86.0(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3)
-      react-reconciler: 0.33.0(react@19.2.3)
-    transitivePeerDependencies:
-      - '@babel/core'
-      - supports-color
-      - typescript
-
-  '@symbiote-native/slider@4.0.0(40183050cfd1b18f15a72be12c99ac0d)':
-    dependencies:
-      '@react-native-community/slider': 5.2.0
-      '@symbiote-native/components': 0.2.5(@symbiote-native/engine@0.1.6(react-native@0.86.0(@babel/core@7.29.7)(@react-native-community/cli@20.1.0(typescript@6.0.3))(@react-native/metro-config@0.86.0(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3)))(react-native@0.86.0(@babel/core@7.29.7)(@react-native-community/cli@20.1.0(typescript@6.0.3))(@react-native/metro-config@0.86.0(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3))
-      '@symbiote-native/engine': 0.1.6(react-native@0.86.0(@babel/core@7.29.7)(@react-native-community/cli@20.1.0(typescript@6.0.3))(@react-native/metro-config@0.86.0(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3))
-      react-native: 0.86.0(@babel/core@7.29.7)(@react-native-community/cli@20.1.0(typescript@6.0.3))(@react-native/metro-config@0.86.0(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3)
-    optionalDependencies:
-      '@angular/core': 22.0.5(@angular/compiler@22.0.5)(rxjs@7.8.2)
-      '@symbiote-native/angular': 0.6.0(@angular/compiler@22.0.5)(@angular/core@22.0.5(@angular/compiler@22.0.5)(rxjs@7.8.2))(@babel/core@7.29.7)(@symbiote-native/engine@0.1.6(react-native@0.86.0(@babel/core@7.29.7)(@react-native-community/cli@20.1.0(typescript@6.0.3))(@react-native/metro-config@0.86.0(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3)))(react-native@0.86.0(@babel/core@7.29.7)(@react-native-community/cli@20.1.0(typescript@6.0.3))(@react-native/metro-config@0.86.0(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3))(typescript@6.0.3)
-      '@symbiote-native/react': 0.2.6(@babel/core@7.29.7)(@symbiote-native/engine@0.1.6(react-native@0.86.0(@babel/core@7.29.7)(@react-native-community/cli@20.1.0(typescript@6.0.3))(@react-native/metro-config@0.86.0(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3)))(react-native@0.86.0(@babel/core@7.29.7)(@react-native-community/cli@20.1.0(typescript@6.0.3))(@react-native/metro-config@0.86.0(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3))(react@19.2.3)(typescript@6.0.3)
-      '@symbiote-native/vue': 0.3.6(@babel/core@7.29.7)(@symbiote-native/engine@0.1.6(react-native@0.86.0(@babel/core@7.29.7)(@react-native-community/cli@20.1.0(typescript@6.0.3))(@react-native/metro-config@0.86.0(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3)))(react-native@0.86.0(@babel/core@7.29.7)(@react-native-community/cli@20.1.0(typescript@6.0.3))(@react-native/metro-config@0.86.0(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3))(vue@3.5.39(typescript@6.0.3))
-      '@vue/runtime-core': 3.5.39
-      react: 19.2.3
-      vue: 3.5.39(typescript@6.0.3)
-
-  '@symbiote-native/slider@4.0.0(c54e1f43cfc05bb4cf7ef98042ae2597)':
-    dependencies:
-      '@react-native-community/slider': 5.2.0
-      '@symbiote-native/components': 0.2.5(@symbiote-native/engine@0.1.6(react-native@0.86.0(@babel/core@7.29.7)(@react-native-community/cli@20.1.0(typescript@6.0.3))(@react-native/metro-config@0.86.0(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3)))(react-native@0.86.0(@babel/core@7.29.7)(@react-native-community/cli@20.1.0(typescript@6.0.3))(@react-native/metro-config@0.86.0(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3))
-      '@symbiote-native/engine': 0.1.6(react-native@0.86.0(@babel/core@7.29.7)(@react-native-community/cli@20.1.0(typescript@6.0.3))(@react-native/metro-config@0.86.0(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3))
-      react-native: 0.86.0(@babel/core@7.29.7)(@react-native-community/cli@20.1.0(typescript@6.0.3))(@react-native/metro-config@0.86.0(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3)
-    optionalDependencies:
-      '@angular/core': 22.0.5(@angular/compiler@22.0.5)(rxjs@7.8.2)
-      '@symbiote-native/angular': 0.5.0(@angular/compiler@22.0.5)(@angular/core@22.0.5(@angular/compiler@22.0.5)(rxjs@7.8.2))(@babel/core@7.29.7)(@symbiote-native/engine@0.1.6(react-native@0.86.0(@babel/core@7.29.7)(@react-native-community/cli@20.1.0(typescript@6.0.3))(@react-native/metro-config@0.86.0(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3)))(react-native@0.86.0(@babel/core@7.29.7)(@react-native-community/cli@20.1.0(typescript@6.0.3))(@react-native/metro-config@0.86.0(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3))(typescript@6.0.3)
-      '@symbiote-native/react': 0.2.6(@babel/core@7.29.7)(@symbiote-native/engine@0.1.6(react-native@0.86.0(@babel/core@7.29.7)(@react-native-community/cli@20.1.0(typescript@6.0.3))(@react-native/metro-config@0.86.0(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3)))(react-native@0.86.0(@babel/core@7.29.7)(@react-native-community/cli@20.1.0(typescript@6.0.3))(@react-native/metro-config@0.86.0(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3))(react@19.2.3)(typescript@6.0.3)
-      '@symbiote-native/vue': 0.3.6(@babel/core@7.29.7)(@symbiote-native/engine@0.1.6(react-native@0.86.0(@babel/core@7.29.7)(@react-native-community/cli@20.1.0(typescript@6.0.3))(@react-native/metro-config@0.86.0(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3)))(react-native@0.86.0(@babel/core@7.29.7)(@react-native-community/cli@20.1.0(typescript@6.0.3))(@react-native/metro-config@0.86.0(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3))(vue@3.5.39(typescript@6.0.3))
-      '@vue/runtime-core': 3.5.39
-      react: 19.2.3
-      vue: 3.5.39(typescript@6.0.3)
-
-  '@symbiote-native/splash-screen@2.0.0(2ca1fc64fb06481d649a77fb88945f9b)':
-    dependencies:
-      '@symbiote-native/components': 0.2.5(@symbiote-native/engine@0.1.6(react-native@0.86.0(@babel/core@7.29.7)(@react-native-community/cli@20.1.0(typescript@6.0.3))(@react-native/metro-config@0.86.0(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3)))(react-native@0.86.0(@babel/core@7.29.7)(@react-native-community/cli@20.1.0(typescript@6.0.3))(@react-native/metro-config@0.86.0(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3))
-      '@symbiote-native/engine': 0.1.6(react-native@0.86.0(@babel/core@7.29.7)(@react-native-community/cli@20.1.0(typescript@6.0.3))(@react-native/metro-config@0.86.0(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3))
-      react-native: 0.86.0(@babel/core@7.29.7)(@react-native-community/cli@20.1.0(typescript@6.0.3))(@react-native/metro-config@0.86.0(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3)
-      react-native-bootsplash: 7.3.2(@types/node@26.1.0)(react-native@0.86.0(@babel/core@7.29.7)(@react-native-community/cli@20.1.0(typescript@6.0.3))(@react-native/metro-config@0.86.0(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3))(react@19.2.3)(typescript@6.0.3)
-      react-native-is-edge-to-edge: 1.3.1(react-native@0.86.0(@babel/core@7.29.7)(@react-native-community/cli@20.1.0(typescript@6.0.3))(@react-native/metro-config@0.86.0(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3))(react@19.2.3)
-    optionalDependencies:
-      '@angular/core': 22.0.5(@angular/compiler@22.0.5)(rxjs@7.8.2)
-      '@symbiote-native/angular': 0.6.0(@angular/compiler@22.0.5)(@angular/core@22.0.5(@angular/compiler@22.0.5)(rxjs@7.8.2))(@babel/core@7.29.7)(@symbiote-native/engine@0.1.6(react-native@0.86.0(@babel/core@7.29.7)(@react-native-community/cli@20.1.0(typescript@6.0.3))(@react-native/metro-config@0.86.0(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3)))(react-native@0.86.0(@babel/core@7.29.7)(@react-native-community/cli@20.1.0(typescript@6.0.3))(@react-native/metro-config@0.86.0(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3))(typescript@6.0.3)
-      '@symbiote-native/react': 0.2.6(@babel/core@7.29.7)(@symbiote-native/engine@0.1.6(react-native@0.86.0(@babel/core@7.29.7)(@react-native-community/cli@20.1.0(typescript@6.0.3))(@react-native/metro-config@0.86.0(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3)))(react-native@0.86.0(@babel/core@7.29.7)(@react-native-community/cli@20.1.0(typescript@6.0.3))(@react-native/metro-config@0.86.0(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3))(react@19.2.3)(typescript@6.0.3)
-      '@symbiote-native/vue': 0.3.6(@babel/core@7.29.7)(@symbiote-native/engine@0.1.6(react-native@0.86.0(@babel/core@7.29.7)(@react-native-community/cli@20.1.0(typescript@6.0.3))(@react-native/metro-config@0.86.0(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3)))(react-native@0.86.0(@babel/core@7.29.7)(@react-native-community/cli@20.1.0(typescript@6.0.3))(@react-native/metro-config@0.86.0(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3))(vue@3.5.39(typescript@6.0.3))
-      '@vue/runtime-core': 3.5.39
-      react: 19.2.3
-      vue: 3.5.39(typescript@6.0.3)
-    transitivePeerDependencies:
-      - '@types/node'
-      - supports-color
-      - typescript
-
-  '@symbiote-native/splash-screen@2.0.0(c6d60f0834fd4baf495fc081792ea271)':
-    dependencies:
-      '@symbiote-native/components': 0.2.5(@symbiote-native/engine@0.1.6(react-native@0.86.0(@babel/core@7.29.7)(@react-native-community/cli@20.1.0(typescript@6.0.3))(@react-native/metro-config@0.86.0(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3)))(react-native@0.86.0(@babel/core@7.29.7)(@react-native-community/cli@20.1.0(typescript@6.0.3))(@react-native/metro-config@0.86.0(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3))
-      '@symbiote-native/engine': 0.1.6(react-native@0.86.0(@babel/core@7.29.7)(@react-native-community/cli@20.1.0(typescript@6.0.3))(@react-native/metro-config@0.86.0(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3))
-      react-native: 0.86.0(@babel/core@7.29.7)(@react-native-community/cli@20.1.0(typescript@6.0.3))(@react-native/metro-config@0.86.0(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3)
-      react-native-bootsplash: 7.3.2(@types/node@26.1.0)(react-native@0.86.0(@babel/core@7.29.7)(@react-native-community/cli@20.1.0(typescript@6.0.3))(@react-native/metro-config@0.86.0(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3))(react@19.2.3)(typescript@6.0.3)
-      react-native-is-edge-to-edge: 1.3.1(react-native@0.86.0(@babel/core@7.29.7)(@react-native-community/cli@20.1.0(typescript@6.0.3))(@react-native/metro-config@0.86.0(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3))(react@19.2.3)
-    optionalDependencies:
-      '@angular/core': 22.0.5(@angular/compiler@22.0.5)(rxjs@7.8.2)
-      '@symbiote-native/angular': 0.5.0(@angular/compiler@22.0.5)(@angular/core@22.0.5(@angular/compiler@22.0.5)(rxjs@7.8.2))(@babel/core@7.29.7)(@symbiote-native/engine@0.1.6(react-native@0.86.0(@babel/core@7.29.7)(@react-native-community/cli@20.1.0(typescript@6.0.3))(@react-native/metro-config@0.86.0(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3)))(react-native@0.86.0(@babel/core@7.29.7)(@react-native-community/cli@20.1.0(typescript@6.0.3))(@react-native/metro-config@0.86.0(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3))(typescript@6.0.3)
-      '@symbiote-native/react': 0.2.6(@babel/core@7.29.7)(@symbiote-native/engine@0.1.6(react-native@0.86.0(@babel/core@7.29.7)(@react-native-community/cli@20.1.0(typescript@6.0.3))(@react-native/metro-config@0.86.0(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3)))(react-native@0.86.0(@babel/core@7.29.7)(@react-native-community/cli@20.1.0(typescript@6.0.3))(@react-native/metro-config@0.86.0(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3))(react@19.2.3)(typescript@6.0.3)
-      '@symbiote-native/vue': 0.3.6(@babel/core@7.29.7)(@symbiote-native/engine@0.1.6(react-native@0.86.0(@babel/core@7.29.7)(@react-native-community/cli@20.1.0(typescript@6.0.3))(@react-native/metro-config@0.86.0(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3)))(react-native@0.86.0(@babel/core@7.29.7)(@react-native-community/cli@20.1.0(typescript@6.0.3))(@react-native/metro-config@0.86.0(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3))(vue@3.5.39(typescript@6.0.3))
-      '@vue/runtime-core': 3.5.39
-      react: 19.2.3
-      vue: 3.5.39(typescript@6.0.3)
-    transitivePeerDependencies:
-      - '@types/node'
-      - supports-color
-      - typescript
-
-  '@symbiote-native/test-utils@0.1.5': {}
-
-  '@symbiote-native/vue@0.3.6(@babel/core@7.29.7)(@symbiote-native/engine@0.1.6(react-native@0.86.0(@babel/core@7.29.7)(@react-native-community/cli@20.1.0(typescript@6.0.3))(@react-native/metro-config@0.86.0(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3)))(react-native@0.86.0(@babel/core@7.29.7)(@react-native-community/cli@20.1.0(typescript@6.0.3))(@react-native/metro-config@0.86.0(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3))(vue@3.5.39(typescript@6.0.3))':
-    dependencies:
-      '@symbiote-native/components': 0.2.5(@symbiote-native/engine@0.1.6(react-native@0.86.0(@babel/core@7.29.7)(@react-native-community/cli@20.1.0(typescript@6.0.3))(@react-native/metro-config@0.86.0(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3)))(react-native@0.86.0(@babel/core@7.29.7)(@react-native-community/cli@20.1.0(typescript@6.0.3))(@react-native/metro-config@0.86.0(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3))
-      '@symbiote-native/css-parser': 0.2.2(@babel/core@7.29.7)(typescript@6.0.3)
-      '@symbiote-native/engine': 0.1.6(react-native@0.86.0(@babel/core@7.29.7)(@react-native-community/cli@20.1.0(typescript@6.0.3))(@react-native/metro-config@0.86.0(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3))
-      '@vue/compiler-core': 3.5.39
-      '@vue/compiler-sfc': 3.5.39
-      '@vue/runtime-core': 3.5.39
-      react-native: 0.86.0(@babel/core@7.29.7)(@react-native-community/cli@20.1.0(typescript@6.0.3))(@react-native/metro-config@0.86.0(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3)
-      typescript: 6.0.3
-      vue: 3.5.39(typescript@6.0.3)
-    transitivePeerDependencies:
-      - '@babel/core'
-      - supports-color
 
   '@tybys/wasm-util@0.10.3':
     dependencies:
@@ -13767,9 +13397,9 @@ snapshots:
       expo: 57.0.4(@babel/core@7.29.7)(@expo/dom-webview@57.0.0)(react-native@0.86.0(@babel/core@7.29.7)(@react-native-community/cli@20.1.0(typescript@6.0.3))(@react-native/metro-config@0.86.0(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3))(react@19.2.3)(typescript@6.0.3)
       react: 19.2.3
 
-  expo-modules-autolinking@57.0.5(typescript@6.0.3):
+  expo-modules-autolinking@57.0.8(typescript@6.0.3):
     dependencies:
-      '@expo/require-utils': 57.0.1(typescript@6.0.3)
+      '@expo/require-utils': 57.0.3(typescript@6.0.3)
       '@expo/spawn-async': 1.8.0
       chalk: 4.1.2
       commander: 7.2.0
@@ -13816,7 +13446,7 @@ snapshots:
       expo-file-system: 57.0.0(expo@57.0.4)(react-native@0.86.0(@babel/core@7.29.7)(@react-native-community/cli@20.1.0(typescript@6.0.3))(@react-native/metro-config@0.86.0(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3))
       expo-font: 57.0.0(expo@57.0.4)(react-native@0.86.0(@babel/core@7.29.7)(@react-native-community/cli@20.1.0(typescript@6.0.3))(@react-native/metro-config@0.86.0(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3))(react@19.2.3)
       expo-keep-awake: 57.0.0(expo@57.0.4)(react@19.2.3)
-      expo-modules-autolinking: 57.0.5(typescript@6.0.3)
+      expo-modules-autolinking: 57.0.8(typescript@6.0.3)
       expo-modules-core: 57.0.5(react-native@0.86.0(@babel/core@7.29.7)(@react-native-community/cli@20.1.0(typescript@6.0.3))(@react-native/metro-config@0.86.0(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3))(react@19.2.3)
       pretty-format: 29.7.0
       react: 19.2.3
