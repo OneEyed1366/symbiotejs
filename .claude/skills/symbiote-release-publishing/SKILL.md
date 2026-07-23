@@ -140,6 +140,44 @@ inferred from `files`/`publishConfig`, it's a flat, easy-to-forget list.
 Fixed by adding `core/test-utils/build` to the list; see the
 `test-utils-esm-extension` changeset for the republish.
 
+## Gotcha (found 2026-07-23 via a `sensors` canary that shipped with no `build/` at all): a mixed-mechanism package's `clean` script must target `build-ngc`, never `build`
+
+Any package with the **mixed mechanism** (a plain `publishConfig` override for
+`.`/`./react`/`./vue` pointed at `build/{core,react,vue}/...`, PLUS a
+conditional `./angular` export pointed at a *separate* `build-ngc/angular/...`
+— `slider`, `navigation`, `splash-screen`, `sensors`) runs `prepublish-build`
+as `typecheck && fix-esm-extensions && ng:build`, in that order. `typecheck`
+(`tsc --build`) emits the plain `build/` tree first; `ng:build` runs after it
+as `pnpm run clean && ngc -p tsconfig.angular.json`. If that package's own
+`clean` script reads `"rm -rf build"` (copy-pasted from `@symbiote-native/
+angular`, where it's CORRECT — see below), it deletes the `build/` tree
+`typecheck` just produced, `ngc` only ever repopulates `build-ngc/`, and
+nothing regenerates `build/` afterward. The packed tarball ships `build-ngc/`
+but no `build/`, while `exports["."]`/`exports["./react"]`/`exports["./vue"]`
+still point at `./build/...` — every consumer's `Cannot find module
+'@symbiote-native/<pkg>/react'` (Metro AND `tsc`/`vue-tsc` alike; confirmed via
+a real Metro bundle attempt, not just a type-checker false positive). Silent
+in-repo: `workspace:*` resolution never touches a package's own `build/` at
+all, so this is invisible until a real packed install (canary or npm).
+
+**`@symbiote-native/angular` itself is NOT affected and must NOT get this
+fix** — its own `ngc` outDir is `build/angular` (a SUBFOLDER of `build`, not a
+sibling `build-ngc`), and its `exports` never reference plain `build/*.js`
+directly, only `build/angular/*` — so `clean: "rm -rf build"` there correctly
+wipes the whole tree before `ngc` regenerates just the `angular/` subfolder.
+Check each package's own `tsconfig.angular.json` `outDir` before assuming
+which fix applies — `build-ngc` (sibling, needs this fix) vs `build/angular`
+(subfolder, already correct).
+
+Fixed 2026-07-23 in `packages/{sensors,navigation,slider,splash-screen}/
+package.json`: `"clean": "rm -rf build-ngc"`. Verified by deleting both dirs,
+running `npx tsc --build packages/sensors` (repopulates `build/{core,react,
+vue,angular}`), then `pnpm run ng:build` inside the package (confirms `build/`
+still has all 4 subfolders afterward, `build-ngc/` also regenerates). Any
+FUTURE mixed-mechanism package must get `clean` pointed at `build-ngc`, not
+`build`, from the start — check this the moment a new package.json copies the
+`ng:build`/`clean` pair from an existing one.
+
 ## Changesets config (`.changeset/config.json`)
 
 ```jsonc

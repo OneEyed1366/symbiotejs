@@ -87,8 +87,15 @@ module ::Expo
   module ProjectIntegrator
     # Renders the "[Expo] Configure project" Xcode build-phase script — regenerated on every
     # `pod install` but executed on every build, so this needs the same fix as above or every
-    # build fails at that phase, even after a green `pod install`.
-    def self.generate_support_script(autolinking_manager, modules_provider_path, entitlement_path)
+    # build fails at that phase, even after a green `pod install`. expo-modules-autolinking
+    # 57.0.8's own project_integrator.rb calls this with 4 args — it added `target_name`
+    # (forwarded below as `--target-name`) between the first and the `modules_provider_path`
+    # arg. A 3-arg override (no `target_name`) raises `ArgumentError: wrong number of arguments
+    # (given 4, expected 3)` on `pod install` against this version — verify the real call site's
+    # arity in your installed copy (`grep -n "def self.generate_support_script"
+    # node_modules/expo-modules-autolinking/scripts/ios/project_integrator.rb`) before assuming
+    # this exact signature still matches a future release.
+    def self.generate_support_script(autolinking_manager, target_name, modules_provider_path, entitlement_path)
       args = autolinking_manager.base_command_args.map { |a| "\"#{a}\"" }
       package_names = autolinking_manager.packages_to_generate.map { |p| "\"#{p.name}\"" }
       entitlement_param = entitlement_path.nil? ? '' : "--entitlement \"#{entitlement_path}\""
@@ -101,7 +108,8 @@ module ::Expo
         NODE_BINARY=$(command -v node)
         "$NODE_BINARY" --no-warnings --eval "require('expo-modules-autolinking/bin/expo-modules-autolinking')" \\
           expo-modules-autolinking generate-modules-provider #{args.join(' ')} \\
-          --target "#{modules_provider_path}" #{entitlement_param} #{app_root_param} \\
+          --target "#{modules_provider_path}" --target-name "#{target_name}" \\
+          #{entitlement_param} #{app_root_param} \\
           #{podfile_properties_param} --platform "apple" --packages #{package_names.join(' ')}
       SCRIPT
     end
@@ -236,6 +244,37 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
 Also needs a `SWIFT_OBJC_BRIDGING_HEADER` pointing at a bridging header that imports
 `SymbioteExpoModulesFactory.h`, since Swift app targets don't auto-bridge their own Objective-C++
 sources the way pod targets do.
+
+<Aside type="danger" title="Two more real build failures, not covered above">
+  Both surfaced only at `xcodebuild`, after a green `pod install` — a `pod install`-only
+  verification pass will miss them.
+
+  1. **Register the two new files with the Xcode project, not just the filesystem.** Dropping
+     `SymbioteExpoModulesFactory.h`/`.mm` next to `AppDelegate.swift` on disk is not enough
+     unless the project uses Xcode 16's file-system-synchronized groups (check for
+     `PBXFileSystemSynchronizedRootGroup` in `project.pbxproj` — most React Native templates
+     still use the classic `PBXFileReference`/`PBXGroup` model). Without an explicit
+     `PBXFileReference` + a `Sources` build-phase membership for the `.mm`, linking fails with
+     `Undefined symbols for architecture arm64: "_OBJC_CLASS_$_SymbioteExpoModulesFactory"` — the
+     header compiles fine (nothing consumes it at link time), only the missing `.mm` shows up.
+     Add both via the `xcodeproj` gem (never hand-edit `project.pbxproj` text): find the group
+     that already contains `AppDelegate.swift`, add both files as siblings, and add only the
+     `.mm` to the target's Sources build phase. That group is typically **virtual** (`path: nil`)
+     — check the sibling file's own `path` (e.g. `Canary/AppDelegate.swift`) and set the new
+     files' `path` with the same prefix; relying on the group's `path` alone resolves one
+     directory too high and fails with `Build input file cannot be found`.
+
+  2. **Bump the app target's own `IPHONEOS_DEPLOYMENT_TARGET`, not just the Podfile's `platform
+     :ios` line.** That line (step 2) only raises the floor CocoaPods checks for Pod-to-Pod
+     compatibility — it does not touch the Xcode **project's** own deployment target. Once
+     `AppDelegate.swift` imports `ExpoModulesCore` directly (via the bridging header above),
+     Swift's compiler checks the imported module's minimum deployment target against the
+     *importing* target's own setting, not just the Pods project's — leaving the app target at
+     its old floor (commonly 15.1) fails with `compiling for iOS 15.1, but module
+     'ExpoModulesCore' has a minimum deployment target of iOS 16.4`. Fix: same `xcodeproj` gem
+     script, set `IPHONEOS_DEPLOYMENT_TARGET = '16.4'` on every build configuration (project-level
+     and every target) that is currently below it.
+</Aside>
 
 ## 4. Android — `settings.gradle`
 
@@ -412,6 +451,16 @@ cd android && ./gradlew projects   # lists Project ':expo-modules-core' and ':ex
 # Android: a real debug build succeeds
 ./gradlew :app:assembleDebug
 ```
+
+<Aside type="note" title="Gradle daemon dying mid-CMake build">
+  `expo-modules-core`'s native worklets library builds via CMake for every architecture in
+  `reactNativeArchitectures` (default 4: armeabi-v7a, arm64-v8a, x86, x86_64) — memory-hungry, and
+  the failure mode when the box runs out of headroom is `Gradle build daemon disappeared
+  unexpectedly`, not an out-of-memory message. Common when several such builds run concurrently on
+  the same machine (e.g. wiring multiple example apps in parallel). Not a wiring bug — retry with
+  `./gradlew :app:assembleDebug -PreactNativeArchitectures=arm64-v8a --max-workers=1
+  --no-daemon` to confirm the wiring itself is sound before chasing a phantom config issue.
+</Aside>
 
 <Aside type="caution" title="Test with a clean install">
   `./gradlew installDebug` performs an incremental reinstall — it does **not** clear the app's

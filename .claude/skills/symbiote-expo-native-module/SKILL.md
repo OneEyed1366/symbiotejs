@@ -385,6 +385,25 @@ has (Java 17, `ANDROID_HOME` set, the repo's own `./gradlew`); ANDROID_HOME + Gr
 (via wrapper) were available in the verifying environment, so this was a real build, not a
 best-effort static check.
 
+**Two more real iOS build failures surface only at `xcodebuild`, per-app (2026-07-17, wiring the
+Vue-TSX canary) — a green `pod install` does not catch either.** Full fix + code, kept in the
+howto doc since it's the copy-paste-adaptable source: `expo-native-module-setup.mdx`'s "iOS —
+install the runtime hook" section, the two `<Aside type="danger">` blocks.
+1. `expo-modules-autolinking`'s `generate_support_script` arity drifts across versions — 57.0.8
+   calls it with 4 args (added `target_name`, forwarded as `--target-name`); a Podfile monkey-patch
+   copied from an older doc snippet with the old 3-arg signature raises `ArgumentError: wrong
+   number of arguments (given 4, expected 3)` on `pod install`. Verify the real arity in your
+   installed copy before trusting any doc's exact signature.
+2. `SymbioteExpoModulesFactory.h`/`.mm` dropped on disk next to `AppDelegate.swift` are invisible
+   to the Xcode project unless it uses Xcode 16 file-system-synchronized groups (check for
+   `PBXFileSystemSynchronizedRootGroup` in `project.pbxproj`) — most RN templates still don't, so
+   the `.mm` needs an explicit `PBXFileReference` + Sources build-phase membership (via the
+   `xcodeproj` gem) or linking fails with `Undefined symbols … _OBJC_CLASS_$_SymbioteExpoModulesFactory`.
+   Separately, the app target's own `IPHONEOS_DEPLOYMENT_TARGET` (not just the Podfile's
+   `platform :ios` line, which only governs Pod-to-Pod compatibility) must be bumped to match
+   `ExpoModulesCore`'s floor once `AppDelegate.swift` imports it directly — otherwise `compiling
+   for iOS 15.1, but module 'ExpoModulesCore' has a minimum deployment target of iOS 16.4`.
+
 ## 5. Permissions ship with the wrapped native code — do not reimplement
 
 Native permission handling for a sensor family is part of its native module, already
