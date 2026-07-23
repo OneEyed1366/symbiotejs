@@ -1,6 +1,6 @@
 ---
 name: symbiote-release-publishing
-description: "Symbiote npm publishing & versioning — read before touching .changeset/**, a publishable package's `publishConfig`/`files`/`exports`, .github/workflows/release.yml, or running `pnpm changeset`/`pnpm run release`. Versioning is Changesets (`pnpm changeset` → PR → 'Version Packages' PR → merge → CI publishes). Core trick: `main`/`exports` keep pointing at `src/index.ts` for in-repo dev (Metro/tsc resolve live TS, unchanged) — `publishConfig` overrides those to `build/` ONLY inside the tarball, never touching local resolution. No new bundler: `tsc --build` already emits `build/`, so `typecheck` IS the build. `@symbiote-native/angular`/`@symbiote-native/slider`'s `./angular` entry predate this, use a DIFFERENT mechanism (conditional `exports`, AOT build) — don't convert or copy that onto plain packages. Covers the mechanism table, the `files`-mandatory gotcha (`.gitignore` excludes `build/`), the `fix-esm-extensions` argument-list gotcha (a package missing from it ships an unimportable `build/` for every real npm consumer, invisible in-repo), changeset ignore list, release scripts, the `checks.yml` reusable-workflow CI gate (`ci.yml` + `release.yml` both call it, sequencing publish after lint/typecheck/test), and the canary release flow — a REAL npm publish under the `canary` dist-tag, auto-triggered on every PR and gated by a GitHub Environment reviewer approval (`select-canary-dirs.mjs` auto-detects changed packages via `git diff`, `trust:publishers` is now mandatory immediately at package-scaffold time, a `cleanup-canary-versions.mjs` retention cron keeps the registry from growing forever) — which REPLACED an earlier pkg.pr.new-based mechanism (manual `workflow_dispatch`, one checkbox per package, never touched the real npm registry, now removed entirely), and why a 'pnpm cache is not found' + 'Failed to save ... another job may be creating this cache' pair across checks.yml's parallel lint/typecheck/test jobs is an expected first-run/same-key race, not a broken cache (diagnose via job logs, not the Actions UI summary). Trigger: 'publish npm', 'release', 'changeset', 'version bump', 'publishConfig', 'canary release', 'CI publish', 'pkg.pr.new', 'canary dist-tag', 'trust:publishers', 'pnpm cache not found', 'actions cache'."
+description: "Symbiote npm publishing & versioning — read before touching .changeset/**, a publishable package's `publishConfig`/`files`/`exports`, .github/workflows/release.yml, or running `pnpm changeset`/`pnpm run release`. Versioning is Changesets (`pnpm changeset` → PR → 'Version Packages' PR → merge → CI publishes). Core trick: `main`/`exports` keep pointing at `src/index.ts` for in-repo dev (Metro/tsc resolve live TS, unchanged) — `publishConfig` overrides those to `build/` ONLY inside the tarball, never touching local resolution. No new bundler: `tsc --build` already emits `build/`, so `typecheck` IS the build. `@symbiote-native/angular`/`@symbiote-native/slider`'s `./angular` entry predate this, use a DIFFERENT mechanism (conditional `exports`, AOT build) — don't convert or copy that onto plain packages. Covers the mechanism table, the `files`-mandatory gotcha (`.gitignore` excludes `build/`), the `fix-esm-extensions` argument-list gotcha (a package missing from it ships an unimportable `build/` for every real npm consumer, invisible in-repo), changeset ignore list, release scripts, the `checks.yml` reusable-workflow CI gate (`ci.yml` + `release.yml` both call it, sequencing publish after lint/typecheck/test), and the canary release flow — a REAL npm publish under the `canary` dist-tag, triggered automatically via `workflow_run` after CI passes on a PR or manually via `workflow_dispatch`, gated by a GitHub Environment reviewer approval, publishing whatever pending changesets + `updateInternalDependencies` cascade decide (no package-selection step — `trust:publishers` is now mandatory immediately at package-scaffold time, a `cleanup-canary-versions.mjs` daily retention cron keeps the registry from growing forever) — which REPLACED an earlier pkg.pr.new-based mechanism (manual `workflow_dispatch`, one checkbox per package, never touched the real npm registry, now removed entirely), and why a 'pnpm cache is not found' + 'Failed to save ... another job may be creating this cache' pair across checks.yml's parallel lint/typecheck/test jobs is an expected first-run/same-key race, not a broken cache (diagnose via job logs, not the Actions UI summary). Trigger: 'publish npm', 'release', 'changeset', 'version bump', 'publishConfig', 'canary release', 'CI publish', 'pkg.pr.new', 'canary dist-tag', 'trust:publishers', 'pnpm cache not found', 'actions cache'."
 ---
 
 # Symbiote npm publishing & versioning
@@ -317,40 +317,56 @@ of avoided.
    Produces versions shaped like `0.0.0-canary-<timestamp>...`, published
    under npm dist-tag `canary`, never touching the `latest` tag.
 
-2. **Trigger — every PR, gated by a required-reviewer approval.**
-   `release.yml`'s `publish-canary` job now triggers on
-   `pull_request: types: [opened, synchronize, reopened]` instead of a manual
-   `workflow_dispatch` checkbox list. It's gated by `needs: checks`
-   (lint/typecheck/test must pass first) AND `environment: canary-publish` —
-   a GitHub Environment with required reviewers, which surfaces a native
-   "Review deployments" approval button directly in the PR's Checks tab
+2. **Trigger — automatic per-PR (via `workflow_run`) or manual, both gated by
+   a required-reviewer approval.** `release.yml`'s `publish-canary` job
+   triggers on `workflow_run` (reacting to the `CI` workflow's own
+   completion — NOT a local `pull_request` trigger; see the "duplicate
+   Checks" gotcha below for why) with `github.event.workflow_run.conclusion
+   == 'success'`, or manually via `workflow_dispatch` with the
+   `publish-canary: true` boolean input. Both paths are gated by
+   `environment: canary-publish` — a GitHub Environment with required
+   reviewers, which surfaces a native "Review deployments" approval button
+   directly in the PR's Checks tab
    ([GitHub docs](https://docs.github.com/actions/managing-workflow-runs/reviewing-deployments)) —
-   the GitHub-native equivalent of the old manual "Play" button, no custom
+   the GitHub-native equivalent of a manual "Play" button, no custom
    comment-parsing or permission-checking code needed. Required reviewers on
    the Free/Pro/Team plan tier only work for PUBLIC repos; `OneEyed1366/
    symbiote-native` is public, so this applies as-is. Self-review is NOT
    prevented (the "prevent self-reviews" environment setting stays off) —
    this is currently a solo-maintained project, so the same person who
    opens/pushes the PR also approves their own canary-publish deployment.
+   **`workflow_run` only fires from the copy of that trigger on the repo's
+   DEFAULT branch (`master`)** — a PR from a non-default branch won't
+   exercise the automatic path until the change is merged; `workflow_dispatch`
+   has no such limitation and works immediately from any branch.
 
-3. **Package selection — auto-detected from the PR diff, not checkboxes.**
-   `scripts/select-canary-dirs.mjs` was rewritten from checkbox-reading to
-   auto-detecting which publishable packages changed in the PR, via `git
-   diff` against the PR base, resolved through the existing
-   `publishablePackageEntries()` helper (`scripts/lib/publishable-
-   packages.mjs`) — the same package-discovery loop `trust-publishers.mjs`
-   uses. The old per-package `workflow_dispatch` boolean inputs are gone.
+3. **No package selection — publishes whatever changesets + cascade decide,
+   same as a real release.** An earlier version of this auto-detected which
+   packages a PR touched (`git diff` against the PR base) and synthesized a
+   throwaway changeset for exactly those. That was abandoned: `.changeset/
+   config.json`'s `updateInternalDependencies: "patch"` still cascades a
+   patch bump onto every OTHER package that depends on one of the "selected"
+   ones via `workspace:*` (e.g. bumping `angular` cascades into `navigation`/
+   `sensors`/`slider`/`splash-screen`, which all pin it) — so the "selected"
+   set was never the actual published set, it only looked like it was.
+   Publishing whatever real `.changeset/*.md` files + cascade decide is
+   honest about what actually happens, and needs a real changeset (from
+   `pnpm changeset`) to publish anything at all — already required discipline
+   for a real release (see "day to day" below), so this adds no extra burden.
+   A branch with no committed changeset gets a clean "No unreleased
+   changesets found" no-op instead of a surprise publish.
 
 4. **Trust-bootstrap moves to package creation, not first release.** Because
    canary publishing now also hits the real npm registry, a package's OIDC
    trust registration (`pnpm run trust:publishers <pkg>`) can no longer wait
    until its first REAL release — it must happen before its first CANARY
    publish too, i.e. effectively immediately at package creation (see the
-   `symbiote-add-component` skill's new-package steps). CI enforces this: the
-   canary-selection step runs `npm view <pkg> version` for every package
-   about to be canary-published and fails fast with an actionable message
-   ("run `pnpm run trust:publishers <pkg>` locally first") instead of a
-   confusing 404 if the package was never published.
+   `symbiote-add-component` skill's new-package steps). CI enforces this:
+   `scripts/check-canary-trust.mjs` runs `npm view <pkg> version` for EVERY
+   publishable package (not a "selected" subset — cascade can touch any of
+   them) before `release:canary` runs, and fails fast with an actionable
+   message ("run `pnpm run trust:publishers <pkg>` locally first") instead of
+   a confusing 404 if any package was never published.
 
 5. **`trust-publishers.mjs` hardened with an auth preflight.** It now runs
    `npm whoami` before its publish/trust loop and auto-runs `npm login`
@@ -359,7 +375,8 @@ of avoided.
    and this was a recurring source of friction.
 
 6. **Retention — a cron cleans up what a per-PR publish accumulates.** New
-   `.github/workflows/canary-cleanup.yml`, `schedule:` every 2 days, runs new
+   `.github/workflows/canary-cleanup.yml`, `schedule:` daily (`0 3 * * *`,
+   also `workflow_dispatch:` for an on-demand run), runs new
    `scripts/cleanup-canary-versions.mjs`. For every publishable package,
    every version matching the `-canary` snapshot pattern (never a real
    release version), excluding whatever version the `canary` dist-tag
@@ -367,7 +384,8 @@ of avoided.
    hard unpublish window —
    [npm policy](https://docs.npmjs.com/policies/unpublish/)), `npm deprecate`
    (soft, permanent, can't be undone, but doesn't break installs) as the
-   fallback for anything older that slipped past the window.
+   fallback for anything older that slipped past the window. Daily (rather
+   than every-2-days) leaves comfortable margin before the 72h window closes.
 
 ### Consuming a canary in `examples/*`
 

@@ -1,12 +1,14 @@
 name: Canary Cleanup
 
 # Retires stale canary snapshot versions (0.0.0-canary-<timestamp>...) that
-# Changesets snapshot-mode publishing accumulates on real npm. Runs every 2
-# days; also dispatchable manually for testing. See
-# scripts/cleanup-canary-versions.mjs for the retention logic.
+# Changesets snapshot-mode publishing accumulates on real npm. Runs daily —
+# npm's unpublish window is 72h, so a daily sweep leaves comfortable margin
+# before a version ages out of real deletion into deprecate-only. Also
+# dispatchable manually on demand. See scripts/cleanup-canary-versions.mjs
+# for the retention logic.
 on:
   schedule:
-    - cron: '0 3 */2 * *'
+    - cron: '0 3 * * *'
   workflow_dispatch:
 
 permissions:

@@ -4,21 +4,18 @@
 // trust-publishers.mjs) can only be registered for a package that already exists
 // on the registry, so a never-published package would otherwise 404 silently
 // deep inside `changeset publish` instead of failing here with a clear reason.
+//
+// Checks EVERY publishable package, not just the ones a changeset directly
+// bumps — `updateInternalDependencies: patch` can cascade a publish onto any
+// package depending on one that's bumped, so there's no fixed "selected" set
+// to narrow this to.
 import { execFileSync } from 'node:child_process';
 
-const rawPackages = (process.env.CANARY_PACKAGES ?? '').trim();
-const packages = rawPackages
-  ? rawPackages.split(',').map((name) => name.trim()).filter(Boolean)
-  : [];
-
-if (packages.length === 0) {
-  console.error('CANARY_PACKAGES must be set (expected from the preceding "Resolve changed publishable packages" step).');
-  process.exit(1);
-}
+import { publishablePackageEntries } from './lib/publishable-packages.mjs';
 
 const shortName = (name) => name.replace('@symbiote-native/', '');
 
-const neverPublished = packages.filter((name) => {
+const neverPublished = publishablePackageEntries().filter(({ name }) => {
   try {
     execFileSync('npm', ['view', name, 'version'], { stdio: 'pipe' });
     return false;
@@ -28,11 +25,12 @@ const neverPublished = packages.filter((name) => {
 });
 
 if (neverPublished.length > 0) {
+  const names = neverPublished.map((e) => e.name);
   console.error(
-    `The following package(s) have never been published to npm, so OIDC trust cannot be registered for them yet: ${neverPublished.join(', ')}\n` +
-      `Run \`pnpm run trust:publishers <short-name>\` locally first (one-off, interactive) for each of: ${neverPublished.map(shortName).join(', ')}.`,
+    `The following package(s) have never been published to npm, so OIDC trust cannot be registered for them yet: ${names.join(', ')}\n` +
+      `Run \`pnpm run trust:publishers <short-name>\` locally first (one-off, interactive) for each of: ${names.map(shortName).join(', ')}.`,
   );
   process.exit(1);
 }
 
-console.log(`npm trust preflight OK for: ${packages.join(', ')}`);
+console.log('npm trust preflight OK for every publishable package.');

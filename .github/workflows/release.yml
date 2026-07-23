@@ -21,10 +21,10 @@ on:
         description: 'Cut a release: open a version-bump PR from this branch into master (run this dispatched from develop)'
         type: boolean
         default: false
-      canary-packages:
-        description: 'Manually publish canary for these packages (comma-separated short names, e.g. "react,vue") — leave empty to skip'
-        type: string
-        default: ''
+      publish-canary:
+        description: 'Manually run a canary publish for whatever pending changesets exist on this branch (internal-dependency cascade included, same as a real release)'
+        type: boolean
+        default: false
 
 concurrency: ${{ github.workflow }}-${{ github.ref }}
 
@@ -137,23 +137,36 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-  # Real npm publish (dist-tag `canary`) of whichever @symbiote-native/* package(s)
-  # a PR touches — replaces the old manual pkg.pr.new checkbox flow so
-  # examples/*/package.json can commit a literal, git-tracked
+  # Real npm publish (dist-tag `canary`) of whatever pending .changeset/*.md
+  # files exist on this branch — replaces the old manual pkg.pr.new checkbox
+  # flow so examples/*/package.json can commit a literal, git-tracked
   # `"@symbiote-native/<pkg>": "canary"` dependency that always resolves live,
-  # something pkg.pr.new's ephemeral per-commit URLs couldn't give us. Two ways in:
-  # automatic (workflow_run, gated on `CI` having passed for the PR) or manual
-  # (workflow_dispatch with the canary-packages input, for a republish with no code
-  # change, or publishing off a branch with no open PR). Both still go through the
-  # `canary-publish` GitHub Environment's required-reviewer approval before
-  # anything actually hits the registry.
+  # something pkg.pr.new's ephemeral per-commit URLs couldn't give us.
+  #
+  # Deliberately does NOT try to scope this to "only the packages a PR
+  # touched" — an earlier version auto-detected changed packages via git diff
+  # and synthesized a throwaway changeset for exactly those, but
+  # `updateInternalDependencies: patch` (.changeset/config.json) still
+  # cascades a patch bump to every OTHER package that depends on one of them
+  # (e.g. bumping `angular` cascades to `navigation`/`sensors`/`slider`/
+  # `splash-screen`, all of which pin it via workspace:*) — so the "selected"
+  # set was never the actual published set anyway, it just looked like it
+  # was. Publishing whatever changesets + cascade decide, same as a real
+  # release, is honest about what actually happens and needs a real
+  # `.changeset/*.md` (from `pnpm changeset`) to publish anything — which is
+  # already required discipline for a real release, so no extra burden.
+  #
+  # Two ways in: automatic (workflow_run, gated on `CI` having passed for the
+  # PR) or manual (workflow_dispatch with publish-canary: true, for a branch
+  # with no open PR, or to retry). Both still go through the `canary-publish`
+  # GitHub Environment's required-reviewer approval before anything actually
+  # hits the registry.
   publish-canary:
     if: >-
       (github.event_name == 'workflow_run' &&
         github.event.workflow_run.event == 'pull_request' &&
-        github.event.workflow_run.conclusion == 'success' &&
-        github.event.workflow_run.pull_requests[0] != null) ||
-      (github.event_name == 'workflow_dispatch' && inputs.canary-packages != '')
+        github.event.workflow_run.conclusion == 'success') ||
+      (github.event_name == 'workflow_dispatch' && inputs.publish-canary == true)
     runs-on: ubuntu-latest
     environment: canary-publish
     steps:
@@ -174,45 +187,12 @@ jobs:
 
       - run: pnpm run prepublish-build
 
-      # Auto-detects which publishable package(s) the PR touches instead of a
-      # human ticking checkboxes — fails fast if it touches none. base/head come
-      # from the workflow_run event's own pull_requests[] entry (empty for a fork
-      # PR — GitHub withholds it there for security, so a fork-originated canary
-      # publish won't run until this is revisited).
-      - name: Resolve changed publishable packages (auto, from PR diff)
-        id: dirs-auto
-        if: github.event_name == 'workflow_run'
-        env:
-          CANARY_BASE_SHA: ${{ github.event.workflow_run.pull_requests[0].base.sha }}
-          CANARY_HEAD_SHA: ${{ github.event.workflow_run.head_sha }}
-        run: node scripts/select-canary-dirs.mjs
-
-      # Manual override: publish whatever the dispatcher typed, regardless of what
-      # actually changed — for a republish (no code change) or a branch with no
-      # open PR to diff against.
-      - name: Resolve selected publishable packages (manual input)
-        id: dirs-manual
-        if: github.event_name == 'workflow_dispatch'
-        env:
-          CANARY_PACKAGES_INPUT: ${{ inputs.canary-packages }}
-        run: node scripts/resolve-manual-canary-packages.mjs
-
-      # `changeset version --snapshot` only acts on packages that already have a
-      # real .changeset/*.md file — it has no idea about the packages resolved
-      # above, so a branch with no committed changeset would otherwise publish
-      # nothing. This writes a throwaway one for exactly the selected packages;
-      # it's never committed or pushed, just consumed by release:canary below.
-      - name: Write ephemeral changeset for selected packages
-        env:
-          CANARY_PACKAGES: ${{ steps.dirs-auto.outputs.packages || steps.dirs-manual.outputs.packages }}
-        run: node scripts/write-canary-changeset.mjs
-
-      # npm's OIDC trust (`npm trust github`, see trust-publishers.mjs) can only be
-      # registered for a package that already exists on the registry — refuse to
-      # let a never-published package reach `changeset publish` and 404 there.
-      - name: Preflight — verify npm trust for selected packages
-        env:
-          CANARY_PACKAGES: ${{ steps.dirs-auto.outputs.packages || steps.dirs-manual.outputs.packages }}
+      # npm's OIDC trust (`npm trust github`, see trust-publishers.mjs) can only
+      # be registered for a package that already exists on the registry — with
+      # no fixed "selected" set (cascade can touch any publishable package),
+      # this checks ALL of them up front rather than guessing which ones a
+      # given changeset might cascade into.
+      - name: Preflight — verify npm trust for every publishable package
         run: node scripts/check-canary-trust.mjs
 
       - name: Publish canary (npm, tag canary)
