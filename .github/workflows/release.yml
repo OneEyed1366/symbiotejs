@@ -161,12 +161,24 @@ jobs:
   # with no open PR, or to retry). Both still go through the `canary-publish`
   # GitHub Environment's required-reviewer approval before anything actually
   # hits the registry.
+  #
+  # `needs: checks` gates the workflow_dispatch path on Lint/Typecheck/Test —
+  # without it, a manual dispatch published straight to npm regardless of
+  # whether those passed. The `checks` job's own `if:` never runs it for
+  # workflow_run (ci.yml already covered that PR push), so its result there
+  # is 'skipped', not 'success' — the explicit needs.checks.result check below
+  # tolerates that instead of the implicit success()-only gate `needs:` alone
+  # would apply, which would silently skip this job on every workflow_run.
   publish-canary:
+    needs: checks
     if: >-
-      (github.event_name == 'workflow_run' &&
-        github.event.workflow_run.event == 'pull_request' &&
-        github.event.workflow_run.conclusion == 'success') ||
-      (github.event_name == 'workflow_dispatch' && inputs.publish-canary == true)
+      (needs.checks.result == 'success' || needs.checks.result == 'skipped') &&
+      (
+        (github.event_name == 'workflow_run' &&
+          github.event.workflow_run.event == 'pull_request' &&
+          github.event.workflow_run.conclusion == 'success') ||
+        (github.event_name == 'workflow_dispatch' && inputs.publish-canary == true)
+      )
     runs-on: ubuntu-latest
     environment: canary-publish
     steps:
