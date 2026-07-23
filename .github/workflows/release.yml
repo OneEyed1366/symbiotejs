@@ -197,6 +197,16 @@ jobs:
           CANARY_PACKAGES_INPUT: ${{ inputs.canary-packages }}
         run: node scripts/resolve-manual-canary-packages.mjs
 
+      # `changeset version --snapshot` only acts on packages that already have a
+      # real .changeset/*.md file — it has no idea about the packages resolved
+      # above, so a branch with no committed changeset would otherwise publish
+      # nothing. This writes a throwaway one for exactly the selected packages;
+      # it's never committed or pushed, just consumed by release:canary below.
+      - name: Write ephemeral changeset for selected packages
+        env:
+          CANARY_PACKAGES: ${{ steps.dirs-auto.outputs.packages || steps.dirs-manual.outputs.packages }}
+        run: node scripts/write-canary-changeset.mjs
+
       # npm's OIDC trust (`npm trust github`, see trust-publishers.mjs) can only be
       # registered for a package that already exists on the registry — refuse to
       # let a never-published package reach `changeset publish` and 404 there.
