@@ -151,7 +151,7 @@
   },
   "scripts": {
     "prepare": "node ../../scripts/vendor-codegen-specs.cjs react-native-screens src/fabric && pnpm run ng:build",
-    "clean": "rm -rf build",
+    "clean": "rm -rf build-ngc",
     "ng:build": "pnpm run clean && ngc -p tsconfig.angular.json",
     "typecheck": "tsc --build",
     "format": "prettier --write \"src/**/*.{ts,tsx}\""

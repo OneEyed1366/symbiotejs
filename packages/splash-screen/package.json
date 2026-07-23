@@ -75,7 +75,7 @@
   "scripts": {
     "prepare": "node ../../scripts/vendor-codegen-specs.cjs react-native-bootsplash src/specs && pnpm run ng:build",
     "typecheck": "tsc --build",
-    "clean": "rm -rf build",
+    "clean": "rm -rf build-ngc",
     "ng:build": "pnpm run clean && ngc -p tsconfig.angular.json",
     "format": "prettier --write \"src/**/*.{ts,tsx}\""
   },
