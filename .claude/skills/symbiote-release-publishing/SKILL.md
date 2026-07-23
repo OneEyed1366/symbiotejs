@@ -1,6 +1,6 @@
 ---
 name: symbiote-release-publishing
-description: "Symbiote npm publishing & versioning — read before touching .changeset/**, a publishable package's `publishConfig`/`files`/`exports`, .github/workflows/release.yml, or running `pnpm changeset`/`pnpm run release`. Versioning is Changesets (`pnpm changeset` → PR → 'Version Packages' PR → merge → CI publishes). Core trick: `main`/`exports` keep pointing at `src/index.ts` for in-repo dev (Metro/tsc resolve live TS, unchanged) — `publishConfig` overrides those to `build/` ONLY inside the tarball, never touching local resolution. No new bundler: `tsc --build` already emits `build/`, so `typecheck` IS the build. `@symbiote-native/angular`/`@symbiote-native/slider`'s `./angular` entry predate this, use a DIFFERENT mechanism (conditional `exports`, AOT build) — don't convert or copy that onto plain packages. Covers the mechanism table, the `files`-mandatory gotcha (`.gitignore` excludes `build/`), the `fix-esm-extensions` argument-list gotcha (a package missing from it ships an unimportable `build/` for every real npm consumer, invisible in-repo), changeset ignore list, release scripts, the `checks.yml` reusable-workflow CI gate (`ci.yml` + `release.yml` both call it, sequencing publish after lint/typecheck/test), and the manual canary release flow via pkg.pr.new (`workflow_dispatch` on `release.yml`, one checkbox per package, publishes a real packed tarball WITHOUT ever touching the npm registry — for e2e-testing packaging before the real release), and why a 'pnpm cache is not found' + 'Failed to save ... another job may be creating this cache' pair across checks.yml's parallel lint/typecheck/test jobs is an expected first-run/same-key race, not a broken cache (diagnose via job logs, not the Actions UI summary). Trigger: 'publish npm', 'release', 'changeset', 'version bump', 'publishConfig', 'canary release', 'CI publish', 'pkg.pr.new', 'pnpm cache not found', 'actions cache'."
+description: "Symbiote npm publishing & versioning — read before touching .changeset/**, a publishable package's `publishConfig`/`files`/`exports`, .github/workflows/release.yml, or running `pnpm changeset`/`pnpm run release`. Versioning is Changesets (`pnpm changeset` → PR → 'Version Packages' PR → merge → CI publishes). Core trick: `main`/`exports` keep pointing at `src/index.ts` for in-repo dev (Metro/tsc resolve live TS, unchanged) — `publishConfig` overrides those to `build/` ONLY inside the tarball, never touching local resolution. No new bundler: `tsc --build` already emits `build/`, so `typecheck` IS the build. `@symbiote-native/angular`/`@symbiote-native/slider`'s `./angular` entry predate this, use a DIFFERENT mechanism (conditional `exports`, AOT build) — don't convert or copy that onto plain packages. Covers the mechanism table, the `files`-mandatory gotcha (`.gitignore` excludes `build/`), the `fix-esm-extensions` argument-list gotcha (a package missing from it ships an unimportable `build/` for every real npm consumer, invisible in-repo), changeset ignore list, release scripts, the `checks.yml` reusable-workflow CI gate (`ci.yml` + `release.yml` both call it, sequencing publish after lint/typecheck/test), and the canary release flow — a REAL npm publish under the `canary` dist-tag, auto-triggered on every PR and gated by a GitHub Environment reviewer approval (`select-canary-dirs.mjs` auto-detects changed packages via `git diff`, `trust:publishers` is now mandatory immediately at package-scaffold time, a `cleanup-canary-versions.mjs` retention cron keeps the registry from growing forever) — which REPLACED an earlier pkg.pr.new-based mechanism (manual `workflow_dispatch`, one checkbox per package, never touched the real npm registry, now removed entirely), and why a 'pnpm cache is not found' + 'Failed to save ... another job may be creating this cache' pair across checks.yml's parallel lint/typecheck/test jobs is an expected first-run/same-key race, not a broken cache (diagnose via job logs, not the Actions UI summary). Trigger: 'publish npm', 'release', 'changeset', 'version bump', 'publishConfig', 'canary release', 'CI publish', 'pkg.pr.new', 'canary dist-tag', 'trust:publishers', 'pnpm cache not found', 'actions cache'."
 ---
 
 # Symbiote npm publishing & versioning
@@ -250,8 +250,8 @@ by trigger:
   `NODE_AUTH_TOKEN`, which `actions/setup-node`'s `registry-url` reads) OR the
   OIDC trusted-publisher config above; without either the version-PR step
   still works, only the actual `npm publish` call fails.
-- **`publish-canary`** (`if: github.event_name == 'workflow_dispatch'`, one
-  boolean input per publishable package) — see "Canary releases" below.
+- **`publish-canary`** (`if: github.event_name == 'pull_request'`, further
+  gated by `environment: canary-publish`) — see "Canary releases" below.
 
 ### pnpm store cache — a same-run save race is expected, not broken
 
@@ -281,86 +281,114 @@ working and the NEXT run with an unchanged lockfile should show `Cache
 restored from key: ...` in all jobs instead of `not found`. Only worth
 digging further if the SAME lockfile hash still misses on a *second* run.
 
-## Canary releases (manual, via pkg.pr.new — never touches the real npm registry)
+## Canary releases (automatic per-PR, real npm publish under the `canary` dist-tag)
 
-**Deliberately does NOT use npm/changesets at all.** An earlier version of
-this mechanism used `changeset version --snapshot` + `npm publish --tag` —
-rejected because every snapshot version, however obscure the tag, stays
-forever visible on the real npmjs.com registry (immutable, un-deletable).
-[pkg.pr.new](https://github.com/stackblitz-labs/pkg.pr.new) solves the same
-problem (install a real packed tarball to e2e-test packaging, not a
-`workspace:*` link) via its own npm-COMPATIBLE URLs — nothing is ever
-published to npmjs.com, so there's nothing to see there, no dist-tag, no
-version bump, nothing to clean up. Requires the pkg.pr.new GitHub App
-installed on this repo once (github.com/apps/pkg-pr-new); `pkg-pr-new` itself
-is a normal catalogued devDependency (installed from the lockfile, run via
-`pnpm exec` — its own README explicitly warns against `npx`/`pnpm dlx` in CI
-for supply-chain reasons).
+**Now a real npm publish — a reversal of an earlier rejection.** The
+mechanism documented here until 2026-07 went through
+[pkg.pr.new](https://github.com/stackblitz-labs/pkg.pr.new): a manual
+`workflow_dispatch` with one checkbox per package, publishing a real packed
+tarball to pkg.pr.new's own npm-compatible URLs — never touching npmjs.com,
+no dist-tag, nothing to clean up. That mechanism is **removed entirely**.
 
-Trigger `release.yml` manually ("Run workflow" in the Actions UI / `gh
-workflow run release.yml --ref <branch>`). Each publishable package has its
-OWN checkbox input (`android`, `angular`, `components`, `css-parser`,
-`engine`, `react`, `slider`, `splash-screen`, `test-utils`, `vue`) — all
-default `false`, so you deliberately tick only the ones you want (a canary
-run is normally about one changed package, not a rebuild-and-republish-
-everything sweep). A run with nothing ticked fails fast with a clear message
-instead of silently doing nothing.
+Before pkg.pr.new, an even earlier version of the CURRENT idea was tried and
+explicitly rejected: `changeset version --snapshot` + `npm publish --tag`,
+straight against the real registry — rejected at the time because every
+snapshot version, however obscure the tag, stays forever visible on the real
+npmjs.com registry (immutable, un-deletable). The team is now consciously
+reversing that rejection and going back to a real publish, because
+`examples/*/package.json` needs to commit `"@symbiote-native/<pkg>": "canary"`
+as a literal, git-tracked npm dependency value — npm/pnpm support a dist-tag
+string as a dependency specifier
+([npm docs](https://docs.npmjs.com/cli/v11/configuring-npm/package-json/)),
+and unlike pkg.pr.new's ephemeral per-commit URLs or the untracked
+`.examples/*` dev harness, it always resolves live and survives branch
+switches. A real publish also makes pkg.pr.new's packed-tarball testing
+redundant — it exercises the real `publishConfig` override for free. The
+immutable-forever-visible tradeoff from the original rejection is real and
+still applies; this time it's mitigated with a retention cron (below) instead
+of avoided.
 
-Mechanism:
-1. **`Determine selected packages`** step (`actions/github-script`) reads
-   `context.payload.inputs` generically — filters to keys whose value is
-   `'true'` — so adding an 11th package later means adding its
-   workflow_dispatch input, NOT touching this step's logic.
-2. `pnpm run prepublish-build`.
-3. **`scripts/select-canary-dirs.mjs`** (+ `scripts/lib/publishable-
-   packages.mjs`'s `publishablePackageEntries()`, same package-discovery loop
-   `trust-publishers.mjs` uses) — resolves the selected short names (env
-   `CANARY_PACKAGES`, comma-separated) to their package DIRECTORIES and writes
-   them space-separated to `GITHUB_OUTPUT` (`dirs=…`). It does NOT pack
-   anything — pkg.pr.new packs the dirs itself in step 4.
-4. `pnpm exec pkg-pr-new publish --pnpm <dir> <dir> …` — pass DIRECTORIES, and
-   the **`--pnpm` flag is mandatory**. Verified against the installed
-   `pkg-pr-new@0.0.75` bundle source (2026-07): its glob resolves with
-   `onlyDirectories: true` (it NEVER matches a prebuilt `.tgz` — the
-   "prebuilt-tarball mode" is an UNRELEASED main-branch feature, absent from
-   every published version), and it packs each dir itself defaulting to
-   `npm pack` unless `--pnpm` is passed. Plain `npm pack` does NOT apply a
-   package's `publishConfig` override (only pnpm does); without `--pnpm` the
-   tarball's `main`/`exports` still point at `src/index.ts` — installable, but
-   broken for any consumer without a TS-aware bundler. (History: an earlier
-   `scripts/pack-canary-tarballs.mjs` pre-packed tarballs and relied on that
-   non-existent prebuilt mode — it silently uploaded nothing. Deleted.)
+### Mechanism
 
-Install a canary with the **repo-qualified long URL form**:
-`pnpm add https://pkg.pr.new/OneEyed1366/symbiote-native/@symbiote-native/<pkg>@<commit-sha> --config.block-exotic-subdeps=false`
-(URL printed by the workflow run / posted as a PR comment if the branch has
-an open PR) in `.examples/*`/`examples/*`. `--config.block-exotic-subdeps=false`
-is required under pnpm 11 (its `blockExoticSubdeps: true` default blocks a
-URL dep appearing as a subdependency, which canary cross-deps always do).
+1. **Versioning — Changesets snapshot mode.** Root script:
+   ```jsonc
+   "release:canary": "changeset version --snapshot canary && changeset publish --tag canary"
+   ```
+   Produces versions shaped like `0.0.0-canary-<timestamp>...`, published
+   under npm dist-tag `canary`, never touching the `latest` tag.
 
-**GOTCHA — the URL form is load-bearing, not cosmetic (found 2026-07):** use
-the LONG `pkg.pr.new/OneEyed1366/symbiote-native/@symbiote-native/<pkg>@<sha>`,
-never the short `pkg.pr.new/@symbiote-native/<pkg>@<sha>`. Both resolve to the
-byte-identical tarball (same `integrity` hash), but pkg.pr.new bakes the LONG
-form into every published package's OWN cross-package deps (react→engine,
-components→engine, vue→engine). pnpm keys packages by the URL STRING, so if an
-example pins engine via the short form while `@symbiote-native/react` pulls it
-via the long form, pnpm installs TWO physical engine copies. That splits every
-ENGINE-level singleton: `registerStyles()` (css-parser-generated, runs in app
-context) writes the class map in copy A, but `resolveClassName()` (called from
-inside `@symbiote-native/react`) reads copy B → the map is empty → **every
-`className`/`class` silently resolves to `{}` and all CSS styling vanishes**,
-with no error. Catalog/semver installs never hit this (pnpm dedupes a plain
-version range). Diagnose by comparing
-`readlink -f examples/<app>/node_modules/@symbiote-native/engine` against the
-engine `@symbiote-native/react` resolves to inside its `.pnpm` virtual-store
-dir — they MUST be the same path. `grep -c 'pkg.pr.new/@symbiote-native/'
-pnpm-lock.yaml` (short form) must be `0`.
+2. **Trigger — every PR, gated by a required-reviewer approval.**
+   `release.yml`'s `publish-canary` job now triggers on
+   `pull_request: types: [opened, synchronize, reopened]` instead of a manual
+   `workflow_dispatch` checkbox list. It's gated by `needs: checks`
+   (lint/typecheck/test must pass first) AND `environment: canary-publish` —
+   a GitHub Environment with required reviewers, which surfaces a native
+   "Review deployments" approval button directly in the PR's Checks tab
+   ([GitHub docs](https://docs.github.com/actions/managing-workflow-runs/reviewing-deployments)) —
+   the GitHub-native equivalent of the old manual "Play" button, no custom
+   comment-parsing or permission-checking code needed. Required reviewers on
+   the Free/Pro/Team plan tier only work for PUBLIC repos; `OneEyed1366/
+   symbiote-native` is public, so this applies as-is. Self-review is NOT
+   prevented (the "prevent self-reviews" environment setting stays off) —
+   this is currently a solo-maintained project, so the same person who
+   opens/pushes the PR also approves their own canary-publish deployment.
 
-Nothing here is committed or pushed — the version bump and the generated
-changeset file live only in that one ephemeral CI checkout. Re-running the
-workflow against the SAME branch just re-publishes over the same dist-tag
-with a fresh timestamp; nothing to clean up between runs.
+3. **Package selection — auto-detected from the PR diff, not checkboxes.**
+   `scripts/select-canary-dirs.mjs` was rewritten from checkbox-reading to
+   auto-detecting which publishable packages changed in the PR, via `git
+   diff` against the PR base, resolved through the existing
+   `publishablePackageEntries()` helper (`scripts/lib/publishable-
+   packages.mjs`) — the same package-discovery loop `trust-publishers.mjs`
+   uses. The old per-package `workflow_dispatch` boolean inputs are gone.
+
+4. **Trust-bootstrap moves to package creation, not first release.** Because
+   canary publishing now also hits the real npm registry, a package's OIDC
+   trust registration (`pnpm run trust:publishers <pkg>`) can no longer wait
+   until its first REAL release — it must happen before its first CANARY
+   publish too, i.e. effectively immediately at package creation (see the
+   `symbiote-add-component` skill's new-package steps). CI enforces this: the
+   canary-selection step runs `npm view <pkg> version` for every package
+   about to be canary-published and fails fast with an actionable message
+   ("run `pnpm run trust:publishers <pkg>` locally first") instead of a
+   confusing 404 if the package was never published.
+
+5. **`trust-publishers.mjs` hardened with an auth preflight.** It now runs
+   `npm whoami` before its publish/trust loop and auto-runs `npm login`
+   (interactive) if there's no active session, instead of failing on a raw
+   npm auth error — npm login sessions for this user expire fairly quickly,
+   and this was a recurring source of friction.
+
+6. **Retention — a cron cleans up what a per-PR publish accumulates.** New
+   `.github/workflows/canary-cleanup.yml`, `schedule:` every 2 days, runs new
+   `scripts/cleanup-canary-versions.mjs`. For every publishable package,
+   every version matching the `-canary` snapshot pattern (never a real
+   release version), excluding whatever version the `canary` dist-tag
+   currently points at: real `npm unpublish` if younger than 72 hours (npm's
+   hard unpublish window —
+   [npm policy](https://docs.npmjs.com/policies/unpublish/)), `npm deprecate`
+   (soft, permanent, can't be undone, but doesn't break installs) as the
+   fallback for anything older that slipped past the window.
+
+### Consuming a canary in `examples/*`
+
+`examples/*/package.json` MAY commit a literal dist-tag dependency —
+`"@symbiote-native/<pkg>": "canary"`, not a semver range — for a feature
+branch that wants to dogfood in-progress unreleased changes: git-tracked,
+survives branch switches, always resolves to whatever the `canary` tag
+currently points at. This is a capability now available, not a blanket
+rewrite of every example app's dependencies — `examples/*` continues to
+default to real published semver ranges except when a specific branch
+deliberately opts in. `.examples/*` (the private untracked dev harness, still
+`workspace:*`) is unchanged and out of scope for this decision entirely — see
+`symbiote-dev-examples`.
+
+### Removed
+
+`pkg-pr-new` is gone entirely — no longer a devDependency, no longer in the
+pnpm catalog. The old repo-qualified `pkg.pr.new/OneEyed1366/symbiote-native/…`
+install URL no longer works for anything published after this change; use
+the `canary` dist-tag instead. The pkg.pr.new GitHub App on this repo is no
+longer needed by the release pipeline.
 
 ## The actual release workflow (day to day)
 

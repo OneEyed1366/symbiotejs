@@ -277,6 +277,19 @@ Wire up and smoke-test every phase in the matching `.examples/<app>` (never
 `symbiote-dev-examples`). `examples/<app>` only picks up X later, deliberately,
 after `@symbiote-native/components`/adapter is actually published.
 
+**If this component work scaffolds a brand-new publishable package** (a new
+adapter under `adapters/`, or a new third-party wrapper under `packages/`),
+two release-related steps are now mandatory immediately after scaffolding,
+before any further feature work — not deferred until release time:
+1. The package starts at version `0.0.0`, even with placeholder content and
+   no real README yet.
+2. Run `pnpm run trust:publishers <short-name>` right away. Canary publishing
+   now hits the real npm registry (see `symbiote-release-publishing`'s
+   "Canary releases" section), so a package's OIDC trust registration can no
+   longer wait until its first real release — skip this and CI's canary
+   preflight fails with a confusing 404 instead of the actionable "run
+   `trust:publishers` locally first" message it's meant to give you.
+
 **Device-smoke bar for a SHARED-CORE change (all adapters drive ONE core state
 machine).** When the logic being verified lives once in `@symbiote-native/components`
 and each adapter is only a thin lifecycle bridge over it (the whole point of the
