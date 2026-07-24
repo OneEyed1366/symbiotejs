@@ -7,8 +7,5 @@
   "access": "public",
   "baseBranch": "master",
   "updateInternalDependencies": "patch",
-  "ignore": ["@symbiote-native/docs-site"],
-  "snapshot": {
-    "useCalculatedVersion": true
-  }
+  "ignore": ["@symbiote-native/docs-site"]
 }

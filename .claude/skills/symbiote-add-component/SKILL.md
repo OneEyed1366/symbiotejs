@@ -283,12 +283,11 @@ two release-related steps are now mandatory immediately after scaffolding,
 before any further feature work — not deferred until release time:
 1. The package starts at version `0.0.0`, even with placeholder content and
    no real README yet.
-2. Run `pnpm run trust:publishers <short-name>` right away. Canary publishing
-   now hits the real npm registry (see `symbiote-release-publishing`'s
-   "Canary releases" section), so a package's OIDC trust registration can no
-   longer wait until its first real release — skip this and CI's canary
-   preflight fails with a confusing 404 instead of the actionable "run
-   `trust:publishers` locally first" message it's meant to give you.
+2. Run `pnpm run trust:publishers <short-name>` right away — do the one-time,
+   interactive npm OIDC trust registration while the package is still
+   trivial/empty, not scrambled together right before its first real feature
+   release (see `symbiote-release-publishing`'s "Root scripts" section for
+   what the script does).
 
 **Device-smoke bar for a SHARED-CORE change (all adapters drive ONE core state
 machine).** When the logic being verified lives once in `@symbiote-native/components`

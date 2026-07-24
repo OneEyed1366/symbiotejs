@@ -28,7 +28,6 @@
     "changeset": "changeset",
     "version-packages": "changeset version",
     "release": "pnpm run build && changeset publish",
-    "release:canary": "changeset version --snapshot canary && changeset publish --tag canary",
     "trust:publishers": "node scripts/trust-publishers.mjs"
   },
   "devDependencies": {
@@ -40,6 +39,7 @@
     "globals": "catalog:",
     "husky": "catalog:",
     "lint-staged": "catalog:",
+    "pkg-pr-new": "catalog:",
     "prettier": "catalog:",
     "syncpack": "catalog:",
     "typescript": "catalog:",

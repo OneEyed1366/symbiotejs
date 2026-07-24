@@ -22,7 +22,7 @@ on:
         type: boolean
         default: false
       publish-canary:
-        description: 'Manually run a canary publish for whatever pending changesets exist on this branch (internal-dependency cascade included, same as a real release)'
+        description: 'Manually publish a pkg.pr.new preview build of every publishable package on this branch'
         type: boolean
         default: false
 
@@ -137,38 +137,34 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-  # Real npm publish (dist-tag `canary`) of whatever pending .changeset/*.md
-  # files exist on this branch — replaces the old manual pkg.pr.new checkbox
-  # flow so examples/*/package.json can commit a literal, git-tracked
-  # `"@symbiote-native/<pkg>": "canary"` dependency that always resolves live,
-  # something pkg.pr.new's ephemeral per-commit URLs couldn't give us.
+  # Preview publish of every publishable package via pkg.pr.new — WITHOUT touching the real npm
+  # registry at all. pkg.pr.new hosts its own npm-compatible per-commit URLs, so nothing here is
+  # ever visible on npmjs.com: no dist-tag, no version bump, nothing to clean up. That last point
+  # is load-bearing, not incidental — an earlier version of this job published real npm snapshots
+  # under a `canary` dist-tag instead, which turned out to be a dead end: real npm's `unpublish`
+  # and `deprecate` both require an interactive OTP that a headless CI job can never supply, and
+  # this holds even for a granular access token with "bypass 2FA" enabled — that bypass only ever
+  # covers `npm publish`, never `unpublish`/`deprecate` (confirmed empirically, not just from
+  # docs, against this repo's own packages on 2026-07-24). So real npm snapshots would have
+  # accumulated on the registry forever with no working automated cleanup. pkg.pr.new sidesteps
+  # the whole problem by never touching the real registry in the first place.
   #
-  # Deliberately does NOT try to scope this to "only the packages a PR
-  # touched" — an earlier version auto-detected changed packages via git diff
-  # and synthesized a throwaway changeset for exactly those, but
-  # `updateInternalDependencies: patch` (.changeset/config.json) still
-  # cascades a patch bump to every OTHER package that depends on one of them
-  # (e.g. bumping `angular` cascades to `navigation`/`sensors`/`slider`/
-  # `splash-screen`, all of which pin it via workspace:*) — so the "selected"
-  # set was never the actual published set anyway, it just looked like it
-  # was. Publishing whatever changesets + cascade decide, same as a real
-  # release, is honest about what actually happens and needs a real
-  # `.changeset/*.md` (from `pnpm changeset`) to publish anything — which is
-  # already required discipline for a real release, so no extra burden.
+  # Publishes ALL publishable packages every time rather than a hand-picked subset: unlike a real
+  # npm publish, pkg.pr.new never mutates shared registry state (no dist-tag to move, no cascade
+  # via `updateInternalDependencies` to reason about), so there's no staleness/cascade risk a
+  # selection would need to guard against — publishing everything is simply the cheapest, always-
+  # accurate option. Requires the pkg.pr.new GitHub App installed on this repo
+  # (github.com/apps/pkg-pr-new).
   #
-  # Two ways in: automatic (workflow_run, gated on `CI` having passed for the
-  # PR) or manual (workflow_dispatch with publish-canary: true, for a branch
-  # with no open PR, or to retry). Both still go through the `canary-publish`
-  # GitHub Environment's required-reviewer approval before anything actually
-  # hits the registry.
+  # Two ways in: automatic (workflow_run, gated on `CI` having passed for the PR) or manual
+  # (workflow_dispatch with publish-canary: true, for a branch with no open PR, or to retry).
   #
-  # `needs: checks` gates the workflow_dispatch path on Lint/Typecheck/Test —
-  # without it, a manual dispatch published straight to npm regardless of
-  # whether those passed. The `checks` job's own `if:` never runs it for
-  # workflow_run (ci.yml already covered that PR push), so its result there
-  # is 'skipped', not 'success' — the explicit needs.checks.result check below
-  # tolerates that instead of the implicit success()-only gate `needs:` alone
-  # would apply, which would silently skip this job on every workflow_run.
+  # `needs: checks` gates the workflow_dispatch path on Lint/Typecheck/Test — without it, a manual
+  # dispatch would publish regardless of whether those passed. The `checks` job's own `if:` never
+  # runs it for workflow_run (ci.yml already covered that PR push), so its result there is
+  # 'skipped', not 'success' — the explicit needs.checks.result check below tolerates that instead
+  # of the implicit success()-only gate `needs:` alone would apply, which would silently skip this
+  # job on every workflow_run.
   publish-canary:
     needs: checks
     if: >-
@@ -192,20 +188,19 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-          registry-url: https://registry.npmjs.org
           cache: pnpm
 
       - run: pnpm install --frozen-lockfile
 
       - run: pnpm run prepublish-build
 
-      # npm's OIDC trust (`npm trust github`, see trust-publishers.mjs) can only
-      # be registered for a package that already exists on the registry — with
-      # no fixed "selected" set (cascade can touch any publishable package),
-      # this checks ALL of them up front rather than guessing which ones a
-      # given changeset might cascade into.
-      - name: Preflight — verify npm trust for every publishable package
-        run: node scripts/check-canary-trust.mjs
+      # pkg-pr-new's own glob resolution only matches directories, and it packs them itself,
+      # defaulting to `npm pack` unless told otherwise. `--pnpm` makes it use `pnpm pack`, which
+      # — unlike `npm pack` — resolves each package's `publishConfig` override (ships `build/`,
+      # not the in-repo `src/*.ts` entry).
+      - name: Resolve publishable package directories
+        id: dirs
+        run: node scripts/select-canary-dirs.mjs
 
-      - name: Publish canary (npm, tag canary)
-        run: pnpm run release:canary
+      - name: Publish canary (pkg.pr.new)
+        run: pnpm exec pkg-pr-new publish --pnpm ${{ steps.dirs.outputs.dirs }}
